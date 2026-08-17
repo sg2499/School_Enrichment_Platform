@@ -40,15 +40,31 @@ jobs:
           mkdir -p ci-artifacts
           if [ "${{ github.event_name }}" = "push" ]; then
             BASE="${{ github.event.before }}"
-            if printf '%s' "$BASE" | grep -Eq '^0+$'; then BASE="HEAD^"; fi
+            if printf '%s' "$BASE" | grep -Eq '^0+$'; then
+              # github.event.before is all-zeros both for a brand new branch
+              # AND for a repo's very first commit ever. HEAD^ only exists
+              # in the first case -- a root commit has no parent, so
+              # `git diff HEAD^...HEAD` fails outright (exit 128). Detect
+              # that and fall back to scanning the whole tree instead of a
+              # diff, since there's nothing to diff against yet.
+              if git rev-parse --verify -q HEAD^ >/dev/null; then
+                BASE="HEAD^"
+              else
+                BASE=""
+              fi
+            fi
           else
             BASE_REF="${{ github.base_ref }}"
             if [ -z "$BASE_REF" ]; then BASE_REF="main"; fi
             git fetch origin "$BASE_REF"
             BASE="origin/$BASE_REF"
           fi
-          git diff --check "$BASE...HEAD"
-          changed="$(git diff --name-only "$BASE...HEAD")"
+          if [ -z "$BASE" ]; then
+            changed="$(git ls-tree -r --name-only HEAD)"
+          else
+            git diff --check "$BASE...HEAD"
+            changed="$(git diff --name-only "$BASE...HEAD")"
+          fi
           printf '%s\n' "$changed" | tee ci-artifacts/changed-files.txt
           secret_paths="$(printf '%s\n' "$changed" | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|id_rsa$|credentials\.json$|secrets?\.)' | grep -vE '(^|/)\.env\.example$' || true)"
           if [ -n "$secret_paths" ]; then
