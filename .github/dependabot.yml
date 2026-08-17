@@ -1,0 +1,40 @@
+# Dependabot configuration, adapted from MathPath-Platform's (verified
+# working there). Opens weekly PRs for outdated/vulnerable dependencies
+# across all ecosystems this repo uses. Does not auto-merge anything —
+# every PR still goes through the normal CI gate and PR review flow. The
+# goal is visibility, not automatic changes reaching production unreviewed.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "backend"
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Major-version bumps for the frontend framework and error-tracking SDK
+    # are high-blast-radius (need a dedicated, deliberate verification pass)
+    # rather than something to land via a routine automated PR.
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@sentry/nextjs"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"

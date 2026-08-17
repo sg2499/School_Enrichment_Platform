@@ -1,0 +1,23 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/*.db
+backend/uploads/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# Env files (never commit real secrets -- .env.example files are fine)
+.env
+backend/.env
+frontend/.env.local
+
+# OS/editor
+.DS_Store
+*.swp

@@ -1,0 +1,10 @@
+line-length = 120
+
+[lint]
+extend-select = ["I"]  # isort-style import sorting
+ignore = [
+    "EXE002",  # executable-bit-without-shebang -- false positive from how
+               # files get written to disk in some tooling; not a real
+               # code issue, and not something git preserves consistently
+               # across platforms anyway.
+]

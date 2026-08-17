@@ -1,0 +1,48 @@
+# Render "Infrastructure as Code" file, adapted from MathPath-Platform's
+# render.yaml. Revised 17 Aug 2026: uses Render's own managed Postgres
+# (not Neon — only Vercel/Render/Sentry accounts are in scope for this
+# phase; a dedicated hosting team re-architects infra before go-live with
+# real student volume, per ENGINEERING_OPERATING_SYSTEM.md Section 2).
+# This is now near-identical to MathPath's own render.yaml on purpose.
+
+services:
+  - type: web
+    name: school-enrichment-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w 4 --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: school-enrichment-postgres
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: FRONTEND_URL
+        sync: false   # set manually: the Vercel production URL, once assigned
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: SENTRY_DSN
+        sync: false   # set manually once the Sentry project exists
+      # File storage: Render persistent disk for now (see
+      # ENGINEERING_OPERATING_SYSTEM.md Section 2) — no object-storage
+      # account exists yet. Attach a Render disk to this service
+      # (Settings -> Disks) mounted at /opt/render/project/src/backend/uploads
+      # (or wherever app/main.py's UPLOAD_ROOT points) once the service
+      # exists; add FILE_SIGNING_SECRET below once the signed-token file
+      # access layer is implemented.
+      # - key: FILE_SIGNING_SECRET
+      #   generateValue: true
+      # Email intentionally not configured yet — deferred per
+      # ENGINEERING_OPERATING_SYSTEM.md Section 2 (parent reports ship as
+      # in-app + downloadable PDF first; add SMTP/email vars only if the
+      # client specifically requires emailed delivery later).
+
+databases:
+  - name: school-enrichment-postgres
+    databaseName: school_enrichment
+    user: school_enrichment_user
