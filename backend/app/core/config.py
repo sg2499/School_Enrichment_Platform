@@ -25,3 +25,12 @@ COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 SENTRY_DSN = os.getenv("SENTRY_DSN")
+
+# Permanent operator-only credential for POST /api/platform/schools (see
+# routes_platform.py) -- the one endpoint that must work before any admin
+# account exists to log in with, since account creation is otherwise
+# admin-gated. Not a per-user secret and not one-time: whoever operates the
+# platform (Shailesh, or the hosting team later) holds this and calls the
+# endpoint each time a new school is onboarded. Unset by default so a
+# deployment with no key configured fails closed instead of silently open.
+PLATFORM_OPERATOR_KEY = os.getenv("PLATFORM_OPERATOR_KEY")
