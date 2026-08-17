@@ -153,6 +153,43 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # --- Wait for CI ------------------------------------------------------------
+# `gh pr checks --watch` trusts whatever check-runs already exist the moment
+# it's called. GitHub Actions takes a few seconds to register a workflow's
+# jobs as check-runs on the PR after a push -- if --watch is called before
+# ci-summary (or any of the 5 underlying jobs) has registered, it can see
+# "0 pending, 0 failing" (because nothing's there yet, not because
+# everything passed) and report success immediately. Found the hard way
+# (17 Aug 2026, PR #24): the interactive PR-template editor step above gave
+# GitHub Actions enough real time to actually finish in the background, but
+# --watch still only reported on two unrelated Vercel checks and exited --
+# CI had genuinely passed by then, confirmed by hand on github.com, but the
+# script itself couldn't have told the difference between that and a real
+# false-pass. This loop waits for ci-summary to actually appear as a known
+# check before trusting --watch's result.
+Step "Waiting for GitHub Actions to register checks on the PR"
+$maxWaitSeconds = 60
+$pollIntervalSeconds = 3
+$elapsed = 0
+$ciSummaryRegistered = $false
+while ($elapsed -lt $maxWaitSeconds) {
+    $checksJson = gh pr checks $Branch --json name 2>$null
+    if ($LASTEXITCODE -eq 0 -and $checksJson) {
+        $checks = $checksJson | ConvertFrom-Json
+        if ($checks | Where-Object { $_.name -eq "ci-summary" }) {
+            $ciSummaryRegistered = $true
+            break
+        }
+    }
+    Start-Sleep -Seconds $pollIntervalSeconds
+    $elapsed += $pollIntervalSeconds
+}
+if (-not $ciSummaryRegistered) {
+    Warn "ci-summary hasn't registered on the PR after ${maxWaitSeconds}s."
+    Warn "Continuing to watch anyway, but verify the PR's Checks tab on GitHub yourself before merging."
+} else {
+    Ok "ci-summary registered, now watching it run."
+}
+
 Step "Waiting for CI (ci-summary must pass before this can merge)"
 gh pr checks $Branch --watch
 if ($LASTEXITCODE -ne 0) {
