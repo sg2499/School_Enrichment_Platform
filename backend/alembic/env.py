@@ -1,11 +1,11 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from app.core.config import DATABASE_URL
 from app.database import Base
-from app.models import models  # noqa: F401 -- registers all model classes on Base.metadata
+from app.models import curriculum, models  # noqa: F401 -- registers all model classes on Base.metadata
 
 config = context.config
 if config.config_file_name is not None:
