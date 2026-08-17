@@ -16,7 +16,7 @@ from app.core.security import (
     create_two_factor_challenge_token,
     verify_password,
 )
-from app.models import Student, Teacher, User
+from app.models import SchoolAdmin, Student, Teacher, User
 
 
 def public_profile_photo_url(user: User, stored_photo: str | None) -> str | None:
@@ -48,6 +48,12 @@ def user_payload(db: Session, user: User) -> dict:
 
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+
+    school_admin = None
+    if user.role == "ADMIN":
+        # SUPER_ADMIN deliberately excluded: platform-wide, not tied to one
+        # school, so it has no SchoolAdmin row to look up.
+        school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
 
     data = {
         "id": user.id,
@@ -84,6 +90,12 @@ def user_payload(db: Session, user: User) -> dict:
             "signatureUrl": teacher.signature_url,
             "designation": teacher.designation,
             "subjectSpecialization": teacher.subject_specialization,
+        }
+
+    if school_admin:
+        data["admin"] = {
+            "id": school_admin.id,
+            "schoolId": school_admin.school_id,
         }
 
     return data

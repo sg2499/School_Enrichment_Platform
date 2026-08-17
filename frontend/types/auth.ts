@@ -30,6 +30,11 @@ export type CurrentUser = {
     designation?: string | null;
     subjectSpecialization?: string | null;
   } | null;
+  // ADMIN only -- SUPER_ADMIN is platform-wide and has no school association.
+  admin?: {
+    id: string;
+    schoolId: string;
+  } | null;
 };
 
 export type LoginResponse = {

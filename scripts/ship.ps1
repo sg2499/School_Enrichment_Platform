@@ -34,7 +34,27 @@ param(
     [switch]$AutoMerge
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
+# Deliberately NOT "Stop". This script's whole design (every native git/gh
+# call followed by a manual `if ($LASTEXITCODE ...) { throw ... }` check)
+# assumes a native command's failure is non-terminating so that check can
+# run. Under "Stop", PowerShell converts ANY stderr output from a redirected
+# native command (`*>$null`, `2>$null`, etc.) into a terminating error in
+# its own right -- independent of exit code, and true on Windows PowerShell
+# 5.1 as well as 7.x, not just the 7.3+ $PSNativeCommandUseErrorActionPreference
+# feature (kept disabled below too, as defense in depth). That silently
+# breaks the very first "is this allowed to fail" check in the script: `git
+# rev-parse --verify <branch>` is SUPPOSED to fail when the branch is new --
+# that failure is how the branch-create-vs-checkout logic below decides
+# which path to take. Found the hard way (17 Aug 2026): a brand new branch
+# name made the script die immediately with "fatal: Needed a single
+# revision" instead of creating the branch, on two different PowerShell
+# versions. Explicit `throw` statements elsewhere in this script (e.g. "not
+# logged into GitHub CLI") still terminate correctly under "Continue" --
+# `throw` is a PowerShell language construct, not subject to
+# $ErrorActionPreference, so none of the script's actual failure handling
+# is weakened by this change.
+$PSNativeCommandUseErrorActionPreference = $false
 
 function Step($text) { Write-Host "`n==> $text" -ForegroundColor Cyan }
 function Ok($text)   { Write-Host "    $text" -ForegroundColor Green }
@@ -105,13 +125,21 @@ if ($suspicious) {
 Ok "No secret-bearing paths in the diff."
 
 # --- Commit and push -------------------------------------------------------
+# Explicit $LASTEXITCODE checks below on git commit/push and gh pr create/merge
+# are new (17 Aug 2026) -- under the old $ErrorActionPreference = "Stop", a
+# real failure here would (accidentally, via the same stderr-redirection quirk
+# explained above) already halt the script, so nobody noticed these were
+# missing their own checks. Now that "Continue" is deliberate, they need to be
+# explicit like every other native call in this script.
 Step "Committing"
 git add -A
 git commit -m "$Message"
+if ($LASTEXITCODE -ne 0) { throw "git commit failed (see output above) -- nothing to push." }
 Ok "Committed."
 
 Step "Pushing to origin/$Branch"
 git push -u origin $Branch
+if ($LASTEXITCODE -ne 0) { throw "git push failed (see output above)." }
 Ok "Pushed."
 
 # --- Open PR (uses .github/pull_request_template.md interactively) --------
@@ -121,6 +149,7 @@ if ($LASTEXITCODE -eq 0) {
     Warn "PR already exists for this branch."
 } else {
     gh pr create --title "$Message" --base main --head $Branch
+    if ($LASTEXITCODE -ne 0) { throw "gh pr create failed (see output above)." }
 }
 
 # --- Wait for CI ------------------------------------------------------------
@@ -135,6 +164,7 @@ Ok "All required checks passed."
 if ($AutoMerge) {
     Step "Merging (squash, delete branch, no admin bypass)"
     gh pr merge $Branch --squash --delete-branch
+    if ($LASTEXITCODE -ne 0) { throw "gh pr merge failed (see output above)." }
     Ok "Merged. Vercel/Render will auto-deploy from main."
 } else {
     Write-Host ""

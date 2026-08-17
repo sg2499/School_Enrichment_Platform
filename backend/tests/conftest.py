@@ -11,6 +11,7 @@ import os
 # origin, which would otherwise break every cookie-authenticated test here.
 os.environ.setdefault("COOKIE_SECURE", "false")
 os.environ.setdefault("SECRET_KEY", "test-secret")
+os.environ.setdefault("PLATFORM_OPERATOR_KEY", "test-platform-operator-key")
 
 import pytest
 from fastapi.testclient import TestClient

@@ -1,1 +1,1 @@
-from app.models.models import AuditLog, School, Student, Teacher, User  # noqa: F401
+from app.models.models import AuditLog, School, SchoolAdmin, Student, Teacher, User  # noqa: F401

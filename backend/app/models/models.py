@@ -22,6 +22,15 @@ Provenance against PHASE_0_CODE_AUDIT.md:
   useful for any school's student records, not Abacus-specific.
 - AuditLog: Retain as-is, minus the attempt_id column (no Attempt table
   exists yet in Phase 1 -- re-added in Phase 3 when it does).
+- SchoolAdmin: new (17 Aug 2026, Phase 1 exit-gate work) -- ADMIN is the one
+  role with no dedicated profile table, so before this there was no way to
+  record which school an admin actually administers (Student/Teacher already
+  carry school_id on their own rows). Mirrors the Student/Teacher pattern
+  exactly rather than bolting a school_id onto User directly, so a future
+  "admin manages multiple schools" scenario needs no further schema change --
+  just another row. SUPER_ADMIN (platform operator, not tied to one school)
+  deliberately has no SchoolAdmin row, same way School itself has no owner
+  column.
 """
 import uuid
 
@@ -133,6 +142,18 @@ class Teacher(Base):
     photo_url = Column(Text, nullable=True)
     signature_url = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+
+    school = relationship("School")
+    user = relationship("User")
+
+
+class SchoolAdmin(Base):
+    __tablename__ = "school_admins"
+    id = Column(String, primary_key=True, default=uuid_str)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    school_id = Column(String, ForeignKey("schools.id", ondelete="RESTRICT"), nullable=False, index=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     school = relationship("School")
     user = relationship("User")
