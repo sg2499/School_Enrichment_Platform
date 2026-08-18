@@ -32,6 +32,36 @@ export type ChapterDetail = ChapterSummary & {
   conceptLessons: ConceptLessonSummary[];
 };
 
+// Full content for one question -- the actual review surface (stem, every
+// option, correct answer, explanation), not just a status badge. Mirrors
+// GET /curriculum-admin/concept-lessons/{id}/questions.
+export type QuestionDetail = {
+  id: string;
+  code: string;
+  conceptLessonId: string;
+  questionType: string;
+  difficulty: number | null;
+  competency: string | null;
+  stem: string;
+  optionA: string | null;
+  optionB: string | null;
+  optionC: string | null;
+  optionD: string | null;
+  correctAnswer: string;
+  acceptedVariants: string | null;
+  hint: string | null;
+  explanation: string | null;
+  misconceptionTag: string | null;
+  marks: number;
+  timeSeconds: number | null;
+  autoGradable: boolean;
+  shuffleOptions: boolean;
+  responseFormat: string | null;
+  mediaRequired: string | null;
+  teacherNote: string | null;
+  status: QuestionStatus;
+};
+
 export type BoardCourseOption = {
   id: string;
   code: string;

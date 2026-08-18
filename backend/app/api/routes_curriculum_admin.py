@@ -299,6 +299,58 @@ def update_concept_lesson_status(concept_lesson_id: str, payload: StatusChangeRe
 # --- Question ------------------------------------------------------------
 
 
+def _question_detail(question: Question) -> dict:
+    return {
+        "id": question.id,
+        "code": question.code,
+        "conceptLessonId": question.concept_lesson_id,
+        "questionType": question.question_type,
+        "difficulty": question.difficulty,
+        "competency": question.competency,
+        "stem": question.stem,
+        "optionA": question.option_a,
+        "optionB": question.option_b,
+        "optionC": question.option_c,
+        "optionD": question.option_d,
+        "correctAnswer": question.correct_answer,
+        "acceptedVariants": question.accepted_variants,
+        "hint": question.hint,
+        "explanation": question.explanation,
+        "misconceptionTag": question.misconception_tag,
+        "marks": question.marks,
+        "timeSeconds": question.time_seconds,
+        "autoGradable": question.auto_gradable,
+        "shuffleOptions": question.shuffle_options,
+        "responseFormat": question.response_format,
+        "mediaRequired": question.media_required,
+        "teacherNote": question.teacher_note,
+        "status": question.status,
+    }
+
+
+@router.get("/concept-lessons/{concept_lesson_id}/questions", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def list_concept_lesson_questions(concept_lesson_id: str, db: Session = Depends(get_db)):
+    """The actual content-review surface: full question text, every option,
+    the correct answer, and the explanation -- everything a SUPER_ADMIN needs
+    to eyeball before moving a question (and therefore, eventually, the
+    chapter) toward PUBLISHED. Before this endpoint existed, the studio UI
+    only ever showed counts and status badges, so "review" meant clicking
+    Approve without ever seeing what was being approved. SUPER_ADMIN only,
+    matching every other endpoint in this file that touches unreviewed
+    master content."""
+    lesson = db.get(ConceptLesson, concept_lesson_id)
+    if not lesson:
+        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+
+    questions = (
+        db.query(Question)
+        .filter(Question.concept_lesson_id == concept_lesson_id)
+        .order_by(Question.code)
+        .all()
+    )
+    return {"questions": [_question_detail(q) for q in questions]}
+
+
 @router.patch("/questions/{question_id}/status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
 def update_question_status(question_id: str, payload: StatusChangeRequest, db: Session = Depends(get_db)):
     question = db.get(Question, question_id)
