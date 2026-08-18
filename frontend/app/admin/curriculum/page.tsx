@@ -474,6 +474,14 @@ function ChapterStudio() {
                             <Badge tone={LESSON_STATUS_TONE[lesson.status]} size="sm">
                               {lesson.status}
                             </Badge>
+                            <Button
+                              size="sm"
+                              variant={isExpanded ? "secondary" : "ghost"}
+                              leadingIcon={isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              onClick={() => toggleLesson(lesson.id)}
+                            >
+                              {isExpanded ? "Hide Questions" : "Review Questions"}
+                            </Button>
                             {lesson.status === "DRAFT" ? (
                               <Button
                                 size="sm"
