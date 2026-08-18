@@ -14,6 +14,7 @@ export type CurrentUser = {
   student?: {
     id: string;
     schoolId: string;
+    schoolName?: string | null;
     studentCode: string;
     customId?: string | null;
     photoUrl?: string | null;
@@ -24,6 +25,7 @@ export type CurrentUser = {
   teacher?: {
     id: string;
     schoolId: string;
+    schoolName?: string | null;
     teacherCode: string;
     photoUrl?: string | null;
     signatureUrl?: string | null;
@@ -34,6 +36,7 @@ export type CurrentUser = {
   admin?: {
     id: string;
     schoolId: string;
+    schoolName?: string | null;
   } | null;
 };
 

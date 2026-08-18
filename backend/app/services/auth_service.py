@@ -16,7 +16,19 @@ from app.core.security import (
     create_two_factor_challenge_token,
     verify_password,
 )
-from app.models import SchoolAdmin, Student, Teacher, User
+from app.models import School, SchoolAdmin, Student, Teacher, User
+
+
+def _school_name(db: Session, school_id: str | None) -> str | None:
+    """Human-readable school name for display only (e.g. the login page's
+    "Issued by <school>" pill, remembered client-side per browser once a
+    person has actually signed in once -- see frontend lib/auth.ts's
+    rememberSchoolName()). Never used for authorization; schoolId remains
+    the real tenant anchor everywhere else."""
+    if not school_id:
+        return None
+    school = db.query(School).filter(School.id == school_id).first()
+    return school.name if school else None
 
 
 def public_profile_photo_url(user: User, stored_photo: str | None) -> str | None:
@@ -72,6 +84,7 @@ def user_payload(db: Session, user: User) -> dict:
         data["student"] = {
             "id": student.id,
             "schoolId": student.school_id,
+            "schoolName": _school_name(db, student.school_id),
             "studentCode": student.student_code,
             "customId": student.custom_id,
             "photoUrl": public_profile_photo_url(user, student.photo_url),
@@ -85,6 +98,7 @@ def user_payload(db: Session, user: User) -> dict:
         data["teacher"] = {
             "id": teacher.id,
             "schoolId": teacher.school_id,
+            "schoolName": _school_name(db, teacher.school_id),
             "teacherCode": teacher.teacher_code,
             "photoUrl": public_profile_photo_url(user, teacher.photo_url),
             "signatureUrl": teacher.signature_url,
@@ -96,6 +110,7 @@ def user_payload(db: Session, user: User) -> dict:
         data["admin"] = {
             "id": school_admin.id,
             "schoolId": school_admin.school_id,
+            "schoolName": _school_name(db, school_admin.school_id),
         }
 
     return data

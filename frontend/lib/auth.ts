@@ -16,6 +16,7 @@ import type { CurrentUser, UserRole } from "@/types/auth";
 const LEGACY_USER_KEY = "school_enrichment_user";
 const ACTIVE_ROLE_KEY = "school_enrichment_active_role";
 const CSRF_COOKIE_NAME = "se_csrf";
+const KNOWN_SCHOOL_KEY = "school_enrichment_known_school";
 
 function roleFromPath(): UserRole | null {
   if (typeof window === "undefined") return null;
@@ -114,6 +115,36 @@ export function getStoredUserForRole(role: UserRole): CurrentUser | null {
   }
 }
 
+function schoolNameFromUser(user: CurrentUser): string | null {
+  return user.student?.schoolName || user.teacher?.schoolName || user.admin?.schoolName || null;
+}
+
+/** Remembers which school this browser last signed in as -- purely a
+ * display convenience (the login page's "Issued by <school>" pill) for a
+ * returning visitor on their own device. Never used for authorization: the
+ * login page still asks for real credentials regardless of what this says,
+ * and a person on a shared/public device simply sees the generic pill until
+ * they've actually signed in here once. Non-secret, just a name string.
+ */
+export function rememberSchoolName(name: string | null | undefined): void {
+  if (typeof window === "undefined" || !name) return;
+  try {
+    localStorage.setItem(KNOWN_SCHOOL_KEY, name);
+  } catch {
+    // Storage full or blocked (private browsing) -- the pill just falls
+    // back to generic wording next visit, nothing else depends on this.
+  }
+}
+
+export function getRememberedSchoolName(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(KNOWN_SCHOOL_KEY);
+  } catch {
+    return null;
+  }
+}
+
 /** Persists the logged-in user's own profile (display only, non-secret) and
  * marks this role as active. Called once per successful login/2FA-verify;
  * the real session was already established server-side via the httpOnly
@@ -124,6 +155,7 @@ export function setSession(user: CurrentUser): void {
   safeSetJson(userKey(role), user);
   localStorage.setItem(ACTIVE_ROLE_KEY, role);
   safeSetJson(LEGACY_USER_KEY, user);
+  rememberSchoolName(schoolNameFromUser(user));
   window.dispatchEvent(new Event("school-enrichment-auth-changed"));
 }
 

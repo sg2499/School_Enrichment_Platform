@@ -2,12 +2,382 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  height: 100%;
+/*
+ * School Enrichment base layer.
+ *
+ * Typography: Plus Jakarta Sans (UI/body -- humanist geometric, stays
+ * legible at the small sizes admins live in and friendly enough for a
+ * Class 5 student) paired with Fraunces (display -- an editorial serif
+ * that gives headings warmth and stops the product reading as generic
+ * dashboard software). Both are loaded from Google Fonts in app/layout.tsx
+ * with system fallbacks below so nothing reflows into a default serif.
+ */
+:root {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+
+  /* Mirrors tailwind.config.ts semantic roles for the few places raw CSS
+     needs them (scrollbars, selection, form autofill). */
+  --canvas: #faf8f4;
+  --content: #1c1b29;
+  --brand-700: #3c3489;
+  --brand-500: #6355bc;
+
+  /* Shared easing so entrance choreography, parallax and hover all decelerate
+     on the same curve instead of each component inventing its own. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-body {
-  color: #0f172a;
-  background: #f8fafc;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--content);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02" 1, "cv03" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-variation-settings: "SOFT" 24, "WONK" 0;
+    font-weight: 600;
+    color: #1c1b29;
+  }
+
+  /* One consistent, high-visibility focus treatment everywhere. Kids and
+     keyboard users both benefit; it never disappears behind a custom
+     outline: none somewhere else in the tree. */
+  :focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background-color: rgba(99, 85, 188, 0.22);
+    color: #171338;
+  }
+
+  /* Numerals line up in tables/stat blocks. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--content);
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+    caret-color: var(--content);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cac8d8 transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #cac8d8;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #9e9cb2;
+  }
+}
+
+@layer components {
+  /* Frosted panel used on dark brand surfaces (login artwork, sidebar). */
+  .glass-panel {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  /* Fine graph-paper texture -- a quiet nod to squared exercise books.
+     Used at low opacity behind hero and empty-state areas. */
+  .bg-grid {
+    background-image: linear-gradient(to right, rgba(28, 27, 41, 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(28, 27, 41, 0.055) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+
+  .bg-grid-inverse {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .bg-dots {
+    background-image: radial-gradient(rgba(28, 27, 41, 0.09) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  /* Masks a decorative background so it fades out instead of ending on a
+     hard edge. */
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  }
+
+  .mask-fade-radial {
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 78%);
+    mask-image: radial-gradient(ellipse at center, #000 40%, transparent 78%);
+  }
+
+  /* Fades artwork out towards the left so it can sit *behind* a column of
+     text without ever competing with it (login brand panel). */
+  .mask-fade-l {
+    -webkit-mask-image: linear-gradient(to left, #000 0%, #000 44%, transparent 92%);
+    mask-image: linear-gradient(to left, #000 0%, #000 44%, transparent 92%);
+  }
+
+  .text-gradient-brand {
+    background-image: linear-gradient(120deg, #26215c 0%, #4e42a0 45%, #6355bc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-warm {
+    background-image: linear-gradient(120deg, #ffffff 0%, #fddc92 55%, #f9ab2b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ------------------------------------------------------------------
+   * Pointer-reactive depth.
+   *
+   * A container writes --pointer-x / --pointer-y (both normalised to the
+   * range -1..1) and --pointer-px / --pointer-py (0%..100%) onto itself as
+   * the cursor moves. Descendants opt in by class, so the whole effect is
+   * two custom properties and zero React re-renders.
+   *
+   * Never put these on the same element as a Tailwind translate/scale
+   * utility -- both write `transform` and the utility layer wins. Wrap
+   * instead.
+   * ------------------------------------------------------------------ */
+  .parallax-layer {
+    transform: translate3d(
+      calc(var(--pointer-x, 0) * var(--parallax-depth, 12px)),
+      calc(var(--pointer-y, 0) * var(--parallax-depth, 12px)),
+      0
+    );
+    transition: transform 900ms var(--ease-out-expo);
+    will-change: transform;
+  }
+
+  .parallax-tilt {
+    transform: perspective(1600px) rotateY(calc(var(--pointer-x, 0) * 7deg))
+      rotateX(calc(var(--pointer-y, 0) * -6deg))
+      translate3d(
+        calc(var(--pointer-x, 0) * var(--parallax-depth, 18px)),
+        calc(var(--pointer-y, 0) * var(--parallax-depth, 18px)),
+        0
+      );
+    transition: transform 700ms var(--ease-out-expo);
+    will-change: transform;
+  }
+
+  /* A warm light that follows the cursor across the dark brand panel. Only
+     lit while the pointer is actually over the panel. */
+  .pointer-spotlight {
+    background-image: radial-gradient(
+      520px circle at var(--pointer-px, 50%) var(--pointer-py, 42%),
+      rgba(249, 171, 43, 0.14),
+      rgba(133, 121, 210, 0.1) 42%,
+      transparent 72%
+    );
+    opacity: 0;
+    transition: opacity 700ms ease-out;
+  }
+
+  [data-pointer="active"] .pointer-spotlight {
+    opacity: 1;
+  }
+
+  /* ------------------------------------------------------------------
+   * Entrance choreography.
+   *
+   * Elements start settled-but-hidden and are released when the page
+   * declares itself ready (fonts loaded / first frame painted) by flipping
+   * data-stage on an ancestor -- so the sequence is tied to load
+   * completion, not to a timer that fires while text is still swapping
+   * fonts. Delays come from the .stage-d* classes below.
+   * ------------------------------------------------------------------ */
+  .stage-in {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+    transition:
+      opacity 680ms var(--ease-out-expo),
+      transform 680ms var(--ease-out-expo);
+    transition-delay: var(--stage-delay, 0ms);
+  }
+
+  .stage-zoom {
+    opacity: 0;
+    transform: scale(0.9);
+    transition:
+      opacity 900ms var(--ease-out-expo),
+      transform 1100ms var(--ease-out-expo);
+    transition-delay: var(--stage-delay, 0ms);
+  }
+
+  [data-stage="ready"] .stage-in,
+  [data-stage="ready"] .stage-zoom {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Without JS the stage never flips, so show everything immediately. */
+  @media (scripting: none) {
+    .stage-in,
+    .stage-zoom {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Entrance stagger helpers, so a group of cards doesn't all pop at once. */
+  .delay-70 {
+    animation-delay: 70ms;
+  }
+  .delay-140 {
+    animation-delay: 140ms;
+  }
+  .delay-210 {
+    animation-delay: 210ms;
+  }
+  .delay-280 {
+    animation-delay: 280ms;
+  }
+  .delay-350 {
+    animation-delay: 350ms;
+  }
+  .delay-420 {
+    animation-delay: 420ms;
+  }
+
+  /* Depth steps for .parallax-layer / .parallax-tilt. Higher number = the
+     layer reads as closer to the viewer. */
+  .parallax-1 {
+    --parallax-depth: 8px;
+  }
+  .parallax-2 {
+    --parallax-depth: 16px;
+  }
+  .parallax-3 {
+    --parallax-depth: 26px;
+  }
+  .parallax-4 {
+    --parallax-depth: 38px;
+  }
+
+  /* Stagger steps for .stage-in / .stage-zoom. Deliberately tight at the
+     front (the eye reads the lockup and headline as one move) and looser
+     towards the supporting detail. */
+  .stage-d0 {
+    --stage-delay: 0ms;
+  }
+  .stage-d1 {
+    --stage-delay: 60ms;
+  }
+  .stage-d2 {
+    --stage-delay: 110ms;
+  }
+  .stage-d3 {
+    --stage-delay: 170ms;
+  }
+  .stage-d4 {
+    --stage-delay: 240ms;
+  }
+  .stage-d5 {
+    --stage-delay: 310ms;
+  }
+  .stage-d6 {
+    --stage-delay: 380ms;
+  }
+  .stage-d7 {
+    --stage-delay: 450ms;
+  }
+  .stage-d8 {
+    --stage-delay: 520ms;
+  }
+}
+
+/* Motion is decorative here, never load-bearing -- switch it all off for
+   anyone who has asked their OS to reduce it. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Content is never gated on the entrance sequence, and nothing tracks the
+     cursor. (The pointer listener is also skipped in JS, but this keeps the
+     rules honest on their own.) */
+  .stage-in,
+  .stage-zoom {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .parallax-layer,
+  .parallax-tilt {
+    transform: none !important;
+  }
+
+  .pointer-spotlight {
+    opacity: 0 !important;
+  }
 }
