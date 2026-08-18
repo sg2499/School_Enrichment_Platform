@@ -332,6 +332,16 @@ class Question(Base):
     # upper-snake-case convention).
     status = Column(String(20), nullable=False, default="DRAFT")
     source_alignment = Column(Text, nullable=True)
+    # Free, automated quality-check result (app/services/question_quality_service.py,
+    # added 18 Aug 2026) -- "UNCHECKED" | "FLAGGED" | "VERIFIED" | "UNVERIFIED".
+    # Deliberately a separate axis from `status` above: this records whether
+    # a question's CONTENT looks right (structural + computed-answer checks),
+    # not where it is in the draft/review/publish workflow. See the service
+    # module's docstring for why "UNVERIFIED" is never treated as "safe to
+    # bulk-approve" the way "VERIFIED" is.
+    quality_status = Column(String(20), nullable=False, default="UNCHECKED")
+    quality_flags = Column(Text, nullable=True)  # JSON list of human-readable reasons, only set when FLAGGED
+    quality_checked_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
