@@ -312,6 +312,36 @@ def test_concept_lesson_status_transition(client, db_session):
     assert invalid.status_code == 409
 
 
+def test_super_admin_can_read_full_question_content_for_review(client, db_session):
+    """The actual regression test for the content-review gap Shailesh flagged
+    18 Aug 2026: clicking "Review" in the studio moved straight to a Publish
+    button with no way to see what was being published. This proves the new
+    GET .../questions endpoint surfaces the real stem/options/correct answer
+    (not just a status badge), and that it's still SUPER_ADMIN-only like
+    every other endpoint that touches unreviewed master content."""
+    chapter, _ = _make_chapter(db_session, "qcontent01")
+    lesson, question = _add_lesson_with_question(db_session, chapter, "qcontent01")
+    _make_super_admin(db_session, "sa-qcontent01@example.com")
+    _make_school_admin(db_session, "admin-qcontent01@example.com", "Question Content Test School")
+
+    _login(client, "sa-qcontent01@example.com")
+    response = client.get(f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions")
+    assert response.status_code == 200
+    questions = response.json()["questions"]
+    assert len(questions) == 1
+    assert questions[0]["id"] == question.id
+    assert questions[0]["stem"] == "2 + 2 = ?"
+    assert questions[0]["correctAnswer"] == "4"
+    assert questions[0]["status"] == "DRAFT"
+
+    missing = client.get("/api/curriculum-admin/concept-lessons/does-not-exist/questions")
+    assert missing.status_code == 404
+
+    _login(client, "admin-qcontent01@example.com")
+    forbidden = client.get(f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions")
+    assert forbidden.status_code == 403
+
+
 # --- SchoolCurriculumMap ---------------------------------------------------
 
 
