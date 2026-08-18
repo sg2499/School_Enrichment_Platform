@@ -8,6 +8,7 @@ import {
   BookMarked,
   CalendarRange,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Layers,
   ListChecks,
@@ -32,6 +33,8 @@ import type {
   ChapterStatus,
   ChapterSummary,
   ConceptLessonStatus,
+  QuestionDetail,
+  QuestionStatus,
   SchoolCurriculumMapEntry,
   SchoolOption,
 } from "@/types/curriculum";
@@ -49,6 +52,109 @@ const LESSON_STATUS_TONE: Record<ConceptLessonStatus, BadgeTone> = {
   PUBLISHED: "success",
   ARCHIVED: "danger",
 };
+
+const QUESTION_STATUS_TONE: Record<QuestionStatus, BadgeTone> = {
+  DRAFT: "neutral",
+  SME_REVIEW: "warning",
+  APPROVED: "success",
+  PUBLISHED: "success",
+};
+
+/** Question.status's DRAFT -> SME_REVIEW -> APPROVED -> PUBLISHED ladder
+ * (mirrors _QUESTION_TRANSITIONS in routes_curriculum_admin.py) rendered as
+ * the one action a reviewer takes after actually reading a question's
+ * content below -- see QuestionCard.
+ */
+const QUESTION_NEXT_ACTION: Partial<Record<QuestionStatus, { label: string; next: QuestionStatus }>> = {
+  DRAFT: { label: "Send to Review", next: "SME_REVIEW" },
+  SME_REVIEW: { label: "Approve", next: "APPROVED" },
+  APPROVED: { label: "Publish", next: "PUBLISHED" },
+};
+const QUESTION_BACK_ACTION: Partial<Record<QuestionStatus, { label: string; next: QuestionStatus }>> = {
+  SME_REVIEW: { label: "Reject to Draft", next: "DRAFT" },
+  APPROVED: { label: "Send Back", next: "SME_REVIEW" },
+  PUBLISHED: { label: "Send Back for Rework", next: "SME_REVIEW" },
+};
+
+function QuestionCard({
+  question,
+  busy,
+  onAdvance,
+}: {
+  question: QuestionDetail;
+  busy: boolean;
+  onAdvance: (status: QuestionStatus) => void;
+}) {
+  const options: Array<[string, string | null]> = [
+    ["A", question.optionA],
+    ["B", question.optionB],
+    ["C", question.optionC],
+    ["D", question.optionD],
+  ].filter(([, text]) => Boolean(text)) as Array<[string, string | null]>;
+  const forward = QUESTION_NEXT_ACTION[question.status];
+  const back = QUESTION_BACK_ACTION[question.status];
+
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-4 space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
+            {question.code} &middot; {question.questionType}
+            {question.difficulty ? ` · Difficulty ${question.difficulty}` : ""} &middot; {question.marks} mark
+            {question.marks === 1 ? "" : "s"}
+          </p>
+          <p className="mt-1 text-sm font-medium leading-[1.5] text-content">{question.stem}</p>
+        </div>
+        <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">
+          {question.status.replace("_", " ")}
+        </Badge>
+      </div>
+
+      {options.length > 0 ? (
+        <ul className="space-y-1">
+          {options.map(([letter, text]) => (
+            <li key={letter} className="flex gap-2 text-sm text-content-muted">
+              <span className="font-semibold text-content-subtle">{letter}.</span>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <p className="text-sm">
+        <span className="font-semibold text-content-subtle">Correct answer: </span>
+        <span className="text-content">{question.correctAnswer}</span>
+      </p>
+
+      {question.explanation ? (
+        <p className="text-sm text-content-muted">
+          <span className="font-semibold text-content-subtle">Explanation: </span>
+          {question.explanation}
+        </p>
+      ) : null}
+
+      {question.hint ? (
+        <p className="text-sm text-content-muted">
+          <span className="font-semibold text-content-subtle">Hint: </span>
+          {question.hint}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        {forward ? (
+          <Button size="sm" variant="secondary" loading={busy} onClick={() => onAdvance(forward.next)}>
+            {forward.label}
+          </Button>
+        ) : null}
+        {back ? (
+          <Button size="sm" variant="ghost" loading={busy} onClick={() => onAdvance(back.next)}>
+            {back.label}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function ErrorBanner({ message }: { message: string }) {
   return (
@@ -77,6 +183,14 @@ function ChapterStudio() {
 
   const [chapterActionBusy, setChapterActionBusy] = useState(false);
   const [lessonActionBusyId, setLessonActionBusyId] = useState<string | null>(null);
+
+  // Question-level content review -- expanding a lesson is the only way to
+  // actually see what's being approved/published, not just its status.
+  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
+  const [questionsByLesson, setQuestionsByLesson] = useState<Record<string, QuestionDetail[]>>({});
+  const [loadingQuestionsFor, setLoadingQuestionsFor] = useState<string | null>(null);
+  const [questionsError, setQuestionsError] = useState<string | null>(null);
+  const [questionActionBusyId, setQuestionActionBusyId] = useState<string | null>(null);
 
   const loadChapters = useCallback(async () => {
     setLoadingChapters(true);
@@ -110,7 +224,48 @@ function ChapterStudio() {
 
   useEffect(() => {
     if (selectedId) loadDetail(selectedId);
+    // Switching chapters -- collapse any open lesson and drop cached
+    // questions from the previous chapter rather than showing stale content.
+    setExpandedLessonId(null);
+    setQuestionsByLesson({});
+    setQuestionsError(null);
   }, [selectedId, loadDetail]);
+
+  const loadQuestions = useCallback(async (lessonId: string) => {
+    setLoadingQuestionsFor(lessonId);
+    setQuestionsError(null);
+    try {
+      const { data } = await api.get<{ questions: QuestionDetail[] }>(
+        `/curriculum-admin/concept-lessons/${lessonId}/questions`,
+      );
+      setQuestionsByLesson((prev) => ({ ...prev, [lessonId]: data.questions }));
+    } catch (err) {
+      setQuestionsError(apiErrorMessage(err));
+    } finally {
+      setLoadingQuestionsFor(null);
+    }
+  }, []);
+
+  function toggleLesson(lessonId: string) {
+    const opening = expandedLessonId !== lessonId;
+    setExpandedLessonId(opening ? lessonId : null);
+    if (opening && !questionsByLesson[lessonId]) {
+      loadQuestions(lessonId);
+    }
+  }
+
+  async function advanceQuestion(lessonId: string, questionId: string, status: QuestionStatus) {
+    setQuestionActionBusyId(questionId);
+    setQuestionsError(null);
+    try {
+      await api.patch(`/curriculum-admin/questions/${questionId}/status`, { status });
+      await loadQuestions(lessonId);
+    } catch (err) {
+      setQuestionsError(apiErrorMessage(err));
+    } finally {
+      setQuestionActionBusyId(null);
+    }
+  }
 
   async function transitionChapter(status: ChapterStatus) {
     if (!selectedId) return;
@@ -281,58 +436,97 @@ function ChapterStudio() {
 
               <div className="space-y-2 border-t border-line pt-4">
                 <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Concept lessons</p>
+                <p className="text-xs text-content-faint">
+                  Open a lesson to read every question&apos;s actual text, options and correct answer before approving
+                  it — a status badge alone doesn&apos;t tell you what&apos;s about to publish.
+                </p>
+                {questionsError ? <ErrorBanner message={questionsError} /> : null}
                 {loadingDetail ? (
                   <p className="text-sm text-content-subtle">Loading&hellip;</p>
                 ) : !detail || detail.conceptLessons.length === 0 ? (
                   <p className="text-sm text-content-subtle">No concept lessons on this chapter.</p>
                 ) : (
                   <ul className="space-y-2">
-                    {detail.conceptLessons.map((lesson) => (
-                      <li
-                        key={lesson.id}
-                        className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface-muted/60 px-3.5 py-3"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-semibold text-content">{lesson.title}</span>
-                          <span className="block truncate text-xs text-content-subtle">
-                            {lesson.code} &middot; {lesson.questionCount} question{lesson.questionCount === 1 ? "" : "s"}
-                          </span>
-                        </span>
-                        <Badge tone={LESSON_STATUS_TONE[lesson.status]} size="sm">
-                          {lesson.status}
-                        </Badge>
-                        {lesson.status === "DRAFT" ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            loading={lessonActionBusyId === lesson.id}
-                            onClick={() => advanceLesson(lesson.id, "REVIEW")}
-                          >
-                            Send to Review
-                          </Button>
-                        ) : null}
-                        {lesson.status === "REVIEW" ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              loading={lessonActionBusyId === lesson.id}
-                              onClick={() => advanceLesson(lesson.id, "PUBLISHED")}
+                    {detail.conceptLessons.map((lesson) => {
+                      const isExpanded = expandedLessonId === lesson.id;
+                      const lessonQuestions = questionsByLesson[lesson.id];
+                      return (
+                        <li key={lesson.id} className="rounded-2xl border border-line bg-surface-muted/60">
+                          <div className="flex flex-wrap items-center gap-3 px-3.5 py-3">
+                            <button
+                              type="button"
+                              onClick={() => toggleLesson(lesson.id)}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
                             >
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              loading={lessonActionBusyId === lesson.id}
-                              onClick={() => advanceLesson(lesson.id, "DRAFT")}
-                            >
-                              Back to Draft
-                            </Button>
-                          </>
-                        ) : null}
-                      </li>
-                    ))}
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 shrink-0 text-content-faint" aria-hidden />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 shrink-0 text-content-faint" aria-hidden />
+                              )}
+                              <span className="min-w-0">
+                                <span className="block truncate text-sm font-semibold text-content">{lesson.title}</span>
+                                <span className="block truncate text-xs text-content-subtle">
+                                  {lesson.code} &middot; {lesson.questionCount} question
+                                  {lesson.questionCount === 1 ? "" : "s"}
+                                </span>
+                              </span>
+                            </button>
+                            <Badge tone={LESSON_STATUS_TONE[lesson.status]} size="sm">
+                              {lesson.status}
+                            </Badge>
+                            {lesson.status === "DRAFT" ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                loading={lessonActionBusyId === lesson.id}
+                                onClick={() => advanceLesson(lesson.id, "REVIEW")}
+                              >
+                                Send to Review
+                              </Button>
+                            ) : null}
+                            {lesson.status === "REVIEW" ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  loading={lessonActionBusyId === lesson.id}
+                                  onClick={() => advanceLesson(lesson.id, "PUBLISHED")}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  loading={lessonActionBusyId === lesson.id}
+                                  onClick={() => advanceLesson(lesson.id, "DRAFT")}
+                                >
+                                  Back to Draft
+                                </Button>
+                              </>
+                            ) : null}
+                          </div>
+
+                          {isExpanded ? (
+                            <div className="space-y-3 border-t border-line px-3.5 py-3.5">
+                              {loadingQuestionsFor === lesson.id ? (
+                                <p className="text-sm text-content-subtle">Loading questions&hellip;</p>
+                              ) : !lessonQuestions || lessonQuestions.length === 0 ? (
+                                <p className="text-sm text-content-subtle">No questions in this lesson yet.</p>
+                              ) : (
+                                lessonQuestions.map((question) => (
+                                  <QuestionCard
+                                    key={question.id}
+                                    question={question}
+                                    busy={questionActionBusyId === question.id}
+                                    onAdvance={(status) => advanceQuestion(lesson.id, question.id, status)}
+                                  />
+                                ))
+                              )}
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
