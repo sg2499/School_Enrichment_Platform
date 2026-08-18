@@ -46,21 +46,27 @@ const LOOP: { label: string; done: boolean }[] = [
  * narrower headline column), so there's real room for a specific sentence
  * per card instead of a clipped fragment.
  */
+/**
+ * Bodies are capped at ~60 characters on purpose: each card is one of three
+ * in a row, so the real column is much narrower than it looks in the source
+ * -- anything longer wraps to four or five lines and blows out the panel's
+ * height (this is what caused the page to need scrolling before).
+ */
 const PILLARS = [
   {
     icon: BookMarked,
     title: "Not a Worksheet Library",
-    body: "Every chapter is mapped to the real CBSE and ICSE syllabus, Class 5 to 10 — in the order your school teaches it.",
+    body: "Mapped to the real CBSE and ICSE syllabus, Class 5 to 10.",
   },
   {
     icon: Users,
     title: "Sections, Not Spreadsheets",
-    body: "Assign 8-B a chapter in seconds. Who's stuck, and on what, comes back to you automatically.",
+    body: "Assign a whole section in seconds. Gaps come back to you.",
   },
   {
     icon: PenLine,
     title: "Graded the Way Your School Grades",
-    body: "Part marks and method marks, scored the way a teacher would with a red pen — not just right or wrong.",
+    body: "Part marks and method marks — not just right or wrong.",
   },
 ];
 
@@ -213,13 +219,19 @@ export default function LoginPage() {
   return (
     <main
       data-stage={stage}
-      className="relative min-h-screen bg-canvas lg:grid lg:grid-cols-[1.06fr_1fr] xl:grid-cols-[1.12fr_1fr]"
+      // `lg:h-screen` (not just min-h-screen) is deliberate: below this, the
+      // two columns are free to grow with their content and the page
+      // scrolls normally, which is correct on a phone. At `lg` and up this
+      // is a split login screen, and a split login screen that scrolls
+      // reads as a mistake -- so above `lg` the row is pinned to exactly
+      // one viewport and both panels are sized to actually fit inside it.
+      className="relative min-h-screen bg-canvas lg:grid lg:h-screen lg:grid-cols-[1.06fr_1fr] lg:overflow-hidden xl:grid-cols-[1.12fr_1fr]"
     >
       {/* ---------------- Brand panel ---------------- */}
       <section
         ref={brandRef}
         data-pointer="idle"
-        className="relative isolate hidden overflow-hidden bg-brand-gradient lg:flex lg:flex-col lg:px-12 lg:py-8 xl:px-16 xl:py-11"
+        className="relative isolate hidden overflow-hidden bg-brand-gradient lg:flex lg:flex-col lg:px-12 lg:py-6 xl:px-16 xl:py-8"
       >
         <AuroraBackdropInverse parallax vignette />
         <div aria-hidden className="pointer-spotlight pointer-events-none absolute inset-0 z-[1]" />
@@ -251,30 +263,30 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div className="relative z-10 mt-9 flex flex-1 flex-col justify-center gap-7 xl:mt-11 xl:gap-8">
+        <div className="relative z-10 mt-6 flex flex-1 flex-col justify-center gap-5 xl:mt-7 xl:gap-6">
           <div>
             {/* No max-width here on purpose -- this column should use the
                 same full width as the pillar grid below it, not a narrower
                 cap. At the panel's real rendered width both lines run the
                 full measure and only wrap where the words actually run out
                 of room. */}
-            <h1 className="stage-in stage-d1 font-display text-[2.5rem] font-semibold leading-[1.08] tracking-[-0.026em] text-content-inverse xl:text-[3.25rem]">
+            <h1 className="stage-in stage-d1 font-display text-[2.25rem] font-semibold leading-[1.1] tracking-[-0.024em] text-content-inverse xl:text-[2.875rem]">
               Every chapter, <span className="text-gradient-warm">practised until it sticks.</span>
             </h1>
 
-            <p className="stage-in stage-d2 mt-5 text-[1.0625rem] leading-[1.6] text-content-inverse-muted xl:text-[1.125rem]">
+            <p className="stage-in stage-d2 mt-4 text-[1rem] leading-[1.55] text-content-inverse-muted xl:text-[1.0625rem]">
               Your school&rsquo;s syllabus, the practice that follows it, and marks that mean what they mean on paper.
             </p>
           </div>
 
           {/* --- The five-day loop --- */}
-          <div className="stage-in stage-d3 glass-panel mx-auto w-full max-w-[34rem] rounded-3xl px-7 py-5 text-center">
+          <div className="stage-in stage-d3 glass-panel mx-auto w-full max-w-[34rem] rounded-3xl px-7 py-4 text-center">
             <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-saffron-200">
               The five-day chapter loop
             </p>
-            <ol className="mx-auto mt-4 flex max-w-[26rem] items-start gap-2">
+            <ol className="mx-auto mt-3 flex max-w-[26rem] items-start gap-2">
               {LOOP.map((step, index) => (
-                <li key={step.label} className="relative flex min-w-0 flex-1 flex-col items-center gap-2.5">
+                <li key={step.label} className="relative flex min-w-0 flex-1 flex-col items-center gap-2">
                   {index < LOOP.length - 1 ? (
                     <span
                       aria-hidden
@@ -298,7 +310,7 @@ export default function LoginPage() {
                 </li>
               ))}
             </ol>
-            <p className="mx-auto mt-4 max-w-[26rem] text-[0.875rem] leading-[1.55] text-content-inverse-muted">
+            <p className="mx-auto mt-3 max-w-[26rem] text-[0.8125rem] leading-[1.5] text-content-inverse-muted">
               The same rhythm in every subject, Class 5 to 10.
             </p>
           </div>
@@ -310,13 +322,13 @@ export default function LoginPage() {
               return (
                 <li
                   key={pillar.title}
-                  className="group/pillar glass-panel rounded-3xl p-5 transition duration-300 hover:bg-white/[0.1]"
+                  className="group/pillar glass-panel rounded-3xl p-4 transition duration-300 hover:bg-white/[0.1]"
                 >
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.1] text-saffron-200 ring-1 ring-inset ring-white/15 transition duration-300 group-hover/pillar:bg-saffron-400/20 group-hover/pillar:text-saffron-100 group-hover/pillar:ring-saffron-300/30">
-                    <Icon className="h-[1.15rem] w-[1.15rem]" aria-hidden />
+                  <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.1] text-saffron-200 ring-1 ring-inset ring-white/15 transition duration-300 group-hover/pillar:bg-saffron-400/20 group-hover/pillar:text-saffron-100 group-hover/pillar:ring-saffron-300/30">
+                    <Icon className="h-[1.05rem] w-[1.05rem]" aria-hidden />
                   </span>
-                  <p className="mt-3.5 text-sm font-bold leading-snug text-content-inverse">{pillar.title}</p>
-                  <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-content-inverse-muted text-pretty">
+                  <p className="mt-3 text-sm font-bold leading-snug text-content-inverse">{pillar.title}</p>
+                  <p className="mt-1 text-[0.8125rem] leading-snug text-content-inverse-muted text-pretty">
                     {pillar.body}
                   </p>
                 </li>
@@ -325,7 +337,7 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        <div className="stage-in stage-d5 relative z-10 mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-white/[0.12] pt-5">
+        <div className="stage-in stage-d5 relative z-10 mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-white/[0.12] pt-4">
           {ASSURANCES.map((item) => {
             const Icon = item.icon;
             return (
