@@ -342,6 +342,202 @@ def test_super_admin_can_read_full_question_content_for_review(client, db_sessio
     assert forbidden.status_code == 403
 
 
+def test_get_questions_lazily_computes_and_persists_quality_status(client, db_session):
+    """The Single Select question _add_lesson_with_question creates has no
+    options at all, which the structural check correctly flags. Confirms
+    the lazy-compute-on-read behavior actually writes the result back (not
+    just returns it), so a reviewer opening the same lesson twice doesn't
+    recompute for nothing, and so bulk-approve later sees a real status."""
+    chapter, _ = _make_chapter(db_session, "quality01")
+    lesson, question = _add_lesson_with_question(db_session, chapter, "quality01")
+    assert question.quality_status == "UNCHECKED"
+    _make_super_admin(db_session, "sa-quality01@example.com")
+    _login(client, "sa-quality01@example.com")
+
+    response = client.get(f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions")
+    assert response.status_code == 200
+    body = response.json()["questions"][0]
+    assert body["qualityStatus"] == "FLAGGED"
+    assert any("option" in f.lower() for f in body["qualityFlags"])
+
+    db_session.refresh(question)
+    assert question.quality_status == "FLAGGED"
+    assert question.quality_checked_at is not None
+
+
+def test_recheck_quality_endpoint_forces_full_recompute(client, db_session):
+    chapter, _ = _make_chapter(db_session, "quality02")
+    lesson, question = _add_lesson_with_question(db_session, chapter, "quality02")
+    _make_super_admin(db_session, "sa-quality02@example.com")
+    csrf = _login(client, "sa-quality02@example.com")
+
+    response = client.post(f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions/recheck-quality", headers=csrf)
+    assert response.status_code == 200
+    assert response.json()["questions"][0]["qualityStatus"] == "FLAGGED"
+
+    missing = client.post("/api/curriculum-admin/concept-lessons/does-not-exist/questions/recheck-quality", headers=csrf)
+    assert missing.status_code == 404
+
+
+def _add_question(db, lesson, code, **overrides):
+    defaults = dict(
+        concept_lesson_id=lesson.id,
+        code=code,
+        question_type="Numeric Entry",
+        stem="Round 4,236 to the nearest 10.",
+        correct_answer="4240",
+        status="DRAFT",
+    )
+    defaults.update(overrides)
+    question = Question(**defaults)
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+def test_bulk_approve_lesson_only_advances_verified_by_default(client, db_session):
+    chapter, _ = _make_chapter(db_session, "bulk01")
+    lesson = ConceptLesson(chapter_id=chapter.id, code="SKL-bulk01", title="Skill bulk01", status="DRAFT")
+    db_session.add(lesson)
+    db_session.commit()
+    db_session.refresh(lesson)
+
+    verified_q = _add_question(db_session, lesson, "Q-BULK01-V", stem="Round 4,236 to the nearest 10.", correct_answer="4240")
+    flagged_q = _add_question(db_session, lesson, "Q-BULK01-F", stem="", correct_answer="")
+    unverified_q = _add_question(db_session, lesson, "Q-BULK01-U", stem="Explain your reasoning in one sentence.", correct_answer="Because.")
+
+    _make_super_admin(db_session, "sa-bulk01@example.com")
+    csrf = _login(client, "sa-bulk01@example.com")
+
+    response = client.post(
+        f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions/bulk-approve",
+        json={"includeUnverified": False},
+        headers=csrf,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["approvedCount"] == 1
+    assert body["skippedFlaggedCount"] == 1
+    assert body["skippedUnverifiedCount"] == 1
+
+    for q in (verified_q, flagged_q, unverified_q):
+        db_session.refresh(q)
+    assert verified_q.status == "APPROVED"
+    assert flagged_q.status == "DRAFT"
+    assert unverified_q.status == "DRAFT"
+
+
+def test_bulk_approve_lesson_include_unverified_still_never_touches_flagged(client, db_session):
+    chapter, _ = _make_chapter(db_session, "bulk02")
+    lesson = ConceptLesson(chapter_id=chapter.id, code="SKL-bulk02", title="Skill bulk02", status="DRAFT")
+    db_session.add(lesson)
+    db_session.commit()
+    db_session.refresh(lesson)
+
+    flagged_q = _add_question(db_session, lesson, "Q-BULK02-F", stem="", correct_answer="")
+    unverified_q = _add_question(db_session, lesson, "Q-BULK02-U", stem="Explain your reasoning in one sentence.", correct_answer="Because.")
+
+    _make_super_admin(db_session, "sa-bulk02@example.com")
+    csrf = _login(client, "sa-bulk02@example.com")
+
+    response = client.post(
+        f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions/bulk-approve",
+        json={"includeUnverified": True},
+        headers=csrf,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["approvedCount"] == 1
+    assert body["skippedFlaggedCount"] == 1
+
+    db_session.refresh(flagged_q)
+    db_session.refresh(unverified_q)
+    assert flagged_q.status == "DRAFT"  # never bulk-approved, no matter what
+    assert unverified_q.status == "APPROVED"
+
+
+def test_bulk_approve_chapter_spans_every_lesson(client, db_session):
+    chapter, _ = _make_chapter(db_session, "bulk03")
+    lesson_a = ConceptLesson(chapter_id=chapter.id, code="SKL-bulk03a", title="A", status="DRAFT")
+    lesson_b = ConceptLesson(chapter_id=chapter.id, code="SKL-bulk03b", title="B", status="DRAFT")
+    db_session.add_all([lesson_a, lesson_b])
+    db_session.commit()
+    db_session.refresh(lesson_a)
+    db_session.refresh(lesson_b)
+
+    q_a = _add_question(db_session, lesson_a, "Q-BULK03-A", stem="Round 4,236 to the nearest 10.", correct_answer="4240")
+    q_b = _add_question(db_session, lesson_b, "Q-BULK03-B", stem="What is the place value of 7 in 47,326?", correct_answer="7000")
+
+    _make_super_admin(db_session, "sa-bulk03@example.com")
+    csrf = _login(client, "sa-bulk03@example.com")
+
+    response = client.post(
+        f"/api/curriculum-admin/chapters/{chapter.id}/questions/bulk-approve",
+        json={"includeUnverified": False},
+        headers=csrf,
+    )
+    assert response.status_code == 200
+    assert response.json()["approvedCount"] == 2
+
+    db_session.refresh(q_a)
+    db_session.refresh(q_b)
+    assert q_a.status == "APPROVED"
+    assert q_b.status == "APPROVED"
+
+
+def test_bulk_approve_is_super_admin_only(client, db_session):
+    chapter, _ = _make_chapter(db_session, "bulk04")
+    lesson, _ = _add_lesson_with_question(db_session, chapter, "bulk04")
+    _make_school_admin(db_session, "admin-bulk04@example.com", "Bulk Approve Test School")
+    csrf = _login(client, "admin-bulk04@example.com")
+
+    response = client.post(
+        f"/api/curriculum-admin/concept-lessons/{lesson.id}/questions/bulk-approve",
+        json={},
+        headers=csrf,
+    )
+    assert response.status_code == 403
+
+
+def test_bulk_chapter_status_send_all_to_review(client, db_session):
+    chapter_a, _ = _make_chapter(db_session, "bulkstatus01", status="DRAFT")
+    chapter_b, _ = _make_chapter(db_session, "bulkstatus02", status="DRAFT")
+    chapter_c, _ = _make_chapter(db_session, "bulkstatus03", status="PUBLISHED")
+    _make_super_admin(db_session, "sa-bulkstatus01@example.com")
+    csrf = _login(client, "sa-bulkstatus01@example.com")
+
+    response = client.post(
+        "/api/curriculum-admin/chapters/bulk-status",
+        json={"chapterIds": [chapter_a.id, chapter_b.id, chapter_c.id], "status": "REVIEW"},
+        headers=csrf,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body["updatedChapters"]) == {chapter_a.code, chapter_b.code}
+    assert body["skippedChapters"] == [chapter_c.code]
+
+    db_session.refresh(chapter_a)
+    db_session.refresh(chapter_b)
+    db_session.refresh(chapter_c)
+    assert chapter_a.status == "REVIEW"
+    assert chapter_b.status == "REVIEW"
+    assert chapter_c.status == "PUBLISHED"  # untouched -- not a valid REVIEW source
+
+
+def test_bulk_chapter_status_is_super_admin_only(client, db_session):
+    _make_chapter(db_session, "bulkstatus04", status="DRAFT")
+    _make_school_admin(db_session, "admin-bulkstatus04@example.com", "Bulk Status Test School")
+    csrf = _login(client, "admin-bulkstatus04@example.com")
+
+    response = client.post(
+        "/api/curriculum-admin/chapters/bulk-status",
+        json={"status": "REVIEW"},
+        headers=csrf,
+    )
+    assert response.status_code == 403
+
+
 # --- SchoolCurriculumMap ---------------------------------------------------
 
 

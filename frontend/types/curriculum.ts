@@ -4,6 +4,14 @@ export type ChapterStatus = "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED";
 export type ConceptLessonStatus = "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED";
 export type QuestionStatus = "DRAFT" | "SME_REVIEW" | "APPROVED" | "PUBLISHED";
 
+// The free automated content-quality check (question_quality_service.py),
+// separate from QuestionStatus above -- this is "does the content look
+// right", not "where is it in the review workflow". FLAGGED always needs a
+// human; VERIFIED means a computed check confirmed the stored answer is
+// correct; UNVERIFIED means nothing could check it either way, and is
+// deliberately never treated the same as VERIFIED.
+export type QualityStatus = "UNCHECKED" | "FLAGGED" | "VERIFIED" | "UNVERIFIED";
+
 export type ChapterSummary = {
   id: string;
   code: string;
@@ -60,6 +68,15 @@ export type QuestionDetail = {
   mediaRequired: string | null;
   teacherNote: string | null;
   status: QuestionStatus;
+  qualityStatus: QualityStatus;
+  qualityFlags: string[];
+};
+
+export type BulkApproveResult = {
+  approvedCount: number;
+  skippedFlaggedCount: number;
+  skippedUnverifiedCount: number;
+  skippedAlreadyDoneCount: number;
 };
 
 export type BoardCourseOption = {
