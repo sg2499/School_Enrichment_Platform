@@ -179,15 +179,50 @@ class Term(Base):
 
 
 class Chapter(Base):
+    """Identity note (18 Aug 2026, Shailesh: boards revise syllabi year to
+    year across classes 5-10, and the platform must let content be added or
+    removed at any time without ever colliding or silently corrupting
+    something else): a chapter's real-world identity is "this code, for
+    this class's subject, in this syllabus edition" -- NOT just "this code,
+    for this subject" the way it used to be modeled. Two boards' Class 5 and
+    Class 6 Maths chapters both legitimately start numbering at "CH01" (real
+    chapter numbering restarts every class), and `discipline_id` alone is
+    subject-only (e.g. "Mathematics" generically) with no class in it at
+    all -- so the OLD uniqueness (discipline_id, code) would have silently
+    let a second class's "CH01" collide with an existing one's the moment a
+    second class's content was imported. `board_course_id` (which DOES
+    carry board+class, see BoardCourse) and `curriculum_version_id` (the
+    syllabus edition/year -- see CurriculumVersion) both had to become part
+    of a chapter's real identity to fix that, not just decoration.
+
+    Every row's primary key is still a permanent UUID regardless -- nothing
+    here is about renaming or reusing an existing chapter's identity, only
+    about which NEW rows are allowed to coexist safely. Archiving a chapter
+    (status=ARCHIVED) remains the only "removal" path; SchoolCurriculumMap
+    rows are protected from ever pointing at a deleted chapter by the
+    RESTRICT foreign key on chapter_id, unchanged by this.
+    """
     __tablename__ = "chapters"
     id = Column(String, primary_key=True, default=uuid_str)
     discipline_id = Column(String, ForeignKey("disciplines.id", ondelete="RESTRICT"), nullable=False, index=True)
-    # Nullable: a term/curriculum-calendar assignment is a real part of the
-    # blueprint hierarchy, but chapters can be drafted and reviewed before a
-    # school calendar exists to place them in -- content authoring shouldn't
-    # be blocked on academic-calendar setup.
+    # Which class's offering of a board course this chapter belongs to
+    # (Board + ClassLevel + subject label -- e.g. "CBSE Class 5
+    # Mathematics"). Required precisely so chapter identity can never be
+    # class-ambiguous -- see class docstring.
+    board_course_id = Column(String, ForeignKey("board_courses.id", ondelete="RESTRICT"), nullable=False, index=True)
+    # Which syllabus edition/year this chapter belongs to (see
+    # CurriculumVersion) -- required so a board's yearly syllabus revision
+    # can exist as its own trackable, coexistable bundle rather than
+    # silently overwriting last year's chapter of the same code.
+    curriculum_version_id = Column(String, ForeignKey("curriculum_versions.id", ondelete="RESTRICT"), nullable=False, index=True)
+    # Nullable: an actual academic-term/semester subdivision WITHIN a
+    # curriculum version is a real part of the blueprint hierarchy, but
+    # chapters can be drafted and reviewed before a school calendar exists
+    # to place them in, and the real source content has no term/semester
+    # field at all today -- content authoring shouldn't be blocked on
+    # academic-calendar setup that doesn't exist yet.
     term_id = Column(String, ForeignKey("terms.id", ondelete="SET NULL"), nullable=True, index=True)
-    code = Column(String(30), nullable=False)  # e.g. "CH01"
+    code = Column(String(30), nullable=False)  # e.g. "CH01" -- unique only WITHIN (board_course, discipline, version)
     chapter_no = Column(Integer, nullable=False)
     title = Column(String(200), nullable=False)
     sequence = Column(Integer, nullable=False, default=1)
@@ -202,9 +237,16 @@ class Chapter(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     discipline = relationship("Discipline")
+    board_course = relationship("BoardCourse")
+    curriculum_version = relationship("CurriculumVersion")
     term = relationship("Term")
 
-    __table_args__ = (UniqueConstraint("discipline_id", "code", name="uq_chapter_discipline_code"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "board_course_id", "discipline_id", "curriculum_version_id", "code",
+            name="uq_chapter_identity",
+        ),
+    )
 
 
 class ConceptLesson(Base):

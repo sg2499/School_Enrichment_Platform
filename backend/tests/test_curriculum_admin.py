@@ -22,7 +22,9 @@ through a second client when a test needs both a SUPER_ADMIN action
 the publish endpoint itself already gets full coverage from the
 SUPER_ADMIN-only tests below.
 """
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
 
 from app.core.security import hash_password
 from app.models import (
@@ -31,6 +33,7 @@ from app.models import (
     Chapter,
     ClassLevel,
     ConceptLesson,
+    CurriculumVersion,
     Discipline,
     Question,
     School,
@@ -88,14 +91,28 @@ def _get_or_create_board_course(db):
         db.add(board_course)
         db.flush()
 
+    curriculum_version = (
+        db.query(CurriculumVersion)
+        .filter(CurriculumVersion.board_id == board.id, CurriculumVersion.code == "2026-27")
+        .first()
+    )
+    if not curriculum_version:
+        curriculum_version = CurriculumVersion(
+            board_id=board.id, code="2026-27", label="2026-27", status="PUBLISHED", effective_from="2026-04-01"
+        )
+        db.add(curriculum_version)
+        db.flush()
+
     db.commit()
-    return board_course, discipline
+    return board_course, discipline, curriculum_version
 
 
 def _make_chapter(db, suffix: str, status: str = "DRAFT"):
-    board_course, discipline = _get_or_create_board_course(db)
+    board_course, discipline, curriculum_version = _get_or_create_board_course(db)
     chapter = Chapter(
         discipline_id=discipline.id,
+        board_course_id=board_course.id,
+        curriculum_version_id=curriculum_version.id,
         code=f"CH-ADMIN-{suffix}",
         chapter_no=900,
         title=f"Admin Test Chapter {suffix}",
@@ -647,3 +664,201 @@ def test_super_admin_mapping_without_school_id_is_rejected(client, db_session):
         headers=csrf,
     )
     assert response.status_code == 422
+
+
+# --- Chapter identity scoping (board_course + discipline + curriculum
+# version + code -- 18 Aug 2026, fixes the latent "chapter codes restart
+# every class" collision, see Chapter model docstring and migration
+# 7b3d4c9a1f06) --------------------------------------------------------
+
+
+def _make_class_6_board_course(db):
+    """A second, distinct class -- deliberately reuses the SAME board and
+    discipline as _get_or_create_board_course's Class 5 Mathematics, since
+    the whole point of this scoping fix is that identical subject +
+    identical chapter code ("CH01" etc, numbering restarts every class)
+    must still not collide once the class differs."""
+    board_course, discipline, curriculum_version = _get_or_create_board_course(db)
+    board = db.query(Board).filter(Board.id == board_course.board_id).first()
+
+    class_level = db.query(ClassLevel).filter(ClassLevel.code == "6").first()
+    if not class_level:
+        class_level = ClassLevel(code="6", display_name="Class 6", display_order=6)
+        db.add(class_level)
+        db.flush()
+
+    class_6_course = (
+        db.query(BoardCourse)
+        .filter(
+            BoardCourse.board_id == board.id,
+            BoardCourse.class_level_id == class_level.id,
+            BoardCourse.code == "MATHEMATICS",
+        )
+        .first()
+    )
+    if not class_6_course:
+        class_6_course = BoardCourse(
+            board_id=board.id, class_level_id=class_level.id, code="MATHEMATICS",
+            display_name="Mathematics", status="DRAFT",
+        )
+        db.add(class_6_course)
+        db.flush()
+    db.commit()
+    return class_6_course, discipline, curriculum_version
+
+
+def test_same_chapter_code_across_different_classes_does_not_collide(db_session):
+    """The actual bug this scoping fix closes: real chapter numbering
+    restarts at CH01 every class, and before board_course_id was part of a
+    chapter's identity, a second class's CH01 would have silently collided
+    with an existing one's under the old (discipline_id, code) constraint."""
+    class_5_course, discipline, curriculum_version = _get_or_create_board_course(db_session)
+    class_6_course, _, _ = _make_class_6_board_course(db_session)
+
+    class_5_ch01 = Chapter(
+        discipline_id=discipline.id, board_course_id=class_5_course.id, curriculum_version_id=curriculum_version.id,
+        code="CH-IDENTITY-01", chapter_no=1, title="Class 5 Chapter 1", status="DRAFT",
+    )
+    class_6_ch01 = Chapter(
+        discipline_id=discipline.id, board_course_id=class_6_course.id, curriculum_version_id=curriculum_version.id,
+        code="CH-IDENTITY-01", chapter_no=1, title="Class 6 Chapter 1", status="DRAFT",
+    )
+    db_session.add_all([class_5_ch01, class_6_ch01])
+    db_session.commit()  # must not raise
+
+    assert class_5_ch01.id != class_6_ch01.id
+
+
+def test_true_duplicate_chapter_identity_is_rejected_at_db_level(db_session):
+    """Same board_course + discipline + curriculum_version + code IS a real
+    collision and must still be rejected -- this scoping fix widens what
+    counts as a distinct chapter, it doesn't remove the uniqueness
+    guarantee entirely."""
+    board_course, discipline, curriculum_version = _get_or_create_board_course(db_session)
+    first = Chapter(
+        discipline_id=discipline.id, board_course_id=board_course.id, curriculum_version_id=curriculum_version.id,
+        code="CH-IDENTITY-DUP", chapter_no=901, title="First", status="DRAFT",
+    )
+    db_session.add(first)
+    db_session.commit()
+
+    duplicate = Chapter(
+        discipline_id=discipline.id, board_course_id=board_course.id, curriculum_version_id=curriculum_version.id,
+        code="CH-IDENTITY-DUP", chapter_no=901, title="Duplicate", status="DRAFT",
+    )
+    db_session.add(duplicate)
+    try:
+        with pytest.raises(IntegrityError):
+            db_session.commit()
+    finally:
+        db_session.rollback()
+
+
+# --- CurriculumVersion (syllabus edition/year) management ------------------
+
+
+def test_super_admin_can_list_create_and_publish_curriculum_version(client, db_session):
+    board = db_session.query(Board).filter(Board.code == "CBSE").first()
+    if not board:
+        board = Board(code="CBSE", display_name="CBSE")
+        db_session.add(board)
+        db_session.commit()
+    _make_super_admin(db_session, "sa-cv01@example.com")
+    csrf = _login(client, "sa-cv01@example.com")
+
+    create_response = client.post(
+        "/api/curriculum-admin/curriculum-versions",
+        json={"boardId": board.id, "code": "2027-28-cv01", "label": "2027-28 edition"},
+        headers=csrf,
+    )
+    assert create_response.status_code == 200
+    body = create_response.json()
+    assert body["status"] == "DRAFT"
+    version_id = body["id"]
+
+    list_response = client.get("/api/curriculum-admin/curriculum-versions", params={"board_id": board.id})
+    assert list_response.status_code == 200
+    codes = [v["code"] for v in list_response.json()["curriculumVersions"]]
+    assert "2027-28-cv01" in codes
+
+    review_response = client.patch(
+        f"/api/curriculum-admin/curriculum-versions/{version_id}/status", json={"status": "REVIEW"}, headers=csrf
+    )
+    assert review_response.status_code == 200
+    publish_response = client.patch(
+        f"/api/curriculum-admin/curriculum-versions/{version_id}/status", json={"status": "PUBLISHED"}, headers=csrf
+    )
+    assert publish_response.status_code == 200
+    assert publish_response.json()["status"] == "PUBLISHED"
+
+    bad_response = client.patch(
+        f"/api/curriculum-admin/curriculum-versions/{version_id}/status", json={"status": "DRAFT"}, headers=csrf
+    )
+    assert bad_response.status_code == 409
+
+
+def test_curriculum_version_creation_is_super_admin_only(client, db_session):
+    board = db_session.query(Board).filter(Board.code == "CBSE").first()
+    if not board:
+        board = Board(code="CBSE", display_name="CBSE")
+        db_session.add(board)
+        db_session.commit()
+    _make_school_admin(db_session, "admin-cv02@example.com", "CV Test School")
+    csrf = _login(client, "admin-cv02@example.com")
+
+    response = client.post(
+        "/api/curriculum-admin/curriculum-versions",
+        json={"boardId": board.id, "code": "2027-28-cv02", "label": "2027-28 edition"},
+        headers=csrf,
+    )
+    assert response.status_code == 403
+
+    # Read access is still fine for ADMIN.
+    list_response = client.get("/api/curriculum-admin/curriculum-versions")
+    assert list_response.status_code == 200
+
+
+def test_school_admin_cannot_see_chapter_from_unpublished_curriculum_version(client, db_session):
+    """A chapter can individually be status=PUBLISHED while its whole
+    syllabus edition is still being prepared (DRAFT/REVIEW) ahead of a
+    future rollout -- a school ADMIN must not see or map into it before the
+    platform owner actually releases that edition, even though the chapter
+    itself looks ready."""
+    board_course, discipline, _ = _get_or_create_board_course(db_session)
+    board = db_session.query(Board).filter(Board.id == board_course.board_id).first()
+    draft_edition = CurriculumVersion(
+        board_id=board.id, code="2028-29-unreleased", label="2028-29 (not yet released)", status="DRAFT",
+    )
+    db_session.add(draft_edition)
+    db_session.flush()
+
+    chapter = Chapter(
+        discipline_id=discipline.id, board_course_id=board_course.id, curriculum_version_id=draft_edition.id,
+        code="CH-ADMIN-futureed01", chapter_no=902, title="Future Edition Chapter", status="PUBLISHED",
+    )
+    db_session.add(chapter)
+    db_session.commit()
+    db_session.refresh(chapter)
+
+    _make_school_admin(db_session, "admin-futureed01@example.com", "Future Edition Test School")
+    _login(client, "admin-futureed01@example.com")
+
+    list_response = client.get("/api/curriculum-admin/chapters")
+    assert list_response.status_code == 200
+    codes = [c["code"] for c in list_response.json()["chapters"]]
+    assert "CH-ADMIN-futureed01" not in codes
+
+    detail_response = client.get(f"/api/curriculum-admin/chapters/{chapter.id}")
+    assert detail_response.status_code == 404
+
+
+def test_chapter_summary_exposes_board_course_and_curriculum_version_ids(client, db_session):
+    chapter, board_course = _make_chapter(db_session, "fields01", status="DRAFT")
+    _make_super_admin(db_session, "sa-fields01@example.com")
+    _login(client, "sa-fields01@example.com")
+
+    response = client.get(f"/api/curriculum-admin/chapters/{chapter.id}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["boardCourseId"] == board_course.id
+    assert body["curriculumVersionId"] == chapter.curriculum_version_id

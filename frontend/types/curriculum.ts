@@ -19,10 +19,33 @@ export type ChapterSummary = {
   title: string;
   status: ChapterStatus;
   disciplineId: string;
+  // A chapter's real identity is (boardCourseId, disciplineId,
+  // curriculumVersionId, code) -- not just disciplineId+code -- so the same
+  // human-facing code can safely coexist across different classes and
+  // syllabus editions (18 Aug 2026, see backend Chapter model docstring).
+  boardCourseId: string;
+  curriculumVersionId: string;
   termId: string | null;
   sequence: number;
   conceptLessonCount: number;
   questionCount: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+// "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED" -- same lifecycle shape as
+// ChapterStatus/ConceptLessonStatus. A school ADMIN only ever sees chapters
+// belonging to a PUBLISHED curriculum version (enforced server-side).
+export type CurriculumVersionStatus = "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED";
+
+export type CurriculumVersion = {
+  id: string;
+  boardId: string;
+  code: string;
+  label: string;
+  status: CurriculumVersionStatus;
+  effectiveFrom: string | null;
+  effectiveTo: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 };

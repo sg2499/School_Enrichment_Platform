@@ -33,6 +33,7 @@ from app.models import (
     ClassLevel,
     ConceptLesson,
     CourseDisciplineMap,
+    CurriculumVersion,
     Discipline,
     Question,
     SubjectGroup,
@@ -177,6 +178,24 @@ def _get_or_create_board_course(
     return course
 
 
+def _get_or_create_curriculum_version(
+    db: Session, board: Board, code: str, label: str, status: str, effective_from: str | None
+) -> CurriculumVersion:
+    version = (
+        db.query(CurriculumVersion)
+        .filter(CurriculumVersion.board_id == board.id, CurriculumVersion.code == code)
+        .first()
+    )
+    if version:
+        return version
+    version = CurriculumVersion(
+        board_id=board.id, code=code, label=label, status=status, effective_from=effective_from
+    )
+    db.add(version)
+    db.flush()
+    return version
+
+
 def _ensure_course_discipline_map(db: Session, board_course: BoardCourse, discipline: Discipline) -> None:
     existing = (
         db.query(CourseDisciplineMap)
@@ -205,12 +224,26 @@ def import_chapter_workbook(
     discipline_display_name: str = "Mathematics",
     board_course_code: str = "MATHEMATICS",
     board_course_display_name: str = "Mathematics",
+    curriculum_version_code: str = "2026-27",
+    curriculum_version_label: str = "2026-27",
+    curriculum_version_status: str = "PUBLISHED",
+    curriculum_version_effective_from: str | None = "2026-04-01",
 ) -> ImportResult:
     """Import one chapter workbook. Master data (board/class level/subject
-    group/discipline/board course) is shared across chapters and created
-    once, on first import, then reused -- callers importing multiple
-    chapters for the same board/class/subject should pass the same codes
-    each time.
+    group/discipline/board course/curriculum version) is shared across
+    chapters and created once, on first import, then reused -- callers
+    importing multiple chapters for the same board/class/subject/edition
+    should pass the same codes each time.
+
+    A chapter's real identity is (board_course, discipline, curriculum_version,
+    code) -- see the Chapter model docstring (18 Aug 2026) -- not just
+    (discipline, code), so that e.g. Class 6 Maths content can safely reuse
+    "CH01" the same way Class 5 Maths does, and a future syllabus edition can
+    be imported alongside an older one without colliding with it. Callers
+    importing a new class or a new syllabus year should pass a distinct
+    board_course_code/class_level_code or curriculum_version_code
+    accordingly -- reusing the same codes across genuinely different
+    classes/editions is what would cause a collision, not this importer.
     """
     wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
 
@@ -236,11 +269,26 @@ def import_chapter_workbook(
         db, board, class_level, board_course_code, board_course_display_name
     )
     _ensure_course_discipline_map(db, board_course, discipline)
+    curriculum_version = _get_or_create_curriculum_version(
+        db, board, curriculum_version_code, curriculum_version_label,
+        curriculum_version_status, curriculum_version_effective_from,
+    )
 
-    chapter = db.query(Chapter).filter(Chapter.discipline_id == discipline.id, Chapter.code == chapter_code).first()
+    chapter = (
+        db.query(Chapter)
+        .filter(
+            Chapter.board_course_id == board_course.id,
+            Chapter.discipline_id == discipline.id,
+            Chapter.curriculum_version_id == curriculum_version.id,
+            Chapter.code == chapter_code,
+        )
+        .first()
+    )
     if chapter is None:
         chapter = Chapter(
             discipline_id=discipline.id,
+            board_course_id=board_course.id,
+            curriculum_version_id=curriculum_version.id,
             code=chapter_code,
             chapter_no=chapter_no,
             title=chapter_title,
