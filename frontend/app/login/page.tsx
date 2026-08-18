@@ -241,7 +241,7 @@ export default function LoginPage() {
       <section
         ref={brandRef}
         data-pointer="idle"
-        className="relative isolate hidden overflow-hidden bg-brand-gradient lg:flex lg:flex-col lg:px-12 lg:py-[clamp(0.75rem,2.5vh,2rem)] xl:px-16"
+        className="relative isolate hidden overflow-hidden bg-brand-gradient lg:flex lg:flex-col lg:px-12 lg:py-[clamp(0.75rem,3.5vh,3.5rem)] xl:px-16"
       >
         <AuroraBackdropInverse parallax vignette />
         <div aria-hidden className="pointer-spotlight pointer-events-none absolute inset-0 z-[1]" />
@@ -272,28 +272,28 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.625rem,1.8vh,1.5rem)] py-[clamp(0.5rem,2vh,1.25rem)]">
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.625rem,4.5vh,3.5rem)] py-[clamp(0.5rem,3vh,2.5rem)]">
           <div>
             {/* No max-width here on purpose -- this column should use the
                 same full width as the pillar grid below it, not a narrower
                 cap. At the panel's real rendered width both lines run the
                 full measure and only wrap where the words actually run out
                 of room. */}
-            <h1 className="stage-in stage-d1 font-display text-[clamp(1.375rem,4.2vh,2.875rem)] font-semibold leading-[1.1] tracking-[-0.022em] text-content-inverse">
+            <h1 className="stage-in stage-d1 font-display text-[clamp(1.375rem,4.5vh,3.25rem)] font-semibold leading-[1.1] tracking-[-0.022em] text-content-inverse">
               Every chapter, <span className="text-gradient-warm">practised until it sticks.</span>
             </h1>
 
-            <p className="stage-in stage-d2 mt-[clamp(0.25rem,1vh,1rem)] text-[clamp(0.8125rem,2vh,1.0625rem)] leading-[1.5] text-content-inverse-muted">
+            <p className="stage-in stage-d2 mt-[clamp(0.25rem,1.4vh,1.25rem)] text-[clamp(0.8125rem,2.1vh,1.125rem)] leading-[1.5] text-content-inverse-muted">
               Your school&rsquo;s syllabus, the practice that follows it, and marks that mean what they mean on paper.
             </p>
           </div>
 
           {/* --- The five-day loop --- */}
-          <div className="stage-in stage-d3 glass-panel mx-auto w-full max-w-[34rem] rounded-3xl px-[clamp(1rem,3vw,1.75rem)] py-[clamp(0.5rem,1.6vh,1rem)] text-center">
-            <p className="text-[clamp(0.625rem,1.4vh,0.6875rem)] font-bold uppercase tracking-eyebrow text-saffron-200">
+          <div className="stage-in stage-d3 glass-panel mx-auto w-full max-w-[36rem] rounded-3xl px-[clamp(1rem,3vw,2rem)] py-[clamp(0.5rem,2.2vh,1.5rem)] text-center">
+            <p className="text-[clamp(0.625rem,1.5vh,0.75rem)] font-bold uppercase tracking-eyebrow text-saffron-200">
               The five-day chapter loop
             </p>
-            <ol className="mx-auto mt-[clamp(0.375rem,1vh,0.75rem)] flex max-w-[26rem] items-start gap-2">
+            <ol className="mx-auto mt-[clamp(0.375rem,1.6vh,1.25rem)] flex max-w-[27rem] items-start gap-2">
               {LOOP.map((step, index) => (
                 <li key={step.label} className="relative flex min-w-0 flex-1 flex-col items-center gap-1.5">
                   {index < LOOP.length - 1 ? (
@@ -310,7 +310,7 @@ export default function LoginPage() {
                   />
                   <span
                     className={cn(
-                      "text-[clamp(0.6875rem,1.4vh,0.8125rem)] font-semibold leading-none",
+                      "text-[clamp(0.6875rem,1.5vh,0.875rem)] font-semibold leading-none",
                       step.done ? "text-content-inverse" : "text-white/60",
                     )}
                   >
@@ -319,27 +319,27 @@ export default function LoginPage() {
                 </li>
               ))}
             </ol>
-            <p className="mx-auto mt-[clamp(0.375rem,1vh,0.75rem)] max-w-[26rem] text-[clamp(0.6875rem,1.4vh,0.8125rem)] leading-[1.4] text-content-inverse-muted">
+            <p className="mx-auto mt-[clamp(0.375rem,1.6vh,1.25rem)] max-w-[27rem] text-[clamp(0.6875rem,1.5vh,0.875rem)] leading-[1.4] text-content-inverse-muted">
               The same rhythm in every subject, Class 5 to 10.
             </p>
           </div>
 
           {/* --- Pillars: full-width cards, not a squeezed-in list --- */}
-          <ul className="stage-in stage-d4 grid grid-cols-3 gap-[clamp(0.5rem,1.5vw,1rem)]">
+          <ul className="stage-in stage-d4 grid grid-cols-3 gap-[clamp(0.5rem,2vw,1.5rem)]">
             {PILLARS.map((pillar) => {
               const Icon = pillar.icon;
               return (
                 <li
                   key={pillar.title}
-                  className="group/pillar glass-panel rounded-2xl p-[clamp(0.625rem,1.8vh,1rem)] transition duration-300 hover:bg-white/[0.1]"
+                  className="group/pillar glass-panel rounded-2xl p-[clamp(0.625rem,2.4vh,1.75rem)] transition duration-300 hover:bg-white/[0.1]"
                 >
                   <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.1] text-saffron-200 ring-1 ring-inset ring-white/15 transition duration-300 group-hover/pillar:bg-saffron-400/20 group-hover/pillar:text-saffron-100 group-hover/pillar:ring-saffron-300/30">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
-                  <p className="mt-2 text-[clamp(0.75rem,1.6vh,0.875rem)] font-bold leading-snug text-content-inverse">
+                  <p className="mt-2 text-[clamp(0.75rem,1.9vh,1rem)] font-bold leading-snug text-content-inverse">
                     {pillar.title}
                   </p>
-                  <p className="mt-1 text-[clamp(0.6875rem,1.4vh,0.8125rem)] leading-snug text-content-inverse-muted text-pretty">
+                  <p className="mt-1 text-[clamp(0.6875rem,1.6vh,0.9375rem)] leading-snug text-content-inverse-muted text-pretty">
                     {pillar.body}
                   </p>
                 </li>
@@ -348,7 +348,7 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        <div className="stage-in stage-d5 relative z-10 flex shrink-0 flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-white/[0.12] pt-[clamp(0.5rem,1.4vh,1rem)]">
+        <div className="stage-in stage-d5 relative z-10 flex shrink-0 flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-white/[0.12] pt-[clamp(0.5rem,1.8vh,1.5rem)]">
           {ASSURANCES.map((item) => {
             const Icon = item.icon;
             return (
@@ -367,7 +367,7 @@ export default function LoginPage() {
         // Same clamp() approach as the brand panel: py-12/p-8 were fixed
         // sizes that never shrank at `lg`, which is what clipped the
         // "Secure School Sign-In" chip at the top on a short viewport.
-        className="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 py-12 sm:px-8 lg:min-h-0 lg:justify-center lg:px-12 lg:py-[clamp(0.75rem,3vh,3rem)] xl:px-16"
+        className="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 py-12 sm:px-8 lg:min-h-0 lg:justify-center lg:px-12 lg:py-[clamp(0.75rem,4vh,4rem)] xl:px-16"
       >
         <AuroraBackdrop parallax className="lg:opacity-70" />
 
@@ -380,7 +380,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-[27.5rem]">
-          <div className="stage-in stage-d1 mb-4 lg:mb-[clamp(0.75rem,2.5vh,1.75rem)]">
+          <div className="stage-in stage-d1 mb-4 lg:mb-[clamp(0.75rem,3.5vh,3rem)]">
             <div className="mb-4 lg:hidden">
               <LogoMark className="h-12 w-12" />
             </div>
@@ -388,7 +388,7 @@ export default function LoginPage() {
             {/* Kept in the flow rather than pinned to a corner, so it can
                 never collide with the card on a short laptop screen. The
                 live dot is the one bit of motion on this side of the page. */}
-            <div className="mb-3 hidden lg:block lg:mb-[clamp(0.5rem,1.6vh,1rem)]">
+            <div className="mb-3 hidden lg:block lg:mb-[clamp(0.5rem,2vh,1.5rem)]">
               <span className="inline-flex items-center gap-2.5 rounded-full border border-line bg-surface/85 px-3.5 py-1.5 text-[0.8125rem] font-semibold text-content-muted shadow-xs backdrop-blur">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span
@@ -401,14 +401,14 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <h2 className="font-display text-content lg:text-[clamp(1.375rem,3.6vh,2rem)]">Welcome Back</h2>
-            <p className="mt-3 max-w-[24rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty lg:mt-[clamp(0.375rem,1vh,0.75rem)] lg:text-[clamp(0.8125rem,2vh,1.0625rem)] lg:leading-[1.45]">
+            <h2 className="font-display text-content lg:text-[clamp(1.375rem,4.3vh,2.5rem)]">Welcome Back</h2>
+            <p className="mt-3 max-w-[24rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:text-[clamp(0.8125rem,2.2vh,1.1875rem)] lg:leading-[1.45]">
               Sign in with the email, phone number or student code your school issued you.
             </p>
           </div>
 
-          <div className="stage-in stage-d2 rounded-4xl border border-line bg-surface/95 p-6 shadow-panel backdrop-blur-xl sm:p-8 lg:p-[clamp(1rem,3vh,2rem)]">
-            <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-[clamp(0.625rem,2vh,1.25rem)]" noValidate>
+          <div className="stage-in stage-d2 rounded-4xl border border-line bg-surface/95 p-6 shadow-panel backdrop-blur-xl sm:p-8 lg:p-[clamp(1rem,4vh,2.75rem)]">
+            <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-[clamp(0.625rem,2.6vh,1.75rem)]" noValidate>
               <TextField
                 id="identifier"
                 name="identifier"
@@ -458,23 +458,23 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 space-y-3 border-t border-line pt-5 lg:mt-[clamp(0.75rem,2vh,1.5rem)] lg:space-y-[clamp(0.375rem,1vh,0.75rem)] lg:pt-[clamp(0.625rem,1.6vh,1.25rem)]">
-              <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.6vh,0.875rem)] lg:leading-[1.4]">
+            <div className="mt-6 space-y-3 border-t border-line pt-5 lg:mt-[clamp(0.75rem,2.8vh,2.25rem)] lg:space-y-[clamp(0.375rem,1.2vh,1rem)] lg:pt-[clamp(0.625rem,2.2vh,1.75rem)]">
+              <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">
                 <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />
                 <span>Your session is verified on our servers, so a shared school device stays safe.</span>
               </p>
-              <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.6vh,0.875rem)] lg:leading-[1.4]">
+              <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">
                 <KeyRound className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-brand-600" aria-hidden />
                 <span>Forgotten your password? Your school coordinator can reset it for you.</span>
               </p>
             </div>
           </div>
 
-          <div className="stage-in stage-d3 mt-7 space-y-2.5 text-center lg:mt-[clamp(0.75rem,2vh,1.75rem)] lg:space-y-1.5">
-            <p className="text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.6vh,0.875rem)]">
+          <div className="stage-in stage-d3 mt-7 space-y-2.5 text-center lg:mt-[clamp(0.75rem,2.8vh,2.5rem)] lg:space-y-2">
+            <p className="text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)]">
               New here? Accounts are created by your school &mdash; ask your class teacher or coordinator.
             </p>
-            <p className="text-[0.8125rem] leading-[1.5] text-content-subtle lg:text-[clamp(0.6875rem,1.4vh,0.8125rem)]">
+            <p className="text-[0.8125rem] leading-[1.5] text-content-subtle lg:text-[clamp(0.6875rem,1.5vh,0.875rem)]">
               Students &middot; Teachers &middot; School Admins &mdash; one sign-in, the right workspace.
             </p>
           </div>
