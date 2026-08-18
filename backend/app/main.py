@@ -25,6 +25,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.api.routes_auth import router as auth_router
+from app.api.routes_curriculum_admin import router as curriculum_admin_router
 from app.api.routes_health import router as health_router
 from app.api.routes_platform import router as platform_router
 from app.core.config import FRONTEND_URL, SENTRY_DSN
@@ -93,3 +94,4 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(platform_router)
+app.include_router(curriculum_admin_router)

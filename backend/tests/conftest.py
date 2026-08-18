@@ -19,6 +19,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.rate_limit import limiter
 from app.database import Base, get_db
 from app.main import app
 
@@ -43,6 +44,21 @@ def _create_schema():
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """slowapi's Limiter keys by client IP (get_remote_address), and every
+    TestClient request reports the same address ("testclient") -- so
+    without this, rate-limited endpoints like /api/auth/login (5/minute)
+    accumulate a single shared counter across the ENTIRE test session
+    instead of per-test, and any test file that adds a few more login calls
+    than before can push earlier-passing tests over the limit and fail them
+    with an unrelated 429. Resetting before each test gives every test the
+    full limit budget, matching what "isolated test" should mean.
+    """
+    limiter.reset()
+    yield
 
 
 @pytest.fixture()
