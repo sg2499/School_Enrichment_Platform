@@ -13,7 +13,11 @@ school coordinator cannot publish global curriculum or view another
 school"):
   - Chapter/ConceptLesson/Question status transitions touch master content
     shared by every school -- SUPER_ADMIN only. A school's own ADMIN never
-    gets to change what "published" means platform-wide.
+    gets to change what "published" means platform-wide. Reading chapters
+    (list/detail) is open to both roles, but a school's ADMIN only ever sees
+    PUBLISHED chapters -- draft/in-review content isn't reviewed yet, and
+    all a school coordinator needs this list for is picking something to
+    map (see list_chapters()/get_chapter() below).
   - SchoolCurriculumMap is the one school-scoped table here (see
     app/models/curriculum.py's own docstring). A school's ADMIN manages
     only their own school_id, resolved server-side from their SchoolAdmin
@@ -39,7 +43,7 @@ from pydantic import BaseModel
 from app.core.errors import api_error
 from app.database import get_db
 from app.dependencies import require_roles
-from app.models import BoardCourse, Chapter, ConceptLesson, Question, SchoolAdmin, SchoolCurriculumMap, User
+from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, Question, SchoolAdmin, SchoolCurriculumMap, User
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
 
@@ -167,10 +171,24 @@ def _map_summary(mapping: SchoolCurriculumMap) -> dict:
 # --- Chapter -----------------------------------------------------------
 
 
-@router.get("/chapters", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def list_chapters(status: str | None = None, discipline_id: str | None = None, db: Session = Depends(get_db)):
+@router.get("/chapters")
+def list_chapters(
+    status: str | None = None,
+    discipline_id: str | None = None,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """SUPER_ADMIN sees every chapter at any status -- content governance
+    happens here. A school's own ADMIN only ever sees PUBLISHED chapters
+    (any status filter they pass is overridden), since draft/in-review
+    content isn't reviewed/approved yet and a school coordinator's only
+    real use for this list is picking a chapter to map into their
+    calendar -- see SchoolCurriculumMap below, which enforces the same
+    PUBLISHED-only rule server-side."""
     query = db.query(Chapter)
-    if status:
+    if user.role == "ADMIN":
+        query = query.filter(Chapter.status == "PUBLISHED")
+    elif status:
         query = query.filter(Chapter.status == status.strip().upper())
     if discipline_id:
         query = query.filter(Chapter.discipline_id == discipline_id)
@@ -183,10 +201,19 @@ def list_chapters(status: str | None = None, discipline_id: str | None = None, d
     return {"chapters": payload}
 
 
-@router.get("/chapters/{chapter_id}", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def get_chapter(chapter_id: str, db: Session = Depends(get_db)):
+@router.get("/chapters/{chapter_id}")
+def get_chapter(
+    chapter_id: str,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     chapter = db.get(Chapter, chapter_id)
     if not chapter:
+        api_error(404, "NOT_FOUND", "Chapter not found.")
+    # Same PUBLISHED-only boundary as list_chapters above -- 404 rather than
+    # 403 so an ADMIN probing chapter ids can't even confirm an unpublished
+    # one exists.
+    if user.role == "ADMIN" and chapter.status != "PUBLISHED":
         api_error(404, "NOT_FOUND", "Chapter not found.")
 
     lessons = (
@@ -285,6 +312,40 @@ def update_question_status(question_id: str, payload: StatusChangeRequest, db: S
     db.commit()
     db.refresh(question)
     return {"id": question.id, "code": question.code, "status": question.status}
+
+
+# --- BoardCourse (read-only lookup, for the mapping form) -----------------
+
+
+@router.get("/board-courses")
+def list_board_courses(
+    _user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Just enough to populate a "which course am I mapping into" dropdown --
+    no status filtering here, unlike chapters. A board course is a container
+    label ("CBSE Class 5 Mathematics"), not itself student-facing content,
+    so there's nothing for a school ADMIN to be shielded from."""
+    rows = (
+        db.query(BoardCourse, Board, ClassLevel)
+        .join(Board, BoardCourse.board_id == Board.id)
+        .join(ClassLevel, BoardCourse.class_level_id == ClassLevel.id)
+        .order_by(ClassLevel.display_order, BoardCourse.display_name)
+        .all()
+    )
+    return {
+        "boardCourses": [
+            {
+                "id": board_course.id,
+                "code": board_course.code,
+                "displayName": board_course.display_name,
+                "boardCode": board.code,
+                "classLevelCode": class_level.code,
+                "classLevelDisplayName": class_level.display_name,
+            }
+            for board_course, board, class_level in rows
+        ]
+    }
 
 
 # --- SchoolCurriculumMap ---------------------------------------------------
