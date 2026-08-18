@@ -41,6 +41,13 @@ export type BoardCourseOption = {
   classLevelDisplayName: string;
 };
 
+export type SchoolOption = {
+  id: string;
+  name: string;
+  board: string | null;
+  city: string | null;
+};
+
 export type SchoolCurriculumMapEntry = {
   id: string;
   schoolId: string;

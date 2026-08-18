@@ -43,7 +43,7 @@ from pydantic import BaseModel
 from app.core.errors import api_error
 from app.database import get_db
 from app.dependencies import require_roles
-from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, Question, SchoolAdmin, SchoolCurriculumMap, User
+from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, Question, School, SchoolAdmin, SchoolCurriculumMap, User
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
 
@@ -344,6 +344,25 @@ def list_board_courses(
                 "classLevelDisplayName": class_level.display_name,
             }
             for board_course, board, class_level in rows
+        ]
+    }
+
+
+# --- School (read-only lookup, SUPER_ADMIN only, for the school picker) ---
+
+
+@router.get("/schools", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def list_schools(db: Session = Depends(get_db)):
+    """Lets a SUPER_ADMIN pick which school to map a chapter into, from one
+    session, without needing a second ADMIN login for that school. Deliberately
+    SUPER_ADMIN-only -- a school's own ADMIN must still never be able to see
+    another school exists at all, let alone browse it (blueprint Section 6.4:
+    "a school coordinator cannot ... view another school")."""
+    schools = db.query(School).filter(School.is_active.is_(True)).order_by(School.name).all()
+    return {
+        "schools": [
+            {"id": school.id, "name": school.name, "board": school.board, "city": school.city}
+            for school in schools
         ]
     }
 
