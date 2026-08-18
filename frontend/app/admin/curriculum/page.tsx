@@ -33,6 +33,7 @@ import type {
   ChapterSummary,
   ConceptLessonStatus,
   SchoolCurriculumMapEntry,
+  SchoolOption,
 } from "@/types/curriculum";
 
 const CHAPTER_STATUS_TONE: Record<ChapterStatus, BadgeTone> = {
@@ -344,16 +345,24 @@ function ChapterStudio() {
 }
 
 /**
- * School-scoped view: pick a published chapter and map it into this
- * school's own calendar. Available to ADMIN (own school, resolved
- * server-side) -- see routes_curriculum_admin.py's _resolve_school_id().
+ * Maps a published chapter into a school's own calendar. For a school's own
+ * ADMIN this is always their own school (resolved server-side from their
+ * SchoolAdmin row -- see routes_curriculum_admin.py's _resolve_school_id()).
+ * For SUPER_ADMIN it can be any school, picked explicitly here -- lets one
+ * person hold the platform-operator account and still do the whole
+ * draft-to-mapped loop for any school without a second login, per Shailesh's
+ * 18 Aug 2026 decision to centralize master controls with SUPER_ADMIN.
  */
-function CurriculumMapPanel() {
+function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   const [publishedChapters, setPublishedChapters] = useState<ChapterSummary[]>([]);
   const [boardCourses, setBoardCourses] = useState<BoardCourseOption[]>([]);
   const [mappings, setMappings] = useState<SchoolCurriculumMapEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [loadingSchools, setLoadingSchools] = useState(isPlatformAdmin);
+  const [selectedSchoolId, setSelectedSchoolId] = useState("");
 
   const [boardCourseId, setBoardCourseId] = useState("");
   const [chapterId, setChapterId] = useState("");
@@ -365,35 +374,75 @@ function CurriculumMapPanel() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
+  // A SUPER_ADMIN needs a school picked before "which school's map" means
+  // anything; a school's own ADMIN always has exactly one, implicitly.
+  const schoolContextReady = !isPlatformAdmin || Boolean(selectedSchoolId);
+
+  const loadChaptersAndBoardCourses = useCallback(async () => {
     try {
-      const [chaptersRes, boardCoursesRes, mappingsRes] = await Promise.all([
+      const [chaptersRes, boardCoursesRes] = await Promise.all([
         api.get<{ chapters: ChapterSummary[] }>("/curriculum-admin/chapters"),
         api.get<{ boardCourses: BoardCourseOption[] }>("/curriculum-admin/board-courses"),
-        api.get<{ schoolCurriculumMaps: SchoolCurriculumMapEntry[] }>("/curriculum-admin/school-curriculum-maps"),
       ]);
       setPublishedChapters(chaptersRes.data.chapters.filter((c) => c.status === "PUBLISHED"));
       setBoardCourses(boardCoursesRes.data.boardCourses);
-      setMappings(mappingsRes.data.schoolCurriculumMaps);
+    } catch (err) {
+      setLoadError(apiErrorMessage(err));
+    }
+  }, []);
+
+  const loadMappings = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const { data } = await api.get<{ schoolCurriculumMaps: SchoolCurriculumMapEntry[] }>(
+        "/curriculum-admin/school-curriculum-maps",
+        { params: isPlatformAdmin ? { schoolId: selectedSchoolId } : undefined },
+      );
+      setMappings(data.schoolCurriculumMaps);
     } catch (err) {
       setLoadError(apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isPlatformAdmin, selectedSchoolId]);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+    loadChaptersAndBoardCourses();
+  }, [loadChaptersAndBoardCourses]);
+
+  useEffect(() => {
+    if (!isPlatformAdmin) return;
+    setLoadingSchools(true);
+    api
+      .get<{ schools: SchoolOption[] }>("/curriculum-admin/schools")
+      .then(({ data }) => setSchools(data.schools))
+      .catch((err) => setLoadError(apiErrorMessage(err)))
+      .finally(() => setLoadingSchools(false));
+  }, [isPlatformAdmin]);
+
+  useEffect(() => {
+    if (schoolContextReady) {
+      loadMappings();
+    } else {
+      setLoading(false);
+    }
+  }, [schoolContextReady, loadMappings]);
 
   const chapterById = useMemo(() => new Map(publishedChapters.map((c) => [c.id, c])), [publishedChapters]);
   const boardCourseById = useMemo(() => new Map(boardCourses.map((bc) => [bc.id, bc])), [boardCourses]);
+  const selectedSchool = useMemo(
+    () => schools.find((s) => s.id === selectedSchoolId) ?? null,
+    [schools, selectedSchoolId],
+  );
 
   async function handleCreateMapping(event: React.FormEvent) {
     event.preventDefault();
     setFormError(null);
+    if (isPlatformAdmin && !selectedSchoolId) {
+      setFormError("Choose a school first.");
+      return;
+    }
     if (!boardCourseId || !chapterId) {
       setFormError("Choose a board course and a chapter.");
       return;
@@ -401,6 +450,7 @@ function CurriculumMapPanel() {
     setSaving(true);
     try {
       await api.post("/curriculum-admin/school-curriculum-maps", {
+        schoolId: isPlatformAdmin ? selectedSchoolId : undefined,
         boardCourseId,
         chapterId,
         className: className.trim() || null,
@@ -412,7 +462,7 @@ function CurriculumMapPanel() {
       setSection("");
       setPlannedStartDate("");
       setPlannedEndDate("");
-      await loadAll();
+      await loadMappings();
     } catch (err) {
       setFormError(apiErrorMessage(err));
     } finally {
@@ -425,7 +475,7 @@ function CurriculumMapPanel() {
     setLoadError(null);
     try {
       await api.delete(`/curriculum-admin/school-curriculum-maps/${mapId}`);
-      await loadAll();
+      await loadMappings();
     } catch (err) {
       setLoadError(apiErrorMessage(err));
     } finally {
@@ -443,17 +493,46 @@ function CurriculumMapPanel() {
             </CardIcon>
             <div>
               <CardTitle>Map a Published Chapter</CardTitle>
-              <p className="mt-0.5 text-xs text-content-subtle">Places it in your school&apos;s own calendar</p>
+              <p className="mt-0.5 text-xs text-content-subtle">
+                {isPlatformAdmin ? "Places it in any school's calendar" : "Places it in your school’s own calendar"}
+              </p>
             </div>
           </div>
 
+          {isPlatformAdmin ? (
+            <SelectField
+              label="School"
+              value={selectedSchoolId}
+              onChange={(e) => setSelectedSchoolId(e.target.value)}
+              disabled={loadingSchools}
+              required
+            >
+              <option value="" disabled>
+                {loadingSchools ? "Loading schools…" : "Choose a school"}
+              </option>
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                  {school.board ? ` · ${school.board}` : ""}
+                  {school.city ? ` · ${school.city}` : ""}
+                </option>
+              ))}
+            </SelectField>
+          ) : null}
+
           {loading ? (
             <p className="text-sm text-content-subtle">Loading&hellip;</p>
+          ) : isPlatformAdmin && !selectedSchoolId ? (
+            <EmptyState
+              status={{ label: "No school selected", tone: "neutral" }}
+              title="Pick a school above"
+              description="Choose which school you're mapping this chapter into, then pick a board course and a published chapter."
+            />
           ) : publishedChapters.length === 0 ? (
             <EmptyState
               status={{ label: "Nothing published yet", tone: "neutral" }}
               title="No published chapters yet"
-              description="Once a platform admin publishes a chapter, it appears here ready to map into your school's classes."
+              description="Once a platform admin publishes a chapter, it appears here ready to map into a school's classes."
             />
           ) : (
             <form onSubmit={handleCreateMapping} className="space-y-4">
@@ -526,16 +605,18 @@ function CurriculumMapPanel() {
               <ListChecks className="h-5 w-5" aria-hidden />
             </CardIcon>
             <div>
-              <CardTitle>Your School&apos;s Curriculum Map</CardTitle>
+              <CardTitle>
+                {isPlatformAdmin ? (selectedSchool ? `${selectedSchool.name}’s Curriculum Map` : "Curriculum Map") : "Your School’s Curriculum Map"}
+              </CardTitle>
               <p className="mt-0.5 text-xs text-content-subtle">
-                {mappings.length} chapter{mappings.length === 1 ? "" : "s"} mapped
+                {schoolContextReady ? `${mappings.length} chapter${mappings.length === 1 ? "" : "s"} mapped` : "Pick a school to see its map"}
               </p>
             </div>
           </div>
 
           {loadError ? <ErrorBanner message={loadError} /> : null}
 
-          {loading ? (
+          {!schoolContextReady ? null : loading ? (
             <p className="text-sm text-content-subtle">Loading&hellip;</p>
           ) : mappings.length === 0 ? (
             <EmptyState
@@ -603,13 +684,13 @@ export default function CurriculumStudioPage() {
 
   return (
     <RoleShell role="ADMIN" user={user}>
-      <div className="space-y-8">
+      <div className="space-y-10">
         <PageHeader
           eyebrow="Content workflow"
           title="Curriculum Studio"
           description={
             isPlatformAdmin
-              ? "Move chapters through draft, review and publish. Nothing reaches a school until it's published here."
+              ? "Review and publish chapters, then map any of them straight into a school's calendar — all in one place."
               : "Bring a published chapter into your school's own calendar — pick a class, a section, and you're set."
           }
           meta={
@@ -619,7 +700,31 @@ export default function CurriculumStudioPage() {
           }
         />
 
-        {isPlatformAdmin ? <ChapterStudio /> : <CurriculumMapPanel />}
+        {isPlatformAdmin ? (
+          <>
+            <section className="space-y-4">
+              <div>
+                <h2 className="font-display text-display-sm text-content">Review &amp; Publish</h2>
+                <p className="mt-1 text-sm text-content-muted">
+                  Draft &rarr; review &rarr; publish. Nothing reaches any school until it&apos;s published here.
+                </p>
+              </div>
+              <ChapterStudio />
+            </section>
+
+            <section className="space-y-4 border-t border-line pt-8">
+              <div>
+                <h2 className="font-display text-display-sm text-content">Map Into a School</h2>
+                <p className="mt-1 text-sm text-content-muted">
+                  Pick any school and place a published chapter into its calendar — no second login needed.
+                </p>
+              </div>
+              <CurriculumMapPanel isPlatformAdmin />
+            </section>
+          </>
+        ) : (
+          <CurriculumMapPanel isPlatformAdmin={false} />
+        )}
       </div>
     </RoleShell>
   );
