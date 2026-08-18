@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,6 +17,8 @@ import {
   LifeBuoy,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   Sparkles,
   Target,
@@ -154,15 +156,19 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
 function NavRow({
   item,
   active,
+  collapsed,
   onNavigate,
 }: {
   item: NavItem;
   active: boolean;
+  collapsed?: boolean;
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
-  const base =
-    "group flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition duration-200 ease-spring";
+  const base = cn(
+    "group flex w-full items-center gap-3 rounded-2xl text-sm font-medium transition duration-200 ease-spring",
+    collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5",
+  );
 
   if (item.href) {
     return (
@@ -170,6 +176,7 @@ function NavRow({
         href={item.href}
         onClick={onNavigate}
         aria-current={active ? "page" : undefined}
+        title={collapsed ? item.label : undefined}
         className={cn(
           base,
           active
@@ -179,7 +186,7 @@ function NavRow({
       >
         <span
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-xl",
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
             active
               ? "bg-accent-gradient text-brand-950 shadow-accent"
               : "bg-white/[0.08] ring-1 ring-inset ring-white/10",
@@ -187,7 +194,7 @@ function NavRow({
         >
           <Icon className="h-4 w-4" />
         </span>
-        <span className="truncate">{item.label}</span>
+        {!collapsed ? <span className="truncate">{item.label}</span> : null}
       </Link>
     );
   }
@@ -195,16 +202,20 @@ function NavRow({
   return (
     <span
       aria-disabled="true"
-      title={`${item.label} arrives in a later phase`}
+      title={collapsed ? `${item.label} — arrives in a later phase` : `${item.label} arrives in a later phase`}
       className={cn(base, "cursor-default text-white/55 hover:bg-white/[0.06] hover:text-white/75")}
     >
-      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.07] ring-1 ring-inset ring-white/10">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] ring-1 ring-inset ring-white/10">
         <Icon className="h-4 w-4" />
       </span>
-      <span className="truncate">{item.label}</span>
-      <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-white/60">
-        Soon
-      </span>
+      {!collapsed ? (
+        <>
+          <span className="truncate">{item.label}</span>
+          <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-white/60">
+            Soon
+          </span>
+        </>
+      ) : null}
     </span>
   );
 }
@@ -213,16 +224,23 @@ function SidebarContent({
   role,
   user,
   pathname,
+  collapsed = false,
   onNavigate,
   onSignOut,
   signingOut,
+  onToggleCollapse,
 }: {
   role: UserRole;
   user: CurrentUser | null;
   pathname: string;
+  collapsed?: boolean;
   onNavigate?: () => void;
   onSignOut: () => void;
   signingOut: boolean;
+  /** Only the desktop rail can collapse -- the mobile drawer always passes
+   *  this as undefined, since it's already a full-width overlay the user
+   *  dismisses entirely rather than shrinking. */
+  onToggleCollapse?: () => void;
 }) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-brand-gradient">
@@ -232,37 +250,69 @@ function SidebarContent({
         <div className="absolute inset-0 bg-grid-inverse opacity-60" />
       </div>
 
-      <div className="relative flex items-center gap-3 px-5 pb-6 pt-6">
-        <Lockup tone="light" showTagline />
+      <div className={cn("relative flex items-center gap-3 pb-6 pt-6", collapsed ? "justify-center px-3" : "px-5")}>
+        {collapsed ? <LogoMark className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
       </div>
 
-      <div className="relative px-5">
-        <div className="glass-panel flex items-center gap-3 rounded-2xl px-3.5 py-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 text-[0.8125rem] font-bold text-white ring-1 ring-inset ring-white/20">
+      {onToggleCollapse ? (
+        <div className={cn("relative pb-4", collapsed ? "flex justify-center px-3" : "flex justify-end px-5")}>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+            title={collapsed ? "Expand navigation" : "Collapse navigation"}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.08] text-white/70 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.16] hover:text-white"
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4" aria-hidden />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" aria-hidden />
+            )}
+          </button>
+        </div>
+      ) : null}
+
+      <div className={cn("relative", collapsed ? "px-3" : "px-5")}>
+        <div
+          className={cn(
+            "glass-panel flex items-center gap-3 rounded-2xl",
+            collapsed ? "justify-center px-2 py-2" : "px-3.5 py-3",
+          )}
+          title={collapsed ? `${user?.fullName ?? "Signed in"} · ${ROLE_LABEL[role]}` : undefined}
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-[0.8125rem] font-bold text-white ring-1 ring-inset ring-white/20">
             {initialsFromName(user?.fullName)}
           </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-content-inverse">
-              {user?.fullName ?? "Signed in"}
+          {!collapsed ? (
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-content-inverse">
+                {user?.fullName ?? "Signed in"}
+              </span>
+              <span className="block truncate text-[0.6875rem] font-semibold uppercase tracking-eyebrow text-saffron-300">
+                {ROLE_LABEL[role]}
+              </span>
             </span>
-            <span className="block truncate text-[0.6875rem] font-semibold uppercase tracking-eyebrow text-saffron-300">
-              {ROLE_LABEL[role]}
-            </span>
-          </span>
+          ) : null}
         </div>
       </div>
 
-      <nav className="relative mt-6 flex-1 space-y-6 overflow-y-auto px-3 pb-4" aria-label="Primary">
+      <nav
+        className={cn("relative mt-6 flex-1 space-y-6 overflow-y-auto pb-4", collapsed ? "px-3" : "px-3")}
+        aria-label="Primary"
+      >
         {NAV[role].map((group) => (
           <div key={group.section} className="space-y-1">
-            <p className="px-3 pb-1 text-[0.625rem] font-bold uppercase tracking-eyebrow text-white/40">
-              {group.section}
-            </p>
+            {!collapsed ? (
+              <p className="px-3 pb-1 text-[0.625rem] font-bold uppercase tracking-eyebrow text-white/40">
+                {group.section}
+              </p>
+            ) : null}
             {group.items.map((item) => (
               <NavRow
                 key={item.label}
                 item={item}
                 active={!!item.href && item.href === pathname}
+                collapsed={collapsed}
                 onNavigate={onNavigate}
               />
             ))}
@@ -270,22 +320,37 @@ function SidebarContent({
         ))}
       </nav>
 
-      <div className="relative space-y-3 border-t border-white/10 px-5 py-5">
-        <p className="flex items-center gap-2 text-xs text-white/55">
-          <LifeBuoy className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Need help? Ask your school coordinator.
-        </p>
-        <Button
-          variant="quiet"
-          size="sm"
-          fullWidth
-          onClick={onSignOut}
-          loading={signingOut}
-          loadingLabel="Signing out"
-          leadingIcon={<LogOut className="h-4 w-4" />}
-        >
-          Sign out
-        </Button>
+      <div className={cn("relative space-y-3 border-t border-white/10 py-5", collapsed ? "px-3" : "px-5")}>
+        {!collapsed ? (
+          <p className="flex items-center gap-2 text-xs text-white/55">
+            <LifeBuoy className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Need help? Ask your school coordinator.
+          </p>
+        ) : null}
+        {collapsed ? (
+          <button
+            type="button"
+            onClick={onSignOut}
+            disabled={signingOut}
+            aria-label="Sign out"
+            title="Sign out"
+            className="inline-flex h-10 w-full items-center justify-center rounded-2xl border border-line-inverse bg-white/10 text-content-inverse backdrop-blur transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-55"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+          </button>
+        ) : (
+          <Button
+            variant="quiet"
+            size="sm"
+            fullWidth
+            onClick={onSignOut}
+            loading={signingOut}
+            loadingLabel="Signing out"
+            leadingIcon={<LogOut className="h-4 w-4" />}
+          >
+            Sign out
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -298,6 +363,13 @@ function SidebarContent({
  * low-end-tablet-based, so the small-screen path is a first-class layout,
  * not a squeeze of the desktop one.
  */
+// Collapse is a plain UI preference, not access-control or session data --
+// unlike ADMIN_ROLE_VARIANT_KEY (auth.ts's per-tab sessionStorage marker
+// for disambiguating ADMIN vs SUPER_ADMIN), this is safe to persist in
+// localStorage so it survives reloads and applies the same across tabs,
+// the same as any other "remember my layout preference" setting.
+const SIDEBAR_COLLAPSED_KEY = "se_sidebar_collapsed";
+
 export function RoleShell({
   role,
   user,
@@ -311,6 +383,23 @@ export function RoleShell({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // Starts expanded on both server and first client render (no window
+  // during SSR) to avoid a hydration mismatch, then flips from localStorage
+  // right after mount -- the one-frame flash this costs is the standard,
+  // accepted trade-off for a client-only layout preference like this.
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1");
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
 
   async function handleLogout() {
     setSigningOut(true);
@@ -324,9 +413,26 @@ export function RoleShell({
 
   return (
     <div className="min-h-screen bg-canvas">
-      {/* Desktop rail */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-sidebar lg:block">
-        <SidebarContent role={role} user={user} pathname={pathname} onSignOut={handleLogout} signingOut={signingOut} />
+      {/* Desktop rail -- collapsible (18 Aug 2026, Shailesh: a full-width
+          review window was getting visually trapped next to the sidebar,
+          and every role needs a way to reclaim that space, not just this
+          one page) -- width transitions smoothly and the choice persists
+          across reloads via localStorage. */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-300 ease-spring lg:block",
+          collapsed ? "w-sidebar-collapsed" : "w-sidebar",
+        )}
+      >
+        <SidebarContent
+          role={role}
+          user={user}
+          pathname={pathname}
+          collapsed={collapsed}
+          onSignOut={handleLogout}
+          signingOut={signingOut}
+          onToggleCollapse={toggleCollapsed}
+        />
       </aside>
 
       {/* Mobile top bar */}
@@ -381,7 +487,12 @@ export function RoleShell({
       ) : null}
 
       {/* Content column */}
-      <div className="relative lg:pl-sidebar">
+      <div
+        className={cn(
+          "relative transition-[padding] duration-300 ease-spring",
+          collapsed ? "lg:pl-sidebar-collapsed" : "lg:pl-sidebar",
+        )}
+      >
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-canvas-glow" />
 
         {/* Desktop context bar */}

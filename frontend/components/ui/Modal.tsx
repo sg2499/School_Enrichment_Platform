@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,15 @@ const SIZES: Record<ModalSize, string> = {
  * Body scroll is locked while open, Escape closes it, and clicking the
  * backdrop closes it -- the same conventions as RoleShell's mobile nav
  * drawer, just centered instead of a side sheet.
+ *
+ * Rendered via a portal straight into document.body (18 Aug 2026, fixing a
+ * real bug Shailesh caught from a screenshot: a page-level ancestor with
+ * its own z-index -- RoleShell's `<main className="relative z-10">` --
+ * creates a stacking context, which trapped this modal's z-50 *inside*
+ * that context no matter how high the number, so it painted BEHIND
+ * RoleShell's z-40 sidebar instead of above it. A portal escapes every
+ * ancestor's stacking context entirely, which is the actual fix -- raising
+ * this component's z-index alone could never have solved it).
  */
 export function Modal({
   open,
@@ -58,10 +68,10 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
       <button
         type="button"
         aria-label="Close dialog"
@@ -102,6 +112,7 @@ export function Modal({
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
