@@ -161,6 +161,10 @@ const config: Config = {
         22: "5.5rem",
         30: "7.5rem",
         "sidebar": "17.5rem",
+        // Icon-only rail width when a user collapses the sidebar (18 Aug
+        // 2026) -- wide enough for a comfortable tap target, narrow enough
+        // to give a review modal or any wide content real room back.
+        "sidebar-collapsed": "5.25rem",
       },
 
       maxWidth: {
