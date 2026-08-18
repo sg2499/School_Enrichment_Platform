@@ -35,6 +35,9 @@ must have at least one question that has itself cleared APPROVED/PUBLISHED
 review -- otherwise a chapter with no real question coverage could go live
 for students.
 """
+import json
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends
@@ -44,6 +47,7 @@ from app.core.errors import api_error
 from app.database import get_db
 from app.dependencies import require_roles
 from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, Question, School, SchoolAdmin, SchoolCurriculumMap, User
+from app.services.question_quality_service import run_quality_checks
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
 
@@ -278,6 +282,41 @@ def update_chapter_status(chapter_id: str, payload: StatusChangeRequest, db: Ses
     return _chapter_summary(chapter, lesson_count, question_count)
 
 
+class BulkChapterStatusRequest(BaseModel):
+    chapterIds: list[str] | None = None  # None = every chapter currently eligible for the transition
+    status: str = "REVIEW"
+
+
+@router.post("/chapters/bulk-status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def bulk_update_chapter_status(payload: BulkChapterStatusRequest, db: Session = Depends(get_db)):
+    """Bulk "Send All to Review" (Shailesh, 18 Aug 2026: moving 15 chapters
+    into review one click at a time is needless friction). Deliberately
+    only wired up for DRAFT -> REVIEW in practice -- REVIEW isn't visible to
+    any school (only PUBLISHED is), so batching this move exposes nothing
+    unreviewed to a student; it only changes which queue a chapter sits in.
+    Publishing itself stays one-at-a-time via the existing single-chapter
+    endpoint, since that's the step with a real readiness gate. Skips (does
+    not error on) any chapter that isn't a valid DRAFT->REVIEW candidate, so
+    one already-published chapter in the list doesn't block the rest."""
+    requested_status = payload.status.strip().upper()
+    query = db.query(Chapter)
+    if payload.chapterIds:
+        query = query.filter(Chapter.id.in_(payload.chapterIds))
+    chapters = query.all()
+
+    updated: list[str] = []
+    skipped: list[str] = []
+    for chapter in chapters:
+        allowed = _CHAPTER_TRANSITIONS.get(chapter.status, set())
+        if requested_status in allowed:
+            chapter.status = requested_status
+            updated.append(chapter.code)
+        else:
+            skipped.append(chapter.code)
+    db.commit()
+    return {"updatedChapters": updated, "skippedChapters": skipped}
+
+
 # --- ConceptLesson -------------------------------------------------------
 
 
@@ -325,7 +364,31 @@ def _question_detail(question: Question) -> dict:
         "mediaRequired": question.media_required,
         "teacherNote": question.teacher_note,
         "status": question.status,
+        "qualityStatus": question.quality_status,
+        "qualityFlags": json.loads(question.quality_flags) if question.quality_flags else [],
     }
+
+
+def _persist_quality_results(db: Session, questions: list[Question]) -> None:
+    """Runs the free structural + math-pattern checks (question_quality_service.py)
+    over `questions` as one batch (duplicate detection needs sibling
+    context) and writes the result onto each row. Caller commits."""
+    results = run_quality_checks(questions)
+    now = datetime.now(timezone.utc)
+    for question in questions:
+        result = results[question.id]
+        question.quality_status = result.status
+        question.quality_flags = json.dumps(result.flags) if result.flags else None
+        question.quality_checked_at = now
+
+
+def _questions_for_lesson(db: Session, concept_lesson_id: str) -> list[Question]:
+    return (
+        db.query(Question)
+        .filter(Question.concept_lesson_id == concept_lesson_id)
+        .order_by(Question.code)
+        .all()
+    )
 
 
 @router.get("/concept-lessons/{concept_lesson_id}/questions", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
@@ -337,17 +400,38 @@ def list_concept_lesson_questions(concept_lesson_id: str, db: Session = Depends(
     only ever showed counts and status badges, so "review" meant clicking
     Approve without ever seeing what was being approved. SUPER_ADMIN only,
     matching every other endpoint in this file that touches unreviewed
-    master content."""
+    master content.
+
+    Also lazily runs the free quality checks (question_quality_service.py)
+    on any question that's never been checked (quality_status UNCHECKED),
+    so a reviewer always sees fresh flags without a separate manual step --
+    see the recheck endpoint below for forcing a full re-run after a
+    verifier improves."""
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
         api_error(404, "NOT_FOUND", "Concept lesson not found.")
 
-    questions = (
-        db.query(Question)
-        .filter(Question.concept_lesson_id == concept_lesson_id)
-        .order_by(Question.code)
-        .all()
-    )
+    questions = _questions_for_lesson(db, concept_lesson_id)
+    unchecked = [q for q in questions if q.quality_status == "UNCHECKED"]
+    if unchecked:
+        _persist_quality_results(db, unchecked)
+        db.commit()
+    return {"questions": [_question_detail(q) for q in questions]}
+
+
+@router.post("/concept-lessons/{concept_lesson_id}/questions/recheck-quality", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def recheck_lesson_question_quality(concept_lesson_id: str, db: Session = Depends(get_db)):
+    """Forces a full re-run of the quality checks for every question in this
+    lesson, not just UNCHECKED ones -- for after a verifier is fixed/added
+    (see question_quality_service.py's changelog-style docstring) or the
+    content itself was corrected and re-imported."""
+    lesson = db.get(ConceptLesson, concept_lesson_id)
+    if not lesson:
+        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+
+    questions = _questions_for_lesson(db, concept_lesson_id)
+    _persist_quality_results(db, questions)
+    db.commit()
     return {"questions": [_question_detail(q) for q in questions]}
 
 
@@ -364,6 +448,81 @@ def update_question_status(question_id: str, payload: StatusChangeRequest, db: S
     db.commit()
     db.refresh(question)
     return {"id": question.id, "code": question.code, "status": question.status}
+
+
+class BulkApproveRequest(BaseModel):
+    includeUnverified: bool = False
+
+
+def _bulk_approve_questions(db: Session, questions: list[Question], include_unverified: bool) -> dict:
+    """Advances every question whose quality check allows it straight from
+    its current status to APPROVED (DRAFT and SME_REVIEW both walk the
+    normal _QUESTION_TRANSITIONS chain, just without a human clicking each
+    step) -- the quality gate substitutes for the per-question ceremony,
+    it doesn't skip it. A FLAGGED question is NEVER touched by this
+    regardless of includeUnverified; that flag exists specifically to force
+    a human look. Returns transparent counts rather than a single number --
+    Shailesh was explicit that nothing should be silently glossed over."""
+    unchecked = [q for q in questions if q.quality_status == "UNCHECKED"]
+    if unchecked:
+        _persist_quality_results(db, unchecked)
+
+    allowed_statuses = {"VERIFIED"} | ({"UNVERIFIED"} if include_unverified else set())
+
+    approved = 0
+    skipped_flagged = 0
+    skipped_unverified = 0
+    skipped_already_done = 0
+    for question in questions:
+        if question.status in ("APPROVED", "PUBLISHED"):
+            skipped_already_done += 1
+            continue
+        if question.quality_status == "FLAGGED":
+            skipped_flagged += 1
+            continue
+        if question.quality_status not in allowed_statuses:
+            skipped_unverified += 1
+            continue
+        if question.status == "DRAFT":
+            question.status = "SME_REVIEW"
+        if question.status == "SME_REVIEW":
+            question.status = "APPROVED"
+            approved += 1
+    db.commit()
+    return {
+        "approvedCount": approved,
+        "skippedFlaggedCount": skipped_flagged,
+        "skippedUnverifiedCount": skipped_unverified,
+        "skippedAlreadyDoneCount": skipped_already_done,
+    }
+
+
+@router.post("/concept-lessons/{concept_lesson_id}/questions/bulk-approve", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def bulk_approve_lesson_questions(concept_lesson_id: str, payload: BulkApproveRequest, db: Session = Depends(get_db)):
+    lesson = db.get(ConceptLesson, concept_lesson_id)
+    if not lesson:
+        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+    questions = _questions_for_lesson(db, concept_lesson_id)
+    return _bulk_approve_questions(db, questions, payload.includeUnverified)
+
+
+@router.post("/chapters/{chapter_id}/questions/bulk-approve", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def bulk_approve_chapter_questions(chapter_id: str, payload: BulkApproveRequest, db: Session = Depends(get_db)):
+    """Same as the per-lesson version, but across every lesson in the
+    chapter in one call -- the real answer to "hundreds of questions per
+    chapter, reviewing one at a time isn't feasible" (Shailesh, 18 Aug
+    2026): the quality gate does the triage, this does the bulk motion."""
+    chapter = db.get(Chapter, chapter_id)
+    if not chapter:
+        api_error(404, "NOT_FOUND", "Chapter not found.")
+    questions = (
+        db.query(Question)
+        .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
+        .filter(ConceptLesson.chapter_id == chapter_id)
+        .order_by(Question.code)
+        .all()
+    )
+    return _bulk_approve_questions(db, questions, payload.includeUnverified)
 
 
 # --- BoardCourse (read-only lookup, for the mapping form) -----------------

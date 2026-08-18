@@ -10,11 +10,15 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  HelpCircle,
   Layers,
   ListChecks,
   Map as MapIcon,
   RotateCcw,
   Send,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
@@ -29,10 +33,12 @@ import { SelectField, TextField } from "@/components/ui/Field";
 import { api, apiErrorMessage } from "@/lib/api";
 import type {
   BoardCourseOption,
+  BulkApproveResult,
   ChapterDetail,
   ChapterStatus,
   ChapterSummary,
   ConceptLessonStatus,
+  QualityStatus,
   QuestionDetail,
   QuestionStatus,
   SchoolCurriculumMapEntry,
@@ -58,6 +64,28 @@ const QUESTION_STATUS_TONE: Record<QuestionStatus, BadgeTone> = {
   SME_REVIEW: "warning",
   APPROVED: "success",
   PUBLISHED: "success",
+};
+
+// Quality is a SEPARATE axis from question status -- see question_quality_service.py.
+// UNCHECKED shouldn't normally reach the UI (the API computes it lazily on
+// read), but is included for completeness/safety.
+const QUALITY_STATUS_TONE: Record<QualityStatus, BadgeTone> = {
+  UNCHECKED: "neutral",
+  FLAGGED: "danger",
+  VERIFIED: "success",
+  UNVERIFIED: "neutral",
+};
+const QUALITY_STATUS_LABEL: Record<QualityStatus, string> = {
+  UNCHECKED: "Not checked yet",
+  FLAGGED: "Flagged — needs review",
+  VERIFIED: "Verified correct",
+  UNVERIFIED: "Not auto-verifiable",
+};
+const QUALITY_STATUS_ICON: Record<QualityStatus, typeof ShieldCheck> = {
+  UNCHECKED: HelpCircle,
+  FLAGGED: ShieldAlert,
+  VERIFIED: ShieldCheck,
+  UNVERIFIED: HelpCircle,
 };
 
 /** Question.status's DRAFT -> SME_REVIEW -> APPROVED -> PUBLISHED ladder
@@ -93,9 +121,14 @@ function QuestionCard({
   ].filter(([, text]) => Boolean(text)) as Array<[string, string | null]>;
   const forward = QUESTION_NEXT_ACTION[question.status];
   const back = QUESTION_BACK_ACTION[question.status];
+  const QualityIcon = QUALITY_STATUS_ICON[question.qualityStatus];
 
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4 space-y-3">
+    <div
+      className={`rounded-2xl border p-4 space-y-3 ${
+        question.qualityStatus === "FLAGGED" ? "border-coral-300 bg-coral-50/40" : "border-line bg-surface"
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
@@ -105,10 +138,27 @@ function QuestionCard({
           </p>
           <p className="mt-1 text-sm font-medium leading-[1.5] text-content">{question.stem}</p>
         </div>
-        <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">
-          {question.status.replace("_", " ")}
-        </Badge>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">
+            {question.status.replace("_", " ")}
+          </Badge>
+          <Badge tone={QUALITY_STATUS_TONE[question.qualityStatus]} size="sm">
+            <QualityIcon className="mr-1 h-3 w-3" aria-hidden />
+            {QUALITY_STATUS_LABEL[question.qualityStatus]}
+          </Badge>
+        </div>
       </div>
+
+      {question.qualityFlags.length > 0 ? (
+        <ul className="space-y-1 rounded-xl border border-coral-200 bg-coral-50 px-3 py-2">
+          {question.qualityFlags.map((flag, i) => (
+            <li key={i} className="flex gap-1.5 text-xs leading-[1.5] text-coral-800">
+              <span aria-hidden>&bull;</span>
+              <span>{flag}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {options.length > 0 ? (
         <ul className="space-y-1">
@@ -191,6 +241,13 @@ function ChapterStudio() {
   const [loadingQuestionsFor, setLoadingQuestionsFor] = useState<string | null>(null);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
   const [questionActionBusyId, setQuestionActionBusyId] = useState<string | null>(null);
+
+  // Bulk actions (18 Aug 2026: reviewing/approving hundreds of questions
+  // one at a time doesn't scale -- see question_quality_service.py).
+  const [bulkReviewBusy, setBulkReviewBusy] = useState(false);
+  const [bulkReviewResult, setBulkReviewResult] = useState<string | null>(null);
+  const [bulkApproveBusy, setBulkApproveBusy] = useState(false);
+  const [bulkApproveResult, setBulkApproveResult] = useState<BulkApproveResult | null>(null);
 
   const loadChapters = useCallback(async () => {
     setLoadingChapters(true);
@@ -294,21 +351,83 @@ function ChapterStudio() {
     }
   }
 
+  async function sendAllChaptersToReview() {
+    setBulkReviewBusy(true);
+    setBulkReviewResult(null);
+    setListError(null);
+    try {
+      const { data } = await api.post<{ updatedChapters: string[]; skippedChapters: string[] }>(
+        "/curriculum-admin/chapters/bulk-status",
+        { status: "REVIEW" },
+      );
+      setBulkReviewResult(
+        data.updatedChapters.length === 0
+          ? "No chapters were eligible — only Draft chapters move to Review."
+          : `Moved ${data.updatedChapters.length} chapter${data.updatedChapters.length === 1 ? "" : "s"} to Review.`,
+      );
+      await loadChapters();
+      if (selectedId) await loadDetail(selectedId);
+    } catch (err) {
+      setListError(apiErrorMessage(err));
+    } finally {
+      setBulkReviewBusy(false);
+    }
+  }
+
+  async function bulkApproveChapterQuestions(includeUnverified: boolean) {
+    if (!selectedId) return;
+    setBulkApproveBusy(true);
+    setBulkApproveResult(null);
+    setDetailError(null);
+    try {
+      const { data } = await api.post<BulkApproveResult>(
+        `/curriculum-admin/chapters/${selectedId}/questions/bulk-approve`,
+        { includeUnverified },
+      );
+      setBulkApproveResult(data);
+      // Statuses changed underneath whatever's cached -- drop it so
+      // re-opening a lesson shows fresh status/quality info instead of
+      // stale pre-bulk-approve data.
+      setQuestionsByLesson({});
+      setExpandedLessonId(null);
+      await Promise.all([loadDetail(selectedId), loadChapters()]);
+    } catch (err) {
+      setDetailError(apiErrorMessage(err));
+    } finally {
+      setBulkApproveBusy(false);
+    }
+  }
+
   const selected = chapters.find((c) => c.id === selectedId) ?? null;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
       <Card className="animate-fade-up">
         <CardBody className="space-y-5">
-          <div className="flex items-start gap-3">
-            <CardIcon tone="brand">
-              <Layers className="h-5 w-5" aria-hidden />
-            </CardIcon>
-            <div>
-              <CardTitle>Chapters</CardTitle>
-              <p className="mt-0.5 text-xs text-content-subtle">Every chapter, at any status</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <CardIcon tone="brand">
+                <Layers className="h-5 w-5" aria-hidden />
+              </CardIcon>
+              <div>
+                <CardTitle>Chapters</CardTitle>
+                <p className="mt-0.5 text-xs text-content-subtle">Every chapter, at any status</p>
+              </div>
             </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              leadingIcon={<Send className="h-4 w-4" />}
+              loading={bulkReviewBusy}
+              onClick={sendAllChaptersToReview}
+            >
+              Send All to Review
+            </Button>
           </div>
+
+          {bulkReviewResult ? (
+            <p className="rounded-xl bg-jade-50 px-3 py-2 text-xs font-medium text-jade-800">{bulkReviewResult}</p>
+          ) : null}
 
           {listError ? <ErrorBanner message={listError} /> : null}
 
@@ -431,6 +550,54 @@ function ChapterStudio() {
                   >
                     Restore to Draft
                   </Button>
+                ) : null}
+              </div>
+
+              <div className="space-y-2.5 rounded-2xl border border-line bg-surface-muted/60 p-4">
+                <div className="flex items-start gap-2.5">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
+                  <div>
+                    <p className="text-sm font-semibold text-content">Bulk-approve this chapter&apos;s questions</p>
+                    <p className="mt-0.5 text-xs text-content-subtle">
+                      Runs the free automated checks (structural + computed-answer verification), then approves only
+                      the questions those checks actually confirmed are correct. Anything flagged, or that no check
+                      could verify either way, is left untouched for you to look at individually.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    leadingIcon={<ShieldCheck className="h-4 w-4" />}
+                    loading={bulkApproveBusy}
+                    onClick={() => bulkApproveChapterQuestions(false)}
+                  >
+                    Approve All Verified
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    leadingIcon={<ShieldAlert className="h-4 w-4" />}
+                    loading={bulkApproveBusy}
+                    onClick={() => bulkApproveChapterQuestions(true)}
+                  >
+                    Also Approve Unverified
+                  </Button>
+                </div>
+                {bulkApproveResult ? (
+                  <p className="text-xs leading-[1.6] text-content-muted">
+                    Approved <strong className="text-jade-700">{bulkApproveResult.approvedCount}</strong>.
+                    {bulkApproveResult.skippedFlaggedCount > 0
+                      ? ` ${bulkApproveResult.skippedFlaggedCount} flagged — needs your review.`
+                      : ""}
+                    {bulkApproveResult.skippedUnverifiedCount > 0
+                      ? ` ${bulkApproveResult.skippedUnverifiedCount} left unverified — not auto-checkable.`
+                      : ""}
+                    {bulkApproveResult.skippedAlreadyDoneCount > 0
+                      ? ` ${bulkApproveResult.skippedAlreadyDoneCount} were already approved/published.`
+                      : ""}
+                  </p>
                 ) : null}
               </div>
 
