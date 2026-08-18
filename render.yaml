@@ -11,7 +11,17 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt && alembic upgrade head
-    startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w 4 --bind 0.0.0.0:$PORT
+    # -w 1 (was 4, until 18 Aug 2026): Render's own deploy log prints
+    # "Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the
+    # instance" -- i.e. it's telling us this instance is sized for one
+    # worker -- but the hardcoded -w 4 here ignored that and always started
+    # four full FastAPI/SQLAlchemy processes anyway. That went unnoticed
+    # through ~20 earlier deploys, then the 784eb47 deploy hung with zero
+    # log output (no error, no health check, nothing) for the full 15-minute
+    # port-scan window and was killed -- the silent-hang signature of an
+    # OOM kill during startup, not a code bug. Matching the actual instance
+    # size Render already told us about.
+    startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker -w 1 --bind 0.0.0.0:$PORT
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
