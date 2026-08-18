@@ -209,6 +209,21 @@ def test_board_courses_listing_available_to_both_roles(client, db_session):
     assert any(c["code"] == "MATHEMATICS" and c["boardCode"] == "CBSE" for c in courses)
 
 
+def test_schools_listing_is_super_admin_only(client, db_session):
+    _make_school_admin(db_session, "admin-sl01@example.com", "Schools Listing Test School")
+    _make_super_admin(db_session, "sa-sl01@example.com")
+
+    _login(client, "admin-sl01@example.com")
+    admin_response = client.get("/api/curriculum-admin/schools")
+    assert admin_response.status_code == 403
+
+    _login(client, "sa-sl01@example.com")
+    sa_response = client.get("/api/curriculum-admin/schools")
+    assert sa_response.status_code == 200
+    names = [s["name"] for s in sa_response.json()["schools"]]
+    assert "Schools Listing Test School" in names
+
+
 def test_chapter_status_rejects_invalid_jump(client, db_session):
     chapter, _ = _make_chapter(db_session, "jump01")
     _make_super_admin(db_session, "sa-jump01@example.com")
