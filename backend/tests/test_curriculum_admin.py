@@ -177,6 +177,38 @@ def test_super_admin_can_list_and_view_chapter(client, db_session):
     assert body["conceptLessons"][0]["code"] == "SKL-list01"
 
 
+def test_school_admin_only_sees_published_chapters(client, db_session):
+    draft_chapter, _ = _make_chapter(db_session, "vis01", status="DRAFT")
+    published_chapter, _ = _make_chapter(db_session, "vis02", status="PUBLISHED")
+    _make_school_admin(db_session, "admin-vis01@example.com", "Visibility Test School")
+    _login(client, "admin-vis01@example.com")
+
+    # A status filter from an ADMIN is overridden, not honoured -- they only
+    # ever see PUBLISHED regardless of what they ask for.
+    list_response = client.get("/api/curriculum-admin/chapters", params={"status": "DRAFT"})
+    assert list_response.status_code == 200
+    codes = [c["code"] for c in list_response.json()["chapters"]]
+    assert "CH-ADMIN-vis02" in codes
+    assert "CH-ADMIN-vis01" not in codes
+
+    published_detail = client.get(f"/api/curriculum-admin/chapters/{published_chapter.id}")
+    assert published_detail.status_code == 200
+
+    draft_detail = client.get(f"/api/curriculum-admin/chapters/{draft_chapter.id}")
+    assert draft_detail.status_code == 404
+
+
+def test_board_courses_listing_available_to_both_roles(client, db_session):
+    _get_or_create_board_course(db_session)
+    _make_school_admin(db_session, "admin-bc01@example.com", "Board Course Test School")
+    _login(client, "admin-bc01@example.com")
+
+    response = client.get("/api/curriculum-admin/board-courses")
+    assert response.status_code == 200
+    courses = response.json()["boardCourses"]
+    assert any(c["code"] == "MATHEMATICS" and c["boardCode"] == "CBSE" for c in courses)
+
+
 def test_chapter_status_rejects_invalid_jump(client, db_session):
     chapter, _ = _make_chapter(db_session, "jump01")
     _make_super_admin(db_session, "sa-jump01@example.com")

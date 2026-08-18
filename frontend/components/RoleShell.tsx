@@ -111,7 +111,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Content",
       items: [
-        { label: "Curriculum studio", icon: Library, soon: true },
+        { label: "Curriculum studio", icon: Library, href: "/admin/curriculum" },
         { label: "Question bank", icon: Database, soon: true },
         { label: "Papers & mocks", icon: FileSpreadsheet, soon: true },
       ],
@@ -136,7 +136,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Content",
       items: [
-        { label: "Curriculum studio", icon: Library, soon: true },
+        { label: "Curriculum studio", icon: Library, href: "/admin/curriculum" },
         { label: "Question bank", icon: Database, soon: true },
         { label: "Papers & mocks", icon: FileSpreadsheet, soon: true },
       ],
