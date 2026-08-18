@@ -315,7 +315,16 @@ class Question(Base):
     time_seconds = Column(Integer, nullable=True)
     auto_gradable = Column(Boolean, nullable=False, default=True)
     shuffle_options = Column(Boolean, nullable=False, default=False)
-    response_format = Column(String(50), nullable=True)
+    # Widened from 50 -> 255 (18 Aug 2026): the real Class 5 Maths content
+    # load hit a genuine StringDataRightTruncation on Postgres the moment a
+    # real chapter (5) was imported into production -- SQLite (used in
+    # local dev/tests) silently ignores VARCHAR length limits, so this
+    # never surfaced until the first real Postgres write. Longest real
+    # value seen across all 15 chapters is 67 chars (e.g. "Mixed-unit
+    # length, ordered list, comparison sign or short statement"); 255
+    # gives real headroom rather than the bare minimum. See migration
+    # widen_question_response_format.
+    response_format = Column(String(255), nullable=True)
     media_required = Column(String(100), nullable=True)
     teacher_note = Column(Text, nullable=True)
     # "DRAFT" | "SME_REVIEW" | "APPROVED" | "PUBLISHED" -- matches the
