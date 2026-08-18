@@ -18,18 +18,49 @@ const ACTIVE_ROLE_KEY = "school_enrichment_active_role";
 const CSRF_COOKIE_NAME = "se_csrf";
 const KNOWN_SCHOOL_KEY = "school_enrichment_known_school";
 
+// ADMIN and SUPER_ADMIN both live under /admin/*, so the URL alone can't
+// tell them apart the way it does for /teacher and /student. sessionStorage
+// (unlike localStorage) is scoped per-tab, not per-browser, so it's the
+// right place to remember "which of the two this specific tab signed in
+// as" -- set once at login (setSession below), read on every later request
+// in that same tab so the X-Auth-Role hint (and thus which cookie the
+// backend checks) stays correct even when another tab logs into the other
+// admin variant in the meantime. Falls back to "ADMIN" for a brand-new tab
+// that hasn't logged in yet in this tab -- harmless, since the backend
+// still falls back to scanning every cookie it has if the hint misses.
+const ADMIN_ROLE_VARIANT_KEY = "school_enrichment_admin_role_variant";
+
+function setAdminRoleVariant(role: "ADMIN" | "SUPER_ADMIN"): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(ADMIN_ROLE_VARIANT_KEY, role);
+  } catch {
+    // Storage full or blocked (private browsing) -- worst case the hint
+    // falls back to "ADMIN" next read, which the backend's cookie-scan
+    // fallback still recovers from.
+  }
+}
+
+function getAdminRoleVariant(): "ADMIN" | "SUPER_ADMIN" {
+  if (typeof window === "undefined") return "ADMIN";
+  try {
+    return sessionStorage.getItem(ADMIN_ROLE_VARIANT_KEY) === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
+  } catch {
+    return "ADMIN";
+  }
+}
+
 function roleFromPath(): UserRole | null {
   if (typeof window === "undefined") return null;
   const path = window.location.pathname;
-  if (path.startsWith("/admin")) return "ADMIN";
+  if (path.startsWith("/admin")) return getAdminRoleVariant();
   if (path.startsWith("/teacher")) return "TEACHER";
   if (path.startsWith("/student")) return "STUDENT";
   return null;
 }
 
 function normalizeRole(role?: string | null): UserRole | null {
-  if (role === "SUPER_ADMIN") return "ADMIN";
-  if (role === "ADMIN" || role === "TEACHER" || role === "STUDENT") return role;
+  if (role === "ADMIN" || role === "SUPER_ADMIN" || role === "TEACHER" || role === "STUDENT") return role;
   return null;
 }
 
@@ -152,6 +183,7 @@ export function getRememberedSchoolName(): string | null {
  */
 export function setSession(user: CurrentUser): void {
   const role = normalizeRole(user.role) || "STUDENT";
+  if (role === "ADMIN" || role === "SUPER_ADMIN") setAdminRoleVariant(role);
   safeSetJson(userKey(role), user);
   localStorage.setItem(ACTIVE_ROLE_KEY, role);
   safeSetJson(LEGACY_USER_KEY, user);
@@ -166,12 +198,18 @@ export function clearSession(): void {
     localStorage.removeItem(userKey(role));
   }
   localStorage.removeItem(LEGACY_USER_KEY);
+  try {
+    sessionStorage.removeItem(ADMIN_ROLE_VARIANT_KEY);
+  } catch {
+    // ignore
+  }
   window.dispatchEvent(new Event("school-enrichment-auth-changed"));
 }
 
 export function updateStoredUser(user: CurrentUser): void {
   if (typeof window === "undefined") return;
   const role = normalizeRole(user.role) || activeRole() || "STUDENT";
+  if (role === "ADMIN" || role === "SUPER_ADMIN") setAdminRoleVariant(role);
   safeSetJson(userKey(role), user);
   localStorage.setItem(ACTIVE_ROLE_KEY, role);
   safeSetJson(LEGACY_USER_KEY, user);

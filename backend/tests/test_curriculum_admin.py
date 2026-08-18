@@ -13,14 +13,17 @@ test_platform.py/test_curriculum_import.py already do. Shared master data
 code, mirroring curriculum_import_service.py's own idempotent pattern, so it
 doesn't matter which test file runs first.
 
-ADMIN and SUPER_ADMIN share one session-cookie name (se_admin_sess -- see
-cookies.py), so a single TestClient can only hold one of those sessions at a
-time. Tests that need both a SUPER_ADMIN action (publish) and an ADMIN
-action (map) set the chapter's status directly on the ORM object instead of
-round-tripping the publish endpoint through a second client -- the publish
-endpoint itself already gets full coverage from the SUPER_ADMIN-only tests
-below.
+ADMIN and SUPER_ADMIN each have their own session-cookie name (see
+cookies.py -- split 18 Aug 2026 so both can be signed in at once in separate
+browser tabs). Tests written before that split still set a chapter's status
+directly on the ORM object instead of round-tripping the publish endpoint
+through a second client when a test needs both a SUPER_ADMIN action
+(publish) and an ADMIN action (map) -- left as-is since it's equivalent and
+the publish endpoint itself already gets full coverage from the
+SUPER_ADMIN-only tests below.
 """
+from fastapi.testclient import TestClient
+
 from app.core.security import hash_password
 from app.models import (
     Board,
@@ -210,15 +213,27 @@ def test_board_courses_listing_available_to_both_roles(client, db_session):
 
 
 def test_schools_listing_is_super_admin_only(client, db_session):
+    """Also doubles as the regression test for the 18 Aug 2026 cookie split:
+    ADMIN and SUPER_ADMIN now each get their own cookie name, so two
+    separate TestClient instances sharing the same app/db (one per "browser
+    tab") can be signed in as each role at once without either kicking the
+    other out -- exactly the scenario the split was built for.
+    """
     _make_school_admin(db_session, "admin-sl01@example.com", "Schools Listing Test School")
     _make_super_admin(db_session, "sa-sl01@example.com")
 
-    _login(client, "admin-sl01@example.com")
-    admin_response = client.get("/api/curriculum-admin/schools")
+    admin_tab = TestClient(client.app)
+    sa_tab = TestClient(client.app)
+
+    _login(admin_tab, "admin-sl01@example.com")
+    _login(sa_tab, "sa-sl01@example.com")
+
+    # Both sessions coexist -- the admin tab is still unaffected by the
+    # super-admin login that happened in the "other tab".
+    admin_response = admin_tab.get("/api/curriculum-admin/schools")
     assert admin_response.status_code == 403
 
-    _login(client, "sa-sl01@example.com")
-    sa_response = client.get("/api/curriculum-admin/schools")
+    sa_response = sa_tab.get("/api/curriculum-admin/schools")
     assert sa_response.status_code == 200
     names = [s["name"] for s in sa_response.json()["schools"]]
     assert "Schools Listing Test School" in names

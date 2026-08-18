@@ -9,16 +9,24 @@ through its own domain (see frontend/next.config.mjs's rewrites()) so the
 browser treats the cookie as first-party. Do not point these cookies at
 the Render origin directly.
 
-Multi-role sessions: a user can be logged into admin/teacher/student
-simultaneously in different browser tabs. A single shared cookie name
-would break that -- one login would silently kick out the others. Instead
-each role gets its own cookie name, scoped to Path=/api so all of them
-ride along on every API request, and the frontend sends a non-secret
+Multi-role sessions: a user can be logged into super-admin/admin/teacher/
+student simultaneously in different browser tabs. A single shared cookie
+name would break that -- one login would silently kick out the others.
+Instead each role gets its own cookie name, scoped to Path=/api so all of
+them ride along on every API request, and the frontend sends a non-secret
 X-Auth-Role header (read_session_token() below) telling the backend which
 one applies to a given request. Tampering with that header client-side
 gains nothing -- it only *selects* which cookie to check, it never
 substitutes for one; the actual authorization is always the cookie's JWT
 value.
+
+ADMIN and SUPER_ADMIN used to share "se_admin_sess" (both are, loosely,
+"an admin"). That was wrong for the multi-tab case: logging into one
+silently overwrote the other's cookie in the same browser, since cookies
+aren't tab-scoped -- there's only ever one value for a given cookie name
+per browser, no matter how many tabs are open. Split 18 Aug 2026 into
+their own cookie names so a platform operator (SUPER_ADMIN) and a school
+admin can both stay signed in at once, in separate tabs, for testing.
 """
 import secrets
 
@@ -28,7 +36,7 @@ from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, COOKIE_SECURE
 
 SESSION_COOKIE_NAMES = {
     "ADMIN": "se_admin_sess",
-    "SUPER_ADMIN": "se_admin_sess",
+    "SUPER_ADMIN": "se_super_admin_sess",
     "TEACHER": "se_teacher_sess",
     "STUDENT": "se_student_sess",
 }
