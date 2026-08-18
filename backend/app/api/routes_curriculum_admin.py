@@ -46,7 +46,7 @@ from pydantic import BaseModel
 from app.core.errors import api_error
 from app.database import get_db
 from app.dependencies import require_roles
-from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, Question, School, SchoolAdmin, SchoolCurriculumMap, User
+from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, CurriculumVersion, Question, School, SchoolAdmin, SchoolCurriculumMap, User
 from app.services.question_quality_service import run_quality_checks
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
@@ -80,9 +80,25 @@ _QUESTION_TRANSITIONS: dict[str, set[str]] = {
 
 _READY_QUESTION_STATUSES = {"APPROVED", "PUBLISHED"}
 
+_CURRICULUM_VERSION_TRANSITIONS: dict[str, set[str]] = {
+    "DRAFT": {"REVIEW"},
+    "REVIEW": {"PUBLISHED", "DRAFT"},
+    "PUBLISHED": {"ARCHIVED"},
+    "ARCHIVED": {"DRAFT"},
+}
+
 
 class StatusChangeRequest(BaseModel):
     status: str
+
+
+class CurriculumVersionRequest(BaseModel):
+    boardId: str
+    code: str
+    label: str
+    status: str = "DRAFT"
+    effectiveFrom: str | None = None
+    effectiveTo: str | None = None
 
 
 class SchoolCurriculumMapRequest(BaseModel):
@@ -147,6 +163,8 @@ def _chapter_summary(chapter: Chapter, lesson_count: int, question_count: int) -
         "title": chapter.title,
         "status": chapter.status,
         "disciplineId": chapter.discipline_id,
+        "boardCourseId": chapter.board_course_id,
+        "curriculumVersionId": chapter.curriculum_version_id,
         "termId": chapter.term_id,
         "sequence": chapter.sequence,
         "conceptLessonCount": lesson_count,
@@ -183,15 +201,23 @@ def list_chapters(
     db: Session = Depends(get_db),
 ):
     """SUPER_ADMIN sees every chapter at any status -- content governance
-    happens here. A school's own ADMIN only ever sees PUBLISHED chapters
-    (any status filter they pass is overridden), since draft/in-review
+    happens here. A school's own ADMIN only ever sees chapters that are
+    BOTH individually PUBLISHED AND belong to a PUBLISHED curriculum
+    version/edition (any status filter they pass is overridden) -- a
+    chapter can be status=PUBLISHED while its whole syllabus edition is
+    still in DRAFT/REVIEW (e.g. next year's edition being prepared ahead of
+    time), and a school coordinator must not see or map into that edition
+    before the platform owner actually rolls it out. draft/in-review
     content isn't reviewed/approved yet and a school coordinator's only
     real use for this list is picking a chapter to map into their
     calendar -- see SchoolCurriculumMap below, which enforces the same
-    PUBLISHED-only rule server-side."""
+    rule server-side."""
     query = db.query(Chapter)
     if user.role == "ADMIN":
-        query = query.filter(Chapter.status == "PUBLISHED")
+        query = (
+            query.join(CurriculumVersion, Chapter.curriculum_version_id == CurriculumVersion.id)
+            .filter(Chapter.status == "PUBLISHED", CurriculumVersion.status == "PUBLISHED")
+        )
     elif status:
         query = query.filter(Chapter.status == status.strip().upper())
     if discipline_id:
@@ -214,10 +240,13 @@ def get_chapter(
     chapter = db.get(Chapter, chapter_id)
     if not chapter:
         api_error(404, "NOT_FOUND", "Chapter not found.")
-    # Same PUBLISHED-only boundary as list_chapters above -- 404 rather than
-    # 403 so an ADMIN probing chapter ids can't even confirm an unpublished
-    # one exists.
-    if user.role == "ADMIN" and chapter.status != "PUBLISHED":
+    # Same PUBLISHED-chapter-AND-PUBLISHED-edition boundary as list_chapters
+    # above -- 404 rather than 403 so an ADMIN probing chapter ids can't
+    # even confirm an unpublished one (or one from an unreleased syllabus
+    # edition) exists.
+    if user.role == "ADMIN" and (
+        chapter.status != "PUBLISHED" or chapter.curriculum_version.status != "PUBLISHED"
+    ):
         api_error(404, "NOT_FOUND", "Chapter not found.")
 
     lessons = (
@@ -525,6 +554,91 @@ def bulk_approve_chapter_questions(chapter_id: str, payload: BulkApproveRequest,
     return _bulk_approve_questions(db, questions, payload.includeUnverified)
 
 
+# --- CurriculumVersion (year/edition -- SUPER_ADMIN manages these) --------
+# The versatility requirement (Shailesh, 18 Aug 2026: "different boards
+# change their syllabus from year to year ... flexibility to add and remove
+# stuff ... without any sort of issues") lives here: a new syllabus edition
+# is a brand-new CurriculumVersion row, imported alongside the old one
+# (Chapter's real identity includes curriculum_version_id -- see the Chapter
+# model docstring and 7b3d4c9a1f06's migration), never an in-place edit of
+# existing chapters. Nothing forces the old edition to be archived the
+# moment a new one is created -- a school can keep teaching last year's
+# edition until its own ADMIN/SUPER_ADMIN is ready to remap it forward.
+
+
+def _curriculum_version_summary(version: CurriculumVersion) -> dict:
+    return {
+        "id": version.id,
+        "boardId": version.board_id,
+        "code": version.code,
+        "label": version.label,
+        "status": version.status,
+        "effectiveFrom": version.effective_from,
+        "effectiveTo": version.effective_to,
+        "createdAt": version.created_at.isoformat() if version.created_at else None,
+        "updatedAt": version.updated_at.isoformat() if version.updated_at else None,
+    }
+
+
+@router.get("/curriculum-versions", dependencies=[Depends(require_roles("ADMIN", "SUPER_ADMIN"))])
+def list_curriculum_versions(board_id: str | None = None, db: Session = Depends(get_db)):
+    """Open to both roles (read-only, mirrors board-courses) -- an ADMIN
+    picking a chapter to map benefits from seeing which edition it belongs
+    to, same as the BoardCourse lookup above. Status filtering by role is
+    NOT needed here the way it is for chapters: a version's status alone
+    reveals nothing sensitive, and the real gate (an ADMIN can't see or map
+    a chapter from a non-PUBLISHED edition) is already enforced where
+    chapters are actually listed/mapped, not here."""
+    query = db.query(CurriculumVersion)
+    if board_id:
+        query = query.filter(CurriculumVersion.board_id == board_id)
+    versions = query.order_by(CurriculumVersion.code.desc()).all()
+    return {"curriculumVersions": [_curriculum_version_summary(v) for v in versions]}
+
+
+@router.post("/curriculum-versions", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def create_curriculum_version(payload: CurriculumVersionRequest, db: Session = Depends(get_db)):
+    board = db.get(Board, payload.boardId)
+    if not board:
+        api_error(404, "NOT_FOUND", "Board not found.")
+
+    code = payload.code.strip()
+    existing = (
+        db.query(CurriculumVersion)
+        .filter(CurriculumVersion.board_id == board.id, CurriculumVersion.code == code)
+        .first()
+    )
+    if existing:
+        api_error(409, "ALREADY_EXISTS", f"A curriculum version with code {code!r} already exists for this board.")
+
+    version = CurriculumVersion(
+        board_id=board.id,
+        code=code,
+        label=payload.label.strip(),
+        status=payload.status.strip().upper() if payload.status else "DRAFT",
+        effective_from=payload.effectiveFrom,
+        effective_to=payload.effectiveTo,
+    )
+    db.add(version)
+    db.commit()
+    db.refresh(version)
+    return _curriculum_version_summary(version)
+
+
+@router.patch("/curriculum-versions/{version_id}/status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def update_curriculum_version_status(version_id: str, payload: StatusChangeRequest, db: Session = Depends(get_db)):
+    version = db.get(CurriculumVersion, version_id)
+    if not version:
+        api_error(404, "NOT_FOUND", "Curriculum version not found.")
+
+    requested_status = payload.status.strip().upper()
+    _apply_transition(version.status, requested_status, _CURRICULUM_VERSION_TRANSITIONS, "Curriculum version")
+    version.status = requested_status
+    db.commit()
+    db.refresh(version)
+    return _curriculum_version_summary(version)
+
+
 # --- BoardCourse (read-only lookup, for the mapping form) -----------------
 
 
@@ -593,6 +707,13 @@ def create_school_curriculum_map(
     if not chapter:
         api_error(404, "NOT_FOUND", "Chapter not found.")
     if chapter.status != "PUBLISHED":
+        api_error(409, "CHAPTER_NOT_PUBLISHED", "Only a published chapter can be mapped into a school's calendar.")
+    # Same edition-rollout boundary as list_chapters/get_chapter -- a school
+    # ADMIN cannot map into a chapter whose whole syllabus edition hasn't
+    # been rolled out yet, even if they somehow already had its id. A
+    # SUPER_ADMIN can, deliberately, in case pre-provisioning a school ahead
+    # of an edition's public rollout is ever a real need.
+    if user.role == "ADMIN" and chapter.curriculum_version.status != "PUBLISHED":
         api_error(409, "CHAPTER_NOT_PUBLISHED", "Only a published chapter can be mapped into a school's calendar.")
 
     board_course = db.get(BoardCourse, payload.boardCourseId)
