@@ -28,6 +28,7 @@ import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { api, apiErrorMessage } from "@/lib/api";
@@ -400,8 +401,12 @@ function ChapterStudio() {
 
   const selected = chapters.find((c) => c.id === selectedId) ?? null;
 
+  function closeChapterReview() {
+    setSelectedId(null);
+  }
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
+    <>
       <Card className="animate-fade-up">
         <CardBody className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -411,7 +416,9 @@ function ChapterStudio() {
               </CardIcon>
               <div>
                 <CardTitle>Chapters</CardTitle>
-                <p className="mt-0.5 text-xs text-content-subtle">Every chapter, at any status</p>
+                <p className="mt-0.5 text-xs text-content-subtle">
+                  Every chapter, at any status — click one to open its dedicated review window
+                </p>
               </div>
             </div>
             <Button
@@ -440,7 +447,7 @@ function ChapterStudio() {
               description="Import a chapter workbook to see it here — it lands in Draft, ready for review."
             />
           ) : (
-            <ul className="-mx-2 space-y-1">
+            <ul className="-mx-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
               {chapters.map((chapter) => (
                 <li key={chapter.id}>
                   <button
@@ -473,27 +480,17 @@ function ChapterStudio() {
         </CardBody>
       </Card>
 
-      <Card className="animate-fade-up delay-70">
-        <CardBody className="space-y-5">
-          {!selected ? (
-            <EmptyState
-              status={{ label: "Nothing selected", tone: "neutral" }}
-              title="Pick a chapter"
-              description="Select a chapter on the left to review its concept lessons and move it through draft, review and publish."
-            />
-          ) : (
-            <>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
-                    {selected.code}
-                  </p>
-                  <h3 className="mt-0.5 font-display text-lg font-semibold text-content">{selected.title}</h3>
-                </div>
-                <Badge tone={CHAPTER_STATUS_TONE[selected.status]}>{selected.status}</Badge>
-              </div>
-
-              {detailError ? <ErrorBanner message={detailError} /> : null}
+      <Modal
+        open={Boolean(selected)}
+        onClose={closeChapterReview}
+        size="full"
+        eyebrow={selected?.code}
+        title={selected?.title ?? "Chapter"}
+        meta={selected ? <Badge tone={CHAPTER_STATUS_TONE[selected.status]}>{selected.status}</Badge> : null}
+      >
+        {!selected ? null : (
+          <div className="space-y-6">
+            {detailError ? <ErrorBanner message={detailError} /> : null}
 
               <div className="flex flex-wrap gap-2.5">
                 {selected.status === "DRAFT" ? (
@@ -682,20 +679,22 @@ function ChapterStudio() {
                           </div>
 
                           {isExpanded ? (
-                            <div className="space-y-3 border-t border-line px-3.5 py-3.5">
+                            <div className="border-t border-line px-3.5 py-3.5">
                               {loadingQuestionsFor === lesson.id ? (
                                 <p className="text-sm text-content-subtle">Loading questions&hellip;</p>
                               ) : !lessonQuestions || lessonQuestions.length === 0 ? (
                                 <p className="text-sm text-content-subtle">No questions in this lesson yet.</p>
                               ) : (
-                                lessonQuestions.map((question) => (
-                                  <QuestionCard
-                                    key={question.id}
-                                    question={question}
-                                    busy={questionActionBusyId === question.id}
-                                    onAdvance={(status) => advanceQuestion(lesson.id, question.id, status)}
-                                  />
-                                ))
+                                <div className="grid gap-3 xl:grid-cols-2">
+                                  {lessonQuestions.map((question) => (
+                                    <QuestionCard
+                                      key={question.id}
+                                      question={question}
+                                      busy={questionActionBusyId === question.id}
+                                      onAdvance={(status) => advanceQuestion(lesson.id, question.id, status)}
+                                    />
+                                  ))}
+                                </div>
                               )}
                             </div>
                           ) : null}
@@ -705,11 +704,10 @@ function ChapterStudio() {
                   </ul>
                 )}
               </div>
-            </>
-          )}
-        </CardBody>
-      </Card>
-    </div>
+          </div>
+        )}
+      </Modal>
+    </>
   );
 }
 
