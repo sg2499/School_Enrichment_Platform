@@ -98,7 +98,7 @@ jobs:
       DATABASE_URL: sqlite:///./school_enrichment_ci.db
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: pip
@@ -204,7 +204,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
           cache: pip
@@ -293,7 +293,7 @@ jobs:
       # A missing suite must never silently pass as "success" once real
       # attempt/scoring flows exist — remove this early-exit block the
       # moment frontend/tests/ has real specs in it.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: steps.has_e2e.outputs.present == 'true'
         with:
           python-version: '3.11'
