@@ -46,7 +46,21 @@ from pydantic import BaseModel
 from app.core.errors import api_error
 from app.database import get_db
 from app.dependencies import require_roles
-from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, CurriculumVersion, Question, School, SchoolAdmin, SchoolCurriculumMap, User
+from app.models import (
+    Board,
+    BoardCourse,
+    Chapter,
+    ClassLevel,
+    ConceptLesson,
+    CourseDisciplineMap,
+    CurriculumVersion,
+    Discipline,
+    Question,
+    School,
+    SchoolAdmin,
+    SchoolCurriculumMap,
+    User,
+)
 from app.services.audit_service import log_audit_event
 from app.services.question_quality_service import run_quality_checks
 
@@ -107,12 +121,25 @@ class SchoolCurriculumMapRequest(BaseModel):
     boardCourseId: str
     chapterId: str
     className: str | None = None
-    section: str | None = None
     teacherId: str | None = None
     plannedStartDate: str | None = None
     plannedEndDate: str | None = None
     textbookReference: str | None = None
     sequence: int = 1
+
+
+class SchoolCurriculumMapRescheduleRequest(BaseModel):
+    """Everything here is optional -- a reschedule is a partial patch, not a
+    full replace. Only the fields an admin actually wants to change need to
+    be sent. This is the "shift the dates without deleting and recreating
+    the mapping" path (19 Aug 2026, see migration d8a3f6c1b2e7's docstring)
+    that turns a holiday/election/festival/health-closure date slip into a
+    two-click edit instead of a rebuild."""
+    teacherId: str | None = None
+    plannedStartDate: str | None = None
+    plannedEndDate: str | None = None
+    textbookReference: str | None = None
+    sequence: int | None = None
 
 
 def _resolve_school_id(db: Session, user: User, requested_school_id: str | None) -> str:
@@ -182,7 +209,6 @@ def _map_summary(mapping: SchoolCurriculumMap) -> dict:
         "boardCourseId": mapping.board_course_id,
         "chapterId": mapping.chapter_id,
         "className": mapping.class_name,
-        "section": mapping.section,
         "teacherId": mapping.teacher_id,
         "plannedStartDate": mapping.planned_start_date,
         "plannedEndDate": mapping.planned_end_date,
@@ -198,6 +224,8 @@ def _map_summary(mapping: SchoolCurriculumMap) -> dict:
 def list_chapters(
     status: str | None = None,
     discipline_id: str | None = None,
+    board_id: str | None = None,
+    class_level_id: str | None = None,
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
@@ -212,7 +240,13 @@ def list_chapters(
     content isn't reviewed/approved yet and a school coordinator's only
     real use for this list is picking a chapter to map into their
     calendar -- see SchoolCurriculumMap below, which enforces the same
-    rule server-side."""
+    rule server-side.
+
+    board_id/class_level_id add cascading Board -> Class filters on top of
+    the existing discipline_id (Subject) filter (19 Aug 2026, Shailesh: the
+    review list and the mapping form should filter by board/class/subject
+    instead of showing one flat list) -- both join through BoardCourse,
+    since that's where a Chapter's board+class actually live."""
     query = db.query(Chapter)
     if user.role == "ADMIN":
         query = (
@@ -223,6 +257,12 @@ def list_chapters(
         query = query.filter(Chapter.status == status.strip().upper())
     if discipline_id:
         query = query.filter(Chapter.discipline_id == discipline_id)
+    if board_id or class_level_id:
+        query = query.join(BoardCourse, Chapter.board_course_id == BoardCourse.id)
+        if board_id:
+            query = query.filter(BoardCourse.board_id == board_id)
+        if class_level_id:
+            query = query.filter(BoardCourse.class_level_id == class_level_id)
     chapters = query.order_by(Chapter.chapter_no).all()
 
     payload = []
@@ -766,31 +806,77 @@ def update_curriculum_version_status(
 
 @router.get("/board-courses")
 def list_board_courses(
+    board_id: str | None = None,
+    class_level_id: str | None = None,
+    discipline_id: str | None = None,
     _user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
     """Just enough to populate a "which course am I mapping into" dropdown --
     no status filtering here, unlike chapters. A board course is a container
     label ("CBSE Class 5 Mathematics"), not itself student-facing content,
-    so there's nothing for a school ADMIN to be shielded from."""
-    rows = (
+    so there's nothing for a school ADMIN to be shielded from.
+
+    board_id/class_level_id/discipline_id let the mapping form narrow this
+    down as Board -> Class -> Subject filters are applied (19 Aug 2026) --
+    discipline_id joins through CourseDisciplineMap since a BoardCourse can
+    span more than one discipline (e.g. a combined "Science" course covering
+    Physics/Chemistry/Biology)."""
+    query = (
         db.query(BoardCourse, Board, ClassLevel)
         .join(Board, BoardCourse.board_id == Board.id)
         .join(ClassLevel, BoardCourse.class_level_id == ClassLevel.id)
-        .order_by(ClassLevel.display_order, BoardCourse.display_name)
-        .all()
     )
+    if board_id:
+        query = query.filter(BoardCourse.board_id == board_id)
+    if class_level_id:
+        query = query.filter(BoardCourse.class_level_id == class_level_id)
+    if discipline_id:
+        query = query.join(
+            CourseDisciplineMap, CourseDisciplineMap.board_course_id == BoardCourse.id
+        ).filter(CourseDisciplineMap.discipline_id == discipline_id)
+    rows = query.order_by(ClassLevel.display_order, BoardCourse.display_name).all()
     return {
         "boardCourses": [
             {
                 "id": board_course.id,
                 "code": board_course.code,
                 "displayName": board_course.display_name,
+                "boardId": board.id,
                 "boardCode": board.code,
+                "classLevelId": class_level.id,
                 "classLevelCode": class_level.code,
                 "classLevelDisplayName": class_level.display_name,
             }
             for board_course, board, class_level in rows
+        ]
+    }
+
+
+# --- Board / Discipline (read-only lookups, for the cascading filters) ----
+
+
+@router.get("/boards", dependencies=[Depends(require_roles("ADMIN", "SUPER_ADMIN"))])
+def list_boards(db: Session = Depends(get_db)):
+    """Powers the "Board" filter step of Board -> Class -> Subject -> Chapter
+    (19 Aug 2026). Open to both roles, same as board-courses -- a board name
+    (CBSE/ICSE) isn't sensitive."""
+    boards = db.query(Board).order_by(Board.display_name).all()
+    return {"boards": [{"id": b.id, "code": b.code, "name": b.display_name} for b in boards]}
+
+
+@router.get("/disciplines", dependencies=[Depends(require_roles("ADMIN", "SUPER_ADMIN"))])
+def list_disciplines(db: Session = Depends(get_db)):
+    """Powers the "Subject" filter step (19 Aug 2026) -- Discipline is the
+    real "Subject" concept in this schema (see curriculum.py's module
+    docstring), not BoardCourse. Open to both roles for the same reason as
+    /boards and /board-courses: a subject name carries nothing to shield a
+    school ADMIN from."""
+    disciplines = db.query(Discipline).order_by(Discipline.display_name).all()
+    return {
+        "disciplines": [
+            {"id": d.id, "code": d.code, "displayName": d.display_name, "subjectGroupId": d.subject_group_id}
+            for d in disciplines
         ]
     }
 
@@ -849,19 +935,17 @@ def create_school_curriculum_map(
             SchoolCurriculumMap.school_id == school_id,
             SchoolCurriculumMap.chapter_id == chapter.id,
             SchoolCurriculumMap.class_name == payload.className,
-            SchoolCurriculumMap.section == payload.section,
         )
         .first()
     )
     if existing:
-        api_error(409, "ALREADY_MAPPED", "This chapter is already mapped for this class/section at this school.")
+        api_error(409, "ALREADY_MAPPED", "This chapter is already mapped for this class at this school.")
 
     mapping = SchoolCurriculumMap(
         school_id=school_id,
         board_course_id=board_course.id,
         chapter_id=chapter.id,
         class_name=payload.className,
-        section=payload.section,
         teacher_id=payload.teacherId,
         planned_start_date=payload.plannedStartDate,
         planned_end_date=payload.plannedEndDate,
@@ -874,7 +958,7 @@ def create_school_curriculum_map(
         "curriculum.school_map.created",
         user_id=user.id,
         request=request,
-        details={"schoolId": school_id, "chapterId": chapter.id, "className": mapping.class_name, "section": mapping.section},
+        details={"schoolId": school_id, "chapterId": chapter.id, "className": mapping.class_name},
     )
     db.commit()
     db.refresh(mapping)
@@ -885,7 +969,6 @@ def create_school_curriculum_map(
 def list_school_curriculum_maps(
     schoolId: str | None = None,
     className: str | None = None,
-    section: str | None = None,
     boardCourseId: str | None = None,
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
@@ -894,12 +977,61 @@ def list_school_curriculum_maps(
     query = db.query(SchoolCurriculumMap).filter(SchoolCurriculumMap.school_id == school_id)
     if className:
         query = query.filter(SchoolCurriculumMap.class_name == className)
-    if section:
-        query = query.filter(SchoolCurriculumMap.section == section)
     if boardCourseId:
         query = query.filter(SchoolCurriculumMap.board_course_id == boardCourseId)
     mappings = query.order_by(SchoolCurriculumMap.sequence).all()
     return {"schoolCurriculumMaps": [_map_summary(m) for m in mappings]}
+
+
+@router.patch("/school-curriculum-maps/{map_id}")
+def reschedule_school_curriculum_map(
+    map_id: str,
+    payload: SchoolCurriculumMapRescheduleRequest,
+    request: Request,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Adjusts an existing mapping's dates/teacher/reference in place --
+    the actual fix for "schedules slip because of holidays, elections,
+    festivals, health closures, ..." (Shailesh, 19 Aug 2026) isn't a
+    finer-grained mapping key, it's this: a two-click edit instead of
+    deleting the mapping and recreating it from scratch. Only the fields
+    present in the payload are touched; anything omitted is left as-is."""
+    mapping = db.get(SchoolCurriculumMap, map_id)
+    if not mapping:
+        api_error(404, "NOT_FOUND", "Mapping not found.")
+    # Raises 403 if this isn't (or isn't within) the caller's own school --
+    # see _resolve_school_id's docstring.
+    _resolve_school_id(db, user, mapping.school_id)
+
+    changes: dict = {}
+    if payload.teacherId is not None:
+        changes["teacherId"] = {"from": mapping.teacher_id, "to": payload.teacherId}
+        mapping.teacher_id = payload.teacherId
+    if payload.plannedStartDate is not None:
+        changes["plannedStartDate"] = {"from": mapping.planned_start_date, "to": payload.plannedStartDate}
+        mapping.planned_start_date = payload.plannedStartDate
+    if payload.plannedEndDate is not None:
+        changes["plannedEndDate"] = {"from": mapping.planned_end_date, "to": payload.plannedEndDate}
+        mapping.planned_end_date = payload.plannedEndDate
+    if payload.textbookReference is not None:
+        changes["textbookReference"] = {"from": mapping.textbook_reference, "to": payload.textbookReference}
+        mapping.textbook_reference = payload.textbookReference
+    if payload.sequence is not None:
+        changes["sequence"] = {"from": mapping.sequence, "to": payload.sequence}
+        mapping.sequence = payload.sequence
+
+    if changes:
+        log_audit_event(
+            db,
+            "curriculum.school_map.rescheduled",
+            user_id=user.id,
+            request=request,
+            details={"mapId": mapping.id, "schoolId": mapping.school_id, "changes": changes},
+        )
+        db.commit()
+        db.refresh(mapping)
+    return _map_summary(mapping)
 
 
 @router.delete("/school-curriculum-maps/{map_id}")

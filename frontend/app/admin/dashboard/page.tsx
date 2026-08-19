@@ -28,27 +28,27 @@ type StageState = "done" | "active" | "planned";
 
 const STAGES: { title: string; body: string; state: StageState }[] = [
   {
-    title: "Platform and secure sign-in",
+    title: "Platform and Secure Sign-In",
     body: "Role-based access for admins, teachers and students, with server-verified sessions.",
     state: "done",
   },
   {
-    title: "Curriculum and question bank",
+    title: "Curriculum and Question Bank",
     body: "Import chapters and questions, review them, then publish to the school.",
     state: "active",
   },
   {
-    title: "Daily learning loop",
+    title: "Daily Learning Loop",
     body: "Chapter lessons and practice released to students on a five-day cycle.",
     state: "planned",
   },
   {
-    title: "School marking engine",
+    title: "School Marking Engine",
     body: "Part marks and school-style grading so scores match what teachers award on paper.",
     state: "planned",
   },
   {
-    title: "Papers, mocks and reports",
+    title: "Papers, Mocks and Reports",
     body: "Board-format papers and the analytics your leadership team will ask for.",
     state: "planned",
   },
@@ -62,7 +62,7 @@ const STAGE_STYLE: Record<StageState, { badge: string; tone: BadgeTone; icon: Re
     rail: "bg-jade-500 text-white ring-jade-100",
   },
   active: {
-    badge: "In build",
+    badge: "In Build",
     tone: "warning",
     icon: <CircleDashed className="h-4 w-4" aria-hidden />,
     rail: "bg-saffron-400 text-brand-950 ring-saffron-100",
@@ -78,17 +78,17 @@ const STAGE_STYLE: Record<StageState, { badge: string; tone: BadgeTone; icon: Re
 const MODULES = [
   {
     icon: <Library className="h-5 w-5" aria-hidden />,
-    title: "Curriculum studio",
+    title: "Curriculum Studio",
     description: "Draft, review and publish chapters mapped to CBSE or ICSE, class by class.",
     tone: "brand" as const,
-    status: { label: "In build", tone: "warning" as const },
+    status: { label: "In Build", tone: "warning" as const },
   },
   {
     icon: <Database className="h-5 w-5" aria-hidden />,
-    title: "Question bank",
+    title: "Question Bank",
     description: "Import from spreadsheets, review quality, and map every question to a chapter.",
     tone: "accent" as const,
-    status: { label: "In build", tone: "warning" as const },
+    status: { label: "In Build", tone: "warning" as const },
   },
   {
     icon: <Users className="h-5 w-5" aria-hidden />,
@@ -99,14 +99,14 @@ const MODULES = [
   },
   {
     icon: <GraduationCap className="h-5 w-5" aria-hidden />,
-    title: "Classes & sections",
+    title: "Classes & Sections",
     description: "The structure everything else hangs off — classes, sections and teacher links.",
     tone: "brand" as const,
     status: { label: "Soon", tone: "neutral" as const },
   },
   {
     icon: <FileSpreadsheet className="h-5 w-5" aria-hidden />,
-    title: "Papers & mocks",
+    title: "Papers & Mocks",
     description: "Generate board-format papers from published content, with answer keys.",
     tone: "accent" as const,
     status: { label: "Planned", tone: "neutral" as const },
@@ -139,7 +139,7 @@ export default function AdminDashboardPage() {
     <RoleShell role={roleForShell} user={user}>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="School control centre"
+          eyebrow="School Control Centre"
           title={
             <>
               Welcome, <span className="text-gradient-brand">{user?.fullName ?? "Admin"}</span>
@@ -149,12 +149,12 @@ export default function AdminDashboardPage() {
           meta={
             <>
               <Badge tone="success" dot>
-                Sign-in live
+                Sign-In Live
               </Badge>
               <Badge tone="warning" dot pulse>
-                Curriculum in build
+                Curriculum in Build
               </Badge>
-              {user?.role === "SUPER_ADMIN" ? <Badge tone="brand">Platform admin</Badge> : null}
+              {user?.role === "SUPER_ADMIN" ? <Badge tone="brand">Platform Admin</Badge> : null}
             </>
           }
         />
@@ -210,7 +210,7 @@ export default function AdminDashboardPage() {
               <CardBody className="sm:p-8">
                 <EmptyState
                   illustration={<BlueprintIllustration />}
-                  status={{ label: "No curriculum published", tone: "warning" }}
+                  status={{ label: "No Curriculum Published", tone: "warning" }}
                   title="Nothing is live for your school yet"
                   description="Chapters and questions move through draft, review and publish before anyone sees them. Once the first subject is published, this panel becomes your live view of what students and teachers can access."
                   points={[
@@ -227,18 +227,18 @@ export default function AdminDashboardPage() {
                   <CardIcon tone="brand">
                     <Building2 className="h-5 w-5" aria-hidden />
                   </CardIcon>
-                  <CardTitle>Your school</CardTitle>
+                  <CardTitle>Your School</CardTitle>
                 </div>
                 <dl className="-mt-1">
                   <DetailRow label="Administrator" value={user?.fullName ?? "—"} />
-                  <DetailRow label="Access level" value={user?.role === "SUPER_ADMIN" ? "Platform admin" : "School admin"} />
+                  <DetailRow label="Access Level" value={user?.role === "SUPER_ADMIN" ? "Platform Admin" : "School Admin"} />
                   <DetailRow
                     label="School ID"
                     value={
                       schoolId ? (
                         <span className="font-mono text-[0.75rem]">{schoolId}</span>
                       ) : (
-                        "Platform-wide access"
+                        "Platform-Wide Access"
                       )
                     }
                   />
@@ -256,7 +256,7 @@ export default function AdminDashboardPage() {
                 Each module opens here the moment it ships &mdash; nothing to install or configure.
               </p>
             </div>
-            <Badge tone="neutral">6 modules</Badge>
+            <Badge tone="neutral">6 Modules</Badge>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {MODULES.map((module, index) => (

@@ -106,9 +106,26 @@ export type BoardCourseOption = {
   id: string;
   code: string;
   displayName: string;
+  boardId: string;
   boardCode: string;
+  classLevelId: string;
   classLevelCode: string;
   classLevelDisplayName: string;
+};
+
+// Board -> Class -> Subject cascading filter lookups (19 Aug 2026), backing
+// GET /curriculum-admin/boards and GET /curriculum-admin/disciplines.
+export type BoardOption = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type DisciplineOption = {
+  id: string;
+  code: string;
+  displayName: string;
+  subjectGroupId: string;
 };
 
 export type SchoolOption = {
@@ -118,13 +135,15 @@ export type SchoolOption = {
   city: string | null;
 };
 
+// section was dropped 19 Aug 2026 -- "n number of sections for a class in a
+// school ... all will follow the same syllabus no matter what" (Shailesh).
+// A mapping is one schedule per class; see migration d8a3f6c1b2e7.
 export type SchoolCurriculumMapEntry = {
   id: string;
   schoolId: string;
   boardCourseId: string;
   chapterId: string;
   className: string | null;
-  section: string | null;
   teacherId: string | null;
   plannedStartDate: string | null;
   plannedEndDate: string | null;

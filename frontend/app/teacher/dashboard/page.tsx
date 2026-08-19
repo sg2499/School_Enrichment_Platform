@@ -22,7 +22,7 @@ import { RosterIllustration } from "@/components/brand/Graphics";
 const MODULES = [
   {
     icon: <Users className="h-5 w-5" aria-hidden />,
-    title: "My classes",
+    title: "My Classes",
     description: "Every section you teach, with each student's current chapter and where they are stuck.",
     tone: "brand" as const,
   },
@@ -40,7 +40,7 @@ const MODULES = [
   },
   {
     icon: <BarChart3 className="h-5 w-5" aria-hidden />,
-    title: "Class analytics",
+    title: "Class Analytics",
     description: "Chapter-level mastery across a section, so reteaching targets the right two topics.",
     tone: "brand" as const,
   },
@@ -48,9 +48,9 @@ const MODULES = [
 
 const READINESS = [
   { label: "Your account and secure sign-in", state: "Ready", tone: "success" as const },
-  { label: "School curriculum imported", state: "In progress", tone: "warning" as const },
-  { label: "Question bank reviewed and published", state: "In progress", tone: "warning" as const },
-  { label: "Class rosters linked to you", state: "Not started", tone: "neutral" as const },
+  { label: "School curriculum imported", state: "In Progress", tone: "warning" as const },
+  { label: "Question bank reviewed and published", state: "In Progress", tone: "warning" as const },
+  { label: "Class rosters linked to you", state: "Not Started", tone: "neutral" as const },
   { label: "Assignments and marking", state: "Planned", tone: "neutral" as const },
 ];
 
@@ -68,7 +68,7 @@ export default function TeacherDashboardPage() {
     <RoleShell role="TEACHER" user={user}>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Teaching workspace"
+          eyebrow="Teaching Workspace"
           title={
             <>
               Welcome, <span className="text-gradient-brand">{user?.fullName ?? surname}</span>
@@ -82,7 +82,7 @@ export default function TeacherDashboardPage() {
                 <Badge tone="neutral">{teacher.subjectSpecialization}</Badge>
               ) : null}
               <Badge tone="accent" dot pulse>
-                Setup in progress
+                Setup in Progress
               </Badge>
             </>
           }
@@ -93,7 +93,7 @@ export default function TeacherDashboardPage() {
             <CardBody className="sm:p-8">
               <EmptyState
                 illustration={<RosterIllustration />}
-                status={{ label: "No classes linked yet", tone: "brand" }}
+                status={{ label: "No Classes Linked Yet", tone: "brand" }}
                 title="Your classes will appear here"
                 description="Once your school admin publishes the curriculum and links you to your sections, each class lands on this screen with its roster, current chapter and outstanding work."
                 points={[
@@ -113,7 +113,7 @@ export default function TeacherDashboardPage() {
                   <Layers className="h-5 w-5" aria-hidden />
                 </CardIcon>
                 <div>
-                  <CardTitle>Rollout status</CardTitle>
+                  <CardTitle>Rollout Status</CardTitle>
                   <p className="mt-0.5 text-xs text-content-subtle">What is live for your school</p>
                 </div>
               </div>
@@ -134,12 +134,12 @@ export default function TeacherDashboardPage() {
         <section className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h2 className="font-display text-display-sm text-content">Your toolkit</h2>
+              <h2 className="font-display text-display-sm text-content">Your Toolkit</h2>
               <p className="mt-1 text-sm text-content-muted">
                 Built for the way Indian schools actually teach &mdash; chapter by chapter, section by section.
               </p>
             </div>
-            <Badge tone="neutral">Rolling out</Badge>
+            <Badge tone="neutral">Rolling Out</Badge>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {MODULES.map((module, index) => (
@@ -163,11 +163,11 @@ export default function TeacherDashboardPage() {
                 <CardIcon tone="brand">
                   <IdCard className="h-5 w-5" aria-hidden />
                 </CardIcon>
-                <CardTitle>Your profile</CardTitle>
+                <CardTitle>Your Profile</CardTitle>
               </div>
               <dl className="-mt-1">
                 <DetailRow label="Name" value={user?.fullName ?? "—"} />
-                <DetailRow label="Teacher code" value={teacher?.teacherCode ?? "—"} />
+                <DetailRow label="Teacher Code" value={teacher?.teacherCode ?? "—"} />
                 <DetailRow label="Designation" value={teacher?.designation ?? "Not set"} />
                 <DetailRow label="Subject" value={teacher?.subjectSpecialization ?? "Not set"} />
               </dl>
@@ -180,7 +180,7 @@ export default function TeacherDashboardPage() {
                 <CardIcon tone="brand">
                   <Compass className="h-5 w-5" aria-hidden />
                 </CardIcon>
-                <CardTitle>While you wait</CardTitle>
+                <CardTitle>While You Wait</CardTitle>
               </div>
               <p className="text-[0.875rem] leading-relaxed text-content-muted">
                 Nothing is required from you yet. When your sections are linked you will get them pre-populated

@@ -15,25 +15,25 @@ import { AuroraBackdropInverse, PathIllustration } from "@/components/brand/Grap
 const MODULES = [
   {
     icon: <BookOpen className="h-5 w-5" aria-hidden />,
-    title: "Chapter lessons",
+    title: "Chapter Lessons",
     description: "Read, watch and work through a chapter at your own pace, in the order your teacher sets.",
     tone: "brand" as const,
   },
   {
     icon: <Target className="h-5 w-5" aria-hidden />,
-    title: "Daily practice",
+    title: "Daily Practice",
     description: "A short set of questions each day, built from the chapter you are on right now.",
     tone: "accent" as const,
   },
   {
     icon: <FileSpreadsheet className="h-5 w-5" aria-hidden />,
-    title: "Mock papers",
+    title: "Mock Papers",
     description: "Full-length practice papers in your board's format, so exam day feels familiar.",
     tone: "jade" as const,
   },
   {
     icon: <TrendingUp className="h-5 w-5" aria-hidden />,
-    title: "My progress",
+    title: "My Progress",
     description: "See which topics you have mastered and which ones deserve another go.",
     tone: "brand" as const,
   },
@@ -77,7 +77,7 @@ export default function StudentDashboardPage() {
               {classLabel ? <Badge tone="brand">{classLabel}</Badge> : null}
               {student?.studentCode ? <Badge tone="neutral">ID {student.studentCode}</Badge> : null}
               <Badge tone="accent" dot pulse>
-                Getting set up
+                Getting Set Up
               </Badge>
             </>
           }
@@ -90,7 +90,7 @@ export default function StudentDashboardPage() {
             <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
               <div className="space-y-4">
                 <Badge tone="inverse" dot pulse>
-                  Nothing to do yet
+                  Nothing to Do Yet
                 </Badge>
                 <h2 className="font-display text-display-md text-balance text-content-inverse">
                   Your first chapter is on its way.
@@ -137,7 +137,7 @@ export default function StudentDashboardPage() {
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <h2 className="font-display text-display-sm text-content">What you&apos;ll find here</h2>
-            <Badge tone="neutral">Coming soon</Badge>
+            <Badge tone="neutral">Coming Soon</Badge>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {MODULES.map((module, index) => (
@@ -160,7 +160,7 @@ export default function StudentDashboardPage() {
             <CardBody>
               <EmptyState
                 illustration={<PathIllustration />}
-                status={{ label: "Waiting on your school", tone: "accent" }}
+                status={{ label: "Waiting on Your School", tone: "accent" }}
                 title="Nothing to practise today"
                 description="When your first chapter is published you'll see a short daily set here — usually ten to fifteen minutes' work, never a wall of homework."
                 points={[
@@ -177,7 +177,7 @@ export default function StudentDashboardPage() {
                 <CardIcon tone="brand">
                   <CalendarCheck className="h-5 w-5" aria-hidden />
                 </CardIcon>
-                <CardTitle>Your details</CardTitle>
+                <CardTitle>Your Details</CardTitle>
               </div>
               <dl className="-mt-1">
                 <DetailRow label="Name" value={user?.fullName ?? "—"} />
