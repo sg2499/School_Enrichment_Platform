@@ -145,8 +145,19 @@ def save_profile_photo(upload: UploadFile, prefix: str) -> str:
     Content = upload.file.read()
     if not Content:
         api_error(400, "INVALID_FILE", "Profile photo file is empty.")
-    if len(Content) > 350_000:
-        api_error(400, "FILE_TOO_LARGE", "Profile photo must be under 350 KB after compression.")
+    # Raised from 350KB (19 Aug 2026, Shailesh: "we never know what image the
+    # user is gonna upload so we need to keep that in mind always" -- a raw
+    # phone-camera photo is routinely 3-10MB, and this endpoint was rejecting
+    # every one of them with a message that claimed compression had already
+    # happened when none ever did). The real fix is client-side: the upload
+    # UI (components/UserMenu.tsx, via lib/imageCompression.ts) now resizes
+    # and re-encodes any image to a JPEG comfortably under 300KB in the
+    # browser before it's ever sent here, so this limit should almost never
+    # trigger in normal use. It stays as a generous backend safety net --
+    # never trust client-side enforcement alone -- sized well above what any
+    # normally-compressed upload should produce, not as the primary gate.
+    if len(Content) > 2_000_000:
+        api_error(400, "FILE_TOO_LARGE", "Profile photo must be under 2 MB.")
 
     # Content-sniffing, not just extension-checking (2026-08-19 security
     # hardening): safe_profile_photo_name() above only looks at the claimed
