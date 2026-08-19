@@ -267,20 +267,15 @@ function SidebarContent({
         <div className="absolute inset-0 bg-grid-inverse opacity-60" />
       </div>
 
-      {/* Logo and the collapse toggle share one row (19 Aug 2026, Shailesh:
-          the toggle used to sit on its own row below the logo, leaving a
-          dead gap between the logo block and the user-identity card right
-          under it) -- collapsed stays stacked instead, since the rail is
-          only 5.25rem wide there and the logo mark plus button genuinely
-          don't fit side by side at that width. */}
-      <div
-        className={cn(
-          "relative flex items-center pb-6 pt-6",
-          collapsed ? "flex-col justify-center gap-3 px-3" : "justify-between gap-3 px-5",
-        )}
-      >
-        {collapsed ? <LogoMark className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
-        {onToggleCollapse ? (
+      {/* Collapse toggle gets its own row, pinned top-right, ABOVE the logo
+          block (19 Aug 2026, Shailesh -- second pass: the previous attempt
+          put the toggle on the same row as the logo/tagline text, which
+          squeezed the Wordmark's flex width and made "CBSE · ICSE · CLASS
+          5-10" wrap onto a second line. The logo block now gets its own
+          full-width row with nothing competing for space, so it renders
+          exactly as clean as it did before the toggle was ever moved here). */}
+      {onToggleCollapse ? (
+        <div className={cn("relative flex pt-5", collapsed ? "justify-center px-3" : "justify-end px-5")}>
           <button
             type="button"
             onClick={onToggleCollapse}
@@ -294,7 +289,16 @@ function SidebarContent({
               <PanelLeftClose className="h-4 w-4" aria-hidden />
             )}
           </button>
-        ) : null}
+        </div>
+      ) : null}
+      <div
+        className={cn(
+          "relative pb-6",
+          onToggleCollapse ? "pt-4" : "pt-6",
+          collapsed ? "flex justify-center px-3" : "px-5",
+        )}
+      >
+        {collapsed ? <LogoMark className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
       </div>
 
       <div className={cn("relative", collapsed ? "px-3" : "px-5")}>
@@ -524,8 +528,22 @@ export function RoleShell({
       >
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-canvas-glow" />
 
-        {/* Desktop context bar */}
-        <div className="relative z-10 hidden items-center justify-between gap-4 px-8 pt-7 lg:flex">
+        {/* Desktop context bar. z-20, deliberately HIGHER than <main>'s z-10
+            below (19 Aug 2026, Shailesh: the profile dropdown "underlaps"
+            and page text bleeds through it, and its Upload Photo button did
+            nothing when clicked). Root cause: this bar and <main> are
+            sibling elements with position:relative, and they were BOTH
+            z-10 -- equal z-index siblings paint in DOM order, so <main>
+            (which comes second) painted OVER the dropdown's absolutely-
+            positioned panel wherever the two visually overlapped, even
+            though the dropdown itself is z-50. Browsers hit-test clicks in
+            the same top-to-bottom paint order, so those overlapped buttons
+            (Upload Photo included) were never actually receiving the click
+            -- <main>'s content was silently eating it. A stacking context
+            can only ever be out-ranked by ITS OWN ancestor's z-index, so
+            raising this wrapper's z-index is the fix; z-50 on the dropdown
+            panel further down was always irrelevant to the actual bug. */}
+        <div className="relative z-20 hidden items-center justify-between gap-4 px-8 pt-7 lg:flex">
           <span className="flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3.5 py-1.5 text-xs font-medium text-content-muted backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-saffron-500" aria-hidden />
             {ROLE_TAGLINE[role]}
