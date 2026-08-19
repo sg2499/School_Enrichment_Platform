@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import { updateStoredUser } from "@/lib/auth";
+import { compressImageForUpload } from "@/lib/imageCompression";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn, initialsFromName } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -104,9 +105,28 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
     if (!file) return;
     setPhotoError(null);
     setUploadingPhoto(true);
+
+    // Resize/re-encode in the browser first (19 Aug 2026, Shailesh: "we
+    // never know what image the user is gonna upload so we need to keep
+    // that in mind always") -- a raw phone-camera photo is routinely
+    // 3-10MB, and the backend's limit used to reject almost every real
+    // upload with a message that claimed compression had already happened
+    // when none ever did. See lib/imageCompression.ts for the full story.
+    // This can fail on its own (an unsupported format, a corrupted file) --
+    // caught separately from the upload itself so that error surfaces
+    // clearly instead of as a confusing size/format rejection from the API.
+    let compressed: File;
+    try {
+      compressed = await compressImageForUpload(file);
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "That file isn't a supported image.");
+      setUploadingPhoto(false);
+      return;
+    }
+
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressed);
       // No explicit Content-Type header -- axios/the browser need to set
       // this themselves so it includes the multipart boundary that comes
       // from the FormData object; hardcoding "multipart/form-data" here
@@ -225,7 +245,13 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        // Any image, not just the three formats the backend ultimately
+        // stores -- compressImageForUpload() re-encodes whatever it can
+        // decode to JPEG in the browser first, so this doesn't need to be
+        // narrowed to what the backend accepts (19 Aug 2026: "we never know
+        // what image the user is gonna upload so we need to keep that in
+        // mind always").
+        accept="image/*"
         className="hidden"
         onChange={handlePhotoChange}
       />
