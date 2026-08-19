@@ -128,10 +128,10 @@ function BackupCodesPanel({ codes, onDone }: { codes: string[]; onDone: () => vo
 
       <div className="flex flex-wrap gap-3">
         <Button type="button" variant="secondary" size="sm" onClick={handleCopy} leadingIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}>
-          {copied ? "Copied" : "Copy codes"}
+          {copied ? "Copied" : "Copy Codes"}
         </Button>
         <Button type="button" variant="secondary" size="sm" onClick={handleDownload} leadingIcon={<Download className="h-4 w-4" />}>
-          Download as file
+          Download as File
         </Button>
       </div>
 
@@ -370,17 +370,17 @@ function SecuritySettingsPageInner() {
     <RoleShell role={roleForShell} user={user}>
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Account security"
+          eyebrow="Account Security"
           title="Security Settings"
           description="Two-factor authentication, active sessions, and your password -- all in one place."
           meta={
             twoFactorEnabled ? (
               <Badge tone="success" dot icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-                Two-factor enabled
+                Two-Factor Enabled
               </Badge>
             ) : (
               <Badge tone="warning" dot pulse icon={<ShieldAlert className="h-3.5 w-3.5" />}>
-                Two-factor required
+                Two-Factor Required
               </Badge>
             )
           }
@@ -408,7 +408,7 @@ function SecuritySettingsPageInner() {
                 <ShieldCheck className="h-5 w-5" aria-hidden />
               </CardIcon>
               <div>
-                <CardTitle>Two-factor authentication</CardTitle>
+                <CardTitle>Two-Factor Authentication</CardTitle>
                 <CardDescription className="mt-0.5">
                   {twoFactorEnabled
                     ? "Your account is protected by an authenticator app."
@@ -435,7 +435,7 @@ function SecuritySettingsPageInner() {
                     leadingIcon={<RefreshCw className="h-4 w-4" />}
                     onClick={() => setRegenOpen(true)}
                   >
-                    Regenerate backup codes
+                    Regenerate Backup Codes
                   </Button>
                 ) : null}
 
@@ -464,7 +464,7 @@ function SecuritySettingsPageInner() {
                     ) : null}
                     <div className="flex flex-wrap gap-3">
                       <Button type="submit" loading={regenerating} loadingLabel="Generating">
-                        Generate new codes
+                        Generate New Codes
                       </Button>
                       <Button type="button" variant="ghost" onClick={() => setRegenOpen(false)}>
                         Cancel
@@ -504,7 +504,7 @@ function SecuritySettingsPageInner() {
                       loadingLabel="Preparing setup"
                       onClick={beginSetup}
                     >
-                      Set up two-factor authentication
+                      Set Up Two-Factor Authentication
                     </Button>
                   </>
                 ) : null}
@@ -577,7 +577,7 @@ function SecuritySettingsPageInner() {
                   <LogOut className="h-5 w-5" aria-hidden />
                 </CardIcon>
                 <div>
-                  <CardTitle>Sessions &amp; devices</CardTitle>
+                  <CardTitle>Sessions &amp; Devices</CardTitle>
                   <CardDescription className="mt-0.5">
                     Where you&rsquo;re currently signed in, and a way to end any one of them.
                   </CardDescription>
@@ -613,7 +613,7 @@ function SecuritySettingsPageInner() {
                             {deviceLabel(session.userAgent)}
                             {session.isCurrent ? (
                               <Badge tone="success" className="ml-2 align-middle">
-                                This device
+                                This Device
                               </Badge>
                             ) : null}
                           </p>
@@ -632,7 +632,7 @@ function SecuritySettingsPageInner() {
                         loadingLabel="Ending"
                         onClick={() => handleRevokeSession(session.id)}
                       >
-                        {session.isCurrent ? "Sign out" : "End session"}
+                        {session.isCurrent ? "Sign Out" : "End Session"}
                       </Button>
                     </li>
                   ))}
@@ -655,7 +655,7 @@ function SecuritySettingsPageInner() {
                   loadingLabel="Signing out everywhere"
                   onClick={handleSignOutEverywhere}
                 >
-                  Sign out of all devices
+                  Sign Out of All Devices
                 </Button>
               </div>
             </CardBody>
@@ -671,7 +671,7 @@ function SecuritySettingsPageInner() {
                   <FileJson className="h-5 w-5" aria-hidden />
                 </CardIcon>
                 <div>
-                  <CardTitle>Your data</CardTitle>
+                  <CardTitle>Your Data</CardTitle>
                   <CardDescription className="mt-0.5">
                     Download a copy of everything this platform holds about your account.
                   </CardDescription>
@@ -695,7 +695,7 @@ function SecuritySettingsPageInner() {
                 loadingLabel="Preparing your data"
                 onClick={handleExportData}
               >
-                Download my data
+                Download My Data
               </Button>
             </CardBody>
           </Card>
@@ -709,13 +709,13 @@ function SecuritySettingsPageInner() {
                 <CardIcon tone="coral">
                   <KeyRound className="h-5 w-5" aria-hidden />
                 </CardIcon>
-                <CardTitle>Change password</CardTitle>
+                <CardTitle>Change Password</CardTitle>
               </div>
               <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
                 <TextField
                   id="currentPassword"
                   name="currentPassword"
-                  label="Current password"
+                  label="Current Password"
                   type="password"
                   autoComplete="current-password"
                   revealable
@@ -726,7 +726,7 @@ function SecuritySettingsPageInner() {
                 <TextField
                   id="newPassword"
                   name="newPassword"
-                  label="New password"
+                  label="New Password"
                   type="password"
                   autoComplete="new-password"
                   revealable
@@ -738,7 +738,7 @@ function SecuritySettingsPageInner() {
                 <TextField
                   id="confirmPassword"
                   name="confirmPassword"
-                  label="Confirm new password"
+                  label="Confirm New Password"
                   type="password"
                   autoComplete="new-password"
                   revealable
@@ -761,7 +761,7 @@ function SecuritySettingsPageInner() {
                 ) : null}
 
                 <Button type="submit" loading={changingPassword} loadingLabel="Updating">
-                  Update password
+                  Update Password
                 </Button>
               </form>
             </CardBody>

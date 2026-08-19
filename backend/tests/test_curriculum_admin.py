@@ -612,7 +612,6 @@ def test_admin_can_map_published_chapter_into_own_school(client, db_session):
             "boardCourseId": board_course.id,
             "chapterId": chapter.id,
             "className": "5",
-            "section": "A",
             "sequence": 1,
         },
         headers=csrf,
@@ -620,6 +619,7 @@ def test_admin_can_map_published_chapter_into_own_school(client, db_session):
     assert create_response.status_code == 200
     body = create_response.json()
     assert body["schoolId"] == school.id
+    assert "section" not in body
     mapping_id = body["id"]
 
     list_response = client.get("/api/curriculum-admin/school-curriculum-maps")
@@ -628,11 +628,21 @@ def test_admin_can_map_published_chapter_into_own_school(client, db_session):
 
     dupe_response = client.post(
         "/api/curriculum-admin/school-curriculum-maps",
-        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5", "section": "A"},
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5"},
         headers=csrf,
     )
     assert dupe_response.status_code == 409
     assert dupe_response.json()["detail"]["code"] == "ALREADY_MAPPED"
+
+    reschedule_response = client.patch(
+        f"/api/curriculum-admin/school-curriculum-maps/{mapping_id}",
+        json={"plannedStartDate": "2026-09-01", "plannedEndDate": "2026-09-20"},
+        headers=csrf,
+    )
+    assert reschedule_response.status_code == 200
+    rescheduled = reschedule_response.json()
+    assert rescheduled["plannedStartDate"] == "2026-09-01"
+    assert rescheduled["plannedEndDate"] == "2026-09-20"
 
     delete_response = client.delete(f"/api/curriculum-admin/school-curriculum-maps/{mapping_id}", headers=csrf)
     assert delete_response.status_code == 200
@@ -652,7 +662,6 @@ def test_admin_cannot_map_curriculum_for_another_school(client, db_session):
             "boardCourseId": board_course.id,
             "chapterId": chapter.id,
             "className": "5",
-            "section": "B",
         },
         headers=csrf,
     )
@@ -666,7 +675,7 @@ def test_cannot_map_unpublished_chapter(client, db_session):
 
     response = client.post(
         "/api/curriculum-admin/school-curriculum-maps",
-        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5", "section": "A"},
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5"},
         headers=csrf,
     )
     assert response.status_code == 409
@@ -688,7 +697,6 @@ def test_super_admin_can_map_for_any_school_with_explicit_school_id(client, db_s
             "boardCourseId": board_course.id,
             "chapterId": chapter.id,
             "className": "5",
-            "section": "A",
         },
         headers=csrf,
     )
@@ -703,10 +711,122 @@ def test_super_admin_mapping_without_school_id_is_rejected(client, db_session):
 
     response = client.post(
         "/api/curriculum-admin/school-curriculum-maps",
-        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5", "section": "A"},
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5"},
         headers=csrf,
     )
     assert response.status_code == 422
+
+
+def test_admin_can_reschedule_mapping_without_deleting_it(client, db_session):
+    """The actual fix for "schedules slip because of holidays, elections,
+    festivals, ..." (19 Aug 2026) -- a PATCH updates dates/teacher in place
+    instead of forcing a delete-and-recreate."""
+    chapter, board_course = _make_chapter(db_session, "map06", status="PUBLISHED")
+    _make_school_admin(db_session, "admin-map06@example.com", "Map Test School Six")
+    csrf = _login(client, "admin-map06@example.com")
+
+    create_response = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={
+            "boardCourseId": board_course.id,
+            "chapterId": chapter.id,
+            "className": "6",
+            "plannedStartDate": "2026-06-01",
+            "plannedEndDate": "2026-06-15",
+        },
+        headers=csrf,
+    )
+    assert create_response.status_code == 200
+    mapping_id = create_response.json()["id"]
+
+    # Partial patch -- only plannedEndDate changes (e.g. exam week pushed the
+    # end date out); everything else is left untouched.
+    patch_response = client.patch(
+        f"/api/curriculum-admin/school-curriculum-maps/{mapping_id}",
+        json={"plannedEndDate": "2026-06-25"},
+        headers=csrf,
+    )
+    assert patch_response.status_code == 200
+    body = patch_response.json()
+    assert body["plannedStartDate"] == "2026-06-01"
+    assert body["plannedEndDate"] == "2026-06-25"
+
+    # The mapping still exists as the same row (id unchanged), not recreated.
+    list_response = client.get("/api/curriculum-admin/school-curriculum-maps")
+    ids = [m["id"] for m in list_response.json()["schoolCurriculumMaps"]]
+    assert ids.count(mapping_id) == 1
+
+
+def test_admin_cannot_reschedule_mapping_for_another_school(client, db_session):
+    chapter, board_course = _make_chapter(db_session, "map07", status="PUBLISHED")
+    _make_school_admin(db_session, "admin-map07@example.com", "Map Test School Seven")
+    csrf_a = _login(client, "admin-map07@example.com")
+    create_response = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "7"},
+        headers=csrf_a,
+    )
+    mapping_id = create_response.json()["id"]
+
+    _make_school_admin(db_session, "admin-map07-other@example.com", "Map Test School Eight")
+    csrf_b = _login(client, "admin-map07-other@example.com")
+    response = client.patch(
+        f"/api/curriculum-admin/school-curriculum-maps/{mapping_id}",
+        json={"plannedEndDate": "2026-07-01"},
+        headers=csrf_b,
+    )
+    assert response.status_code == 403
+
+
+def test_list_boards_and_disciplines(client, db_session):
+    """Powers the Board / Subject cascading filter dropdowns (19 Aug 2026)."""
+    _make_chapter(db_session, "lookup01", status="PUBLISHED")  # ensures CBSE + Mathematics exist
+    _make_school_admin(db_session, "admin-lookup01@example.com", "Lookup Test School")
+    csrf = _login(client, "admin-lookup01@example.com")
+
+    boards_response = client.get("/api/curriculum-admin/boards", headers=csrf)
+    assert boards_response.status_code == 200
+    boards = boards_response.json()["boards"]
+    assert any(b["code"] == "CBSE" for b in boards)
+
+    disciplines_response = client.get("/api/curriculum-admin/disciplines", headers=csrf)
+    assert disciplines_response.status_code == 200
+    disciplines = disciplines_response.json()["disciplines"]
+    assert any(d["code"] == "MATHEMATICS" for d in disciplines)
+
+
+def test_chapters_and_board_courses_filter_by_board_and_class(client, db_session):
+    chapter, board_course = _make_chapter(db_session, "lookup02", status="PUBLISHED")
+    _make_super_admin(db_session, "sa-lookup02@example.com")
+    csrf = _login(client, "sa-lookup02@example.com")
+
+    board = db_session.query(Board).filter(Board.code == "CBSE").first()
+    class_level = db_session.query(ClassLevel).filter(ClassLevel.code == "5").first()
+
+    chapters_response = client.get(
+        "/api/curriculum-admin/chapters",
+        params={"board_id": board.id, "class_level_id": class_level.id},
+        headers=csrf,
+    )
+    assert chapters_response.status_code == 200
+    assert any(c["id"] == chapter.id for c in chapters_response.json()["chapters"])
+
+    # A different (nonexistent) class filters it out.
+    empty_response = client.get(
+        "/api/curriculum-admin/chapters",
+        params={"board_id": board.id, "class_level_id": "not-a-real-class-level"},
+        headers=csrf,
+    )
+    assert empty_response.status_code == 200
+    assert empty_response.json()["chapters"] == []
+
+    board_courses_response = client.get(
+        "/api/curriculum-admin/board-courses",
+        params={"board_id": board.id, "class_level_id": class_level.id},
+        headers=csrf,
+    )
+    assert board_courses_response.status_code == 200
+    assert any(bc["id"] == board_course.id for bc in board_courses_response.json()["boardCourses"])
 
 
 # --- Chapter identity scoping (board_course + discipline + curriculum
