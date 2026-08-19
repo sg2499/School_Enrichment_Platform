@@ -33,6 +33,7 @@ from app.core.rate_limit import limiter
 from app.core.security import hash_password, strong_password_issue
 from app.database import get_db
 from app.models import School, SchoolAdmin, User
+from app.services.audit_service import log_audit_event
 
 router = APIRouter(prefix="/api/platform", tags=["platform"])
 
@@ -91,6 +92,13 @@ def provision_school(request: Request, payload: SchoolProvisionRequest, db: Sess
     db.flush()  # populate admin_user.id
 
     db.add(SchoolAdmin(user_id=admin_user.id, school_id=school.id))
+    log_audit_event(
+        db,
+        "platform.school_provisioned",
+        user_id=admin_user.id,
+        request=request,
+        details={"schoolId": school.id, "schoolName": school.name, "adminEmail": admin_user.email},
+    )
     db.commit()
 
     return {

@@ -22,6 +22,7 @@ through a second client when a test needs both a SUPER_ADMIN action
 the publish endpoint itself already gets full coverage from the
 SUPER_ADMIN-only tests below.
 """
+import pyotp
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
@@ -44,6 +45,15 @@ from app.models import (
 )
 
 PASSWORD = "Passw0rd1"
+
+# Fixed TOTP secret for every ADMIN/SUPER_ADMIN test fixture below (2026-08-19
+# security hardening: 2FA is now mandatory for both roles, see
+# dependencies.py's MANDATORY_2FA_ROLES). A shared, known secret -- rather
+# than each test calling the real /2fa/setup endpoint -- keeps every existing
+# test's login a one-liner via _login()'s built-in challenge handling; the
+# setup/enable flow itself gets its own dedicated coverage in
+# tests/test_mandatory_2fa.py.
+TEST_TOTP_SECRET = pyotp.random_base32()
 
 
 def _get_or_create_board_course(db):
@@ -143,7 +153,20 @@ def _add_lesson_with_question(db, chapter, suffix: str, lesson_status="DRAFT", q
 
 
 def _make_super_admin(db, email: str) -> User:
-    user = User(full_name="Platform Super Admin", email=email, password_hash=hash_password(PASSWORD), role="SUPER_ADMIN")
+    # totp_enabled=True: 2FA is mandatory for ADMIN/SUPER_ADMIN as of the
+    # 2026-08-19 security hardening (dependencies.py's MANDATORY_2FA_ROLES
+    # check) -- without this, every curriculum-admin test below would be
+    # blocked with a 403 TWO_FACTOR_SETUP_REQUIRED before its role check
+    # ever ran. These tests exercise curriculum-admin behaviour, not 2FA
+    # itself, so the fixture just pre-enrolls the account.
+    user = User(
+        full_name="Platform Super Admin",
+        email=email,
+        password_hash=hash_password(PASSWORD),
+        role="SUPER_ADMIN",
+        totp_enabled=True,
+        totp_secret=TEST_TOTP_SECRET,
+    )
     db.add(user)
     db.commit()
     return user
@@ -153,7 +176,14 @@ def _make_school_admin(db, email: str, school_name: str):
     school = School(name=school_name, board="CBSE", city="Bengaluru")
     db.add(school)
     db.flush()
-    user = User(full_name="School Admin", email=email, password_hash=hash_password(PASSWORD), role="ADMIN")
+    user = User(
+        full_name="School Admin",
+        email=email,
+        password_hash=hash_password(PASSWORD),
+        role="ADMIN",
+        totp_enabled=True,
+        totp_secret=TEST_TOTP_SECRET,
+    )
     db.add(user)
     db.flush()
     db.add(SchoolAdmin(user_id=user.id, school_id=school.id))
@@ -167,9 +197,22 @@ def _login(client, email: str) -> dict:
     it for any cookie-authenticated POST/PUT/PATCH/DELETE -- the double-
     submit CSRF check (see cookies.py) -- so a bare client.post/patch/delete
     after login gets rejected with a CSRF 403 before role checks ever run.
+
+    Every ADMIN/SUPER_ADMIN fixture in this file has 2FA pre-enrolled with
+    TEST_TOTP_SECRET (2026-08-19 security hardening), so /auth/login now
+    returns a challenge instead of a session for them -- this transparently
+    completes that second step with a freshly computed TOTP code so every
+    existing call site here keeps working as a one-line login.
     """
     response = client.post("/api/auth/login", json={"identifier": email, "password": PASSWORD})
     assert response.status_code == 200
+    body = response.json()
+    if body.get("twoFactorRequired"):
+        verify_response = client.post(
+            "/api/auth/2fa/verify-login",
+            json={"challengeToken": body["challengeToken"], "code": pyotp.TOTP(TEST_TOTP_SECRET).now()},
+        )
+        assert verify_response.status_code == 200
     csrf_token = client.cookies.get("se_csrf")
     assert csrf_token
     return {"x-csrf-token": csrf_token}

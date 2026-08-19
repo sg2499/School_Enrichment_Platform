@@ -13,4 +13,4 @@ from app.models.curriculum import (  # noqa: F401
     SubjectGroup,
     Term,
 )
-from app.models.models import AuditLog, School, SchoolAdmin, Student, Teacher, User  # noqa: F401
+from app.models.models import AuditLog, School, SchoolAdmin, Student, Teacher, User, UserSession  # noqa: F401

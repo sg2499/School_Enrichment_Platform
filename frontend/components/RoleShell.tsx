@@ -20,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  ShieldCheck,
   Sparkles,
   Target,
   TrendingUp,
@@ -131,6 +132,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Operations",
       items: [
         { label: "Reports", icon: BarChart3, soon: true },
+        { label: "Security", icon: ShieldCheck, href: "/admin/security" },
         { label: "Settings", icon: Settings, soon: true },
       ],
     },
@@ -156,6 +158,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Operations",
       items: [
         { label: "Reports", icon: BarChart3, soon: true },
+        { label: "Security", icon: ShieldCheck, href: "/admin/security" },
         { label: "Settings", icon: Settings, soon: true },
       ],
     },

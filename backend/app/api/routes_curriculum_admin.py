@@ -40,13 +40,14 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
 from app.core.errors import api_error
 from app.database import get_db
 from app.dependencies import require_roles
 from app.models import Board, BoardCourse, Chapter, ClassLevel, ConceptLesson, CurriculumVersion, Question, School, SchoolAdmin, SchoolCurriculumMap, User
+from app.services.audit_service import log_audit_event
 from app.services.question_quality_service import run_quality_checks
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
@@ -276,8 +277,14 @@ def get_chapter(
     return result
 
 
-@router.patch("/chapters/{chapter_id}/status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def update_chapter_status(chapter_id: str, payload: StatusChangeRequest, db: Session = Depends(get_db)):
+@router.patch("/chapters/{chapter_id}/status")
+def update_chapter_status(
+    chapter_id: str,
+    payload: StatusChangeRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     chapter = db.get(Chapter, chapter_id)
     if not chapter:
         api_error(404, "NOT_FOUND", "Chapter not found.")
@@ -304,7 +311,15 @@ def update_chapter_status(chapter_id: str, payload: StatusChangeRequest, db: Ses
                 {"conceptLessonsMissingQuestions": lessons_missing_questions},
             )
 
+    previous_status = chapter.status
     chapter.status = requested_status
+    log_audit_event(
+        db,
+        "curriculum.chapter.status_changed",
+        user_id=user.id,
+        request=request,
+        details={"chapterId": chapter.id, "chapterCode": chapter.code, "from": previous_status, "to": requested_status},
+    )
     db.commit()
     db.refresh(chapter)
     lesson_count, question_count = _chapter_counts(db, chapter.id)
@@ -316,8 +331,13 @@ class BulkChapterStatusRequest(BaseModel):
     status: str = "REVIEW"
 
 
-@router.post("/chapters/bulk-status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def bulk_update_chapter_status(payload: BulkChapterStatusRequest, db: Session = Depends(get_db)):
+@router.post("/chapters/bulk-status")
+def bulk_update_chapter_status(
+    payload: BulkChapterStatusRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     """Bulk "Send All to Review" (Shailesh, 18 Aug 2026: moving 15 chapters
     into review one click at a time is needless friction). Deliberately
     only wired up for DRAFT -> REVIEW in practice -- REVIEW isn't visible to
@@ -342,6 +362,13 @@ def bulk_update_chapter_status(payload: BulkChapterStatusRequest, db: Session = 
             updated.append(chapter.code)
         else:
             skipped.append(chapter.code)
+    log_audit_event(
+        db,
+        "curriculum.chapter.bulk_status_changed",
+        user_id=user.id,
+        request=request,
+        details={"to": requested_status, "updatedChapters": updated, "skippedChapters": skipped},
+    )
     db.commit()
     return {"updatedChapters": updated, "skippedChapters": skipped}
 
@@ -349,8 +376,14 @@ def bulk_update_chapter_status(payload: BulkChapterStatusRequest, db: Session = 
 # --- ConceptLesson -------------------------------------------------------
 
 
-@router.patch("/concept-lessons/{concept_lesson_id}/status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def update_concept_lesson_status(concept_lesson_id: str, payload: StatusChangeRequest, db: Session = Depends(get_db)):
+@router.patch("/concept-lessons/{concept_lesson_id}/status")
+def update_concept_lesson_status(
+    concept_lesson_id: str,
+    payload: StatusChangeRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
         api_error(404, "NOT_FOUND", "Concept lesson not found.")
@@ -358,7 +391,15 @@ def update_concept_lesson_status(concept_lesson_id: str, payload: StatusChangeRe
     requested_status = payload.status.strip().upper()
     _apply_transition(lesson.status, requested_status, _CONCEPT_LESSON_TRANSITIONS, "Concept lesson")
 
+    previous_status = lesson.status
     lesson.status = requested_status
+    log_audit_event(
+        db,
+        "curriculum.concept_lesson.status_changed",
+        user_id=user.id,
+        request=request,
+        details={"conceptLessonId": lesson.id, "code": lesson.code, "from": previous_status, "to": requested_status},
+    )
     db.commit()
     db.refresh(lesson)
     return {"id": lesson.id, "code": lesson.code, "status": lesson.status}
@@ -464,8 +505,14 @@ def recheck_lesson_question_quality(concept_lesson_id: str, db: Session = Depend
     return {"questions": [_question_detail(q) for q in questions]}
 
 
-@router.patch("/questions/{question_id}/status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def update_question_status(question_id: str, payload: StatusChangeRequest, db: Session = Depends(get_db)):
+@router.patch("/questions/{question_id}/status")
+def update_question_status(
+    question_id: str,
+    payload: StatusChangeRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     question = db.get(Question, question_id)
     if not question:
         api_error(404, "NOT_FOUND", "Question not found.")
@@ -473,7 +520,15 @@ def update_question_status(question_id: str, payload: StatusChangeRequest, db: S
     requested_status = payload.status.strip().upper()
     _apply_transition(question.status, requested_status, _QUESTION_TRANSITIONS, "Question")
 
+    previous_status = question.status
     question.status = requested_status
+    log_audit_event(
+        db,
+        "curriculum.question.status_changed",
+        user_id=user.id,
+        request=request,
+        details={"questionId": question.id, "code": question.code, "from": previous_status, "to": requested_status},
+    )
     db.commit()
     db.refresh(question)
     return {"id": question.id, "code": question.code, "status": question.status}
@@ -483,7 +538,15 @@ class BulkApproveRequest(BaseModel):
     includeUnverified: bool = False
 
 
-def _bulk_approve_questions(db: Session, questions: list[Question], include_unverified: bool) -> dict:
+def _bulk_approve_questions(
+    db: Session,
+    questions: list[Question],
+    include_unverified: bool,
+    *,
+    user: User,
+    request: Request,
+    scope: dict,
+) -> dict:
     """Advances every question whose quality check allows it straight from
     its current status to APPROVED (DRAFT and SME_REVIEW both walk the
     normal _QUESTION_TRANSITIONS chain, just without a human clicking each
@@ -517,6 +580,19 @@ def _bulk_approve_questions(db: Session, questions: list[Question], include_unve
         if question.status == "SME_REVIEW":
             question.status = "APPROVED"
             approved += 1
+    log_audit_event(
+        db,
+        "curriculum.question.bulk_approved",
+        user_id=user.id,
+        request=request,
+        details={
+            **scope,
+            "approvedCount": approved,
+            "skippedFlaggedCount": skipped_flagged,
+            "skippedUnverifiedCount": skipped_unverified,
+            "skippedAlreadyDoneCount": skipped_already_done,
+        },
+    )
     db.commit()
     return {
         "approvedCount": approved,
@@ -526,17 +602,33 @@ def _bulk_approve_questions(db: Session, questions: list[Question], include_unve
     }
 
 
-@router.post("/concept-lessons/{concept_lesson_id}/questions/bulk-approve", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def bulk_approve_lesson_questions(concept_lesson_id: str, payload: BulkApproveRequest, db: Session = Depends(get_db)):
+@router.post("/concept-lessons/{concept_lesson_id}/questions/bulk-approve")
+def bulk_approve_lesson_questions(
+    concept_lesson_id: str,
+    payload: BulkApproveRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
         api_error(404, "NOT_FOUND", "Concept lesson not found.")
     questions = _questions_for_lesson(db, concept_lesson_id)
-    return _bulk_approve_questions(db, questions, payload.includeUnverified)
+    return _bulk_approve_questions(
+        db, questions, payload.includeUnverified,
+        user=user, request=request,
+        scope={"conceptLessonId": lesson.id, "conceptLessonCode": lesson.code},
+    )
 
 
-@router.post("/chapters/{chapter_id}/questions/bulk-approve", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def bulk_approve_chapter_questions(chapter_id: str, payload: BulkApproveRequest, db: Session = Depends(get_db)):
+@router.post("/chapters/{chapter_id}/questions/bulk-approve")
+def bulk_approve_chapter_questions(
+    chapter_id: str,
+    payload: BulkApproveRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     """Same as the per-lesson version, but across every lesson in the
     chapter in one call -- the real answer to "hundreds of questions per
     chapter, reviewing one at a time isn't feasible" (Shailesh, 18 Aug
@@ -551,7 +643,11 @@ def bulk_approve_chapter_questions(chapter_id: str, payload: BulkApproveRequest,
         .order_by(Question.code)
         .all()
     )
-    return _bulk_approve_questions(db, questions, payload.includeUnverified)
+    return _bulk_approve_questions(
+        db, questions, payload.includeUnverified,
+        user=user, request=request,
+        scope={"chapterId": chapter.id, "chapterCode": chapter.code},
+    )
 
 
 # --- CurriculumVersion (year/edition -- SUPER_ADMIN manages these) --------
@@ -596,8 +692,13 @@ def list_curriculum_versions(board_id: str | None = None, db: Session = Depends(
     return {"curriculumVersions": [_curriculum_version_summary(v) for v in versions]}
 
 
-@router.post("/curriculum-versions", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def create_curriculum_version(payload: CurriculumVersionRequest, db: Session = Depends(get_db)):
+@router.post("/curriculum-versions")
+def create_curriculum_version(
+    payload: CurriculumVersionRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     board = db.get(Board, payload.boardId)
     if not board:
         api_error(404, "NOT_FOUND", "Board not found.")
@@ -620,20 +721,41 @@ def create_curriculum_version(payload: CurriculumVersionRequest, db: Session = D
         effective_to=payload.effectiveTo,
     )
     db.add(version)
+    log_audit_event(
+        db,
+        "curriculum.version.created",
+        user_id=user.id,
+        request=request,
+        details={"boardId": board.id, "code": version.code, "label": version.label, "status": version.status},
+    )
     db.commit()
     db.refresh(version)
     return _curriculum_version_summary(version)
 
 
-@router.patch("/curriculum-versions/{version_id}/status", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def update_curriculum_version_status(version_id: str, payload: StatusChangeRequest, db: Session = Depends(get_db)):
+@router.patch("/curriculum-versions/{version_id}/status")
+def update_curriculum_version_status(
+    version_id: str,
+    payload: StatusChangeRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     version = db.get(CurriculumVersion, version_id)
     if not version:
         api_error(404, "NOT_FOUND", "Curriculum version not found.")
 
     requested_status = payload.status.strip().upper()
     _apply_transition(version.status, requested_status, _CURRICULUM_VERSION_TRANSITIONS, "Curriculum version")
+    previous_status = version.status
     version.status = requested_status
+    log_audit_event(
+        db,
+        "curriculum.version.status_changed",
+        user_id=user.id,
+        request=request,
+        details={"versionId": version.id, "code": version.code, "from": previous_status, "to": requested_status},
+    )
     db.commit()
     db.refresh(version)
     return _curriculum_version_summary(version)
@@ -698,6 +820,7 @@ def list_schools(db: Session = Depends(get_db)):
 @router.post("/school-curriculum-maps")
 def create_school_curriculum_map(
     payload: SchoolCurriculumMapRequest,
+    request: Request,
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
@@ -746,6 +869,13 @@ def create_school_curriculum_map(
         sequence=payload.sequence,
     )
     db.add(mapping)
+    log_audit_event(
+        db,
+        "curriculum.school_map.created",
+        user_id=user.id,
+        request=request,
+        details={"schoolId": school_id, "chapterId": chapter.id, "className": mapping.class_name, "section": mapping.section},
+    )
     db.commit()
     db.refresh(mapping)
     return _map_summary(mapping)
@@ -775,6 +905,7 @@ def list_school_curriculum_maps(
 @router.delete("/school-curriculum-maps/{map_id}")
 def delete_school_curriculum_map(
     map_id: str,
+    request: Request,
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
@@ -784,6 +915,13 @@ def delete_school_curriculum_map(
     # Raises 403 if this isn't (or isn't within) the caller's own school --
     # see _resolve_school_id's docstring.
     _resolve_school_id(db, user, mapping.school_id)
+    log_audit_event(
+        db,
+        "curriculum.school_map.deleted",
+        user_id=user.id,
+        request=request,
+        details={"mapId": mapping.id, "schoolId": mapping.school_id, "chapterId": mapping.chapter_id},
+    )
     db.delete(mapping)
     db.commit()
     return {"deleted": True}
