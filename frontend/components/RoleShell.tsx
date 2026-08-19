@@ -518,7 +518,16 @@ export function RoleShell({
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white">
                 {initialsFromName(user?.fullName)}
               </span>
-              <span className="text-sm font-semibold text-content">{user?.fullName ?? "Signed in"}</span>
+              {/* max-w + truncate rather than relying on flex-shrink alone --
+                  this pill sits inside two more flex rows above it, so an
+                  unusually long real name (this product spans many
+                  naming conventions) could otherwise stretch the whole
+                  context bar wider than the space next to a collapsed vs.
+                  expanded sidebar actually leaves it, right at the lg
+                  breakpoint where that space is tightest. */}
+              <span className="max-w-[9rem] truncate text-sm font-semibold text-content sm:max-w-[14rem]">
+                {user?.fullName ?? "Signed in"}
+              </span>
             </span>
           </span>
         </div>
