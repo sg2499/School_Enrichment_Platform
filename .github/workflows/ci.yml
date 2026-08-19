@@ -81,7 +81,7 @@ jobs:
           } | tee ci-artifacts/repository-safety.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload repository safety evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: repository-safety-${{ github.run_id }}-${{ github.run_attempt }}
           path: ci-artifacts
@@ -120,7 +120,7 @@ jobs:
           tail -n 20 ../ci-artifacts/backend-tests.txt >> "$GITHUB_STEP_SUMMARY" || true
       - name: Upload backend evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-tests-${{ github.run_id }}-${{ github.run_attempt }}
           path: ci-artifacts/backend-tests.txt
@@ -156,7 +156,7 @@ jobs:
           tail -n 20 ../ci-artifacts/frontend-typecheck.txt >> "$GITHUB_STEP_SUMMARY" || true
       - name: Upload typecheck evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-typecheck-${{ github.run_id }}-${{ github.run_attempt }}
           path: ci-artifacts/frontend-typecheck.txt
@@ -192,7 +192,7 @@ jobs:
           tail -n 20 ../ci-artifacts/frontend-build.txt >> "$GITHUB_STEP_SUMMARY" || true
       - name: Upload frontend build evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: ci-artifacts/frontend-build.txt
@@ -262,7 +262,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload dependency-scan evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dependency-scan-${{ github.run_id }}-${{ github.run_attempt }}
           path: ci-artifacts/*dependency-audit.txt
@@ -345,7 +345,7 @@ jobs:
           echo 'No Playwright suite present yet — this job is a placeholder until one exists.' | tee ci-artifacts/frontend-e2e-tests.txt
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -355,7 +355,7 @@ jobs:
           retention-days: ${{ env.CI_ARTIFACT_RETENTION_DAYS }}
       - name: Upload e2e evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-e2e-tests-${{ github.run_id }}-${{ github.run_attempt }}
           path: ci-artifacts/frontend-e2e-tests.txt
