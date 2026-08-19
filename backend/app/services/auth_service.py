@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.errors import api_error
 from app.core.security import (
@@ -72,20 +72,42 @@ def user_login_id(user: User, student: Student | None = None, teacher: Teacher |
 
 
 def user_payload(db: Session, user: User) -> dict:
+    # Speed: joinedload(...School) folds the "what's this school called"
+    # lookup into the SAME query as the role-profile row (one round trip to
+    # Postgres instead of two sequential ones) -- shaves a full network hop
+    # off every login response. Login latency is otherwise dominated by
+    # bcrypt's deliberately-slow hash check (unavoidable, security-required)
+    # and network RTT, so trimming avoidable extra round trips like this one
+    # is where real speed is actually won at the application layer.
     student = None
     teacher = None
 
     if user.role == "STUDENT":
-        student = db.query(Student).filter(Student.user_id == user.id).first()
+        student = (
+            db.query(Student)
+            .options(joinedload(Student.school))
+            .filter(Student.user_id == user.id)
+            .first()
+        )
 
     if user.role == "TEACHER":
-        teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+        teacher = (
+            db.query(Teacher)
+            .options(joinedload(Teacher.school))
+            .filter(Teacher.user_id == user.id)
+            .first()
+        )
 
     school_admin = None
     if user.role == "ADMIN":
         # SUPER_ADMIN deliberately excluded: platform-wide, not tied to one
         # school, so it has no SchoolAdmin row to look up.
-        school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
+        school_admin = (
+            db.query(SchoolAdmin)
+            .options(joinedload(SchoolAdmin.school))
+            .filter(SchoolAdmin.user_id == user.id)
+            .first()
+        )
 
     data = {
         "id": user.id,
@@ -104,7 +126,7 @@ def user_payload(db: Session, user: User) -> dict:
         data["student"] = {
             "id": student.id,
             "schoolId": student.school_id,
-            "schoolName": _school_name(db, student.school_id),
+            "schoolName": student.school.name if student.school else None,
             "studentCode": student.student_code,
             "customId": student.custom_id,
             "photoUrl": public_profile_photo_url(user, student.photo_url),
@@ -118,7 +140,7 @@ def user_payload(db: Session, user: User) -> dict:
         data["teacher"] = {
             "id": teacher.id,
             "schoolId": teacher.school_id,
-            "schoolName": _school_name(db, teacher.school_id),
+            "schoolName": teacher.school.name if teacher.school else None,
             "teacherCode": teacher.teacher_code,
             "photoUrl": public_profile_photo_url(user, teacher.photo_url),
             "signatureUrl": teacher.signature_url,
@@ -130,7 +152,7 @@ def user_payload(db: Session, user: User) -> dict:
         data["admin"] = {
             "id": school_admin.id,
             "schoolId": school_admin.school_id,
-            "schoolName": _school_name(db, school_admin.school_id),
+            "schoolName": school_admin.school.name if school_admin.school else None,
         }
 
     return data
