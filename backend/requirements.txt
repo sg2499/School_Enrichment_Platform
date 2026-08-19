@@ -20,7 +20,7 @@ gunicorn
 slowapi
 cachetools
 
-pyotp==2.9.0
+pyotp==2.10.0
 qrcode[pil]==7.4.2
 # Pillow was already an installed transitive dependency of qrcode[pil], but
 # it's pinned explicitly here now that routes_auth.py imports it directly
