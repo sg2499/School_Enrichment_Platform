@@ -128,9 +128,15 @@ export default function AdminDashboardPage() {
   }
 
   const schoolId = user?.admin?.schoolId ?? null;
+  // The page itself is shared by both admin variants (useProtectedPage's
+  // "ADMIN" argument above just means "either kind of admin may load this
+  // page" -- see its own docstring), so the actual role shown in the
+  // sidebar has to come from the real signed-in user, not that literal
+  // string, or a super admin's tab would always display as a plain admin.
+  const roleForShell = user?.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
 
   return (
-    <RoleShell role="ADMIN" user={user}>
+    <RoleShell role={roleForShell} user={user}>
       <div className="space-y-8">
         <PageHeader
           eyebrow="School control centre"
