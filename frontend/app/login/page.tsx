@@ -331,7 +331,7 @@ export default function LoginPage() {
               return (
                 <li
                   key={pillar.title}
-                  className="group/pillar glass-panel rounded-2xl p-[clamp(0.625rem,2.4vh,1.75rem)] transition duration-300 hover:bg-white/[0.1]"
+                  className="group/pillar glass-panel min-w-0 rounded-2xl p-[clamp(0.625rem,2.4vh,1.75rem)] transition duration-300 hover:bg-white/[0.1]"
                 >
                   <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.1] text-saffron-200 ring-1 ring-inset ring-white/15 transition duration-300 group-hover/pillar:bg-saffron-400/20 group-hover/pillar:text-saffron-100 group-hover/pillar:ring-saffron-300/30">
                     <Icon className="h-4 w-4" aria-hidden />
