@@ -75,6 +75,21 @@ api.interceptors.response.use(
     if ((status === 401 || (status === 403 && code === "CSRF_VALIDATION_FAILED")) && typeof window !== "undefined") {
       clearSession();
     }
+    // Defense in depth for mandatory 2FA (backend/app/dependencies.py):
+    // useProtectedPage already redirects an unenrolled admin to the setup
+    // screen on page load, but a request made *during* that same session
+    // (e.g. a background call still in flight, or an already-open tab) can
+    // still hit this 403 first. Route it to the same place rather than
+    // surfacing a raw "Two-factor authentication must be set up" error on
+    // an unrelated screen.
+    if (
+      status === 403 &&
+      code === "TWO_FACTOR_SETUP_REQUIRED" &&
+      typeof window !== "undefined" &&
+      !window.location.pathname.startsWith("/admin/security")
+    ) {
+      window.location.href = "/admin/security?setup=required";
+    }
     return Promise.reject(error);
   }
 );

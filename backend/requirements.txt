@@ -1,12 +1,13 @@
-fastapi==0.115.6
+fastapi==0.141.1
 uvicorn[standard]==0.32.1
 sqlalchemy==2.0.36
 pydantic==2.10.3
-python-jose[cryptography]==3.4.0
+python-jose[cryptography]==3.5.0
+pyasn1==0.6.4
 passlib==1.7.4
 bcrypt==4.0.1
 python-dotenv==1.2.2
-pytest==8.3.4
+pytest==9.1.1
 httpx==0.28.1
 
 openpyxl==3.1.5
@@ -21,6 +22,12 @@ cachetools
 
 pyotp==2.9.0
 qrcode[pil]==7.4.2
+# Pillow was already an installed transitive dependency of qrcode[pil], but
+# it's pinned explicitly here now that routes_auth.py imports it directly
+# (2026-08-19 profile-photo content-sniffing) -- a transitive dependency can
+# be dropped or re-ranged by an unrelated package update, silently breaking
+# a direct import; pinning what you actually import is the correct pattern.
+pillow==12.3.0
 
 alembic
 ruff

@@ -24,10 +24,27 @@ import type { CurrentUser, UserRole } from "@/types/auth";
  * the equivalent once the REAL role is known from the server response, so
  * nothing is lost by waiting.
  */
-export function useProtectedPage(requiredRole: UserRole) {
+// ADMIN/SUPER_ADMIN accounts must have 2FA enabled before they can use
+// anything else (2026-08-19 security hardening, Shailesh: "Yes, mandatory
+// for both"). The backend enforces this on every other endpoint too (see
+// dependencies.py's MANDATORY_2FA_ROLES check) -- this redirect is the UX
+// layer on top of that, so a not-yet-enrolled admin lands on the setup
+// screen instead of a wall of 403s.
+const MANDATORY_2FA_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
+const SECURITY_SETUP_PATH = "/admin/security";
+
+export interface UseProtectedPageOptions {
+  /** The security-setup page itself passes this so an admin who hasn't
+   *  enrolled yet can actually reach the page that lets them enroll,
+   *  instead of being bounced back to itself forever. */
+  allowWithoutTwoFactor?: boolean;
+}
+
+export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPageOptions = {}) {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "redirecting">("loading");
+  const { allowWithoutTwoFactor = false } = options;
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +57,12 @@ export function useProtectedPage(requiredRole: UserRole) {
         if (normalizedRole !== requiredRole) {
           setStatus("redirecting");
           router.replace("/login");
+          return;
+        }
+        if (!allowWithoutTwoFactor && MANDATORY_2FA_ROLES.includes(data.role) && !data.twoFactorEnabled) {
+          setSession(data);
+          setStatus("redirecting");
+          router.replace(`${SECURITY_SETUP_PATH}?setup=required`);
           return;
         }
         setSession(data);
@@ -56,7 +79,7 @@ export function useProtectedPage(requiredRole: UserRole) {
     return () => {
       cancelled = true;
     };
-  }, [requiredRole, router]);
+  }, [requiredRole, router, allowWithoutTwoFactor]);
 
   return { user, status };
 }
