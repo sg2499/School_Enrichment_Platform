@@ -135,7 +135,7 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
@@ -171,7 +171,7 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
@@ -224,7 +224,7 @@ jobs:
           # ECDSA. A documented, reviewed exception, not a silent ignore --
           # any *other* vulnerability still fails this job.
           pip-audit -r requirements.txt --no-deps --ignore-vuln PYSEC-2026-1325 2>&1 | tee ../ci-artifacts/backend-dependency-audit.txt
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
@@ -309,7 +309,7 @@ jobs:
         run: |
           uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           sleep 10
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.has_e2e.outputs.present == 'true'
         with:
           node-version: '20'
