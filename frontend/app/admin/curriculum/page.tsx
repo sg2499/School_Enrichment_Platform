@@ -935,12 +935,16 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                 ))}
               </SelectField>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Stacks to one column below `sm` -- two native date inputs
+                  side by side leave under 140px each on a small phone once
+                  the page's own padding and this card's padding are
+                  subtracted, which crops the picker UI. */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <TextField label="Class" hint="e.g. 5" value={className} onChange={(e) => setClassName(e.target.value)} />
                 <TextField label="Section" hint="e.g. A" value={section} onChange={(e) => setSection(e.target.value)} />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <TextField
                   label="Planned Start"
                   type="date"
