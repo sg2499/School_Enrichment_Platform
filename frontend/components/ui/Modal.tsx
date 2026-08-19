@@ -5,13 +5,12 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ModalSize = "lg" | "xl" | "full";
+export type ModalSize = "lg" | "xl" | "full" | "fullscreen";
 
-const SIZES: Record<ModalSize, string> = {
+const SIZES: Record<Exclude<ModalSize, "fullscreen">, string> = {
   lg: "max-w-2xl",
   xl: "max-w-4xl",
-  // Near-fullscreen -- for content that needs real room to breathe (e.g.
-  // reviewing dozens of questions at once), not a cramped inline panel.
+  // Near-fullscreen -- generous margin, still visibly a floating dialog.
   full: "max-w-[min(96vw,88rem)]",
 };
 
@@ -34,6 +33,13 @@ const SIZES: Record<ModalSize, string> = {
  * RoleShell's z-40 sidebar instead of above it. A portal escapes every
  * ancestor's stacking context entirely, which is the actual fix -- raising
  * this component's z-index alone could never have solved it).
+ *
+ * size="fullscreen" (18 Aug 2026, Shailesh: the review window should feel
+ * "full screen ... professional ... world class", not just a large floating
+ * card) is a distinct mode from size="full" -- it drops the outer margin,
+ * backdrop, and rounded corners entirely and occupies the exact viewport
+ * edge-to-edge, the same as a native full-screen app window rather than a
+ * dialog sitting on top of one.
  */
 export function Modal({
   open,
@@ -70,20 +76,31 @@ export function Modal({
 
   if (!open || typeof document === "undefined") return null;
 
+  const isFullscreen = size === "fullscreen";
+
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
-      <button
-        type="button"
-        aria-label="Close dialog"
-        onClick={onClose}
-        className="absolute inset-0 bg-brand-950/55 backdrop-blur-sm animate-fade-in"
-      />
+    <div
+      className={cn(
+        "fixed inset-0 z-[100] flex",
+        isFullscreen ? "items-stretch justify-stretch" : "items-center justify-center p-3 sm:p-6",
+      )}
+    >
+      {!isFullscreen ? (
+        <button
+          type="button"
+          aria-label="Close dialog"
+          onClick={onClose}
+          className="absolute inset-0 bg-brand-950/55 backdrop-blur-sm animate-fade-in"
+        />
+      ) : null}
       <div
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-4xl border border-line bg-surface shadow-panel animate-scale-in",
-          SIZES[size],
+          "relative flex w-full flex-col overflow-hidden bg-surface animate-scale-in",
+          isFullscreen
+            ? "h-full max-h-none rounded-none border-0 shadow-none"
+            : cn("max-h-[92vh] rounded-4xl border border-line shadow-panel", SIZES[size]),
         )}
       >
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-6 py-5 sm:px-8 sm:py-6">

@@ -483,7 +483,7 @@ function ChapterStudio() {
       <Modal
         open={Boolean(selected)}
         onClose={closeChapterReview}
-        size="full"
+        size="fullscreen"
         eyebrow={selected?.code}
         title={selected?.title ?? "Chapter"}
         meta={selected ? <Badge tone={CHAPTER_STATUS_TONE[selected.status]}>{selected.status}</Badge> : null}
@@ -685,7 +685,7 @@ function ChapterStudio() {
                               ) : !lessonQuestions || lessonQuestions.length === 0 ? (
                                 <p className="text-sm text-content-subtle">No questions in this lesson yet.</p>
                               ) : (
-                                <div className="grid gap-3 xl:grid-cols-2">
+                                <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
                                   {lessonQuestions.map((question) => (
                                     <QuestionCard
                                       key={question.id}
@@ -1048,9 +1048,14 @@ export default function CurriculumStudioPage() {
   }
 
   const isPlatformAdmin = user?.role === "SUPER_ADMIN";
+  // Same reasoning as admin/dashboard/page.tsx: this page is shared by both
+  // admin variants, so RoleShell's role prop has to reflect the real
+  // signed-in user, not a literal "ADMIN" -- otherwise a super admin's tab
+  // always displays as a plain admin in the sidebar.
+  const roleForShell = isPlatformAdmin ? "SUPER_ADMIN" : "ADMIN";
 
   return (
-    <RoleShell role="ADMIN" user={user}>
+    <RoleShell role={roleForShell} user={user}>
       <div className="space-y-10">
         <PageHeader
           eyebrow="Content workflow"

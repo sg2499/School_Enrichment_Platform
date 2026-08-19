@@ -34,16 +34,25 @@ import { Lockup, LogoMark } from "@/components/brand/Logo";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
+// Title Case throughout -- this is the single source every surface in
+// RoleShell reads from (rail title, user card, mobile top bar, footer), so
+// fixing a label here fixes it everywhere at once. SUPER_ADMIN used to
+// collapse to "Admin" here, which was the real cause of a platform admin's
+// tab looking visually identical to a school admin's (18 Aug 2026,
+// Shailesh: two tabs signed into different admin variants at once still
+// "ended up as either admin or super admin, not both together" -- the
+// underlying per-tab session was actually fine, but nothing on screen ever
+// showed the difference, so it read as broken).
 const ROLE_LABEL: Record<UserRole, string> = {
   ADMIN: "Admin",
-  SUPER_ADMIN: "Admin",
+  SUPER_ADMIN: "Super Admin",
   TEACHER: "Teacher",
   STUDENT: "Student",
 };
 
 const ROLE_TAGLINE: Record<UserRole, string> = {
   ADMIN: "School control centre",
-  SUPER_ADMIN: "School control centre",
+  SUPER_ADMIN: "Platform control centre",
   TEACHER: "Teaching workspace",
   STUDENT: "Your learning space",
 };
