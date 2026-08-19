@@ -52,10 +52,10 @@ const ROLE_LABEL: Record<UserRole, string> = {
 };
 
 const ROLE_TAGLINE: Record<UserRole, string> = {
-  ADMIN: "School control centre",
-  SUPER_ADMIN: "Platform control centre",
-  TEACHER: "Teaching workspace",
-  STUDENT: "Your learning space",
+  ADMIN: "School Control Centre",
+  SUPER_ADMIN: "Platform Control Centre",
+  TEACHER: "Teaching Workspace",
+  STUDENT: "Your Learning Space",
 };
 
 type NavItem = {
@@ -80,16 +80,16 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Learn",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
-        { label: "My lessons", icon: BookOpen, soon: true },
-        { label: "Daily practice", icon: Target, soon: true },
-        { label: "Mock papers", icon: FileSpreadsheet, soon: true },
+        { label: "My Lessons", icon: BookOpen, soon: true },
+        { label: "Daily Practice", icon: Target, soon: true },
+        { label: "Mock Papers", icon: FileSpreadsheet, soon: true },
       ],
     },
     {
       section: "Track",
       items: [
-        { label: "My progress", icon: TrendingUp, soon: true },
-        { label: "Report card", icon: BarChart3, soon: true },
+        { label: "My Progress", icon: TrendingUp, soon: true },
+        { label: "Report Card", icon: BarChart3, soon: true },
       ],
     },
   ],
@@ -98,7 +98,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Teaching",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/teacher/dashboard" },
-        { label: "My classes", icon: Users, soon: true },
+        { label: "My Classes", icon: Users, soon: true },
         { label: "Assignments", icon: ClipboardList, soon: true },
         { label: "Marking", icon: ClipboardCheck, soon: true },
       ],
@@ -106,8 +106,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Insight",
       items: [
-        { label: "Class analytics", icon: BarChart3, soon: true },
-        { label: "Curriculum map", icon: Compass, soon: true },
+        { label: "Class Analytics", icon: BarChart3, soon: true },
+        { label: "Curriculum Map", icon: Compass, soon: true },
       ],
     },
   ],
@@ -117,15 +117,15 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
         { label: "People", icon: Users, soon: true },
-        { label: "Classes & sections", icon: GraduationCap, soon: true },
+        { label: "Classes & Sections", icon: GraduationCap, soon: true },
       ],
     },
     {
       section: "Content",
       items: [
-        { label: "Curriculum studio", icon: Library, href: "/admin/curriculum" },
-        { label: "Question bank", icon: Database, soon: true },
-        { label: "Papers & mocks", icon: FileSpreadsheet, soon: true },
+        { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
+        { label: "Question Bank", icon: Database, soon: true },
+        { label: "Papers & Mocks", icon: FileSpreadsheet, soon: true },
       ],
     },
     {
@@ -143,15 +143,15 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
         { label: "People", icon: Users, soon: true },
-        { label: "Classes & sections", icon: GraduationCap, soon: true },
+        { label: "Classes & Sections", icon: GraduationCap, soon: true },
       ],
     },
     {
       section: "Content",
       items: [
-        { label: "Curriculum studio", icon: Library, href: "/admin/curriculum" },
-        { label: "Question bank", icon: Database, soon: true },
-        { label: "Papers & mocks", icon: FileSpreadsheet, soon: true },
+        { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
+        { label: "Question Bank", icon: Database, soon: true },
+        { label: "Papers & Mocks", icon: FileSpreadsheet, soon: true },
       ],
     },
     {
@@ -515,7 +515,7 @@ export function RoleShell({
           </span>
           <span className="flex items-center gap-3">
             <Badge tone="brand" dot pulse>
-              Session active
+              Session Active
             </Badge>
             <span className="flex items-center gap-2.5 rounded-full border border-line bg-surface/80 py-1.5 pl-1.5 pr-4 shadow-xs backdrop-blur">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white">

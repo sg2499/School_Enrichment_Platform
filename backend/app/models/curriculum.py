@@ -306,8 +306,12 @@ class SchoolCurriculumMap(Base):
     school_id = Column(String, ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
     board_course_id = Column(String, ForeignKey("board_courses.id", ondelete="RESTRICT"), nullable=False, index=True)
     chapter_id = Column(String, ForeignKey("chapters.id", ondelete="RESTRICT"), nullable=False, index=True)
-    class_name = Column(String(50), nullable=True)  # matches Student.class_name's free-text convention (Phase 1)
-    section = Column(String(50), nullable=True)
+    # class_name matches Student.class_name's free-text convention (Phase 1).
+    # section deliberately removed (19 Aug 2026, Shailesh: "n number of
+    # sections ... all will follow the same syllabus no matter what") -- a
+    # mapping is one schedule for the whole class, not one per section. See
+    # migration d8a3f6c1b2e7.
+    class_name = Column(String(50), nullable=True)
     teacher_id = Column(String, ForeignKey("teachers.id", ondelete="SET NULL"), nullable=True, index=True)
     planned_start_date = Column(String(30), nullable=True)
     planned_end_date = Column(String(30), nullable=True)
@@ -322,7 +326,7 @@ class SchoolCurriculumMap(Base):
     teacher = relationship("Teacher")
 
     __table_args__ = (
-        UniqueConstraint("school_id", "chapter_id", "class_name", "section", name="uq_school_curriculum_map_slot"),
+        UniqueConstraint("school_id", "chapter_id", "class_name", name="uq_school_curriculum_map_slot"),
     )
 
 

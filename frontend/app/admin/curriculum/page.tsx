@@ -7,19 +7,23 @@ import {
   Archive,
   BookMarked,
   CalendarRange,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Filter,
   HelpCircle,
   Layers,
   ListChecks,
   Map as MapIcon,
+  Pencil,
   RotateCcw,
   Send,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
@@ -34,11 +38,13 @@ import { SelectField, TextField } from "@/components/ui/Field";
 import { api, apiErrorMessage } from "@/lib/api";
 import type {
   BoardCourseOption,
+  BoardOption,
   BulkApproveResult,
   ChapterDetail,
   ChapterStatus,
   ChapterSummary,
   ConceptLessonStatus,
+  DisciplineOption,
   QualityStatus,
   QuestionDetail,
   QuestionStatus,
@@ -216,6 +222,66 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
+type ClassLevelOption = { id: string; code: string; displayName: string };
+
+/**
+ * Shared Board -> Class -> Subject filter data (19 Aug 2026, Shailesh: the
+ * chapter list and the mapping form should both filter by board/class/
+ * subject instead of showing one flat list). Boards and Disciplines (the
+ * real "Subject" concept -- see curriculum.py's module docstring) come
+ * straight from their own lookup endpoints; Class options are derived from
+ * board-courses per board since ClassLevel itself has no dedicated
+ * endpoint and is otherwise only ever seen bundled into a BoardCourse.
+ */
+function useCurriculumFilterLookups() {
+  const [boards, setBoards] = useState<BoardOption[]>([]);
+  const [disciplines, setDisciplines] = useState<DisciplineOption[]>([]);
+  const [boardCourses, setBoardCourses] = useState<BoardCourseOption[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      api.get<{ boards: BoardOption[] }>("/curriculum-admin/boards"),
+      api.get<{ disciplines: DisciplineOption[] }>("/curriculum-admin/disciplines"),
+      api.get<{ boardCourses: BoardCourseOption[] }>("/curriculum-admin/board-courses"),
+    ])
+      .then(([boardsRes, disciplinesRes, boardCoursesRes]) => {
+        if (cancelled) return;
+        setBoards(boardsRes.data.boards);
+        setDisciplines(disciplinesRes.data.disciplines);
+        setBoardCourses(boardCoursesRes.data.boardCourses);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(apiErrorMessage(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const classLevelsForBoard = useCallback(
+    (boardId: string): ClassLevelOption[] => {
+      const seen = new Map<string, ClassLevelOption>();
+      boardCourses
+        .filter((bc) => !boardId || bc.boardId === boardId)
+        .forEach((bc) => {
+          if (!seen.has(bc.classLevelId)) {
+            seen.set(bc.classLevelId, {
+              id: bc.classLevelId,
+              code: bc.classLevelCode,
+              displayName: bc.classLevelDisplayName,
+            });
+          }
+        });
+      return Array.from(seen.values()).sort((a, b) => Number(a.code) - Number(b.code));
+    },
+    [boardCourses],
+  );
+
+  return { boards, disciplines, boardCourses, classLevelsForBoard, error };
+}
+
 /**
  * Content-governance view: every chapter, any status, with the
  * draft -> review -> publish state machine exposed directly. SUPER_ADMIN
@@ -250,18 +316,40 @@ function ChapterStudio() {
   const [bulkApproveBusy, setBulkApproveBusy] = useState(false);
   const [bulkApproveResult, setBulkApproveResult] = useState<BulkApproveResult | null>(null);
 
+  // Board -> Class -> Subject filters (19 Aug 2026) -- replaces the single
+  // flat unfiltered list.
+  const { boards, disciplines, classLevelsForBoard } = useCurriculumFilterLookups();
+  const [filterBoardId, setFilterBoardId] = useState("");
+  const [filterClassLevelId, setFilterClassLevelId] = useState("");
+  const [filterDisciplineId, setFilterDisciplineId] = useState("");
+  const classLevelOptions = useMemo(
+    () => classLevelsForBoard(filterBoardId),
+    [classLevelsForBoard, filterBoardId],
+  );
+
+  function handleFilterBoardChange(id: string) {
+    setFilterBoardId(id);
+    setFilterClassLevelId("");
+  }
+
   const loadChapters = useCallback(async () => {
     setLoadingChapters(true);
     setListError(null);
     try {
-      const { data } = await api.get<{ chapters: ChapterSummary[] }>("/curriculum-admin/chapters");
+      const { data } = await api.get<{ chapters: ChapterSummary[] }>("/curriculum-admin/chapters", {
+        params: {
+          board_id: filterBoardId || undefined,
+          class_level_id: filterClassLevelId || undefined,
+          discipline_id: filterDisciplineId || undefined,
+        },
+      });
       setChapters(data.chapters);
     } catch (err) {
       setListError(apiErrorMessage(err));
     } finally {
       setLoadingChapters(false);
     }
-  }, []);
+  }, [filterBoardId, filterClassLevelId, filterDisciplineId]);
 
   const loadDetail = useCallback(async (chapterId: string) => {
     setLoadingDetail(true);
@@ -436,15 +524,66 @@ function ChapterStudio() {
             <p className="rounded-xl bg-jade-50 px-3 py-2 text-xs font-medium text-jade-800">{bulkReviewResult}</p>
           ) : null}
 
+          <div className="grid grid-cols-1 gap-3 rounded-2xl border border-line bg-surface-muted/60 p-3.5 sm:grid-cols-3">
+            <div className="col-span-full flex items-center gap-1.5 text-xs font-semibold text-content-subtle">
+              <Filter className="h-3.5 w-3.5" aria-hidden />
+              Filter by Board, Class and Subject
+            </div>
+            <SelectField
+              label="Board"
+              value={filterBoardId}
+              onChange={(e) => handleFilterBoardChange(e.target.value)}
+            >
+              <option value="">All Boards</option>
+              {boards.map((board) => (
+                <option key={board.id} value={board.id}>
+                  {board.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="Class"
+              value={filterClassLevelId}
+              onChange={(e) => setFilterClassLevelId(e.target.value)}
+              disabled={!filterBoardId}
+            >
+              <option value="">All Classes</option>
+              {classLevelOptions.map((cl) => (
+                <option key={cl.id} value={cl.id}>
+                  {cl.displayName}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField
+              label="Subject"
+              value={filterDisciplineId}
+              onChange={(e) => setFilterDisciplineId(e.target.value)}
+            >
+              <option value="">All Subjects</option>
+              {disciplines.map((discipline) => (
+                <option key={discipline.id} value={discipline.id}>
+                  {discipline.displayName}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+
           {listError ? <ErrorBanner message={listError} /> : null}
 
           {loadingChapters ? (
             <p className="text-sm text-content-subtle">Loading chapters&hellip;</p>
           ) : chapters.length === 0 ? (
             <EmptyState
-              status={{ label: "Nothing imported yet", tone: "neutral" }}
-              title="No chapters yet"
-              description="Import a chapter workbook to see it here — it lands in Draft, ready for review."
+              status={{
+                label: filterBoardId || filterClassLevelId || filterDisciplineId ? "No Matches" : "Nothing Imported Yet",
+                tone: "neutral",
+              }}
+              title={filterBoardId || filterClassLevelId || filterDisciplineId ? "No chapters match these filters" : "No chapters yet"}
+              description={
+                filterBoardId || filterClassLevelId || filterDisciplineId
+                  ? "Try widening the board, class or subject filter above."
+                  : "Import a chapter workbook to see it here — it lands in Draft, ready for review."
+              }
             />
           ) : (
             <ul className="-mx-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
@@ -721,8 +860,14 @@ function ChapterStudio() {
  * 18 Aug 2026 decision to centralize master controls with SUPER_ADMIN.
  */
 function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
-  const [publishedChapters, setPublishedChapters] = useState<ChapterSummary[]>([]);
-  const [boardCourses, setBoardCourses] = useState<BoardCourseOption[]>([]);
+  // Board -> Class -> Subject -> Chapter cascading filters replace the old
+  // single unfiltered chapter dropdown + free-text Class/Section fields
+  // (19 Aug 2026). Section is gone entirely -- "n number of sections for a
+  // class in a school ... all will follow the same syllabus no matter
+  // what" (Shailesh) -- a mapping is one schedule for the whole class.
+  const { boards, disciplines, boardCourses, classLevelsForBoard } = useCurriculumFilterLookups();
+  const [chapters, setChapters] = useState<ChapterSummary[]>([]);
+  const [loadingChapters, setLoadingChapters] = useState(false);
   const [mappings, setMappings] = useState<SchoolCurriculumMapEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -731,32 +876,45 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   const [loadingSchools, setLoadingSchools] = useState(isPlatformAdmin);
   const [selectedSchoolId, setSelectedSchoolId] = useState("");
 
-  const [boardCourseId, setBoardCourseId] = useState("");
+  const [boardId, setBoardId] = useState("");
+  const [classLevelId, setClassLevelId] = useState("");
+  const [disciplineId, setDisciplineId] = useState("");
   const [chapterId, setChapterId] = useState("");
-  const [className, setClassName] = useState("");
-  const [section, setSection] = useState("");
   const [plannedStartDate, setPlannedStartDate] = useState("");
   const [plannedEndDate, setPlannedEndDate] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Reschedule (19 Aug 2026) -- the actual fix for dates slipping because of
+  // holidays, elections, festivals, health closures and the rest: a two-
+  // click edit on the existing mapping instead of deleting and recreating
+  // it. See migration d8a3f6c1b2e7's docstring.
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
+  const [rescheduleStart, setRescheduleStart] = useState("");
+  const [rescheduleEnd, setRescheduleEnd] = useState("");
+  const [reschedulingBusy, setReschedulingBusy] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+
   // A SUPER_ADMIN needs a school picked before "which school's map" means
   // anything; a school's own ADMIN always has exactly one, implicitly.
   const schoolContextReady = !isPlatformAdmin || Boolean(selectedSchoolId);
 
-  const loadChaptersAndBoardCourses = useCallback(async () => {
-    try {
-      const [chaptersRes, boardCoursesRes] = await Promise.all([
-        api.get<{ chapters: ChapterSummary[] }>("/curriculum-admin/chapters"),
-        api.get<{ boardCourses: BoardCourseOption[] }>("/curriculum-admin/board-courses"),
-      ]);
-      setPublishedChapters(chaptersRes.data.chapters.filter((c) => c.status === "PUBLISHED"));
-      setBoardCourses(boardCoursesRes.data.boardCourses);
-    } catch (err) {
-      setLoadError(apiErrorMessage(err));
-    }
-  }, []);
+  const classLevelOptions = useMemo(() => classLevelsForBoard(boardId), [classLevelsForBoard, boardId]);
+
+  function handleBoardChange(id: string) {
+    setBoardId(id);
+    setClassLevelId("");
+    setChapterId("");
+  }
+  function handleClassChange(id: string) {
+    setClassLevelId(id);
+    setChapterId("");
+  }
+  function handleDisciplineChange(id: string) {
+    setDisciplineId(id);
+    setChapterId("");
+  }
 
   const loadMappings = useCallback(async () => {
     setLoading(true);
@@ -773,10 +931,6 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setLoading(false);
     }
   }, [isPlatformAdmin, selectedSchoolId]);
-
-  useEffect(() => {
-    loadChaptersAndBoardCourses();
-  }, [loadChaptersAndBoardCourses]);
 
   useEffect(() => {
     if (!isPlatformAdmin) return;
@@ -796,7 +950,34 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
     }
   }, [schoolContextReady, loadMappings]);
 
-  const chapterById = useMemo(() => new Map(publishedChapters.map((c) => [c.id, c])), [publishedChapters]);
+  // Chapter options narrow as Board/Class/Subject are picked -- only ever
+  // PUBLISHED chapters are offered here, matching the old behaviour.
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingChapters(true);
+    api
+      .get<{ chapters: ChapterSummary[] }>("/curriculum-admin/chapters", {
+        params: {
+          board_id: boardId || undefined,
+          class_level_id: classLevelId || undefined,
+          discipline_id: disciplineId || undefined,
+        },
+      })
+      .then(({ data }) => {
+        if (!cancelled) setChapters(data.chapters.filter((c) => c.status === "PUBLISHED"));
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(apiErrorMessage(err));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingChapters(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId, classLevelId, disciplineId]);
+
+  const chapterById = useMemo(() => new Map(chapters.map((c) => [c.id, c])), [chapters]);
   const boardCourseById = useMemo(() => new Map(boardCourses.map((bc) => [bc.id, bc])), [boardCourses]);
   const selectedSchool = useMemo(
     () => schools.find((s) => s.id === selectedSchoolId) ?? null,
@@ -810,23 +991,24 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setFormError("Choose a school first.");
       return;
     }
-    if (!boardCourseId || !chapterId) {
-      setFormError("Choose a board course and a chapter.");
+    const chapter = chapterId ? chapterById.get(chapterId) : null;
+    if (!chapter) {
+      setFormError("Choose a board, class, subject and chapter.");
       return;
     }
+    const boardCourse = boardCourseById.get(chapter.boardCourseId);
+    const classLevel = classLevelOptions.find((cl) => cl.id === classLevelId);
     setSaving(true);
     try {
       await api.post("/curriculum-admin/school-curriculum-maps", {
         schoolId: isPlatformAdmin ? selectedSchoolId : undefined,
-        boardCourseId,
+        boardCourseId: chapter.boardCourseId,
         chapterId,
-        className: className.trim() || null,
-        section: section.trim() || null,
+        className: classLevel?.displayName ?? boardCourse?.classLevelDisplayName ?? null,
         plannedStartDate: plannedStartDate || null,
         plannedEndDate: plannedEndDate || null,
       });
-      setClassName("");
-      setSection("");
+      setChapterId("");
       setPlannedStartDate("");
       setPlannedEndDate("");
       await loadMappings();
@@ -847,6 +1029,35 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setLoadError(apiErrorMessage(err));
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  function startReschedule(mapping: SchoolCurriculumMapEntry) {
+    setReschedulingId(mapping.id);
+    setRescheduleStart(mapping.plannedStartDate ?? "");
+    setRescheduleEnd(mapping.plannedEndDate ?? "");
+    setRescheduleError(null);
+  }
+
+  function cancelReschedule() {
+    setReschedulingId(null);
+    setRescheduleError(null);
+  }
+
+  async function saveReschedule(mapId: string) {
+    setReschedulingBusy(true);
+    setRescheduleError(null);
+    try {
+      await api.patch(`/curriculum-admin/school-curriculum-maps/${mapId}`, {
+        plannedStartDate: rescheduleStart || null,
+        plannedEndDate: rescheduleEnd || null,
+      });
+      setReschedulingId(null);
+      await loadMappings();
+    } catch (err) {
+      setRescheduleError(apiErrorMessage(err));
+    } finally {
+      setReschedulingBusy(false);
     }
   }
 
@@ -887,34 +1098,54 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
             </SelectField>
           ) : null}
 
-          {loading ? (
-            <p className="text-sm text-content-subtle">Loading&hellip;</p>
-          ) : isPlatformAdmin && !selectedSchoolId ? (
+          {isPlatformAdmin && !selectedSchoolId ? (
             <EmptyState
-              status={{ label: "No school selected", tone: "neutral" }}
+              status={{ label: "No School Selected", tone: "neutral" }}
               title="Pick a school above"
-              description="Choose which school you're mapping this chapter into, then pick a board course and a published chapter."
-            />
-          ) : publishedChapters.length === 0 ? (
-            <EmptyState
-              status={{ label: "Nothing published yet", tone: "neutral" }}
-              title="No published chapters yet"
-              description="Once a platform admin publishes a chapter, it appears here ready to map into a school's classes."
+              description="Choose which school you're mapping this chapter into, then filter down to a chapter by board, class and subject."
             />
           ) : (
             <form onSubmit={handleCreateMapping} className="space-y-4">
+              <SelectField label="Board" value={boardId} onChange={(e) => handleBoardChange(e.target.value)} required>
+                <option value="" disabled>
+                  Choose a board
+                </option>
+                {boards.map((board) => (
+                  <option key={board.id} value={board.id}>
+                    {board.name}
+                  </option>
+                ))}
+              </SelectField>
+
               <SelectField
-                label="Board Course"
-                value={boardCourseId}
-                onChange={(e) => setBoardCourseId(e.target.value)}
+                label="Class"
+                value={classLevelId}
+                onChange={(e) => handleClassChange(e.target.value)}
+                disabled={!boardId}
                 required
               >
                 <option value="" disabled>
-                  Choose a board course
+                  {boardId ? "Choose a class" : "Choose a board first"}
                 </option>
-                {boardCourses.map((bc) => (
-                  <option key={bc.id} value={bc.id}>
-                    {bc.boardCode} &middot; {bc.classLevelDisplayName} &middot; {bc.displayName}
+                {classLevelOptions.map((cl) => (
+                  <option key={cl.id} value={cl.id}>
+                    {cl.displayName}
+                  </option>
+                ))}
+              </SelectField>
+
+              <SelectField
+                label="Subject"
+                value={disciplineId}
+                onChange={(e) => handleDisciplineChange(e.target.value)}
+                required
+              >
+                <option value="" disabled>
+                  Choose a subject
+                </option>
+                {disciplines.map((discipline) => (
+                  <option key={discipline.id} value={discipline.id}>
+                    {discipline.displayName}
                   </option>
                 ))}
               </SelectField>
@@ -923,26 +1154,22 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                 label="Chapter"
                 value={chapterId}
                 onChange={(e) => setChapterId(e.target.value)}
+                disabled={!boardId || !classLevelId || !disciplineId || loadingChapters}
                 required
               >
                 <option value="" disabled>
-                  Choose a published chapter
+                  {loadingChapters
+                    ? "Loading chapters…"
+                    : chapters.length === 0
+                      ? "No published chapters match this board/class/subject"
+                      : "Choose a published chapter"}
                 </option>
-                {publishedChapters.map((chapter) => (
+                {chapters.map((chapter) => (
                   <option key={chapter.id} value={chapter.id}>
                     {chapter.code} &middot; {chapter.title}
                   </option>
                 ))}
               </SelectField>
-
-              {/* Stacks to one column below `sm` -- two native date inputs
-                  side by side leave under 140px each on a small phone once
-                  the page's own padding and this card's padding are
-                  subtracted, which crops the picker UI. */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <TextField label="Class" hint="e.g. 5" value={className} onChange={(e) => setClassName(e.target.value)} />
-                <TextField label="Section" hint="e.g. A" value={section} onChange={(e) => setSection(e.target.value)} />
-              </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <TextField
@@ -991,48 +1218,105 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
             <p className="text-sm text-content-subtle">Loading&hellip;</p>
           ) : mappings.length === 0 ? (
             <EmptyState
-              status={{ label: "Nothing mapped yet", tone: "neutral" }}
+              status={{ label: "Nothing Mapped Yet", tone: "neutral" }}
               title="No chapters mapped yet"
-              description="Use the form on the left to place a published chapter into a class and section."
+              description="Use the form on the left to place a published chapter into a class."
             />
           ) : (
             <ul className="space-y-2">
               {mappings.map((mapping) => {
                 const chapter = chapterById.get(mapping.chapterId);
                 const boardCourse = boardCourseById.get(mapping.boardCourseId);
+                const isRescheduling = reschedulingId === mapping.id;
                 return (
                   <li
                     key={mapping.id}
-                    className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface-muted/60 px-3.5 py-3"
+                    className="rounded-2xl border border-line bg-surface-muted/60 px-3.5 py-3"
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-jade-50 text-jade-700 ring-1 ring-inset ring-jade-100">
-                      <BookMarked className="h-4 w-4" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-content">
-                        {chapter?.title ?? "Chapter"}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-jade-50 text-jade-700 ring-1 ring-inset ring-jade-100">
+                        <BookMarked className="h-4 w-4" aria-hidden />
                       </span>
-                      <span className="block truncate text-xs text-content-subtle">
-                        {boardCourse?.displayName ?? "Board course"}
-                        {mapping.className ? ` · Class ${mapping.className}` : ""}
-                        {mapping.section ? ` · Section ${mapping.section}` : ""}
-                      </span>
-                      {mapping.plannedStartDate || mapping.plannedEndDate ? (
-                        <span className="mt-0.5 flex items-center gap-1.5 text-[0.6875rem] text-content-faint">
-                          <CalendarRange className="h-3 w-3" aria-hidden />
-                          {mapping.plannedStartDate ?? "—"} &rarr; {mapping.plannedEndDate ?? "—"}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-content">
+                          {chapter?.title ?? "Chapter"}
                         </span>
-                      ) : null}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      leadingIcon={<Trash2 className="h-4 w-4" />}
-                      loading={deletingId === mapping.id}
-                      onClick={() => handleDelete(mapping.id)}
-                    >
-                      Remove
-                    </Button>
+                        <span className="block truncate text-xs text-content-subtle">
+                          {boardCourse?.displayName ?? "Board course"}
+                          {mapping.className ? ` · Class ${mapping.className}` : ""}
+                        </span>
+                        {!isRescheduling && (mapping.plannedStartDate || mapping.plannedEndDate) ? (
+                          <span className="mt-0.5 flex items-center gap-1.5 text-[0.6875rem] text-content-faint">
+                            <CalendarRange className="h-3 w-3" aria-hidden />
+                            {mapping.plannedStartDate ?? "—"} &rarr; {mapping.plannedEndDate ?? "—"}
+                          </span>
+                        ) : null}
+                      </span>
+                      {isRescheduling ? null : (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            leadingIcon={<Pencil className="h-4 w-4" />}
+                            onClick={() => startReschedule(mapping)}
+                          >
+                            Edit Schedule
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            leadingIcon={<Trash2 className="h-4 w-4" />}
+                            loading={deletingId === mapping.id}
+                            onClick={() => handleDelete(mapping.id)}
+                          >
+                            Remove
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    {isRescheduling ? (
+                      <div className="mt-3 space-y-3 border-t border-line pt-3">
+                        <p className="text-xs text-content-subtle">
+                          Shift the planned dates &mdash; for a holiday, election, festival or other disruption &mdash;
+                          without deleting this mapping.
+                        </p>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <TextField
+                            label="Planned Start"
+                            type="date"
+                            value={rescheduleStart}
+                            onChange={(e) => setRescheduleStart(e.target.value)}
+                          />
+                          <TextField
+                            label="Planned End"
+                            type="date"
+                            value={rescheduleEnd}
+                            onChange={(e) => setRescheduleEnd(e.target.value)}
+                          />
+                        </div>
+                        {rescheduleError ? <ErrorBanner message={rescheduleError} /> : null}
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            leadingIcon={<Check className="h-4 w-4" />}
+                            loading={reschedulingBusy}
+                            onClick={() => saveReschedule(mapping.id)}
+                          >
+                            Save Schedule
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            leadingIcon={<X className="h-4 w-4" />}
+                            onClick={cancelReschedule}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
@@ -1062,16 +1346,16 @@ export default function CurriculumStudioPage() {
     <RoleShell role={roleForShell} user={user}>
       <div className="space-y-10">
         <PageHeader
-          eyebrow="Content workflow"
+          eyebrow="Content Workflow"
           title="Curriculum Studio"
           description={
             isPlatformAdmin
               ? "Review and publish chapters, then map any of them straight into a school's calendar — all in one place."
-              : "Bring a published chapter into your school's own calendar — pick a class, a section, and you're set."
+              : "Bring a published chapter into your school's own calendar — filter by board, class and subject, and you're set."
           }
           meta={
             <Badge tone={isPlatformAdmin ? "brand" : "success"} dot>
-              {isPlatformAdmin ? "Platform admin view" : "School admin view"}
+              {isPlatformAdmin ? "Platform Admin View" : "School Admin View"}
             </Badge>
           }
         />
