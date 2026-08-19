@@ -1,0 +1,10 @@
+Contact: mailto:shaileshgupta841@gmail.com
+Expires: 2027-08-19T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://school-enrichment-frontend.vercel.app/.well-known/security.txt
+
+# School Enrichment is a CBSE/ICSE academic learning platform for Classes 5-10.
+# If you've found a security vulnerability, please report it to the contact
+# above rather than disclosing it publicly. We'll acknowledge your report and
+# work to fix real issues promptly. No bug-bounty program exists at this
+# stage. See INCIDENT_RESPONSE.md in the project repo for our internal process.

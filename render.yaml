@@ -38,6 +38,12 @@ services:
         value: "true"
       - key: SENTRY_DSN
         sync: false   # set manually once the Sentry project exists
+      - key: PLATFORM_OPERATOR_KEY
+        sync: false   # secret-gates POST /api/platform/schools (routes_platform.py) --
+                       # set manually in the Render dashboard, never in this file or git.
+                       # Documented here (2026-08-19 secrets audit) purely so this required
+                       # var isn't invisible/forgotten in IaC -- `sync: false` means Render
+                       # will never read or overwrite a value for it from this file.
       # File storage: Render persistent disk for now (see
       # ENGINEERING_OPERATING_SYSTEM.md Section 2) — no object-storage
       # account exists yet. Attach a Render disk to this service

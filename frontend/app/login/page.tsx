@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   BookMarked,
   Building2,
@@ -18,7 +19,7 @@ import {
 } from "lucide-react";
 import { api, apiErrorMessage } from "@/lib/api";
 import { defaultRouteForRole, getRememberedSchoolName, setSession } from "@/lib/auth";
-import type { LoginResult } from "@/types/auth";
+import type { LoginResponse, LoginResult } from "@/types/auth";
 import { isTwoFactorChallenge } from "@/types/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -185,6 +186,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Two-factor is a second step, not a second page: the challenge token
+  // issued by /auth/login (see backend/app/services/auth_service.py's
+  // login()) lives only in this state, never in the URL or storage -- it's
+  // single-use and expires in 5 minutes, so there's nothing worth persisting.
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
   // Only known after mount (localStorage isn't available during SSR, and
   // reading it here rather than in useState's initializer keeps the first
   // server-rendered paint identical to the first client paint, so there's no
@@ -194,6 +203,12 @@ export default function LoginPage() {
     setKnownSchool(getRememberedSchoolName());
   }, []);
 
+  function completeSignIn(user: LoginResponse["user"]) {
+    setSession(user);
+    const normalizedRole = user.role === "SUPER_ADMIN" ? "ADMIN" : user.role;
+    router.push(defaultRouteForRole(normalizedRole));
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -201,19 +216,40 @@ export default function LoginPage() {
     try {
       const { data } = await api.post<LoginResult>("/auth/login", { identifier, password });
       if (isTwoFactorChallenge(data)) {
-        // Phase 1 scope: 2FA verification screen is not built yet (no
-        // admin account will have 2FA enabled during bootstrap testing).
-        setError("Two-factor authentication is required for this account. This flow isn't built in the UI yet.");
+        setChallengeToken(data.challengeToken);
         return;
       }
-      setSession(data.user);
-      const normalizedRole = data.user.role === "SUPER_ADMIN" ? "ADMIN" : data.user.role;
-      router.push(defaultRouteForRole(normalizedRole));
+      completeSignIn(data.user);
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleVerifyTwoFactor(event: React.FormEvent) {
+    event.preventDefault();
+    if (!challengeToken) return;
+    setError(null);
+    setVerifying(true);
+    try {
+      const { data } = await api.post<LoginResponse>("/auth/2fa/verify-login", {
+        challengeToken,
+        code: twoFactorCode,
+      });
+      completeSignIn(data.user);
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  function backToCredentials() {
+    setChallengeToken(null);
+    setTwoFactorCode("");
+    setError(null);
+    setPassword("");
   }
 
   return (
@@ -401,62 +437,120 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <h2 className="font-display text-content lg:text-[clamp(1.375rem,4.3vh,2.5rem)]">Welcome Back</h2>
+            <h2 className="font-display text-content lg:text-[clamp(1.375rem,4.3vh,2.5rem)]">
+              {challengeToken ? "Verify It's You" : "Welcome Back"}
+            </h2>
             <p className="mt-3 max-w-[24rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:text-[clamp(0.8125rem,2.2vh,1.1875rem)] lg:leading-[1.45]">
-              Sign in with the email, phone number or student code your school issued you.
+              {challengeToken
+                ? "Enter the 6-digit code from your authenticator app, or one of your backup codes."
+                : "Sign in with the email, phone number or student code your school issued you."}
             </p>
           </div>
 
           <div className="stage-in stage-d2 rounded-4xl border border-line bg-surface/95 p-6 shadow-panel backdrop-blur-xl sm:p-8 lg:p-[clamp(1rem,4vh,2.75rem)]">
-            <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-[clamp(0.625rem,2.6vh,1.75rem)]" noValidate>
-              <TextField
-                id="identifier"
-                name="identifier"
-                label="Email, Phone, or Code"
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck={false}
-                placeholder="you@school.edu or STU-1042"
-                required
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                icon={<UserRound className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
-              />
-
-              <TextField
-                id="password"
-                name="password"
-                label="Password"
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                required
-                revealable
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                icon={<Lock className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
-              />
-
-              {error ? (
-                <div
-                  role="alert"
-                  className="flex items-start gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in"
-                >
-                  <AlertCircle className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-coral-600" aria-hidden />
-                  <p className="text-[0.875rem] font-medium leading-[1.55] text-coral-800">{error}</p>
-                </div>
-              ) : null}
-
-              <Button
-                type="submit"
-                size="lg"
-                fullWidth
-                loading={submitting}
-                loadingLabel="Signing you in"
-                trailingIcon={<ArrowRight className="h-4 w-4" />}
+            {challengeToken ? (
+              <form
+                onSubmit={handleVerifyTwoFactor}
+                className="space-y-5 lg:space-y-[clamp(0.625rem,2.6vh,1.75rem)]"
+                noValidate
               >
-                Sign In
-              </Button>
-            </form>
+                <TextField
+                  id="twoFactorCode"
+                  name="twoFactorCode"
+                  label="Authentication Code"
+                  autoComplete="one-time-code"
+                  inputMode="text"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="123456 or a backup code"
+                  required
+                  autoFocus
+                  value={twoFactorCode}
+                  onChange={(event) => setTwoFactorCode(event.target.value)}
+                  icon={<ShieldCheck className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
+                />
+
+                {error ? (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in"
+                  >
+                    <AlertCircle className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-coral-600" aria-hidden />
+                    <p className="text-[0.875rem] font-medium leading-[1.55] text-coral-800">{error}</p>
+                  </div>
+                ) : null}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  fullWidth
+                  loading={verifying}
+                  loadingLabel="Verifying"
+                  trailingIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  Verify &amp; Sign In
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={backToCredentials}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-subtle transition hover:text-content-brand"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                  Back to sign in
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5 lg:space-y-[clamp(0.625rem,2.6vh,1.75rem)]" noValidate>
+                <TextField
+                  id="identifier"
+                  name="identifier"
+                  label="Email, Phone, or Code"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="you@school.edu or STU-1042"
+                  required
+                  value={identifier}
+                  onChange={(event) => setIdentifier(event.target.value)}
+                  icon={<UserRound className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
+                />
+
+                <TextField
+                  id="password"
+                  name="password"
+                  label="Password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  required
+                  revealable
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  icon={<Lock className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
+                />
+
+                {error ? (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in"
+                  >
+                    <AlertCircle className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-coral-600" aria-hidden />
+                    <p className="text-[0.875rem] font-medium leading-[1.55] text-coral-800">{error}</p>
+                  </div>
+                ) : null}
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  fullWidth
+                  loading={submitting}
+                  loadingLabel="Signing you in"
+                  trailingIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  Sign In
+                </Button>
+              </form>
+            )}
 
             <div className="mt-6 space-y-3 border-t border-line pt-5 lg:mt-[clamp(0.75rem,2.8vh,2.25rem)] lg:space-y-[clamp(0.375rem,1.2vh,1rem)] lg:pt-[clamp(0.625rem,2.2vh,1.75rem)]">
               <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">

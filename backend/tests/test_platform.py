@@ -19,7 +19,7 @@ def _payload(email: str, school_name: str = "Green Valley Public School") -> dic
         "city": "Bengaluru",
         "adminFullName": "Ashalatha Gupta",
         "adminEmail": email,
-        "adminPassword": "Passw0rd1",
+        "adminPassword": "Xk4$nQ8vPz",
     }
 
 
@@ -48,7 +48,7 @@ def test_provisioned_admin_can_actually_log_in(client):
     school_id = provision_response.json()["school"]["id"]
 
     login_response = client.post(
-        "/api/auth/login", json={"identifier": "admin-login-loop@example.com", "password": "Passw0rd1"}
+        "/api/auth/login", json={"identifier": "admin-login-loop@example.com", "password": "Xk4$nQ8vPz"}
     )
     assert login_response.status_code == 200
     assert login_response.json()["user"]["role"] == "ADMIN"

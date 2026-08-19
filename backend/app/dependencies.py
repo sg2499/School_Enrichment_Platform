@@ -19,10 +19,39 @@ from app.core.errors import api_error
 from app.core.security import create_access_token, decode_token
 from app.database import SessionLocal, get_db
 from app.models import Student, Teacher, User
+from app.services.session_service import is_session_valid, touch_session
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
 active_users_cache = TTLCache(maxsize=10000, ttl=120)
+
+# Debounces UserSession.last_seen_at writes the same way active_users_cache
+# debounces last_active_at above -- one DB write per session per TTL window,
+# not one per request.
+active_sessions_cache = TTLCache(maxsize=10000, ttl=120)
+
+# Mandatory 2FA (2026-08-19 security hardening, Shailesh: "Yes, mandatory for
+# both" for SUPER_ADMIN and ADMIN) -- these are the highest-value accounts
+# (platform-wide or whole-school data access), so unlike TEACHER/STUDENT,
+# they may not use the product at all until a second factor is enrolled.
+MANDATORY_2FA_ROLES = {"ADMIN", "SUPER_ADMIN"}
+
+# Paths a MANDATORY_2FA_ROLES user must still be able to reach even before
+# they've enrolled -- otherwise there is no way for them (or the frontend) to
+# ever get them into 2FA setup in the first place. Every other endpoint stays
+# blocked for them until totp_enabled is true. Kept as an explicit allowlist
+# (not a prefix check) so a new admin-only endpoint added later is blocked by
+# default and has to be deliberately exempted, rather than accidentally
+# reachable pre-setup.
+TWO_FACTOR_SETUP_EXEMPT_PATHS = {
+    "/api/auth/me",
+    "/api/auth/logout",
+    "/api/auth/logout-all-sessions",
+    "/api/auth/2fa/setup",
+    "/api/auth/2fa/enable",
+    "/api/auth/change-password",
+    "/api/auth/ping",
+}
 
 
 def _as_aware_utc(value: datetime) -> datetime:
@@ -62,6 +91,16 @@ def _update_user_activity(user_id: str):
             update(User).where(User.id == user_id).values(last_active_at=datetime.now(timezone.utc))
         )
         db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
+def _touch_session_activity(session_id: str):
+    db = SessionLocal()
+    try:
+        touch_session(db, session_id)
     except Exception:
         db.rollback()
     finally:
@@ -162,6 +201,22 @@ def get_current_user(
         if IsRevoked:
             api_error(401, "UNAUTHORIZED", "Session was signed out remotely. Please log in again.")
 
+    # Per-device session tracking (2026-08-19 security hardening, session
+    # hygiene). "sid" is only present on tokens issued after this feature
+    # shipped -- an older token with no sid simply skips this check and
+    # falls back on the coarser session_invalidated_at mechanism above,
+    # rather than being rejected outright. See session_service.py's module
+    # docstring for the full rationale, including the per-role absolute
+    # lifetime cap this also enforces.
+    session_id = payload.get("sid")
+    if session_id:
+        if not is_session_valid(db, session_id, user.role):
+            api_error(401, "UNAUTHORIZED", "This session has ended. Please log in again.")
+        request.state.session_id = session_id
+        if session_id not in active_sessions_cache:
+            active_sessions_cache[session_id] = True
+            background_tasks.add_task(_touch_session_activity, session_id)
+
     # Sliding session: a token more than halfway through its lifetime gets
     # transparently renewed via a response header. This is the permanent fix
     # for "student gets logged out mid-exam because their token happened to
@@ -179,7 +234,7 @@ def get_current_user(
             remaining_seconds = (expires_at - datetime.now(timezone.utc)).total_seconds()
             half_lifetime_seconds = (ACCESS_TOKEN_EXPIRE_MINUTES * 60) / 2
             if 0 < remaining_seconds < half_lifetime_seconds:
-                new_token = create_access_token(user.id, user.role)
+                new_token = create_access_token(user.id, user.role, session_id=session_id)
                 # Bearer-header callers (scripts) still read this response
                 # header the same way they always have. Cookie-authenticated
                 # browser requests instead get a fresh Set-Cookie -- the
@@ -197,7 +252,33 @@ def get_current_user(
         active_users_cache[user.id] = True
         background_tasks.add_task(_update_user_activity, user.id)
 
+    # Mandatory 2FA enforcement (2026-08-19 security hardening). Checked last
+    # -- everything above (token validity, revocation, password-change
+    # staleness) still applies first -- so a request that's actually
+    # unauthenticated or already invalid gets the correct 401 rather than
+    # this more specific error masking it. Server-side, not just a frontend
+    # redirect: relying on the UI alone would only stop a browser that
+    # cooperates, not a direct API call.
+    if (
+        user.role in MANDATORY_2FA_ROLES
+        and not user.totp_enabled
+        and request.url.path not in TWO_FACTOR_SETUP_EXEMPT_PATHS
+    ):
+        api_error(
+            403,
+            "TWO_FACTOR_SETUP_REQUIRED",
+            "Two-factor authentication must be set up before you can continue.",
+        )
+
     return user
+
+
+def get_current_session_id(request: Request, _: User = Depends(get_current_user)) -> str | None:
+    """The current request's session id (JWT "sid" claim), stashed onto
+    request.state by get_current_user above. None for a pre-feature token
+    that never had one -- callers (the sessions list/revoke endpoints) treat
+    that as "can't identify which row is this device," not an error."""
+    return getattr(request.state, "session_id", None)
 
 
 def require_roles(*roles: str):

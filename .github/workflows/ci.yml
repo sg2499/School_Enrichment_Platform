@@ -199,6 +199,76 @@ jobs:
           if-no-files-found: warn
           retention-days: ${{ env.CI_ARTIFACT_RETENTION_DAYS }}
 
+  dependency-scan:
+    name: dependency-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Backend dependency audit (pip-audit) -- blocking
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../ci-artifacts
+          pip install -q pip-audit
+          # PYSEC-2026-1325 (ecdsa): no fix has been released upstream (the
+          # ecdsa package's own maintainers have stated pure-Python
+          # constant-time ECDSA is out of scope for the project) -- and it is
+          # unreachable in this app regardless, since every token this app
+          # signs/verifies (app/core/security.py) uses HS256 (HMAC), never
+          # ECDSA. A documented, reviewed exception, not a silent ignore --
+          # any *other* vulnerability still fails this job.
+          pip-audit -r requirements.txt --no-deps --ignore-vuln PYSEC-2026-1325 2>&1 | tee ../ci-artifacts/backend-dependency-audit.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Frontend dependency audit (npm audit) -- informational
+        working-directory: frontend
+        shell: bash
+        run: |
+          set +e
+          mkdir -p ../ci-artifacts
+          npm ci --no-audit --no-fund
+          # Deliberately non-blocking right now (2026-08-19): every currently
+          # known finding here is gated behind a major-version bump of
+          # `next`/`@sentry/nextjs` (see PROJECT_REFERENCE.md's 19 Aug 2026
+          # security-hardening entry for the full list) that needs a
+          # dedicated, visually-verified upgrade pass -- not something to
+          # force through a routine CI run with no way to check the app still
+          # renders correctly afterward. `dependabot.yml` already excludes
+          # exactly these two packages' major bumps for the same reason.
+          # Once that upgrade lands clean, remove the `|| true` below so this
+          # half becomes a real gate too.
+          npm audit --omit=dev 2>&1 | tee ../ci-artifacts/frontend-dependency-audit.txt || true
+      - name: Publish dependency-scan summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Dependency vulnerability scan'
+            echo
+            echo '### Backend (pip-audit) -- blocking'
+            tail -n 15 ci-artifacts/backend-dependency-audit.txt 2>/dev/null || echo '(no output captured)'
+            echo
+            echo '### Frontend (npm audit) -- informational only, see note in workflow'
+            tail -n 20 ci-artifacts/frontend-dependency-audit.txt 2>/dev/null || echo '(no output captured)'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload dependency-scan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-scan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-artifacts/*dependency-audit.txt
+          if-no-files-found: warn
+          retention-days: ${{ env.CI_ARTIFACT_RETENTION_DAYS }}
+
   frontend-e2e-tests:
     name: frontend-e2e-tests
     needs: [frontend-build, backend-tests]
@@ -301,6 +371,7 @@ jobs:
       - backend-tests
       - frontend-typecheck
       - frontend-build
+      - dependency-scan
       - frontend-e2e-tests
     steps:
       - name: Publish final CI result
@@ -310,6 +381,7 @@ jobs:
           BACKEND: ${{ needs.backend-tests.result }}
           TYPECHECK: ${{ needs.frontend-typecheck.result }}
           BUILD: ${{ needs.frontend-build.result }}
+          DEPS: ${{ needs.dependency-scan.result }}
           E2E: ${{ needs.frontend-e2e-tests.result }}
         run: |
           set -euo pipefail
@@ -322,9 +394,10 @@ jobs:
             echo "| Backend tests | $BACKEND |"
             echo "| Frontend typecheck | $TYPECHECK |"
             echo "| Frontend production build | $BUILD |"
+            echo "| Dependency scan | $DEPS |"
             echo "| Frontend E2E tests | $E2E |"
           } >> "$GITHUB_STEP_SUMMARY"
-          for result in "$SAFETY" "$BACKEND" "$TYPECHECK" "$BUILD" "$E2E"; do
+          for result in "$SAFETY" "$BACKEND" "$TYPECHECK" "$BUILD" "$DEPS" "$E2E"; do
             if [ "$result" != 'success' ]; then
               echo "A required CI job did not succeed: $result" >&2
               exit 1

@@ -34,7 +34,7 @@ Provenance against PHASE_0_CODE_AUDIT.md:
 """
 import uuid
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -83,6 +83,16 @@ class User(Base):
     totp_pending_secret = Column(Text, nullable=True)
     totp_enabled = Column(Boolean, default=False, nullable=False)
     totp_backup_codes_json = Column(Text, nullable=True)
+    # Per-account lockout (2026-08-19 security hardening): the existing
+    # slowapi rate limit on /auth/login is per-IP, so a credential-stuffing
+    # attempt spread across many IPs (or targeting one account from a school
+    # network shared with legitimate users) sails straight through it. This
+    # tracks failed attempts on the account itself, independent of source.
+    # Reset to 0 on any successful login; failed_login_attempts is not
+    # itself proof of an attack until it crosses the threshold in
+    # auth_service.py's login(), at which point locked_until is set.
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -169,3 +179,33 @@ class AuditLog(Base):
     ip_address = Column(String(100))
     user_agent = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserSession(Base):
+    """One row per issued login (2026-08-19 security hardening, session
+    hygiene). Before this, the access token was a fully stateless JWT with a
+    sliding renewal window (see core/security.py's create_access_token +
+    dependencies.py's get_current_user) -- great for "an active student never
+    gets logged out mid-exam", but it meant there was no way for a user (or
+    an investigator, per INCIDENT_RESPONSE.md) to answer "where am I logged
+    in" or revoke one specific device without nuking every session via
+    /logout-all-sessions.
+
+    id doubles as the JWT's "sid" claim -- generated once at login, carried
+    forward unchanged through every sliding-renewal reissue of the token (the
+    token's jti-equivalent is stable for the life of the session, only `exp`
+    moves), so this table's row count tracks real logins, not every token
+    refresh. A row with a NULL revoked_at is a "device" the user can see and
+    end from the new Security Settings page; get_current_user() rejects any
+    token whose sid maps to a revoked (or, for older tokens issued before
+    this migration, absent) row the same way it already rejects tokens
+    predating session_invalidated_at.
+    """
+    __tablename__ = "user_sessions"
+    id = Column(String, primary_key=True, default=uuid_str)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    ip_address = Column(String(100))
+    user_agent = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen_at = Column(DateTime(timezone=True), server_default=func.now())
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
