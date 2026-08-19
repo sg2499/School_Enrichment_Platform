@@ -2,7 +2,13 @@
 (app/api/routes_auth.py's save_profile_photo()): the upload endpoint now
 actually decodes the file as an image and checks its real format, not just
 the claimed filename extension.
+
+Also covers the (same-day, second pass) oversized-file rejection at its new
+2MB ceiling -- raised from the original 350KB now that the real size gate is
+client-side compression (frontend/lib/imageCompression.ts); this backend
+check is the safety-net behind it, not the primary UX gate.
 """
+import os
 from io import BytesIO
 
 from PIL import Image
@@ -43,6 +49,17 @@ def _real_jpeg_bytes() -> bytes:
 def _real_png_bytes() -> bytes:
     buffer = BytesIO()
     Image.new("RGB", (4, 4), color=(40, 200, 40)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _oversized_png_bytes() -> bytes:
+    # Random noise, not a solid color -- PNG's compression makes a large
+    # solid-color image tiny regardless of pixel dimensions, so this needs
+    # real entropy to actually land over the 2MB ceiling being tested.
+    width, height = 1400, 1400
+    pixels = os.urandom(width * height * 3)
+    buffer = BytesIO()
+    Image.frombytes("RGB", (width, height), pixels).save(buffer, format="PNG")
     return buffer.getvalue()
 
 
@@ -99,3 +116,19 @@ def test_genuine_png_upload_succeeds(client, db_session):
     )
     assert response.status_code == 200
     assert response.json()["updated"] is True
+
+
+def test_oversized_file_is_rejected(client, db_session):
+    _make_teacher(db_session, "photo-too-big@example.com")
+    headers = _login(client, "photo-too-big@example.com")
+
+    payload = _oversized_png_bytes()
+    assert len(payload) > 2_000_000  # guards against the fixture itself drifting under the limit
+
+    response = client.post(
+        "/api/auth/profile-photo",
+        files={"file": ("photo.png", payload, "image/png")},
+        headers=headers,
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "FILE_TOO_LARGE"
