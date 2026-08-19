@@ -30,10 +30,11 @@ import {
 import { api } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
 import type { CurrentUser, UserRole } from "@/types/auth";
-import { cn, initialsFromName } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Lockup, LogoMark } from "@/components/brand/Logo";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { UserMenu, SidebarUserMenu } from "@/components/UserMenu";
 
 // Title Case throughout -- this is the single source every surface in
 // RoleShell reads from (rail title, user card, mobile top bar, footer), so
@@ -116,7 +117,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "School",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "People", icon: Users, soon: true },
+        { label: "People", icon: Users, href: "/admin/people" },
         { label: "Classes & Sections", icon: GraduationCap, soon: true },
       ],
     },
@@ -142,7 +143,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "School",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "People", icon: Users, soon: true },
+        { label: "People", icon: Users, href: "/admin/people" },
         { label: "Classes & Sections", icon: GraduationCap, soon: true },
       ],
     },
@@ -241,6 +242,8 @@ function SidebarContent({
   onSignOut,
   signingOut,
   onToggleCollapse,
+  onPhotoUpdated,
+  hasSecuritySettings,
 }: {
   role: UserRole;
   user: CurrentUser | null;
@@ -253,6 +256,8 @@ function SidebarContent({
    *  this as undefined, since it's already a full-width overlay the user
    *  dismisses entirely rather than shrinking. */
   onToggleCollapse?: () => void;
+  onPhotoUpdated: (photoUrl: string) => void;
+  hasSecuritySettings: boolean;
 }) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-brand-gradient">
@@ -262,18 +267,26 @@ function SidebarContent({
         <div className="absolute inset-0 bg-grid-inverse opacity-60" />
       </div>
 
-      <div className={cn("relative flex items-center gap-3 pb-6 pt-6", collapsed ? "justify-center px-3" : "px-5")}>
+      {/* Logo and the collapse toggle share one row (19 Aug 2026, Shailesh:
+          the toggle used to sit on its own row below the logo, leaving a
+          dead gap between the logo block and the user-identity card right
+          under it) -- collapsed stays stacked instead, since the rail is
+          only 5.25rem wide there and the logo mark plus button genuinely
+          don't fit side by side at that width. */}
+      <div
+        className={cn(
+          "relative flex items-center pb-6 pt-6",
+          collapsed ? "flex-col justify-center gap-3 px-3" : "justify-between gap-3 px-5",
+        )}
+      >
         {collapsed ? <LogoMark className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
-      </div>
-
-      {onToggleCollapse ? (
-        <div className={cn("relative pb-4", collapsed ? "flex justify-center px-3" : "flex justify-end px-5")}>
+        {onToggleCollapse ? (
           <button
             type="button"
             onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
             title={collapsed ? "Expand navigation" : "Collapse navigation"}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.08] text-white/70 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.16] hover:text-white"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-white/70 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.16] hover:text-white"
           >
             {collapsed ? (
               <PanelLeftOpen className="h-4 w-4" aria-hidden />
@@ -281,31 +294,19 @@ function SidebarContent({
               <PanelLeftClose className="h-4 w-4" aria-hidden />
             )}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
 
       <div className={cn("relative", collapsed ? "px-3" : "px-5")}>
-        <div
-          className={cn(
-            "glass-panel flex items-center gap-3 rounded-2xl",
-            collapsed ? "justify-center px-2 py-2" : "px-3.5 py-3",
-          )}
-          title={collapsed ? `${user?.fullName ?? "Signed in"} · ${ROLE_LABEL[role]}` : undefined}
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 text-[0.8125rem] font-bold text-white ring-1 ring-inset ring-white/20">
-            {initialsFromName(user?.fullName)}
-          </span>
-          {!collapsed ? (
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-content-inverse">
-                {user?.fullName ?? "Signed in"}
-              </span>
-              <span className="block truncate text-[0.6875rem] font-semibold uppercase tracking-eyebrow text-saffron-300">
-                {ROLE_LABEL[role]}
-              </span>
-            </span>
-          ) : null}
-        </div>
+        <SidebarUserMenu
+          user={user}
+          role={role}
+          collapsed={collapsed}
+          onPhotoUpdated={onPhotoUpdated}
+          hasSecuritySettings={hasSecuritySettings}
+          onSignOut={onSignOut}
+          signingOut={signingOut}
+        />
       </div>
 
       <nav
@@ -401,6 +402,18 @@ export function RoleShell({
   // accepted trade-off for a client-only layout preference like this.
   const [collapsed, setCollapsed] = useState(false);
 
+  // RoleShell doesn't own the fetch that produced `user` (each page's own
+  // useProtectedPage() does), so a fresh photo upload from the new profile
+  // menu (19 Aug 2026) is applied as a local override here rather than
+  // waiting on the parent page to re-fetch -- every avatar in this shell
+  // updates instantly instead of only after the next navigation.
+  const [photoOverride, setPhotoOverride] = useState<string | null>(null);
+  const effectiveUser = photoOverride && user ? { ...user, profilePhotoUrl: photoOverride } : user;
+  // Only ADMIN/SUPER_ADMIN have a Security Settings page today (2FA,
+  // sessions, data export) -- the profile menu links out to it for them and
+  // handles password changes inline for every role instead.
+  const hasSecuritySettings = role === "ADMIN" || role === "SUPER_ADMIN";
+
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1");
   }, []);
@@ -438,12 +451,14 @@ export function RoleShell({
       >
         <SidebarContent
           role={role}
-          user={user}
+          user={effectiveUser}
           pathname={pathname}
           collapsed={collapsed}
           onSignOut={handleLogout}
           signingOut={signingOut}
           onToggleCollapse={toggleCollapsed}
+          onPhotoUpdated={setPhotoOverride}
+          hasSecuritySettings={hasSecuritySettings}
         />
       </aside>
 
@@ -480,11 +495,13 @@ export function RoleShell({
           <div className="absolute inset-y-0 left-0 w-[min(20rem,86vw)] animate-fade-in shadow-panel">
             <SidebarContent
               role={role}
-              user={user}
+              user={effectiveUser}
               pathname={pathname}
               onNavigate={() => setMenuOpen(false)}
               onSignOut={handleLogout}
               signingOut={signingOut}
+              onPhotoUpdated={setPhotoOverride}
+              hasSecuritySettings={hasSecuritySettings}
             />
             <button
               type="button"
@@ -517,21 +534,18 @@ export function RoleShell({
             <Badge tone="brand" dot pulse>
               Session Active
             </Badge>
-            <span className="flex items-center gap-2.5 rounded-full border border-line bg-surface/80 py-1.5 pl-1.5 pr-4 shadow-xs backdrop-blur">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white">
-                {initialsFromName(user?.fullName)}
-              </span>
-              {/* max-w + truncate rather than relying on flex-shrink alone --
-                  this pill sits inside two more flex rows above it, so an
-                  unusually long real name (this product spans many
-                  naming conventions) could otherwise stretch the whole
-                  context bar wider than the space next to a collapsed vs.
-                  expanded sidebar actually leaves it, right at the lg
-                  breakpoint where that space is tightest. */}
-              <span className="max-w-[9rem] truncate text-sm font-semibold text-content sm:max-w-[14rem]">
-                {user?.fullName ?? "Signed in"}
-              </span>
-            </span>
+            {/* Clickable profile menu (19 Aug 2026, Shailesh: "it should be
+                clickable and should behave like a user settings panel just
+                like we see in every other top notch platform") -- was a
+                static pill before. */}
+            <UserMenu
+              user={effectiveUser}
+              role={role}
+              onPhotoUpdated={setPhotoOverride}
+              hasSecuritySettings={hasSecuritySettings}
+              onSignOut={handleLogout}
+              signingOut={signingOut}
+            />
           </span>
         </div>
 
@@ -540,7 +554,7 @@ export function RoleShell({
         <footer className="relative z-10 mx-auto w-full max-w-shell px-4 pb-10 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-2 border-t border-line pt-5 text-xs text-content-faint sm:flex-row sm:items-center sm:justify-between">
             <span>School Enrichment &middot; CBSE &amp; ICSE, Class 5&ndash;10</span>
-            <span>Signed in as {ROLE_LABEL[role].toLowerCase()}</span>
+            <span>Signed In as {ROLE_LABEL[role]}</span>
           </div>
         </footer>
       </div>
