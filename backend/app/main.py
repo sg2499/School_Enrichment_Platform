@@ -28,6 +28,7 @@ from app.api.routes_auth import router as auth_router
 from app.api.routes_curriculum_admin import router as curriculum_admin_router
 from app.api.routes_health import router as health_router
 from app.api.routes_platform import router as platform_router
+from app.api.routes_roster import router as roster_router
 from app.core.config import FRONTEND_URL, SENTRY_DSN
 from app.core.rate_limit import limiter
 
@@ -95,3 +96,4 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(platform_router)
 app.include_router(curriculum_admin_router)
+app.include_router(roster_router)
