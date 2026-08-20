@@ -13,4 +13,15 @@ from app.models.curriculum import (  # noqa: F401
     SubjectGroup,
     Term,
 )
+from app.models.learning import (  # noqa: F401
+    ACTIVITY_TYPES,
+    ASSIGNMENT_REASONS,
+    Assignment,
+    AssignmentTarget,
+    Attempt,
+    AttemptAnswer,
+    Evaluation,
+    LearningActivity,
+    LearningActivityQuestion,
+)
 from app.models.models import AuditLog, School, SchoolAdmin, Student, Teacher, User, UserSession  # noqa: F401
