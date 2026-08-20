@@ -113,9 +113,9 @@ def _make_chapter_with_skills(db, suffix: str, n_skills: int = 2):
 # since only assignment_code's shape is under test.
 _CHAPTER_NUM = {
     "gen1": 1, "gen2": 2, "asg1": 3, "asg2": 4,
-    "ATT1": 5, "ATT2": 6, "ATT3": 7,
+    "ATT1": 5, "ATT2": 6, "ATT3": 7, "ATT4": 14,
     "FR2": 8, "FR3": 9,
-    "API1": 10, "API2": 11, "API3": 12, "API4": 13,
+    "API1": 10, "API2": 11, "API3": 12, "API4": 13, "API5": 15, "API6": 16,
 }
 
 
@@ -471,6 +471,54 @@ def test_attempt_limit_is_enforced(db_session):
         pass
 
 
+def test_grant_extra_attempt_raises_this_one_students_limit_only(db_session):
+    """20 Aug 2026, teacher reattempt-approval surface: bonus_attempts is
+    per-AssignmentTarget, so granting one student an extra attempt must not
+    raise the limit for a second student sharing the same Assignment."""
+    chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT4")
+    school = _make_school(db_session, "att4")
+    student = _make_student(db_session, school, "att4")
+    other_student = _make_student(db_session, school, "att4-other")
+    db_session.commit()
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        student_ids=[student.id, other_student.id], max_attempts=1,
+    )
+    target = db_session.query(AssignmentTarget).filter(
+        AssignmentTarget.assignment_id == assignment.id, AssignmentTarget.student_id == student.id
+    ).first()
+    other_target = db_session.query(AssignmentTarget).filter(
+        AssignmentTarget.assignment_id == assignment.id, AssignmentTarget.student_id == other_student.id
+    ).first()
+
+    attempt = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.submit_attempt(db_session, student, attempt.id)
+    other_attempt = learning_service.start_attempt(db_session, other_student, other_target.id)
+    learning_service.submit_attempt(db_session, other_student, other_attempt.id)
+
+    # Both students are now at their limit (max_attempts=1, 0 bonus).
+    for s, t in ((student, target), (other_student, other_target)):
+        try:
+            learning_service.start_attempt(db_session, s, t.id)
+            assert False, "expected ATTEMPT_LIMIT_REACHED"
+        except Exception:
+            pass
+
+    learning_service.grant_extra_attempt(db_session, target)
+    assert target.bonus_attempts == 1
+
+    # The granted student can now start a second attempt...
+    second_attempt = learning_service.start_attempt(db_session, student, target.id)
+    assert second_attempt.attempt_number == 2
+
+    # ...but the other student, who wasn't granted anything, still can't.
+    try:
+        learning_service.start_attempt(db_session, other_student, other_target.id)
+        assert False, "expected ATTEMPT_LIMIT_REACHED for the ungranted student"
+    except Exception:
+        pass
+
+
 def test_unanswered_question_is_scored_as_wrong_on_submit(db_session):
     """blueprint 8.2: 'Unattempted answers receive zero.' -- never touching
     a question at all must still count against max_score, not be silently
@@ -714,6 +762,13 @@ def test_teacher_and_super_admin_can_view_assignment_targets_results(client, db_
     assert target_row["studentId"] == student.id
     assert target_row["status"] == "COMPLETED"
     assert target_row["latestAttempt"]["evaluation"]["finalScore"] == 1
+    # 20 Aug 2026, teacher review/reattempt-approval surface: full attempt
+    # history plus the fields the "grant an extra attempt" UI needs.
+    assert target_row["maxAttempts"] == 3  # create_assignment's default
+    assert target_row["bonusAttempts"] == 0
+    assert target_row["attemptsUsed"] == 1
+    assert len(target_row["attempts"]) == 1
+    assert target_row["attempts"][0]["id"] == target_row["latestAttempt"]["id"]
 
     # A different teacher (even at the same school) gets a 404, not the
     # data -- matches this file's "don't disclose another teacher's/
@@ -730,3 +785,99 @@ def test_teacher_and_super_admin_can_view_assignment_targets_results(client, db_
     sa_targets_response = client.get(f"/api/learning/assignments/{assignment.id}/targets", headers=sa_headers)
     assert sa_targets_response.status_code == 200
     assert len(sa_targets_response.json()["targets"]) == 1
+
+
+def test_grant_extra_attempt_endpoint_is_scoped_and_unblocks_the_student(client, db_session):
+    """20 Aug 2026, teacher reattempt-approval surface: the owning teacher
+    can grant an extra attempt (and it actually unblocks start_attempt); a
+    teacher who doesn't own the assignment gets 404, matching every other
+    scoped endpoint in this file."""
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "API5", n_skills=1)
+    _add_question(db_session, skill1, "API5-Q1", assignment_code=_ac("API5", "P01"), question_type="Single Select", correct_answer="A", marks=1)
+    db_session.commit()
+
+    school = _make_school(db_session, "api5")
+    teacher = _make_teacher(db_session, school, "api5")
+    other_teacher = _make_teacher(db_session, school, "api5-other")
+    student = _make_student(db_session, school, "api5")
+    db_session.commit()
+
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=teacher.user_id,
+        class_name="5A", max_attempts=1,
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    question = db_session.query(Question).filter(Question.code == "API5-Q1").first()
+    attempt = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.save_answer(db_session, student, attempt.id, question.id, "A")
+    learning_service.submit_attempt(db_session, student, attempt.id)
+
+    # Student is now at their limit (max_attempts=1).
+    try:
+        learning_service.start_attempt(db_session, student, target.id)
+        assert False, "expected ATTEMPT_LIMIT_REACHED"
+    except Exception:
+        pass
+
+    # A teacher who doesn't own this assignment can't grant against it.
+    other_headers = _login(client, other_teacher.user.email)
+    forbidden_grant = client.post(
+        f"/api/learning/assignments/{assignment.id}/targets/{target.id}/grant-attempt", headers=other_headers
+    )
+    assert forbidden_grant.status_code == 404
+
+    client.cookies.clear()
+    teacher_headers = _login(client, teacher.user.email)
+    grant_response = client.post(
+        f"/api/learning/assignments/{assignment.id}/targets/{target.id}/grant-attempt", headers=teacher_headers
+    )
+    assert grant_response.status_code == 200
+    body = grant_response.json()
+    assert body["bonusAttempts"] == 1
+    assert body["maxAttempts"] == 1
+    assert body["attemptsUsed"] == 1
+
+    # The grant actually unblocks the student, not just the counter.
+    db_session.refresh(target)
+    unblocked_attempt = learning_service.start_attempt(db_session, student, target.id)
+    assert unblocked_attempt.attempt_number == 2
+
+
+def test_get_attempt_result_is_scoped_for_teacher_and_admin(client, db_session):
+    """20 Aug 2026: closes a real gap -- this endpoint used to have NO
+    scoping for TEACHER/ADMIN at all, so any authenticated teacher could
+    fetch any attempt's full result (including the answer key) by
+    guessing/enumerating attempt_id. Now scoped the same way as the
+    results-list endpoint (list_assignment_targets)."""
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "API6", n_skills=1)
+    _add_question(db_session, skill1, "API6-Q1", assignment_code=_ac("API6", "P01"), question_type="Single Select", correct_answer="A", marks=1)
+    db_session.commit()
+
+    school = _make_school(db_session, "api6")
+    teacher = _make_teacher(db_session, school, "api6")
+    other_teacher = _make_teacher(db_session, school, "api6-other")
+    student = _make_student(db_session, school, "api6")
+    db_session.commit()
+
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=teacher.user_id, class_name="5A",
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    question = db_session.query(Question).filter(Question.code == "API6-Q1").first()
+    attempt = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.save_answer(db_session, student, attempt.id, question.id, "A")
+    learning_service.submit_attempt(db_session, student, attempt.id)
+
+    other_headers = _login(client, other_teacher.user.email)
+    forbidden_result = client.get(f"/api/learning/attempts/{attempt.id}/result", headers=other_headers)
+    assert forbidden_result.status_code == 404
+
+    client.cookies.clear()
+    teacher_headers = _login(client, teacher.user.email)
+    owned_result = client.get(f"/api/learning/attempts/{attempt.id}/result", headers=teacher_headers)
+    assert owned_result.status_code == 200
+    assert owned_result.json()["answers"][0]["correctAnswer"] == "A"

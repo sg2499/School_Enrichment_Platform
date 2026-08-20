@@ -36,6 +36,7 @@ from app.core.errors import api_error
 from app.core.rate_limit import limiter
 from app.database import get_db
 from app.dependencies import get_current_student, get_current_teacher, require_roles
+from app.services.audit_service import log_audit_event
 from app.models import (
     ASSIGNMENT_REASONS,
     Assignment,
@@ -270,6 +271,31 @@ def _latest_attempt_summary(db: Session, assignment_target_id: str) -> dict | No
     }
 
 
+def _attempt_history(db: Session, assignment_target_id: str) -> list[dict]:
+    """Every attempt on this target, oldest first -- the teacher review
+    surface (20 Aug 2026) needs the full history, not just the latest one,
+    so a teacher deciding whether to approve a re-attempt can see how the
+    earlier ones went too."""
+    attempts = (
+        db.query(Attempt)
+        .filter(Attempt.assignment_target_id == assignment_target_id)
+        .order_by(Attempt.attempt_number.asc())
+        .all()
+    )
+    rows = []
+    for attempt in attempts:
+        evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
+        rows.append(
+            {
+                "id": attempt.id,
+                "attemptNumber": attempt.attempt_number,
+                "status": attempt.status,
+                "evaluation": _evaluation_dict(evaluation) if evaluation else None,
+            }
+        )
+    return rows
+
+
 @router.get("/assignments")
 def list_assignments(
     user: User = Depends(require_roles("TEACHER", "STUDENT", "ADMIN", "SUPER_ADMIN")),
@@ -315,20 +341,16 @@ def list_assignments(
     }
 
 
-@router.get("/assignments/{assignment_id}/targets")
-def list_assignment_targets(
-    assignment_id: str,
-    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
-    db: Session = Depends(get_db),
-):
-    """Per-student results for one assignment -- the teacher "results" view
-    (20 Aug 2026, Phase 3 frontend). Returns 404 rather than 403 for an
-    assignment outside the caller's scope, matching this file's existing
-    "don't disclose another school's/teacher's resource exists" rule (see
-    module docstring)."""
-    assignment = db.get(Assignment, assignment_id)
-    if not assignment:
-        api_error(404, "NOT_FOUND", "Assignment not found.")
+def _check_assignment_scope(db: Session, user: User, assignment: Assignment) -> None:
+    """Raises 404 (never 403) if `user` (TEACHER/ADMIN/SUPER_ADMIN) has no
+    scope over `assignment` -- a TEACHER only over assignments they created,
+    an ADMIN only over their own school's, SUPER_ADMIN over everything.
+    Matches this file's existing "don't disclose another school's/teacher's
+    resource exists" rule (see module docstring). Factored out 20 Aug 2026
+    so get_attempt_result could reuse list_assignment_targets' scoping
+    check -- get_attempt_result had none before this pass (any
+    authenticated TEACHER/ADMIN could look up any attempt_id, in any
+    school, by guessing/enumerating it)."""
     if user.role == "TEACHER" and assignment.assigned_by_user_id != user.id:
         api_error(404, "NOT_FOUND", "Assignment not found.")
     if user.role == "ADMIN":
@@ -336,10 +358,32 @@ def list_assignment_targets(
         if assignment.school_id != school.id:
             api_error(404, "NOT_FOUND", "Assignment not found.")
 
+
+def _get_scoped_assignment(db: Session, user: User, assignment_id: str) -> Assignment:
+    assignment = db.get(Assignment, assignment_id)
+    if not assignment:
+        api_error(404, "NOT_FOUND", "Assignment not found.")
+    _check_assignment_scope(db, user, assignment)
+    return assignment
+
+
+@router.get("/assignments/{assignment_id}/targets")
+def list_assignment_targets(
+    assignment_id: str,
+    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Per-student results for one assignment -- the teacher "results" view
+    (20 Aug 2026, Phase 3 frontend; extended the same day with attempt
+    history + attempts-remaining fields for the review/reattempt-approval
+    surface)."""
+    assignment = _get_scoped_assignment(db, user, assignment_id)
+
     targets = db.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
     rows = []
     for target in targets:
         student = target.student
+        attempts = _attempt_history(db, target.id)
         rows.append(
             {
                 "assignmentTargetId": target.id,
@@ -348,11 +392,54 @@ def list_assignment_targets(
                 "studentCode": student.student_code,
                 "className": student.class_name,
                 "status": target.status,
-                "latestAttempt": _latest_attempt_summary(db, target.id),
+                "maxAttempts": assignment.max_attempts,
+                "bonusAttempts": target.bonus_attempts,
+                "attemptsUsed": len(attempts),
+                "attempts": attempts,
+                "latestAttempt": attempts[-1] if attempts else None,
             }
         )
     rows.sort(key=lambda r: (r["studentName"] or "").lower())
     return {"assignmentId": assignment.id, "targets": rows}
+
+
+@router.post("/assignments/{assignment_id}/targets/{target_id}/grant-attempt")
+@limiter.limit("30/minute")
+def grant_extra_attempt(
+    request: Request,
+    assignment_id: str,
+    target_id: str,
+    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Reattempt approval (20 Aug 2026): a teacher/admin grants one specific
+    student one more attempt on one specific assignment, without touching
+    Assignment.max_attempts (shared by every other student targeted by the
+    same assignment) -- see learning_service.grant_extra_attempt and
+    start_attempt's own ATTEMPT_LIMIT_REACHED message, which has pointed
+    students at their teacher for exactly this since Phase 3 kicked off."""
+    assignment = _get_scoped_assignment(db, user, assignment_id)
+    target = db.get(AssignmentTarget, target_id)
+    if not target or target.assignment_id != assignment.id:
+        api_error(404, "NOT_FOUND", "Assignment target not found.")
+
+    target = learning_service.grant_extra_attempt(db, target)
+    log_audit_event(
+        db,
+        "learning.attempt.extra_granted",
+        user_id=user.id,
+        request=request,
+        details={"assignmentId": assignment.id, "assignmentTargetId": target.id, "studentId": target.student_id, "bonusAttempts": target.bonus_attempts},
+    )
+    db.commit()
+
+    attempts = _attempt_history(db, target.id)
+    return {
+        "assignmentTargetId": target.id,
+        "maxAttempts": assignment.max_attempts,
+        "bonusAttempts": target.bonus_attempts,
+        "attemptsUsed": len(attempts),
+    }
 
 
 # --- attempt lifecycle (STUDENT) -------------------------------------------
@@ -449,6 +536,16 @@ def get_attempt_result(
         student_row = db.query(Student).filter(Student.user_id == user.id).first()
         if not student_row or attempt.assignment_target.student_id != student_row.id:
             api_error(404, "NOT_FOUND", "Attempt not found.")
+    else:
+        # TEACHER/ADMIN/SUPER_ADMIN: scoped the same way as the results view
+        # (list_assignment_targets) -- a TEACHER can only see attempts on
+        # assignments they created, an ADMIN only within their own school.
+        # 20 Aug 2026: this scoping used to be entirely missing here (any
+        # TEACHER/ADMIN could fetch any attempt_id's full result, including
+        # the answer key, by guessing or enumerating it) -- closed while
+        # building the teacher review surface, which is the first thing to
+        # actually call this endpoint from a TEACHER session.
+        _check_assignment_scope(db, user, attempt.assignment_target.assignment)
 
     evaluation = learning_service.get_result(db, attempt_id)
     if not evaluation:

@@ -249,6 +249,14 @@ class AssignmentTarget(Base):
     assignment_id = Column(String, ForeignKey("assignments.id", ondelete="CASCADE"), nullable=False, index=True)
     student_id = Column(String, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(String(20), nullable=False, default="PENDING")  # PENDING | IN_PROGRESS | COMPLETED | SKIPPED
+    # Extra attempts a teacher/admin has approved for this one student on
+    # this one assignment, on top of Assignment.max_attempts (shared by
+    # every other student on the same assignment) -- added 20 Aug 2026 for
+    # the teacher reattempt-approval surface. start_attempt's limit check is
+    # `attempt_count >= assignment.max_attempts + target.bonus_attempts`, so
+    # granting one student a re-attempt never changes the limit for anyone
+    # else targeted by the same Assignment row.
+    bonus_attempts = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     assignment = relationship("Assignment")
