@@ -30,13 +30,22 @@ Entry, 125 Single Select, 17 Text Entry, 5 Ordering, 4 Constructed Response,
 1 Multi Select out of 500) -- Single/Multi Select (option-letter matching),
 Numeric Entry/Text Entry (normalized value matching against correct_answer
 or any `|`-separated accepted_variants, mirroring
-question_quality_service.py's own `_normalize_answer_numbers` convention),
-and Ordering (semicolon-separated sequence matching). This is deliberately
-NOT the client's full measurement/unit-tolerance rule set (Section 7 item 5
-of PROJECT_REFERENCE.md's clarifications: separate number/unit scoring,
-accepted unit-name variants, round-half-up, per-question tolerance) --
-that precise a numeric/unit evaluation engine is real, further Phase 3/4
-work of its own, tracked separately, not silently assumed done here.
+question_quality_service.py's own `_normalize_answer_numbers` convention --
+plus, since 20 Aug 2026, a numeric-equivalence fallback via `_numeric_value`
+so thousands-separator commas, a stray currency symbol or common unit label,
+a leading '+', or decimal-precision differences on an otherwise-correct
+numeric blank can never flip a right answer to wrong), and Ordering
+(semicolon-separated sequence matching, same per-blank tolerance). This is
+deliberately NOT the client's full measurement/unit-tolerance rule set
+(Section 7 item 5 of PROJECT_REFERENCE.md's clarifications: separate
+number/unit scoring, accepted unit-name variants, unit conversion, per-
+question rounding/tolerance, and partial credit for a missing required
+unit) -- that precise a numeric/unit evaluation engine, with real per-
+question tolerance/rounding config and partial-credit rules, is real,
+further Phase 3/4 work of its own, tracked separately, not silently
+assumed done here. `_numeric_value`'s unit stripping is a small, curated,
+best-effort vocabulary meant only to stop legitimate formatting variants
+from being marked wrong -- not a substitute for that spec.
 Anything grade_answer can't confidently score (auto_gradable=False, or a
 question_type it doesn't recognise, e.g. Constructed Response) returns
 (None, None) rather than guessing -- the same "don't guess" discipline
@@ -360,6 +369,62 @@ def _normalize_value(text: str) -> str:
     return re.sub(r"\s+", " ", text.replace(",", "")).strip().lower()
 
 
+# Currency/unit noise _numeric_value strips before parsing a blank as a
+# number. Deliberately a small, curated vocabulary -- NOT a general "eat any
+# trailing word" pattern -- so a wrong free-text answer that merely happens
+# to contain the right number (e.g. "subtract 500 each time" when the
+# correct answer is "add 500 each time") can never numeric-match: after
+# stripping, anything other than a bare currency-prefixed/unit-suffixed
+# number still fails float() and falls back to plain string comparison.
+_LEADING_CURRENCY_RE = re.compile(r"^(rs\.?|inr|usd)\s*|^[₹$]\s*", re.IGNORECASE)
+_TRAILING_UNIT_RE = re.compile(
+    r"\s*(kmph|km/h|km|kg|gm|mg|g|cm|mm|ml|l|litres?|liters?|metres?|meters?|m|"
+    r"rupees?|rs\.?|"
+    r"hours?|hrs?|minutes?|mins?|seconds?|secs?|"
+    r"days?|weeks?|months?|years?|degrees?|percent|%)\.?$",
+    re.IGNORECASE,
+)
+
+
+def _numeric_value(text: str) -> float | None:
+    """Best-effort extraction of the number a free-text numeric answer
+    represents, so formatting that doesn't change the underlying value --
+    thousands-separator commas, a leading currency symbol, a trailing unit
+    label, a leading '+', or trailing zeros/decimal precision -- never
+    causes a mathematically correct answer to be marked wrong (found via the
+    20 Aug 2026 pilot scan: "19,250 km" was marked incorrect against a
+    correct_answer of "19250"). Returns None when the text isn't -- once
+    that noise is stripped -- a single clean number, so callers fall back to
+    exact string comparison for genuine free text; this only ever makes
+    grading MORE lenient toward equivalent values, never lenient toward
+    wrong ones.
+    """
+    cleaned = re.sub(r"\s+", " ", text.replace(",", "")).strip()
+    cleaned = _LEADING_CURRENCY_RE.sub("", cleaned)
+    cleaned = _TRAILING_UNIT_RE.sub("", cleaned).strip()
+    cleaned = cleaned.lstrip("+")
+    if not cleaned:
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def _blank_matches(response_blank: str, candidate_blank: str) -> bool:
+    if _normalize_value(response_blank) == _normalize_value(candidate_blank):
+        return True
+    response_value = _numeric_value(response_blank)
+    candidate_value = _numeric_value(candidate_blank)
+    return response_value is not None and candidate_value is not None and response_value == candidate_value
+
+
+def _blanks_match(response_blanks: list[str], candidate_blanks: list[str]) -> bool:
+    return len(response_blanks) == len(candidate_blanks) and all(
+        _blank_matches(r, c) for r, c in zip(response_blanks, candidate_blanks)
+    )
+
+
 def _candidate_answers(question: Question) -> list[str]:
     candidates = [question.correct_answer or ""]
     if question.accepted_variants:
@@ -390,17 +455,20 @@ def grade_answer(question: Question, response_text: str | None) -> tuple[bool | 
         if not response:
             is_correct = False
         else:
-            normalized_response = [_normalize_value(p) for p in response.split(";") if p.strip()]
+            response_blanks = [p for p in response.split(";") if p.strip()]
             is_correct = any(
-                normalized_response == [_normalize_value(p) for p in candidate.split(";") if p.strip()]
+                _blanks_match(response_blanks, [p for p in candidate.split(";") if p.strip()])
                 for candidate in _candidate_answers(question)
             )
     elif question_type == "Ordering":
         if not response:
             is_correct = False
         else:
-            normalized_response = _normalize_value(response)
-            is_correct = any(_normalize_value(candidate) == normalized_response for candidate in _candidate_answers(question))
+            response_blanks = [p for p in response.split(";") if p.strip()]
+            is_correct = any(
+                _blanks_match(response_blanks, [p for p in candidate.split(";") if p.strip()])
+                for candidate in _candidate_answers(question)
+            )
     else:
         # Constructed Response and any other subjective/unrecognised type --
         # not auto-graded, don't guess.
