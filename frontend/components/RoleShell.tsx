@@ -82,7 +82,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
         { label: "My Lessons", icon: BookOpen, soon: true },
-        { label: "Daily Practice", icon: Target, soon: true },
+        { label: "Daily Practice", icon: Target, href: "/student/practice" },
         { label: "Mock Papers", icon: FileSpreadsheet, soon: true },
       ],
     },
@@ -100,7 +100,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/teacher/dashboard" },
         { label: "My Classes", icon: Users, soon: true },
-        { label: "Assignments", icon: ClipboardList, soon: true },
+        { label: "Assignments", icon: ClipboardList, href: "/teacher/assignments" },
         { label: "Marking", icon: ClipboardCheck, soon: true },
       ],
     },
