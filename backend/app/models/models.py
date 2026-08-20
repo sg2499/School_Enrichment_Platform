@@ -119,6 +119,15 @@ class Student(Base):
     permanent_address = Column(Text, nullable=True)
     class_name = Column(String(50), nullable=True)
     section = Column(String(50), nullable=True)
+    # Normalized standard, added 20 Aug 2026 for the teacher-assignment/
+    # Practice Overview scale-safety work -- see
+    # app/models/teacher_assignment.py's module docstring. Deliberately
+    # additive: class_name stays exactly as-is and every existing query that
+    # reads it keeps working unchanged. Nullable because it is backfilled
+    # best-effort from class_name (see the migration that adds this column)
+    # and a school's curriculum content -- and therefore its ClassLevel rows
+    # -- may not cover every standard a student's class_name implies yet.
+    class_level_id = Column(String, ForeignKey("class_levels.id", ondelete="SET NULL"), nullable=True, index=True)
 
     father_name = Column(String(150), nullable=True)
     father_occupation = Column(String(150), nullable=True)
@@ -134,6 +143,7 @@ class Student(Base):
     school = relationship("School")
     user = relationship("User")
     assigned_teacher = relationship("Teacher", foreign_keys=[teacher_id])
+    class_level = relationship("ClassLevel")
 
 
 class Teacher(Base):
