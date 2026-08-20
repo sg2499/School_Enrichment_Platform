@@ -253,6 +253,47 @@ def test_grade_answer_ordering():
     assert grade_answer(q, "9;5;1")[0] is False
 
 
+def test_grade_answer_numeric_entry_tolerates_unit_currency_sign_and_decimal_noise():
+    # Regression for the 20 Aug 2026 pilot scan: "19,250 km" against a
+    # correct_answer of "19250" was marked incorrect even though it's the
+    # mathematically correct value -- grade_answer must never flag a
+    # correct answer as wrong just because of formatting.
+    q = Question(question_type="Numeric Entry", correct_answer="19250", marks=1, auto_gradable=True)
+    assert grade_answer(q, "19,250 km")[0] is True
+    assert grade_answer(q, "19250km")[0] is True
+    assert grade_answer(q, "19250.0")[0] is True
+    assert grade_answer(q, "+19250")[0] is True
+    assert grade_answer(q, "Rs. 19250")[0] is True  # decorative currency prefix still strips to the same number
+    assert grade_answer(q, "19251")[0] is False  # genuinely wrong value stays wrong
+    assert grade_answer(q, "192500")[0] is False  # off by a factor of ten stays wrong
+
+    percent_q = Question(question_type="Numeric Entry", correct_answer="45", marks=1, auto_gradable=True)
+    assert grade_answer(percent_q, "45%")[0] is True
+    assert grade_answer(percent_q, "45 percent")[0] is True
+
+    decimal_q = Question(question_type="Numeric Entry", correct_answer="3.5", marks=1, auto_gradable=True)
+    assert grade_answer(decimal_q, "3.50 cm")[0] is True
+    assert grade_answer(decimal_q, "3.5cm")[0] is True
+
+
+def test_grade_answer_numeric_fallback_never_creates_a_false_positive_from_embedded_numbers():
+    # A wrong free-text answer that merely contains the right number must
+    # still be marked wrong -- the unit-stripping fallback only recognises a
+    # bare number plus a small curated unit/currency vocabulary, not
+    # arbitrary sentences, precisely so this can't be gamed.
+    q = Question(question_type="Text Entry", correct_answer="Add 500", marks=1, auto_gradable=True)
+    assert grade_answer(q, "Subtract 500")[0] is False
+    assert grade_answer(q, "Add 500 each time")[0] is False  # extra words -> no string OR numeric match
+    assert grade_answer(q, "Add 500")[0] is True  # exact (case-insensitive) match still works
+
+
+def test_grade_answer_ordering_tolerates_comma_and_unit_noise_per_item():
+    q = Question(question_type="Ordering", correct_answer="1,000;5,000;9,000", marks=1, auto_gradable=True)
+    assert grade_answer(q, "1000;5000;9000")[0] is True
+    assert grade_answer(q, "1000 km;5000 km;9000 km")[0] is True
+    assert grade_answer(q, "9000;5000;1000")[0] is False
+
+
 def test_grade_answer_returns_none_for_non_auto_gradable_or_unrecognised_type():
     subjective = Question(question_type="Constructed Response", correct_answer="anything", marks=4, auto_gradable=False)
     assert grade_answer(subjective, "my answer") == (None, None)
