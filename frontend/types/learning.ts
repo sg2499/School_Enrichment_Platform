@@ -89,7 +89,8 @@ export type StudentAssignmentSummary = {
 };
 
 // One row of GET /api/learning/assignments/{id}/targets -- the teacher
-// results view.
+// results/review view. Extended 20 Aug 2026 with full attempt history and
+// the fields the reattempt-approval action needs.
 export type AssignmentTargetResult = {
   assignmentTargetId: string;
   studentId: string;
@@ -97,7 +98,20 @@ export type AssignmentTargetResult = {
   studentCode: string;
   className: string | null;
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "SKIPPED";
+  maxAttempts: number;
+  bonusAttempts: number;
+  attemptsUsed: number;
+  attempts: LatestAttemptSummary[];
   latestAttempt: LatestAttemptSummary | null;
+};
+
+// POST /api/learning/assignments/{id}/targets/{targetId}/grant-attempt's
+// response -- just the counters the row needs to refresh itself.
+export type GrantExtraAttemptResult = {
+  assignmentTargetId: string;
+  maxAttempts: number;
+  bonusAttempts: number;
+  attemptsUsed: number;
 };
 
 // A question as sent to a student mid-attempt -- never the answer key (see
