@@ -143,6 +143,13 @@ export type SchoolCurriculumMapEntry = {
   schoolId: string;
   boardCourseId: string;
   chapterId: string;
+  // Added 20 Aug 2026 for Phase 3's teacher Assign workspace -- null on any
+  // response that doesn't enrich them (see routes_curriculum_admin.py's
+  // _map_summary), so a TEACHER's read-only list can show the chapter's
+  // title/status without a second lookup per row.
+  chapterTitle?: string | null;
+  chapterCode?: string | null;
+  chapterStatus?: string | null;
   className: string | null;
   teacherId: string | null;
   plannedStartDate: string | null;
