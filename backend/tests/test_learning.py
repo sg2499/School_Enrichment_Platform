@@ -115,7 +115,7 @@ _CHAPTER_NUM = {
     "gen1": 1, "gen2": 2, "asg1": 3, "asg2": 4,
     "ATT1": 5, "ATT2": 6, "ATT3": 7,
     "FR2": 8, "FR3": 9,
-    "API1": 10, "API2": 11,
+    "API1": 10, "API2": 11, "API3": 12, "API4": 13,
 }
 
 
@@ -537,6 +537,26 @@ def test_generate_and_publish_activities_is_super_admin_only(client, db_session)
     assert response.status_code == 403
 
 
+def test_student_assignment_list_latest_attempt_is_none_before_starting(client, db_session):
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "API3", n_skills=1)
+    _add_question(db_session, skill1, "API3-Q1", assignment_code=_ac("API3", "P01"), question_type="Single Select", correct_answer="A", marks=1)
+    db_session.commit()
+
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    school = _make_school(db_session, "api3")
+    student = _make_student(db_session, school, "api3")
+    db_session.commit()
+    learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", class_name="5A")
+
+    headers = _login(client, student.user.email)
+    response = client.get("/api/learning/assignments", headers=headers)
+    assert response.status_code == 200
+    [assignment_summary] = response.json()["assignments"]
+    assert assignment_summary["status"] == "PENDING"
+    assert assignment_summary["latestAttempt"] is None
+
+
 def test_super_admin_generate_publish_then_teacher_assigns_then_student_completes_attempt_end_to_end(client, db_session):
     chapter, (skill1,) = _make_chapter_with_skills(db_session, "API2", n_skills=1)
     _add_question(db_session, skill1, "API2-Q1", assignment_code=_ac("API2", "P01"), question_type="Single Select", correct_answer="A", marks=1)
@@ -566,6 +586,10 @@ def test_super_admin_generate_publish_then_teacher_assigns_then_student_complete
     )
     assert assign_response.status_code == 200
     assert assign_response.json()["targetCount"] == 1
+    # 20 Aug 2026, Phase 3 frontend: enriched so the teacher "My Assignments"
+    # list doesn't need a second round-trip just to show what was assigned.
+    assert assign_response.json()["learningActivityTitle"]
+    assert assign_response.json()["learningActivityType"] == "CORE_PRACTICE"
 
     client.cookies.clear()
     student_headers = _login(client, student.user.email)
@@ -597,3 +621,71 @@ def test_super_admin_generate_publish_then_teacher_assigns_then_student_complete
     result_body = result_response.json()
     assert result_body["answers"][0]["isCorrect"] is True
     assert result_body["answers"][0]["correctAnswer"] == "A"  # answer key IS visible after submission
+
+    # 20 Aug 2026, Phase 3 frontend: the student list now carries a
+    # latestAttempt summary so "Today's Practice" can render Start/Continue/
+    # View Result without a second round-trip per row.
+    relist_response = client.get("/api/learning/assignments", headers=student_headers)
+    assert relist_response.status_code == 200
+    [relisted] = relist_response.json()["assignments"]
+    assert relisted["status"] == "COMPLETED"
+    assert relisted["latestAttempt"]["id"] == attempt_body["id"]
+    assert relisted["latestAttempt"]["status"] == "EVALUATED"
+    assert relisted["latestAttempt"]["evaluation"]["finalScore"] == 1
+
+
+
+def test_teacher_and_super_admin_can_view_assignment_targets_results(client, db_session):
+    """20 Aug 2026, Phase 3 frontend: the teacher results view -- one row per
+    target student with their latest attempt/score. Sets up the activity/
+    assignment/attempt via direct service calls (not HTTP) so this test's
+    own login budget (5/minute, reset per-test by conftest's
+    _reset_rate_limiter) is spent only on the three role checks actually
+    under test here, not on re-proving the attempt lifecycle itself -- that
+    already has its own dedicated coverage above."""
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "API4", n_skills=1)
+    _add_question(db_session, skill1, "API4-Q1", assignment_code=_ac("API4", "P01"), question_type="Single Select", correct_answer="A", marks=1)
+    db_session.commit()
+
+    school = _make_school(db_session, "api4")
+    teacher = _make_teacher(db_session, school, "api4")
+    other_teacher = _make_teacher(db_session, school, "api4-other")
+    super_admin = _make_super_admin(db_session, "api4")
+    student = _make_student(db_session, school, "api4")
+    db_session.commit()
+
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=teacher.user_id, class_name="5A",
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+
+    question = db_session.query(Question).filter(Question.code == "API4-Q1").first()
+    attempt = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.save_answer(db_session, student, attempt.id, question.id, "A")
+    learning_service.submit_attempt(db_session, student, attempt.id)
+
+    teacher_headers = _login(client, teacher.user.email)
+    targets_response = client.get(f"/api/learning/assignments/{assignment.id}/targets", headers=teacher_headers)
+    assert targets_response.status_code == 200
+    [target_row] = targets_response.json()["targets"]
+    assert target_row["studentId"] == student.id
+    assert target_row["status"] == "COMPLETED"
+    assert target_row["latestAttempt"]["evaluation"]["finalScore"] == 1
+
+    # A different teacher (even at the same school) gets a 404, not the
+    # data -- matches this file's "don't disclose another teacher's/
+    # school's resource exists" convention.
+    client.cookies.clear()
+    other_headers = _login(client, other_teacher.user.email)
+    forbidden_response = client.get(f"/api/learning/assignments/{assignment.id}/targets", headers=other_headers)
+    assert forbidden_response.status_code == 404
+
+    # SUPER_ADMIN can see any assignment's targets, same as everything else
+    # in this file it's unrestricted for.
+    client.cookies.clear()
+    sa_headers = _login(client, super_admin.email)
+    sa_targets_response = client.get(f"/api/learning/assignments/{assignment.id}/targets", headers=sa_headers)
+    assert sa_targets_response.status_code == 200
+    assert len(sa_targets_response.json()["targets"]) == 1

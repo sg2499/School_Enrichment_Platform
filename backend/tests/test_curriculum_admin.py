@@ -41,6 +41,7 @@ from app.models import (
     SchoolAdmin,
     SchoolCurriculumMap,
     SubjectGroup,
+    Teacher,
     User,
 )
 
@@ -647,6 +648,78 @@ def test_admin_can_map_published_chapter_into_own_school(client, db_session):
     delete_response = client.delete(f"/api/curriculum-admin/school-curriculum-maps/{mapping_id}", headers=csrf)
     assert delete_response.status_code == 200
     assert db_session.query(SchoolCurriculumMap).filter(SchoolCurriculumMap.id == mapping_id).first() is None
+
+
+def test_teacher_can_read_but_not_write_own_school_curriculum_map(client, db_session):
+    """20 Aug 2026, Phase 3 frontend: a teacher needs a read-only way to see
+    which chapters are mapped into their own school's calendar, to pick
+    something to assign practice from -- see
+    _resolve_school_id_for_read's docstring in routes_curriculum_admin.py."""
+    chapter, board_course = _make_chapter(db_session, "map20", status="PUBLISHED")
+    admin_user, school = _make_school_admin(db_session, "admin-map20@example.com", "Map Test School Twenty")
+    admin_csrf = _login(client, "admin-map20@example.com")
+    create_response = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5"},
+        headers=admin_csrf,
+    )
+    assert create_response.status_code == 200
+
+    teacher_user = User(
+        full_name="Map Teacher", email="teacher-map20@example.com", password_hash=hash_password(PASSWORD), role="TEACHER",
+    )
+    db_session.add(teacher_user)
+    db_session.flush()
+    db_session.add(Teacher(user_id=teacher_user.id, school_id=school.id, teacher_code="TCH-MAP20"))
+    db_session.commit()
+
+    client.cookies.clear()
+    _login(client, "teacher-map20@example.com")
+
+    list_response = client.get("/api/curriculum-admin/school-curriculum-maps")
+    assert list_response.status_code == 200
+    [mapping] = list_response.json()["schoolCurriculumMaps"]
+    assert mapping["chapterId"] == chapter.id
+    assert mapping["chapterTitle"] == chapter.title
+    assert mapping["chapterCode"] == chapter.code
+    assert mapping["chapterStatus"] == "PUBLISHED"
+
+    # Read-only: a teacher still can't create/reschedule/delete a mapping.
+    write_response = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "6"},
+        headers={"x-csrf-token": client.cookies.get("se_csrf")},
+    )
+    assert write_response.status_code == 403
+
+
+def test_teacher_cannot_read_another_schools_curriculum_map(client, db_session):
+    chapter, board_course = _make_chapter(db_session, "map21", status="PUBLISHED")
+    _admin_user, school = _make_school_admin(db_session, "admin-map21@example.com", "Map Test School TwentyOne")
+    admin_csrf = _login(client, "admin-map21@example.com")
+    client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5"},
+        headers=admin_csrf,
+    )
+
+    other_school = School(name="Map Test School TwentyOne Sibling", board="CBSE", city="Bengaluru")
+    db_session.add(other_school)
+    db_session.flush()
+    teacher_user = User(
+        full_name="Other Map Teacher", email="teacher-map21-other@example.com", password_hash=hash_password(PASSWORD), role="TEACHER",
+    )
+    db_session.add(teacher_user)
+    db_session.flush()
+    db_session.add(Teacher(user_id=teacher_user.id, school_id=other_school.id, teacher_code="TCH-MAP21"))
+    db_session.commit()
+
+    client.cookies.clear()
+    _login(client, "teacher-map21-other@example.com")
+    response = client.get(
+        "/api/curriculum-admin/school-curriculum-maps", params={"schoolId": school.id}
+    )
+    assert response.status_code == 403
 
 
 def test_admin_cannot_map_curriculum_for_another_school(client, db_session):

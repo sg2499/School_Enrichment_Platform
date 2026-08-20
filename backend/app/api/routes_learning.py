@@ -44,6 +44,7 @@ from app.models import (
     AttemptAnswer,
     Chapter,
     ConceptLesson,
+    Evaluation,
     LearningActivity,
     LearningActivityQuestion,
     Question,
@@ -189,6 +190,10 @@ def _assignment_dict(assignment: Assignment, target_count: int) -> dict:
         "id": assignment.id,
         "schoolId": assignment.school_id,
         "learningActivityId": assignment.learning_activity_id,
+        # Added 20 Aug 2026 for the teacher "My Assignments" list -- avoids a
+        # second round-trip per row just to show what was actually assigned.
+        "learningActivityTitle": assignment.learning_activity.title if assignment.learning_activity else None,
+        "learningActivityType": assignment.learning_activity.activity_type if assignment.learning_activity else None,
         "className": assignment.class_name,
         "reason": assignment.reason,
         "pacingMode": assignment.pacing_mode,
@@ -243,6 +248,28 @@ def create_assignment(
     return _assignment_dict(assignment, target_count)
 
 
+def _latest_attempt_summary(db: Session, assignment_target_id: str) -> dict | None:
+    """Small addition for the Phase 3 frontend (20 Aug 2026): the student
+    "Today's Practice" list needs to know, per assignment, whether to show
+    Start / Continue / View Result without a second round-trip per row --
+    this mirrors start_attempt's own "most recent attempt wins" ordering."""
+    attempt = (
+        db.query(Attempt)
+        .filter(Attempt.assignment_target_id == assignment_target_id)
+        .order_by(Attempt.attempt_number.desc())
+        .first()
+    )
+    if not attempt:
+        return None
+    evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
+    return {
+        "id": attempt.id,
+        "attemptNumber": attempt.attempt_number,
+        "status": attempt.status,
+        "evaluation": _evaluation_dict(evaluation) if evaluation else None,
+    }
+
+
 @router.get("/assignments")
 def list_assignments(
     user: User = Depends(require_roles("TEACHER", "STUDENT", "ADMIN", "SUPER_ADMIN")),
@@ -266,6 +293,7 @@ def list_assignments(
                     "dueDate": assignment.due_date,
                     "reason": assignment.reason,
                     "maxAttempts": assignment.max_attempts,
+                    "latestAttempt": _latest_attempt_summary(db, target.id),
                 }
             )
         return {"assignments": results}
@@ -285,6 +313,46 @@ def list_assignments(
             for a in assignments
         ]
     }
+
+
+@router.get("/assignments/{assignment_id}/targets")
+def list_assignment_targets(
+    assignment_id: str,
+    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Per-student results for one assignment -- the teacher "results" view
+    (20 Aug 2026, Phase 3 frontend). Returns 404 rather than 403 for an
+    assignment outside the caller's scope, matching this file's existing
+    "don't disclose another school's/teacher's resource exists" rule (see
+    module docstring)."""
+    assignment = db.get(Assignment, assignment_id)
+    if not assignment:
+        api_error(404, "NOT_FOUND", "Assignment not found.")
+    if user.role == "TEACHER" and assignment.assigned_by_user_id != user.id:
+        api_error(404, "NOT_FOUND", "Assignment not found.")
+    if user.role == "ADMIN":
+        school = _resolve_school(db, user, None)
+        if assignment.school_id != school.id:
+            api_error(404, "NOT_FOUND", "Assignment not found.")
+
+    targets = db.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    rows = []
+    for target in targets:
+        student = target.student
+        rows.append(
+            {
+                "assignmentTargetId": target.id,
+                "studentId": student.id,
+                "studentName": student.user.full_name if student.user else None,
+                "studentCode": student.student_code,
+                "className": student.class_name,
+                "status": target.status,
+                "latestAttempt": _latest_attempt_summary(db, target.id),
+            }
+        )
+    rows.sort(key=lambda r: (r["studentName"] or "").lower())
+    return {"assignmentId": assignment.id, "targets": rows}
 
 
 # --- attempt lifecycle (STUDENT) -------------------------------------------

@@ -59,6 +59,7 @@ from app.models import (
     School,
     SchoolAdmin,
     SchoolCurriculumMap,
+    Teacher,
     User,
 )
 from app.services.audit_service import log_audit_event
@@ -161,6 +162,23 @@ def _resolve_school_id(db: Session, user: User, requested_school_id: str | None)
     return school_admin.school_id
 
 
+def _resolve_school_id_for_read(db: Session, user: User, requested_school_id: str | None) -> str:
+    """Read-only variant of _resolve_school_id that also accepts TEACHER,
+    resolved from Teacher.school_id -- added for Phase 3's teacher "Assign"
+    workspace, which needs to browse (never mutate) its own school's mapped
+    curriculum to pick a chapter to assign practice from. Every ADMIN-only
+    write path in this file keeps using _resolve_school_id above,
+    unchanged."""
+    if user.role == "TEACHER":
+        teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+        if not teacher or not teacher.is_active:
+            api_error(403, "FORBIDDEN", "Teacher profile not found or inactive.")
+        if requested_school_id and requested_school_id != teacher.school_id:
+            api_error(403, "FORBIDDEN", "You can only view your own school's curriculum.")
+        return teacher.school_id
+    return _resolve_school_id(db, user, requested_school_id)
+
+
 def _apply_transition(current_status: str, requested_status: str, transitions: dict[str, set[str]], label: str) -> None:
     allowed = transitions.get(current_status, set())
     if requested_status not in allowed:
@@ -202,12 +220,19 @@ def _chapter_summary(chapter: Chapter, lesson_count: int, question_count: int) -
     }
 
 
-def _map_summary(mapping: SchoolCurriculumMap) -> dict:
+def _map_summary(mapping: SchoolCurriculumMap, chapter: Chapter | None = None) -> dict:
     return {
         "id": mapping.id,
         "schoolId": mapping.school_id,
         "boardCourseId": mapping.board_course_id,
         "chapterId": mapping.chapter_id,
+        # Added for Phase 3's teacher Assign workspace (chapter is optional
+        # and only passed by list_school_curriculum_maps below -- the other
+        # two call sites, create/reschedule, are unchanged and simply omit
+        # it, same as before this field existed).
+        "chapterTitle": chapter.title if chapter else None,
+        "chapterCode": chapter.code if chapter else None,
+        "chapterStatus": chapter.status if chapter else None,
         "className": mapping.class_name,
         "teacherId": mapping.teacher_id,
         "plannedStartDate": mapping.planned_start_date,
@@ -962,7 +987,7 @@ def create_school_curriculum_map(
     )
     db.commit()
     db.refresh(mapping)
-    return _map_summary(mapping)
+    return _map_summary(mapping, chapter)
 
 
 @router.get("/school-curriculum-maps")
@@ -970,17 +995,24 @@ def list_school_curriculum_maps(
     schoolId: str | None = None,
     className: str | None = None,
     boardCourseId: str | None = None,
-    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    # TEACHER added 20 Aug 2026 (Phase 3): the teacher Assign workspace
+    # needs a read-only way to see which chapters are mapped into their own
+    # school's calendar -- see _resolve_school_id_for_read's docstring.
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN", "TEACHER")),
     db: Session = Depends(get_db),
 ):
-    school_id = _resolve_school_id(db, user, schoolId)
+    school_id = _resolve_school_id_for_read(db, user, schoolId)
     query = db.query(SchoolCurriculumMap).filter(SchoolCurriculumMap.school_id == school_id)
     if className:
         query = query.filter(SchoolCurriculumMap.class_name == className)
     if boardCourseId:
         query = query.filter(SchoolCurriculumMap.board_course_id == boardCourseId)
     mappings = query.order_by(SchoolCurriculumMap.sequence).all()
-    return {"schoolCurriculumMaps": [_map_summary(m) for m in mappings]}
+    chapters = {
+        c.id: c
+        for c in db.query(Chapter).filter(Chapter.id.in_([m.chapter_id for m in mappings])).all()
+    }
+    return {"schoolCurriculumMaps": [_map_summary(m, chapters.get(m.chapter_id)) for m in mappings]}
 
 
 @router.patch("/school-curriculum-maps/{map_id}")
