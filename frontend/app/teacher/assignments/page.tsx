@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   RefreshCcw,
+  RotateCcw,
   Send,
   Users,
   XCircle,
@@ -23,7 +25,14 @@ import { SelectField, TextField } from "@/components/ui/Field";
 import { RosterIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
-import type { Assignment, AssignmentReason, AssignmentTargetResult, LearningActivity } from "@/types/learning";
+import type {
+  Assignment,
+  AssignmentReason,
+  AssignmentTargetResult,
+  AttemptResult,
+  GrantExtraAttemptResult,
+  LearningActivity,
+} from "@/types/learning";
 import type { SchoolCurriculumMapEntry } from "@/types/curriculum";
 
 const REASON_OPTIONS: { value: AssignmentReason; label: string }[] = [
@@ -58,6 +67,142 @@ function AlertBanner({ tone, message }: { tone: "error" | "success"; message: st
   );
 }
 
+// One student's row inside the results modal -- expands to the full attempt
+// history, lets the teacher drill into any evaluated attempt's per-question
+// answers, and (once every allowed attempt is used up) offers to approve
+// one more (20 Aug 2026, the teacher review/reattempt-approval surface).
+function TargetRow({
+  target,
+  expanded,
+  onToggle,
+  viewingAttemptId,
+  onViewAttempt,
+  attemptDetail,
+  attemptDetailLoading,
+  attemptDetailError,
+  onGrant,
+  granting,
+}: {
+  target: AssignmentTargetResult;
+  expanded: boolean;
+  onToggle: () => void;
+  viewingAttemptId: string | null;
+  onViewAttempt: (attemptId: string) => void;
+  attemptDetail: AttemptResult | null;
+  attemptDetailLoading: boolean;
+  attemptDetailError: string | null;
+  onGrant: () => void;
+  granting: boolean;
+}) {
+  const attemptsAllowed = target.maxAttempts + target.bonusAttempts;
+  const hasOpenAttempt = target.attempts.some((a) => a.status === "IN_PROGRESS");
+  const exhausted = target.attemptsUsed >= attemptsAllowed && !hasOpenAttempt;
+
+  return (
+    <div className="rounded-2xl border border-line-strong">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        aria-expanded={expanded}
+      >
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-content">{target.studentName ?? target.studentCode}</p>
+          <p className="text-xs text-content-subtle">
+            {target.studentCode} &middot; {target.attemptsUsed}/{attemptsAllowed} attempt{attemptsAllowed === 1 ? "" : "s"} used
+            {target.bonusAttempts > 0 ? ` (${target.bonusAttempts} granted)` : ""}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {target.status === "COMPLETED" && target.latestAttempt?.evaluation ? (
+            <Badge
+              tone={target.latestAttempt.evaluation.finalScore === target.latestAttempt.evaluation.maxScore ? "success" : "accent"}
+              icon={<CheckCircle2 className="h-3 w-3" />}
+            >
+              {target.latestAttempt.evaluation.finalScore}/{target.latestAttempt.evaluation.maxScore}
+            </Badge>
+          ) : target.status === "IN_PROGRESS" ? (
+            <Badge tone="warning">In Progress</Badge>
+          ) : (
+            <Badge tone="neutral" icon={<XCircle className="h-3 w-3" />}>
+              Not Started
+            </Badge>
+          )}
+          <ChevronDown className={`h-4 w-4 text-content-subtle transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden />
+        </div>
+      </button>
+
+      {expanded ? (
+        <div className="space-y-3 border-t border-line-strong px-4 py-3">
+          {target.attempts.length === 0 ? (
+            <p className="text-sm text-content-muted">Not started yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {target.attempts.map((attempt) => (
+                <div key={attempt.id} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-content-muted">
+                    Attempt {attempt.attemptNumber} &middot; {attempt.status}
+                    {attempt.evaluation ? ` · ${attempt.evaluation.finalScore}/${attempt.evaluation.maxScore}` : ""}
+                  </span>
+                  {attempt.evaluation ? (
+                    <Button variant="ghost" size="sm" onClick={() => onViewAttempt(attempt.id)}>
+                      {viewingAttemptId === attempt.id ? "Hide Answers" : "View Answers"}
+                    </Button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {viewingAttemptId ? (
+            <div className="space-y-2 rounded-2xl bg-surface-brand p-3">
+              {attemptDetailLoading ? <p className="text-sm text-content-muted">Loading answers…</p> : null}
+              {attemptDetailError ? <AlertBanner tone="error" message={attemptDetailError} /> : null}
+              {attemptDetail
+                ? attemptDetail.answers.map((answer, index) => (
+                    <div key={answer.questionId} className="space-y-1 rounded-xl bg-surface p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Question {index + 1}</span>
+                        {answer.isCorrect === true ? (
+                          <Badge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>
+                            Correct
+                          </Badge>
+                        ) : answer.isCorrect === false ? (
+                          <Badge tone="danger" icon={<XCircle className="h-3 w-3" />}>
+                            Incorrect
+                          </Badge>
+                        ) : (
+                          <Badge tone="neutral">Pending Review</Badge>
+                        )}
+                      </div>
+                      <p className="font-medium text-content">{answer.stem}</p>
+                      <p className="text-content-muted">
+                        <span className="font-semibold text-content-subtle">Answer: </span>
+                        {answer.responseText || <span className="italic text-content-faint">Not answered</span>}
+                      </p>
+                      {answer.isCorrect === false ? (
+                        <p className="text-content-muted">
+                          <span className="font-semibold text-content-subtle">Correct answer: </span>
+                          {answer.correctAnswer}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))
+                : null}
+            </div>
+          ) : null}
+
+          {exhausted ? (
+            <Button variant="secondary" size="sm" leadingIcon={<RotateCcw className="h-4 w-4" />} onClick={onGrant} loading={granting}>
+              Grant Extra Attempt
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function TeacherAssignmentsPage() {
   const { user, status } = useProtectedPage("TEACHER");
 
@@ -86,6 +231,17 @@ export default function TeacherAssignmentsPage() {
   const [resultsAssignment, setResultsAssignment] = useState<Assignment | null>(null);
   const [resultsRows, setResultsRows] = useState<AssignmentTargetResult[] | null>(null);
   const [resultsError, setResultsError] = useState<string | null>(null);
+
+  // Per-student review/reattempt-approval state (20 Aug 2026) -- lives at
+  // the modal level rather than inside TargetRow so switching which
+  // student's row is expanded doesn't need to hoist state back up anyway.
+  const [expandedTargetId, setExpandedTargetId] = useState<string | null>(null);
+  const [viewingAttemptId, setViewingAttemptId] = useState<string | null>(null);
+  const [attemptDetail, setAttemptDetail] = useState<AttemptResult | null>(null);
+  const [attemptDetailLoading, setAttemptDetailLoading] = useState(false);
+  const [attemptDetailError, setAttemptDetailError] = useState<string | null>(null);
+  const [grantingTargetId, setGrantingTargetId] = useState<string | null>(null);
+  const [grantError, setGrantError] = useState<string | null>(null);
 
   const loadMappings = useCallback(async () => {
     setMappingsLoading(true);
@@ -188,11 +344,63 @@ export default function TeacherAssignmentsPage() {
     setResultsAssignment(assignment);
     setResultsRows(null);
     setResultsError(null);
+    setExpandedTargetId(null);
+    setViewingAttemptId(null);
+    setAttemptDetail(null);
+    setAttemptDetailError(null);
+    setGrantError(null);
     try {
       const { data } = await api.get<{ targets: AssignmentTargetResult[] }>(`/learning/assignments/${assignment.id}/targets`);
       setResultsRows(data.targets);
     } catch (err) {
       setResultsError(apiErrorMessage(err));
+    }
+  }
+
+  function toggleExpanded(targetId: string) {
+    setExpandedTargetId((prev) => (prev === targetId ? null : targetId));
+    setViewingAttemptId(null);
+    setAttemptDetail(null);
+    setAttemptDetailError(null);
+  }
+
+  async function viewAttempt(attemptId: string) {
+    if (viewingAttemptId === attemptId) {
+      setViewingAttemptId(null);
+      setAttemptDetail(null);
+      return;
+    }
+    setViewingAttemptId(attemptId);
+    setAttemptDetail(null);
+    setAttemptDetailError(null);
+    setAttemptDetailLoading(true);
+    try {
+      const { data } = await api.get<AttemptResult>(`/learning/attempts/${attemptId}/result`);
+      setAttemptDetail(data);
+    } catch (err) {
+      setAttemptDetailError(apiErrorMessage(err));
+    } finally {
+      setAttemptDetailLoading(false);
+    }
+  }
+
+  async function grantExtraAttempt(target: AssignmentTargetResult) {
+    if (!resultsAssignment) return;
+    setGrantingTargetId(target.assignmentTargetId);
+    setGrantError(null);
+    try {
+      await api.post<GrantExtraAttemptResult>(
+        `/learning/assignments/${resultsAssignment.id}/targets/${target.assignmentTargetId}/grant-attempt`,
+      );
+      // Refresh the whole row set so the counters/status this row (and the
+      // student's own "Today's Practice" list, next time they load it)
+      // read from stay in sync with the grant that just landed.
+      const { data } = await api.get<{ targets: AssignmentTargetResult[] }>(`/learning/assignments/${resultsAssignment.id}/targets`);
+      setResultsRows(data.targets);
+    } catch (err) {
+      setGrantError(apiErrorMessage(err));
+    } finally {
+      setGrantingTargetId(null);
     }
   }
 
@@ -385,9 +593,10 @@ export default function TeacherAssignmentsPage() {
         onClose={() => setResultsAssignment(null)}
         eyebrow="Assignment Results"
         title={resultsAssignment?.learningActivityTitle ?? "Results"}
-        size="lg"
+        size="xl"
       >
         {resultsError ? <AlertBanner tone="error" message={resultsError} /> : null}
+        {grantError ? <AlertBanner tone="error" message={grantError} /> : null}
         {!resultsError && !resultsRows ? (
           <div className="flex items-center gap-3 text-sm text-content-muted">
             <ClipboardList className="h-4 w-4 animate-pulse" aria-hidden />
@@ -400,28 +609,19 @@ export default function TeacherAssignmentsPage() {
         {resultsRows && resultsRows.length > 0 ? (
           <div className="space-y-2">
             {resultsRows.map((row) => (
-              <div key={row.assignmentTargetId} className="flex items-center justify-between gap-3 rounded-2xl border border-line-strong px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-content">{row.studentName ?? row.studentCode}</p>
-                  <p className="text-xs text-content-subtle">{row.studentCode}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {row.status === "COMPLETED" && row.latestAttempt?.evaluation ? (
-                    <Badge
-                      tone={row.latestAttempt.evaluation.finalScore === row.latestAttempt.evaluation.maxScore ? "success" : "accent"}
-                      icon={<CheckCircle2 className="h-3 w-3" />}
-                    >
-                      {row.latestAttempt.evaluation.finalScore}/{row.latestAttempt.evaluation.maxScore}
-                    </Badge>
-                  ) : row.status === "IN_PROGRESS" ? (
-                    <Badge tone="warning">In Progress</Badge>
-                  ) : (
-                    <Badge tone="neutral" icon={<XCircle className="h-3 w-3" />}>
-                      Not Started
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              <TargetRow
+                key={row.assignmentTargetId}
+                target={row}
+                expanded={expandedTargetId === row.assignmentTargetId}
+                onToggle={() => toggleExpanded(row.assignmentTargetId)}
+                viewingAttemptId={expandedTargetId === row.assignmentTargetId ? viewingAttemptId : null}
+                onViewAttempt={viewAttempt}
+                attemptDetail={attemptDetail}
+                attemptDetailLoading={attemptDetailLoading}
+                attemptDetailError={attemptDetailError}
+                onGrant={() => grantExtraAttempt(row)}
+                granting={grantingTargetId === row.assignmentTargetId}
+              />
             ))}
           </div>
         ) : null}

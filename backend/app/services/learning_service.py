@@ -297,7 +297,10 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
         return in_progress
 
     attempt_count = db.query(func.count(Attempt.id)).filter(Attempt.assignment_target_id == target.id).scalar() or 0
-    if attempt_count >= assignment.max_attempts:
+    # target.bonus_attempts (20 Aug 2026, teacher reattempt-approval surface)
+    # is this one student's own extra allowance on top of the assignment's
+    # shared max_attempts -- see grant_extra_attempt below.
+    if attempt_count >= assignment.max_attempts + target.bonus_attempts:
         api_error(422, "ATTEMPT_LIMIT_REACHED", "No re-attempts remaining for this assignment. Ask your teacher for an additional attempt.")
     if attempt_count > 0:
         latest = (
@@ -315,6 +318,28 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
     db.commit()
     db.refresh(attempt)
     return attempt
+
+
+# --- Teacher/Admin: reattempt approval (20 Aug 2026) -----------------------
+
+
+def grant_extra_attempt(db: Session, target: AssignmentTarget) -> AssignmentTarget:
+    """One more attempt for this one student on this one assignment,
+    approved by their teacher (or an admin) -- see start_attempt's own
+    ATTEMPT_LIMIT_REACHED message, which has said "ask your teacher" since
+    Phase 3 kicked off. Increments AssignmentTarget.bonus_attempts, which is
+    per-target, not per-Assignment, so it never changes the limit for any
+    other student sharing the same Assignment row. Authorization (does this
+    caller own/have scope over the assignment) is the route layer's job,
+    same as every other teacher-facing endpoint in this module -- this
+    function trusts its caller already checked.
+
+    Deliberately does NOT commit -- audit_service.py's own convention is
+    that a sensitive action's audit-log row is added right next to (and
+    committed atomically with) the action it records, so the route handler
+    logs the audit event and commits both together in one transaction."""
+    target.bonus_attempts += 1
+    return target
 
 
 def _get_owned_attempt(db: Session, student: Student, attempt_id: str) -> Attempt:
@@ -451,16 +476,12 @@ def grade_answer(question: Question, response_text: str | None) -> tuple[bool | 
         given = {p.strip().upper() for p in response.split(",") if p.strip()}
         expected = {p.strip().upper() for p in (question.correct_answer or "").split(",") if p.strip()}
         is_correct = bool(given) and given == expected
-    elif question_type in ("Numeric Entry", "Text Entry"):
-        if not response:
-            is_correct = False
-        else:
-            response_blanks = [p for p in response.split(";") if p.strip()]
-            is_correct = any(
-                _blanks_match(response_blanks, [p for p in candidate.split(";") if p.strip()])
-                for candidate in _candidate_answers(question)
-            )
-    elif question_type == "Ordering":
+    elif question_type in ("Numeric Entry", "Text Entry", "Ordering"):
+        # Numeric/Text Entry's semicolon-joined blanks and Ordering's
+        # semicolon-joined sequence share identical per-blank/per-position
+        # matching (both order-sensitive, both tolerant of the same
+        # formatting noise via _blank_matches) -- one branch, not two
+        # copy-pasted ones.
         if not response:
             is_correct = False
         else:
