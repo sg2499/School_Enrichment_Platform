@@ -222,6 +222,19 @@ export default function StudentAttemptPage() {
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const startedRef = useRef(false);
+  // Autosave used to fire one PUT per keystroke with no ordering guard, so a
+  // fast typist could have an earlier (shorter) keystroke's request resolve
+  // AFTER a later, more-complete one and silently overwrite it -- the screen
+  // still showed the full answer, but the server (and therefore auto-
+  // grading) kept a truncated one. Found during the 20 Aug 2026 end-to-end
+  // scan: reproduced twice, independent of typing speed. Fixed by (1)
+  // debouncing so a burst of keystrokes collapses into one save, and (2)
+  // chaining each question's saves onto a per-question promise so, even if
+  // two saves do fire close together, the network calls are serialized in
+  // the order they were issued rather than racing.
+  const answerTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const saveQueueRef = useRef<Record<string, Promise<unknown>>>({});
+  const AUTOSAVE_DEBOUNCE_MS = 400;
 
   const viewOnlyAttemptId = searchParams.get("view") === "result" ? searchParams.get("attemptId") : null;
 
@@ -270,30 +283,71 @@ export default function StudentAttemptPage() {
     [answers],
   );
 
-  async function handleAnswerChange(question: AttemptQuestion, value: string) {
+  const persistAnswer = useCallback(
+    (question: AttemptQuestion, value: string) => {
+      if (!attempt) return Promise.resolve();
+      setSavingIds((prev) => new Set(prev).add(question.id));
+      const attemptId = attempt.id;
+      const previous = saveQueueRef.current[question.id] ?? Promise.resolve();
+      // Chain onto the previous save for this question rather than firing
+      // concurrently, so network responses can't land out of order and
+      // overwrite a newer answer with a stale one.
+      const thisSave = previous
+        .catch(() => {})
+        .then(() => api.put(`/learning/attempts/${attemptId}/answers`, { questionId: question.id, responseText: value }))
+        .catch(() => {
+          // Best-effort autosave -- submit re-sends nothing itself (the
+          // backend grades whatever was last saved per question), so a
+          // transient save failure here just means that one answer may
+          // need re-entering before submit; not worth interrupting the
+          // student mid-attempt over.
+        })
+        .finally(() => {
+          setSavingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(question.id);
+            return next;
+          });
+        });
+      saveQueueRef.current[question.id] = thisSave;
+      return thisSave;
+    },
+    [attempt],
+  );
+
+  function handleAnswerChange(question: AttemptQuestion, value: string) {
     setAnswers((prev) => ({ ...prev, [question.id]: value }));
     if (!attempt) return;
-    setSavingIds((prev) => new Set(prev).add(question.id));
-    try {
-      await api.put(`/learning/attempts/${attempt.id}/answers`, { questionId: question.id, responseText: value });
-    } catch {
-      // Best-effort autosave -- submit re-sends nothing itself (the backend
-      // grades whatever was last saved per question), so a transient save
-      // failure here just means that one answer may need re-entering before
-      // submit; not worth interrupting the student mid-attempt over.
-    } finally {
-      setSavingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(question.id);
-        return next;
-      });
+    const timers = answerTimersRef.current;
+    if (timers[question.id]) clearTimeout(timers[question.id]);
+    timers[question.id] = setTimeout(() => {
+      delete timers[question.id];
+      void persistAnswer(question, value);
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }
+
+  async function flushPendingSaves() {
+    if (!attempt) return;
+    const timers = answerTimersRef.current;
+    const pendingQuestionIds = Object.keys(timers);
+    pendingQuestionIds.forEach((id) => clearTimeout(timers[id]));
+    answerTimersRef.current = {};
+    // Fire the latest value immediately for any question whose debounce
+    // hadn't elapsed yet, then wait for every question's save chain
+    // (freshly fired or already in flight) to settle before submitting --
+    // otherwise a submit right after typing could grade a stale answer.
+    for (const questionId of pendingQuestionIds) {
+      const question = attempt.questions.find((q) => q.id === questionId);
+      if (question) persistAnswer(question, answers[questionId] ?? "");
     }
+    await Promise.all(Object.values(saveQueueRef.current).map((p) => p.catch(() => {})));
   }
 
   async function handleSubmit() {
     if (!attempt) return;
     setPhase("submitting");
     try {
+      await flushPendingSaves();
       await api.post(`/learning/attempts/${attempt.id}/submit`);
       const { data } = await api.get<AttemptResult>(`/learning/attempts/${attempt.id}/result`);
       setResult(data);
