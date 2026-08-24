@@ -21,7 +21,7 @@ slowapi
 cachetools
 
 pyotp==2.9.0
-qrcode[pil]==7.4.2
+qrcode[pil]==8.2
 # Pillow was already an installed transitive dependency of qrcode[pil], but
 # it's pinned explicitly here now that routes_auth.py imports it directly
 # (2026-08-19 profile-photo content-sniffing) -- a transitive dependency can
