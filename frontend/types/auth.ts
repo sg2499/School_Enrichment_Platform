@@ -11,6 +11,9 @@ export type CurrentUser = {
   isActive?: boolean;
   profilePhotoUrl?: string | null;
   twoFactorEnabled?: boolean;
+  // A1 fix (30 Sep 2026 security/DPDP review) -- see useProtectedPage.ts's
+  // allowWithoutPasswordChange for the redirect this drives.
+  mustChangePassword?: boolean;
   student?: {
     id: string;
     schoolId: string;

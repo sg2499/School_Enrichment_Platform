@@ -17,7 +17,7 @@ def _make_school(db_session) -> School:
 
 def test_admin_login_and_me(client, db_session):
     _make_school(db_session)
-    user = User(full_name="Ashalatha Admin", email="admin@example.com", password_hash=hash_password("Passw0rd1"), role="ADMIN")
+    user = User(full_name="Test Admin", email="admin@example.com", password_hash=hash_password("Passw0rd1"), role="ADMIN")
     db_session.add(user)
     db_session.commit()
 

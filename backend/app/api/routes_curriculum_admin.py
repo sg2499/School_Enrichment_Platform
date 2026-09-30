@@ -178,6 +178,19 @@ def _resolve_school_id_for_read(db: Session, user: User, requested_school_id: st
     return _resolve_school_id(db, user, requested_school_id)
 
 
+def _validate_teacher_in_school(db: Session, teacher_id: str | None, school_id: str) -> None:
+    """A12 fix (30 Sep 2026 security/DPDP review): teacherId was stored on a
+    SchoolCurriculumMap with no check it belongs to the mapping's own
+    school, so a mapping could reference another school's teacher. Mirrors
+    the check teacher_assignment_service.py already applies (`if not
+    teacher or teacher.school_id != school_id`)."""
+    if not teacher_id:
+        return
+    teacher = db.get(Teacher, teacher_id)
+    if not teacher or teacher.school_id != school_id:
+        api_error(422, "VALIDATION_ERROR", "teacherId must belong to the same school as this mapping.")
+
+
 def _apply_transition(current_status: str, requested_status: str, transitions: dict[str, set[str]], label: str) -> None:
     allowed = transitions.get(current_status, set())
     if requested_status not in allowed:
@@ -953,6 +966,8 @@ def create_school_curriculum_map(
     if not board_course:
         api_error(404, "NOT_FOUND", "Board course not found.")
 
+    _validate_teacher_in_school(db, payload.teacherId, school_id)
+
     existing = (
         db.query(SchoolCurriculumMap)
         .filter(
@@ -1037,6 +1052,7 @@ def reschedule_school_curriculum_map(
 
     changes: dict = {}
     if payload.teacherId is not None:
+        _validate_teacher_in_school(db, payload.teacherId, mapping.school_id)
         changes["teacherId"] = {"from": mapping.teacher_id, "to": payload.teacherId}
         mapping.teacher_id = payload.teacherId
     if payload.plannedStartDate is not None:

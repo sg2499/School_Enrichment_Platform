@@ -17,7 +17,7 @@ def _payload(email: str, school_name: str = "Green Valley Public School") -> dic
         "schoolName": school_name,
         "board": "CBSE",
         "city": "Bengaluru",
-        "adminFullName": "Ashalatha Gupta",
+        "adminFullName": "Test Admin",
         "adminEmail": email,
         "adminPassword": "Xk4$nQ8vPz",
     }

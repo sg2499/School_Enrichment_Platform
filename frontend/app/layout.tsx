@@ -1,6 +1,33 @@
 import type { Metadata, Viewport } from "next";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+
+// B9 fix (30 Sep 2026 security/DPDP review): previously loaded from a
+// fonts.googleapis.com/fonts.gstatic.com <link> in <head> below -- every
+// visitor's browser made a direct, unauthenticated request to Google for
+// those assets before this app rendered anything, which both leaks visitor
+// IPs/user-agents to a third party on every page load (a DPDP-relevant
+// exposure for what may be a child's device) and adds a render-blocking
+// third-party round trip. next/font/google downloads the font files at
+// BUILD time and self-hosts them from this app's own origin -- no runtime
+// request to Google ever happens, and the CSP's font-src 'self' (already
+// tightened for this reason, see next.config.js) is what actually stops it
+// now instead of just documenting an exception for it.
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: "variable",
+  variable: "--font-plus-jakarta-sans",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -33,25 +60,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
-      <head>
-        {/* Google Fonts is the only external dependency in the visual layer.
-            Loaded as a stylesheet link (rather than next/font) so builds and
-            CI never depend on egress to fonts.gstatic.com; system fallbacks
-            in globals.css cover the offline case. */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font -- this rule
-            guards against a font link placed in a single Pages-Router page
-            (pages/_document.js doesn't exist in this project at all). This is
-            the App Router *root* layout, which wraps every route by design --
-            exactly the one place a global font link belongs. False positive
-            for this architecture, not a real bug. */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
-        />
-      </head>
+    <html lang="en" className={`h-full ${plusJakartaSans.variable} ${fraunces.variable}`}>
       {/* suppressHydrationWarning here only silences mismatches on this exact
           tag -- it's the standard Next.js fix for browser extensions (e.g.
           Grammarly, translators) that inject attributes into <body> before

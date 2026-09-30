@@ -1,8 +1,8 @@
 """Proves the account-creation / roster endpoints (routes_roster.py):
 SUPER_ADMIN creating ADMIN accounts, ADMIN creating TEACHER/STUDENT accounts
-for their own school, the firstname-lastname initial-password scheme, code
-generation, roster listing/search, status (activate/deactivate), and the
-CSV bulk-import path.
+for their own school, the random initial-password scheme (A1 fix, 30 Sep
+2026 review -- previously firstname-lastname), code generation, roster
+listing/search, status (activate/deactivate), and the CSV bulk-import path.
 
 Mirrors test_curriculum_admin.py's fixture/login pattern (2FA pre-enrolled,
 CSRF token attached to every mutating request) rather than importing from
@@ -87,13 +87,18 @@ def test_super_admin_creates_admin_for_existing_school(client, db_session):
     assert response.status_code == 200
     body = response.json()
     assert body["role"] == "ADMIN"
-    assert body["initialPassword"] == "priya-sharma"
+    # A1 fix (30 Sep 2026 review): initial passwords are now random, not
+    # derived from the name -- assert it's genuinely random/unguessable and
+    # that it actually works, rather than a fixed expected string.
+    assert body["initialPassword"] != "priya-sharma"
+    assert len(body["initialPassword"]) >= 12
     assert body["code"] is None
     assert body["schoolId"] == school.id
 
     created = db_session.query(User).filter(User.email == "priya.sharma@dps.example.com").first()
     assert created is not None
-    assert verify_password("priya-sharma", created.password_hash)
+    assert verify_password(body["initialPassword"], created.password_hash)
+    assert created.must_change_password is True
     assert db_session.query(SchoolAdmin).filter(SchoolAdmin.user_id == created.id).first() is not None
 
 
@@ -119,7 +124,9 @@ def test_admin_creates_teacher_with_generated_code_and_password(client, db_sessi
     assert response.status_code == 200
     body = response.json()
     assert body["role"] == "TEACHER"
-    assert body["initialPassword"] == "ravi-kumar"
+    # A1 fix: random initial password, not derived from the name.
+    assert body["initialPassword"] != "ravi-kumar"
+    assert len(body["initialPassword"]) >= 12
     assert body["code"].startswith("TCH-")
     assert body["schoolId"] == school.id
 
@@ -162,7 +169,12 @@ def test_admin_cannot_create_for_another_school(client, db_session):
     assert response.status_code == 403
 
 
-def test_single_name_generates_repeated_password_half(client, db_session):
+def test_single_name_still_generates_a_random_password(client, db_session):
+    """A1 fix (30 Sep 2026 review): this used to prove the firstname-lastname
+    scheme's single-name fallback ("cher-cher"). The password is now fully
+    random regardless of name shape -- this just proves a single-word name
+    doesn't crash account creation and still produces a real, working,
+    random password."""
     admin, _school = _make_school_admin(db_session, "roster-admin5@example.com", "Sunrise School")
     headers = _login(client, admin.email)
     response = client.post(
@@ -171,7 +183,8 @@ def test_single_name_generates_repeated_password_half(client, db_session):
         headers=headers,
     )
     assert response.status_code == 200
-    assert response.json()["initialPassword"] == "cher-cher"
+    assert response.json()["initialPassword"] != "cher-cher"
+    assert len(response.json()["initialPassword"]) >= 12
 
 
 def test_duplicate_email_rejected(client, db_session):
@@ -233,6 +246,9 @@ def test_admin_deactivates_teacher_and_login_is_blocked(client, db_session):
         headers=headers,
     )
     person_id = create_response.json()["id"]
+    # A1 fix: the initial password is random now, so it has to be read back
+    # from the create response rather than assumed from the name.
+    initial_password = create_response.json()["initialPassword"]
 
     status_response = client.patch(
         f"/api/roster/people/{person_id}/status", json={"isActive": False}, headers=headers
@@ -241,7 +257,7 @@ def test_admin_deactivates_teacher_and_login_is_blocked(client, db_session):
     assert status_response.json()["isActive"] is False
 
     login_response = client.post(
-        "/api/auth/login", json={"identifier": "deactivate-me@example.com", "password": "deactivate-me"}
+        "/api/auth/login", json={"identifier": "deactivate-me@example.com", "password": initial_password}
     )
     assert login_response.status_code == 403
     assert login_response.json()["detail"]["code"] == "ACCOUNT_INACTIVE"

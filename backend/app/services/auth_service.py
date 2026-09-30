@@ -15,6 +15,7 @@ from app.core.errors import api_error
 from app.core.security import (
     create_access_token,
     create_two_factor_challenge_token,
+    verify_dummy_password,
     verify_password,
 )
 from app.models import School, SchoolAdmin, Student, Teacher, User
@@ -37,6 +38,53 @@ def _aware_utc(value: datetime) -> datetime:
 
 def _is_locked(user: User) -> bool:
     return bool(user.locked_until) and _aware_utc(user.locked_until) > datetime.now(timezone.utc)
+
+
+# Public alias -- routes_auth.py's two_factor_verify_login (A9 fix) needs the
+# same lockout check login() uses below, so this one is exported rather than
+# duplicated.
+is_account_locked = _is_locked
+
+
+def record_failed_attempt(db: Session, user: User, request: Request | None, event_type: str) -> bool:
+    """Increment the shared per-account lockout counter and lock the account
+    if it crosses the threshold. Returns True if this call just locked the
+    account.
+
+    A9 fix (30 Sep 2026 review): previously only used by login() below for a
+    wrong password -- routes_auth.py's two_factor_verify_login now calls this
+    too for a wrong 2FA code, so an attacker who already has the password but
+    not the second factor trips the same lockout as one guessing the
+    password itself, instead of being able to brute-force TOTP/backup codes
+    with only a shared 10/minute IP limit standing in the way.
+    """
+    user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+    if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
+        user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+        log_audit_event(
+            db,
+            f"{event_type}.locked",
+            user_id=user.id,
+            request=request,
+            details={"failedAttempts": user.failed_login_attempts},
+        )
+        db.commit()
+        return True
+    log_audit_event(
+        db,
+        event_type,
+        user_id=user.id,
+        request=request,
+        details={"failedAttempts": user.failed_login_attempts},
+    )
+    db.commit()
+    return False
+
+
+def reset_lockout(user: User) -> None:
+    if user.failed_login_attempts or user.locked_until:
+        user.failed_login_attempts = 0
+        user.locked_until = None
 
 
 def _school_name(db: Session, school_id: str | None) -> str | None:
@@ -119,6 +167,11 @@ def user_payload(db: Session, user: User) -> dict:
         "isActive": user.is_active,
         "profilePhotoUrl": public_profile_photo_url(user, user.photo_url),
         "twoFactorEnabled": bool(user.totp_enabled),
+        # A1 fix: lets the frontend redirect straight to the change-password
+        # flow instead of surfacing a raw 403 from the first blocked API
+        # call. See dependencies.py's MUST_CHANGE_PASSWORD_ROLES for the
+        # server-side enforcement this mirrors.
+        "mustChangePassword": bool(user.must_change_password),
     }
 
     if student:
@@ -178,6 +231,15 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         user = teacher.user if teacher else None
 
     if not user:
+        # A7 fix (30 Sep 2026 review): a nonexistent identifier used to
+        # return immediately here, skipping bcrypt entirely, while a real
+        # account always ran a bcrypt verify first (a deliberately slow,
+        # ~100ms+ operation) -- proven by test, the two cases were
+        # trivially distinguishable by response time alone, letting an
+        # attacker enumerate valid identifiers without needing a different
+        # status code or message. Running the same dummy bcrypt verify here
+        # equalizes the timing of both code paths.
+        verify_dummy_password()
         api_error(401, "INVALID_CREDENTIALS", "Invalid login details.")
 
     if _is_locked(user):
@@ -191,37 +253,19 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         )
 
     if not verify_password(password, user.password_hash):
-        user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
-        if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
-            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-            log_audit_event(
-                db,
-                "auth.login.locked",
-                user_id=user.id,
-                request=request,
-                details={"failedAttempts": user.failed_login_attempts},
-            )
-            db.commit()
+        locked = record_failed_attempt(db, user, request, "auth.login.failed")
+        if locked:
             api_error(
                 423,
                 "ACCOUNT_LOCKED",
                 f"Too many failed sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes.",
             )
-        log_audit_event(
-            db,
-            "auth.login.failed",
-            user_id=user.id,
-            request=request,
-            details={"failedAttempts": user.failed_login_attempts},
-        )
-        db.commit()
         api_error(401, "INVALID_CREDENTIALS", "Invalid login details.")
 
     # Correct password -- clear any accumulated lockout state so a
     # legitimate sign-in isn't held against a later, unrelated attempt.
     if user.failed_login_attempts or user.locked_until:
-        user.failed_login_attempts = 0
-        user.locked_until = None
+        reset_lockout(user)
         db.commit()
 
     if not user.is_active:

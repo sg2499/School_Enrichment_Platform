@@ -35,6 +35,11 @@ from app.models import User, UserSession
 MAX_SESSION_LIFETIME_MINUTES_BY_ROLE: dict[str, int] = {
     "SUPER_ADMIN": 12 * 60,   # 12 hours -- platform-wide access, highest value target
     "ADMIN": 12 * 60,         # 12 hours -- whole-school access
+    # B11 fix (30 Sep 2026 review): STUDENT sessions previously had no
+    # absolute ceiling at all -- an actively-used session on a shared school
+    # computer could renew forever. Paired with the shorter idle window in
+    # core/security.py's ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE.
+    "STUDENT": 10 * 60,       # 10 hours -- a school day plus evening homework, not indefinite
 }
 
 

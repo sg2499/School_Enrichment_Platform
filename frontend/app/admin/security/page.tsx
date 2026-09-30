@@ -160,8 +160,12 @@ function SecuritySettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setupRequired = searchParams.get("setup") === "required";
+  // A1 fix (30 Sep 2026 review): the forced-password-change deep link from
+  // useProtectedPage's redirect (a brand-new admin who hasn't replaced
+  // their random initial password yet).
+  const passwordChangeRequired = searchParams.get("passwordChange") === "required";
 
-  const { user, status } = useProtectedPage("ADMIN", { allowWithoutTwoFactor: true });
+  const { user, status } = useProtectedPage("ADMIN", { allowWithoutTwoFactor: true, allowWithoutPasswordChange: true });
   const roleForShell = user?.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
 
   // Mirrors user.twoFactorEnabled locally so the UI updates the instant
@@ -169,6 +173,17 @@ function SecuritySettingsPageInner() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   useEffect(() => {
     if (user) setTwoFactorEnabled(Boolean(user.twoFactorEnabled));
+  }, [user]);
+
+  // Same idea, for the A1 forced-password-change gate -- the Change
+  // Password card below needs to be reachable even before 2FA is set up
+  // when this is true (previously it only ever rendered once
+  // twoFactorEnabled was true, which meant a brand-new admin sent here to
+  // satisfy the password-change requirement had no way to actually see the
+  // form).
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+  useEffect(() => {
+    if (user) setMustChangePassword(Boolean(user.mustChangePassword));
   }, [user]);
 
   // --- 2FA setup flow ---
@@ -346,6 +361,7 @@ function SecuritySettingsPageInner() {
     try {
       await api.post("/auth/change-password", { currentPassword, newPassword });
       setPasswordSuccess(true);
+      setMustChangePassword(false);
       // A password change invalidates the token that issued the request
       // (see backend/app/dependencies.py's password_changed_at check) --
       // the current session is already effectively over, so this signs the
@@ -385,6 +401,19 @@ function SecuritySettingsPageInner() {
             )
           }
         />
+
+        {passwordChangeRequired && mustChangePassword ? (
+          <div className="flex items-start gap-3 rounded-3xl border border-saffron-200 bg-saffron-50 p-5 animate-scale-in">
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-saffron-700" aria-hidden />
+            <div>
+              <p className="text-sm font-bold text-saffron-900">Change your password to continue</p>
+              <p className="mt-1 text-[0.8125rem] leading-relaxed text-saffron-800">
+                This account was created with a temporary, one-time password. For security, you need to set your own
+                password before you can use the rest of the platform.
+              </p>
+            </div>
+          </div>
+        ) : null}
 
         {setupRequired && !twoFactorEnabled ? (
           <div className="flex items-start gap-3 rounded-3xl border border-saffron-200 bg-saffron-50 p-5 animate-scale-in">
@@ -485,7 +514,17 @@ function SecuritySettingsPageInner() {
               </div>
             ) : (
               <div className="space-y-5">
-                {setupStage === "idle" ? (
+                {setupStage === "idle" && mustChangePassword ? (
+                  // A1 fix: the backend blocks /2fa/setup until the forced
+                  // password change is done (dependencies.py checks that
+                  // gate before the 2FA one), so showing the setup button
+                  // here would just produce a confusing 403. Point them at
+                  // the Change Password form below instead.
+                  <p className="text-[0.875rem] leading-relaxed text-content-muted">
+                    Change your password below first -- two-factor setup unlocks right after.
+                  </p>
+                ) : null}
+                {setupStage === "idle" && !mustChangePassword ? (
                   <>
                     <p className="text-[0.875rem] leading-relaxed text-content-muted">
                       Scan a QR code with an authenticator app, confirm one code, and you&rsquo;re done. You&rsquo;ll
@@ -702,7 +741,11 @@ function SecuritySettingsPageInner() {
         ) : null}
 
         {/* --- Change password --- */}
-        {twoFactorEnabled ? (
+        {/* A1 fix: previously gated on twoFactorEnabled alone, which meant a
+            brand-new admin sent here specifically to change their default
+            password (mustChangePassword) couldn't see this form at all --
+            it wouldn't render until AFTER they'd already changed it. */}
+        {twoFactorEnabled || mustChangePassword ? (
           <Card className="animate-fade-up delay-140">
             <CardBody className="space-y-5">
               <div className="flex items-center gap-3">

@@ -8,7 +8,7 @@ more restricted in a different direction: it has no school of its own
 (auth_service.py's user_payload() skips the SchoolAdmin lookup for it
 entirely), but it is the ONLY role allowed to move Chapter/ConceptLesson/
 Question through draft -> review -> publish (routes_curriculum_admin.py) --
-a school's own ADMIN (e.g. Ashalatha Gupta's MathPath account) can map
+a school's own ADMIN (e.g. a school coordinator's account) can map
 already-published content into their school's calendar, but can never
 publish anything themselves. Discovered this gap for real on 18 Aug 2026:
 after loading all 15 real Class 5 Maths chapters, nobody could review or

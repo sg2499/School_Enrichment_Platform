@@ -23,6 +23,26 @@ def verify_password(password: str, password_hash: str) -> bool:
     return pwd_context.verify(password, password_hash)
 
 
+# A7 fix (30 Sep 2026 security/DPDP review): a login attempt against an
+# identifier that matches no account used to skip bcrypt entirely and return
+# immediately, while an attempt against a real account always ran a bcrypt
+# verify first -- bcrypt is deliberately slow (~100ms+), so the two cases
+# were trivially distinguishable by response time alone, letting an attacker
+# enumerate valid identifiers without ever seeing a different status code or
+# message. Hashed once at import time (a fixed, unguessable plaintext -- it
+# is never anyone's real password) so auth_service.login() can run the same
+# bcrypt verify on this constant when no user is found, equalizing the
+# timing of both code paths.
+_DUMMY_PASSWORD_HASH = hash_password("0f3a9c2e-7b1d-4e5a-9f8c-timing-equalization-only")
+
+
+def verify_dummy_password() -> None:
+    """Run a throwaway bcrypt verify, purely to burn the same wall-clock time
+    a real verify_password() call would have taken. See _DUMMY_PASSWORD_HASH
+    above for why this exists."""
+    pwd_context.verify("irrelevant-input", _DUMMY_PASSWORD_HASH)
+
+
 # 2026-08-19 security hardening: a length/character-class check alone still
 # lets through "Password1" or "Welcome123" -- both technically pass the old
 # rule but are at the top of every real-world breach/credential-stuffing
@@ -103,6 +123,21 @@ def strong_password_issue(password: str) -> str | None:
     return None
 
 
+# B11 fix (30 Sep 2026 review): STUDENT sessions previously renewed on the
+# same 24-hour idle window as every other role, on shared/school-lab
+# computers, indefinitely for as long as the device kept being used by
+# *someone*. Roles not listed here keep the global ACCESS_TOKEN_EXPIRE_MINUTES
+# idle window unchanged; see session_service.py's MAX_SESSION_LIFETIME_MINUTES_BY_ROLE
+# for the companion absolute-lifetime cap on the same role.
+ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE: dict[str, int] = {
+    "STUDENT": 480,  # 8 hours -- covers a full school day without renewing indefinitely overnight
+}
+
+
+def expire_minutes_for_role(role: str) -> int:
+    return ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE.get(role, ACCESS_TOKEN_EXPIRE_MINUTES)
+
+
 def create_access_token(subject: str, role: str, session_id: str | None = None) -> str:
     """`session_id` (the "sid" claim) is the stable identifier of a single
     login for the life of that login, distinct from `exp`/`iat` which move
@@ -118,7 +153,7 @@ def create_access_token(subject: str, role: str, session_id: str | None = None) 
     the per-session revocation/lifetime checks in get_current_user().
     """
     now = datetime.now(timezone.utc)
-    expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = now + timedelta(minutes=expire_minutes_for_role(role))
     payload = {"sub": subject, "role": role, "exp": expire, "iat": now}
     if session_id:
         payload["sid"] = session_id

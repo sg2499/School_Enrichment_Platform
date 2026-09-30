@@ -21,3 +21,10 @@ frontend/.env.local
 # OS/editor
 .DS_Store
 *.swp
+
+# Local patch-application artifacts (30 Sep 2026: a *.patch file left in the
+# repo root after `git apply` got swept up by ship.ps1's `git add -A` and
+# committed, which then made `git diff --check` flag "trailing whitespace"
+# on the patch file's own diff-formatted text -- not a real code issue,
+# just a leftover handoff file. Ignored so this can't happen again.)
+*.patch
