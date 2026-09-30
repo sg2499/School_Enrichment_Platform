@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BarChart3,
   BookOpen,
+  CalendarDays,
+  ChevronRight,
   ClipboardCheck,
   ClipboardList,
   Compass,
@@ -166,6 +168,28 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
   ],
 };
 
+/**
+ * A nav item is active on its own route *and* anything beneath it, so a
+ * student inside /student/practice/<id> still sees "Daily Practice" lit in
+ * the rail and named in the breadcrumb. Exact-match only (the previous
+ * behaviour) left the rail with nothing highlighted mid-attempt, which reads
+ * as "you are nowhere". No two hrefs in NAV are prefixes of each other, so
+ * this can never light two rows at once.
+ */
+function isActiveHref(href: string | undefined, pathname: string) {
+  if (!href) return false;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function currentNavItem(role: UserRole, pathname: string): NavItem | null {
+  for (const group of NAV[role]) {
+    for (const item of group.items) {
+      if (isActiveHref(item.href, pathname)) return item;
+    }
+  }
+  return null;
+}
+
 function NavRow({
   item,
   active,
@@ -192,20 +216,27 @@ function NavRow({
         title={collapsed ? item.label : undefined}
         className={cn(
           base,
+          // Inactive live rows sit at inverse-muted (5.7:1 at the rail's
+          // lightest point; was raw white/70). The active row's white/12
+          // fill only started rendering once `12` joined the opacity scale
+          // in tailwind.config.ts -- it had been ring-only until then.
           active
-            ? "bg-white/12 text-content-inverse shadow-hairline ring-1 ring-inset ring-white/15"
-            : "text-white/70 hover:bg-white/[0.08] hover:text-content-inverse",
+            ? "bg-white/12 font-semibold text-content-inverse shadow-hairline ring-1 ring-inset ring-white/15"
+            : "text-content-inverse-muted hover:bg-white/[0.08] hover:text-content-inverse",
         )}
       >
         <span
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition duration-200 ease-spring",
             active
               ? "bg-accent-gradient text-brand-950 shadow-accent"
-              : "bg-white/[0.08] ring-1 ring-inset ring-white/10",
+              : "bg-white/[0.08] ring-1 ring-inset ring-white/10 group-hover:bg-white/[0.14] group-hover:ring-white/20",
           )}
         >
-          <Icon className="h-4 w-4" />
+          {/* A hair of lift on hover, on the icon only -- the row stays
+              put, so the list never looks like it is shifting under the
+              cursor. */}
+          <Icon className="h-4 w-4 transition-transform duration-200 ease-spring group-hover:-translate-y-px" />
         </span>
         {!collapsed ? <span className="truncate">{item.label}</span> : null}
       </Link>
@@ -216,15 +247,19 @@ function NavRow({
     <span
       aria-disabled="true"
       title={collapsed ? `${item.label} — arrives in a later phase` : `${item.label} arrives in a later phase`}
-      className={cn(base, "cursor-default text-white/55 hover:bg-white/[0.06] hover:text-white/75")}
+      // Quieter than a live row, but only down to the inverse-faint floor
+      // (4.6:1; was white/55 at ~3.7:1). The hierarchy now comes from the
+      // dimmed icon plate and the Soon pill, not from unreadable text.
+      className={cn(base, "cursor-default text-content-inverse-faint hover:bg-white/[0.05] hover:text-content-inverse-muted")}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.07] ring-1 ring-inset ring-white/10">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] opacity-80 ring-1 ring-inset ring-white/[0.08]">
         <Icon className="h-4 w-4" />
       </span>
       {!collapsed ? (
         <>
           <span className="truncate">{item.label}</span>
-          <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-white/60">
+          {/* inverse-muted on the white/10 pill: 4.6:1 (was white/60, ~3.4:1). */}
+          <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-content-inverse-muted">
             Soon
           </span>
         </>
@@ -244,6 +279,7 @@ function SidebarContent({
   onToggleCollapse,
   onPhotoUpdated,
   hasSecuritySettings,
+  inDrawer = false,
 }: {
   role: UserRole;
   user: CurrentUser | null;
@@ -258,13 +294,22 @@ function SidebarContent({
   onToggleCollapse?: () => void;
   onPhotoUpdated: (photoUrl: string) => void;
   hasSecuritySettings: boolean;
+  /** The mobile drawer overlays its own close button in the top-right
+   *  corner; this reserves room for it so it never sits on the wordmark. */
+  inDrawer?: boolean;
 }) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-brand-gradient">
+      {/* Deliberately static -- the login panel's drifting aurora is a
+          first-impression moment, but this rail sits in peripheral vision
+          for a whole school day, where ambient motion is a distraction. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-brand-500/40 blur-3xl" />
         <div className="absolute bottom-10 right-[-4rem] h-56 w-56 rounded-full bg-saffron-500/20 blur-3xl" />
         <div className="absolute inset-0 bg-grid-inverse opacity-60" />
+        {/* Same film grain as the login brand panel, so the two dark
+            surfaces a user sees read as one material. */}
+        <div className="bg-grain absolute inset-0" />
       </div>
 
       {/* Collapse toggle gets its own row, pinned top-right, ABOVE the logo
@@ -296,6 +341,7 @@ function SidebarContent({
           "relative pb-6",
           onToggleCollapse ? "pt-4" : "pt-6",
           collapsed ? "flex justify-center px-3" : "px-5",
+          inDrawer && "pr-16",
         )}
       >
         {collapsed ? <LogoMark className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
@@ -317,18 +363,28 @@ function SidebarContent({
         className={cn("relative mt-6 flex-1 space-y-6 overflow-y-auto pb-4", collapsed ? "px-3" : "px-3")}
         aria-label="Primary"
       >
-        {NAV[role].map((group) => (
-          <div key={group.section} className="space-y-1">
+        {NAV[role].map((group, index) => (
+          // A named group, so a screen reader hears "School, group" before
+          // its rows -- including in the collapsed rail, where the visible
+          // label is gone. The visible label is aria-hidden to avoid it
+          // being read twice.
+          <div key={group.section} role="group" aria-label={group.section} className="space-y-1">
             {!collapsed ? (
-              <p className="px-3 pb-1 text-[0.625rem] font-bold uppercase tracking-eyebrow text-white/40">
+              // inverse-faint (4.6:1) -- was white/40, which measured 2.7:1.
+              <p aria-hidden className="px-3 pb-1 text-[0.625rem] font-bold uppercase tracking-eyebrow text-content-inverse-faint">
                 {group.section}
               </p>
+            ) : index > 0 ? (
+              // Collapsed: the section label can't fit, but the grouping
+              // still matters, so it becomes a short rule. Without it the
+              // icon column reads as one undifferentiated list of eight.
+              <span aria-hidden className="mx-auto mb-2 block h-px w-7 bg-white/15" />
             ) : null}
             {group.items.map((item) => (
               <NavRow
                 key={item.label}
                 item={item}
-                active={!!item.href && item.href === pathname}
+                active={isActiveHref(item.href, pathname)}
                 collapsed={collapsed}
                 onNavigate={onNavigate}
               />
@@ -339,8 +395,11 @@ function SidebarContent({
 
       <div className={cn("relative space-y-3 border-t border-white/10 py-5", collapsed ? "px-3" : "px-5")}>
         {!collapsed ? (
-          <p className="flex items-center gap-2 text-xs text-white/55">
-            <LifeBuoy className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          // items-start + a nudged icon: at the rail's width this line wraps
+          // to two, and a centred icon then floats between them.
+          // inverse-faint (4.6:1) -- was white/55 at ~3.7:1.
+          <p className="flex items-start gap-2 text-xs leading-relaxed text-content-inverse-faint">
+            <LifeBuoy className="mt-[0.2rem] h-3.5 w-3.5 shrink-0" aria-hidden />
             Need help? Ask your school coordinator.
           </p>
         ) : null}
@@ -405,6 +464,14 @@ export function RoleShell({
   // right after mount -- the one-frame flash this costs is the standard,
   // accepted trade-off for a client-only layout preference like this.
   const [collapsed, setCollapsed] = useState(false);
+  // Today's date for the context bar. Client-only for the same reason as
+  // `collapsed`: these pages are prerendered at build time, so a date
+  // computed during render would be the *build's* date, frozen into the
+  // HTML until the next deploy -- and the server has no idea of the
+  // viewer's timezone anyway. It fades in a beat after mount instead.
+  const [today, setToday] = useState<string | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerCloseRef = useRef<HTMLButtonElement>(null);
 
   // RoleShell doesn't own the fetch that produced `user` (each page's own
   // useProtectedPage() does), so a fresh photo upload from the new profile
@@ -420,7 +487,34 @@ export function RoleShell({
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1");
+    setToday(
+      new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long" }).format(new Date()),
+    );
   }, []);
+
+  // The mobile drawer behaves like the Modal it is documented alongside:
+  // Escape closes it, the page behind it doesn't scroll, focus moves into
+  // it on open (onto its close button, the one control guaranteed to be
+  // there) and returns to the menu button on close. Before this, it had
+  // none of those, despite Modal.tsx describing them as shared conventions.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    drawerCloseRef.current?.focus({ preventScroll: true });
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    const trigger = menuButtonRef.current;
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    };
+  }, [menuOpen]);
+
+  const currentItem = currentNavItem(role, pathname);
 
   function toggleCollapsed() {
     setCollapsed((prev) => {
@@ -442,6 +536,16 @@ export function RoleShell({
 
   return (
     <div className="min-h-screen bg-canvas">
+      {/* Keyboard users land here first on every page and can jump straight
+          past the rail's dozen-odd stops to the content. Invisible until
+          focused. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-surface focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-content-brand focus:shadow-panel"
+      >
+        Skip to content
+      </a>
+
       {/* Desktop rail -- collapsible (18 Aug 2026, Shailesh: a full-width
           review window was getting visually trapped next to the sidebar,
           and every role needs a way to reclaim that space, not just this
@@ -449,7 +553,7 @@ export function RoleShell({
           across reloads via localStorage. */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden transition-[width] duration-300 ease-spring lg:block",
+          "fixed inset-y-0 left-0 z-40 hidden shadow-rail transition-[width] duration-300 ease-spring lg:block",
           collapsed ? "w-sidebar-collapsed" : "w-sidebar",
         )}
       >
@@ -478,10 +582,12 @@ export function RoleShell({
           </span>
         </span>
         <button
+          ref={menuButtonRef}
           type="button"
           onClick={() => setMenuOpen(true)}
           aria-label="Open navigation menu"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-line-strong bg-surface text-content-muted transition hover:border-brand-300 hover:text-content-brand"
+          aria-expanded={menuOpen}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-line-strong bg-surface text-content-muted transition hover:border-brand-300 hover:text-content-brand active:scale-95"
         >
           <Menu className="h-5 w-5" aria-hidden />
         </button>
@@ -489,15 +595,22 @@ export function RoleShell({
 
       {/* Mobile drawer */}
       {menuOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+          {/* tabIndex -1: the backdrop is a pointer target only. The
+              visible close button is the keyboard route out, and Escape
+              works too -- two tab stops that do the same thing is noise. */}
           <button
             type="button"
+            tabIndex={-1}
             aria-label="Close navigation menu"
             onClick={() => setMenuOpen(false)}
             className="absolute inset-0 bg-brand-950/55 backdrop-blur-sm animate-fade-in"
           />
-          <div className="absolute inset-y-0 left-0 w-[min(20rem,86vw)] animate-fade-in shadow-panel">
+          {/* Slides in from the edge it is anchored to (sheet-in), rather
+              than fading up in place. */}
+          <div className="absolute inset-y-0 left-0 w-[min(20rem,86vw)] animate-sheet-in shadow-panel">
             <SidebarContent
+              inDrawer
               role={role}
               user={effectiveUser}
               pathname={pathname}
@@ -508,10 +621,11 @@ export function RoleShell({
               hasSecuritySettings={hasSecuritySettings}
             />
             <button
+              ref={drawerCloseRef}
               type="button"
               onClick={() => setMenuOpen(false)}
               aria-label="Close navigation menu"
-              className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white/80 ring-1 ring-inset ring-white/15 transition hover:bg-white/20"
+              className="absolute right-4 top-5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-content-inverse-muted ring-1 ring-inset ring-white/15 transition hover:bg-white/20 hover:text-content-inverse"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
@@ -526,7 +640,10 @@ export function RoleShell({
           collapsed ? "lg:pl-sidebar-collapsed" : "lg:pl-sidebar",
         )}
       >
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-canvas-glow" />
+        {/* mask-fade-b: the glow used to stop dead at 26rem, leaving a faint
+            horizontal seam across the page right behind the first row of
+            cards. It now dissolves into the canvas instead. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-canvas-glow mask-fade-b" />
 
         {/* Desktop context bar. z-20, deliberately HIGHER than <main>'s z-10
             below (19 Aug 2026, Shailesh: the profile dropdown "underlaps"
@@ -544,12 +661,41 @@ export function RoleShell({
             raising this wrapper's z-index is the fix; z-50 on the dropdown
             panel further down was always irrelevant to the actual bug. */}
         <div className="relative z-20 hidden items-center justify-between gap-4 px-8 pt-7 lg:flex">
-          <span className="flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3.5 py-1.5 text-xs font-medium text-content-muted backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-saffron-500" aria-hidden />
-            {ROLE_TAGLINE[role]}
+          {/* Where am I, and when. The workspace chip is now the root of a
+              breadcrumb ending in the current page -- it used to repeat the
+              page header's eyebrow word-for-word directly beneath it -- and
+              today's date sits beside it, because a school runs on the
+              timetable and the day is the first thing anyone orients by. */}
+          <span className="flex min-w-0 items-center gap-4">
+            <nav aria-label="Breadcrumb" className="min-w-0">
+              <ol className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface/70 py-1.5 pl-3 pr-3.5 text-xs font-medium text-content-muted shadow-xs backdrop-blur">
+                <li className="flex shrink-0 items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-saffron-500" aria-hidden />
+                  {ROLE_TAGLINE[role]}
+                </li>
+                {currentItem ? (
+                  <li className="flex min-w-0 items-center gap-2">
+                    <ChevronRight className="h-3 w-3 shrink-0 text-content-faint" aria-hidden />
+                    <span aria-current="page" className="truncate font-semibold text-content">
+                      {currentItem.label}
+                    </span>
+                  </li>
+                ) : null}
+              </ol>
+            </nav>
+            {today ? (
+              // content-subtle on the paper canvas: 6.0:1.
+              <span className="hidden shrink-0 items-center gap-1.5 text-xs font-medium text-content-subtle animate-fade-in xl:flex">
+                <CalendarDays className="h-3.5 w-3.5 text-content-faint" aria-hidden />
+                {today}
+              </span>
+            ) : null}
           </span>
-          <span className="flex items-center gap-3">
-            <Badge tone="brand" dot pulse>
+          <span className="flex shrink-0 items-center gap-3">
+            {/* success (jade), not brand: jade is this system's "all good"
+                colour, and it matches the live dot on the sign-in page that
+                promised this session in the first place. */}
+            <Badge tone="success" dot pulse>
               Session Active
             </Badge>
             {/* Clickable profile menu (19 Aug 2026, Shailesh: "it should be
@@ -567,11 +713,29 @@ export function RoleShell({
           </span>
         </div>
 
-        <main className="relative z-10 mx-auto w-full max-w-shell px-4 py-8 sm:px-6 lg:px-8 lg:py-10">{children}</main>
+        {/* tabIndex -1 so the skip link can actually move focus here, not
+            just scroll; outline-none because a ring round the whole page on
+            arrival would look like an error. */}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="relative z-10 mx-auto w-full max-w-shell px-4 py-8 outline-none sm:px-6 lg:px-8 lg:py-10"
+        >
+          {children}
+        </main>
 
         <footer className="relative z-10 mx-auto w-full max-w-shell px-4 pb-10 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-2 border-t border-line pt-5 text-xs text-content-faint sm:flex-row sm:items-center sm:justify-between">
-            <span>School Enrichment &middot; CBSE &amp; ICSE, Class 5&ndash;10</span>
+          {/* content-subtle, not content-faint: faint is 4.6:1 on white but
+              4.4:1 on this paper canvas, just under AA at 12px. */}
+          <div className="flex flex-col gap-2 border-t border-line pt-5 text-xs text-content-subtle sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2">
+              {/* aria-hidden wrapper: the mark is labelled "School
+                  Enrichment" and the same words follow as text. */}
+              <span aria-hidden className="inline-flex">
+                <LogoMark className="h-4 w-4" />
+              </span>
+              School Enrichment &middot; CBSE &amp; ICSE, Class 5&ndash;10
+            </span>
             <span>Signed In as {ROLE_LABEL[role]}</span>
           </div>
         </footer>

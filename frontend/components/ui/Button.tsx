@@ -38,6 +38,17 @@ const VARIANTS: Record<ButtonVariant, string> = {
     "bg-coral-600 text-content-inverse shadow-xs hover:bg-coral-700 focus-visible:shadow-focus",
 };
 
+// Filled variants get a lit top edge (shadow-sheen). Outline/ghost/quiet
+// variants have no fill for light to catch, so they don't.
+const HAS_SHEEN: Record<ButtonVariant, boolean> = {
+  primary: true,
+  accent: true,
+  danger: true,
+  secondary: false,
+  ghost: false,
+  quiet: false,
+};
+
 const SIZES: Record<ButtonSize, string> = {
   sm: "h-9 px-4 text-[0.8125rem]",
   md: "h-11 px-5 text-sm",
@@ -87,6 +98,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/[0.09] group-active:bg-black/[0.07]"
       />
+      {/* rounded-[inherit] so the inset highlight follows the pill's curve
+          instead of being clipped into a flat line at the ends. */}
+      {HAS_SHEEN[variant] ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-sheen" />
+      ) : null}
       {/* Light sweeping across the surface while the action is in flight --
           the wait reads as progress rather than as a frozen button. */}
       {loading ? (
