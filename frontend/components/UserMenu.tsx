@@ -98,6 +98,7 @@ function Avatar({
 
   if (objectUrl) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element -- a locally-generated blob: object URL, not a remote asset next/image could optimize.
       <img
         src={objectUrl}
         alt=""

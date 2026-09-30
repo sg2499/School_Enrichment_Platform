@@ -29,13 +29,15 @@ import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
-import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { Badge, Eyebrow, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SelectField, TextField } from "@/components/ui/Field";
+import { BlueprintIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import type {
   BoardCourseOption,
   BoardOption,
@@ -111,13 +113,40 @@ const QUESTION_BACK_ACTION: Partial<Record<QuestionStatus, { label: string; next
   PUBLISHED: { label: "Send Back for Rework", next: "SME_REVIEW" },
 };
 
+/** Human wording for the status enums. The raw values (SME_REVIEW, ...) are
+ *  API vocabulary; a reviewer should read "SME Review". */
+const STATUS_LABEL: Record<ChapterStatus | QuestionStatus, string> = {
+  DRAFT: "Draft",
+  REVIEW: "In Review",
+  SME_REVIEW: "SME Review",
+  APPROVED: "Approved",
+  PUBLISHED: "Published",
+  ARCHIVED: "Archived",
+};
+
+/** The option letters a Select-type question's stored answer names
+ *  ("B", or "A, C" for Multi Select), so the card can mark them in place.
+ *  Anything else (numeric, text, ordering) returns an empty set and the
+ *  "Correct answer" line below carries it alone. */
+function correctLetters(question: QuestionDetail): Set<string> {
+  if (!/select/i.test(question.questionType)) return new Set();
+  return new Set(
+    question.correctAnswer
+      .split(",")
+      .map((part) => part.trim().toUpperCase())
+      .filter((part) => /^[A-D]$/.test(part)),
+  );
+}
+
 function QuestionCard({
   question,
-  busy,
+  pendingStatus,
   onAdvance,
 }: {
   question: QuestionDetail;
-  busy: boolean;
+  /** The status this card is currently being moved to, if any -- so only
+   *  the button that was pressed shows progress (both used to spin). */
+  pendingStatus: QuestionStatus | null;
   onAdvance: (status: QuestionStatus) => void;
 }) {
   const options: Array<[string, string | null]> = [
@@ -129,12 +158,16 @@ function QuestionCard({
   const forward = QUESTION_NEXT_ACTION[question.status];
   const back = QUESTION_BACK_ACTION[question.status];
   const QualityIcon = QUALITY_STATUS_ICON[question.qualityStatus];
+  const correct = correctLetters(question);
+  const busy = pendingStatus !== null;
 
   return (
-    <div
-      className={`rounded-2xl border p-4 space-y-3 ${
-        question.qualityStatus === "FLAGGED" ? "border-coral-300 bg-coral-50/40" : "border-line bg-surface"
-      }`}
+    <article
+      aria-label={`Question ${question.code}`}
+      className={cn(
+        "flex flex-col gap-3 rounded-2xl border p-4",
+        question.qualityStatus === "FLAGGED" ? "border-coral-300 bg-coral-50/40" : "border-line bg-surface",
+      )}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
@@ -147,16 +180,16 @@ function QuestionCard({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">
-            {question.status.replace("_", " ")}
+            {STATUS_LABEL[question.status]}
           </Badge>
-          <Badge tone={QUALITY_STATUS_TONE[question.qualityStatus]} size="sm">
-            <QualityIcon className="mr-1 h-3 w-3" aria-hidden />
+          <Badge tone={QUALITY_STATUS_TONE[question.qualityStatus]} size="sm" icon={<QualityIcon className="h-3 w-3" />}>
             {QUALITY_STATUS_LABEL[question.qualityStatus]}
           </Badge>
         </div>
       </div>
 
       {question.qualityFlags.length > 0 ? (
+        // coral-800 on coral-50: 8.7:1.
         <ul className="space-y-1 rounded-xl border border-coral-200 bg-coral-50 px-3 py-2">
           {question.qualityFlags.map((flag, i) => (
             <li key={i} className="flex gap-1.5 text-xs leading-[1.5] text-coral-800">
@@ -169,12 +202,33 @@ function QuestionCard({
 
       {options.length > 0 ? (
         <ul className="space-y-1">
-          {options.map(([letter, text]) => (
-            <li key={letter} className="flex gap-2 text-sm text-content-muted">
-              <span className="font-semibold text-content-subtle">{letter}.</span>
-              <span>{text}</span>
-            </li>
-          ))}
+          {options.map(([letter, text]) => {
+            const isCorrect = correct.has(letter);
+            return (
+              <li
+                key={letter}
+                className={cn(
+                  "flex items-start gap-2 rounded-lg px-2 py-1 text-sm",
+                  // The keyed option is marked where it sits, so a reviewer
+                  // checks it against the stem in one glance instead of
+                  // cross-reading a letter from the line below. Tick + words
+                  // for screen readers, not colour alone.
+                  isCorrect ? "bg-jade-50 text-content ring-1 ring-inset ring-jade-200" : "text-content-muted",
+                )}
+              >
+                <span className={cn("w-4 shrink-0 font-semibold", isCorrect ? "text-jade-700" : "text-content-subtle")}>
+                  {letter}.
+                </span>
+                <span className="min-w-0 flex-1">{text}</span>
+                {isCorrect ? (
+                  <>
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-jade-600" aria-hidden />
+                    <span className="sr-only">(correct answer)</span>
+                  </>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 
@@ -197,19 +251,33 @@ function QuestionCard({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-2 pt-1">
-        {forward ? (
-          <Button size="sm" variant="secondary" loading={busy} onClick={() => onAdvance(forward.next)}>
-            {forward.label}
-          </Button>
-        ) : null}
-        {back ? (
-          <Button size="sm" variant="ghost" loading={busy} onClick={() => onAdvance(back.next)}>
-            {back.label}
-          </Button>
-        ) : null}
-      </div>
-    </div>
+      {forward || back ? (
+        <div className="mt-auto flex flex-wrap gap-2 border-t border-line/70 pt-3">
+          {forward ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={pendingStatus === forward.next}
+              disabled={busy && pendingStatus !== forward.next}
+              onClick={() => onAdvance(forward.next)}
+            >
+              {forward.label}
+            </Button>
+          ) : null}
+          {back ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              loading={pendingStatus === back.next}
+              disabled={busy && pendingStatus !== back.next}
+              onClick={() => onAdvance(back.next)}
+            >
+              {back.label}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
   );
 }
 
@@ -282,24 +350,62 @@ function useCurriculumFilterLookups() {
   return { boards, disciplines, boardCourses, classLevelsForBoard, error };
 }
 
+type ChapterFilter = ChapterStatus | "ALL";
+const CHAPTER_FILTERS: ChapterFilter[] = ["ALL", "DRAFT", "REVIEW", "PUBLISHED", "ARCHIVED"];
+
+/** Placeholder rows in the chapter grid's own shape, so the list doesn't
+ *  jump from one line of "Loading…" into a three-column grid. */
+function ChapterListSkeleton() {
+  return (
+    <div aria-busy="true">
+      <span className="sr-only" role="status">
+        Loading chapters
+      </span>
+      <ul aria-hidden className="-mx-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }, (_, i) => (
+          <li key={i} className="flex items-center gap-3 rounded-2xl px-3 py-3">
+            <span className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-ink-100" />
+            <span className="flex-1 space-y-2">
+              <span className="block h-3.5 w-3/4 animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-3 w-1/2 animate-pulse rounded-full bg-ink-100" />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * Content-governance view: every chapter, any status, with the
  * draft -> review -> publish state machine exposed directly. SUPER_ADMIN
  * only -- see routes_curriculum_admin.py's module docstring for why a
  * school's own ADMIN never gets these controls.
+ *
+ * Phase 2a pass (30 Sep 2026), the parts that change behaviour rather than
+ * just look:
+ *  - "Send All to Review" now sends the Draft chapters *listed on screen*
+ *    (the endpoint's optional chapterIds), not every Draft on the platform
+ *    regardless of the Board/Class/Subject filters above it. With no
+ *    filters set that is the same set as before. It also asks once first.
+ *  - "Also Approve Unverified" asks once first: it approves questions that
+ *    no automated check could confirm, which is the one bulk action here
+ *    that can publish a wrong answer key.
+ *  - Every multi-button row shows progress only on the button pressed.
  */
 function ChapterStudio() {
   const [chapters, setChapters] = useState<ChapterSummary[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<ChapterFilter>("ALL");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ChapterDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
-  const [chapterActionBusy, setChapterActionBusy] = useState(false);
-  const [lessonActionBusyId, setLessonActionBusyId] = useState<string | null>(null);
+  const [pendingChapterStatus, setPendingChapterStatus] = useState<ChapterStatus | null>(null);
+  const [lessonAction, setLessonAction] = useState<{ id: string; status: ConceptLessonStatus } | null>(null);
 
   // Question-level content review -- expanding a lesson is the only way to
   // actually see what's being approved/published, not just its status.
@@ -307,13 +413,15 @@ function ChapterStudio() {
   const [questionsByLesson, setQuestionsByLesson] = useState<Record<string, QuestionDetail[]>>({});
   const [loadingQuestionsFor, setLoadingQuestionsFor] = useState<string | null>(null);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
-  const [questionActionBusyId, setQuestionActionBusyId] = useState<string | null>(null);
+  const [questionAction, setQuestionAction] = useState<{ id: string; status: QuestionStatus } | null>(null);
 
   // Bulk actions (18 Aug 2026: reviewing/approving hundreds of questions
   // one at a time doesn't scale -- see question_quality_service.py).
+  const [confirmBulkReview, setConfirmBulkReview] = useState(false);
   const [bulkReviewBusy, setBulkReviewBusy] = useState(false);
   const [bulkReviewResult, setBulkReviewResult] = useState<string | null>(null);
-  const [bulkApproveBusy, setBulkApproveBusy] = useState(false);
+  const [bulkApproveMode, setBulkApproveMode] = useState<"verified" | "unverified" | null>(null);
+  const [confirmUnverified, setConfirmUnverified] = useState(false);
   const [bulkApproveResult, setBulkApproveResult] = useState<BulkApproveResult | null>(null);
 
   // Board -> Class -> Subject filters (19 Aug 2026) -- replaces the single
@@ -326,6 +434,7 @@ function ChapterStudio() {
     () => classLevelsForBoard(filterBoardId),
     [classLevelsForBoard, filterBoardId],
   );
+  const anyScopeFilter = Boolean(filterBoardId || filterClassLevelId || filterDisciplineId);
 
   function handleFilterBoardChange(id: string) {
     setFilterBoardId(id);
@@ -375,6 +484,8 @@ function ChapterStudio() {
     setExpandedLessonId(null);
     setQuestionsByLesson({});
     setQuestionsError(null);
+    setBulkApproveResult(null);
+    setConfirmUnverified(false);
   }, [selectedId, loadDetail]);
 
   const loadQuestions = useCallback(async (lessonId: string) => {
@@ -401,7 +512,7 @@ function ChapterStudio() {
   }
 
   async function advanceQuestion(lessonId: string, questionId: string, status: QuestionStatus) {
-    setQuestionActionBusyId(questionId);
+    setQuestionAction({ id: questionId, status });
     setQuestionsError(null);
     try {
       await api.patch(`/curriculum-admin/questions/${questionId}/status`, { status });
@@ -409,13 +520,13 @@ function ChapterStudio() {
     } catch (err) {
       setQuestionsError(apiErrorMessage(err));
     } finally {
-      setQuestionActionBusyId(null);
+      setQuestionAction(null);
     }
   }
 
   async function transitionChapter(status: ChapterStatus) {
     if (!selectedId) return;
-    setChapterActionBusy(true);
+    setPendingChapterStatus(status);
     setDetailError(null);
     try {
       await api.patch(`/curriculum-admin/chapters/${selectedId}/status`, { status });
@@ -423,12 +534,12 @@ function ChapterStudio() {
     } catch (err) {
       setDetailError(apiErrorMessage(err));
     } finally {
-      setChapterActionBusy(false);
+      setPendingChapterStatus(null);
     }
   }
 
   async function advanceLesson(lessonId: string, status: ConceptLessonStatus) {
-    setLessonActionBusyId(lessonId);
+    setLessonAction({ id: lessonId, status });
     setDetailError(null);
     try {
       await api.patch(`/curriculum-admin/concept-lessons/${lessonId}/status`, { status });
@@ -436,24 +547,27 @@ function ChapterStudio() {
     } catch (err) {
       setDetailError(apiErrorMessage(err));
     } finally {
-      setLessonActionBusyId(null);
+      setLessonAction(null);
     }
   }
 
-  async function sendAllChaptersToReview() {
+  const listedDrafts = useMemo(() => chapters.filter((c) => c.status === "DRAFT"), [chapters]);
+
+  async function sendListedDraftsToReview() {
     setBulkReviewBusy(true);
     setBulkReviewResult(null);
     setListError(null);
     try {
       const { data } = await api.post<{ updatedChapters: string[]; skippedChapters: string[] }>(
         "/curriculum-admin/chapters/bulk-status",
-        { status: "REVIEW" },
+        { status: "REVIEW", chapterIds: listedDrafts.map((c) => c.id) },
       );
       setBulkReviewResult(
         data.updatedChapters.length === 0
           ? "No chapters were eligible — only Draft chapters move to Review."
           : `Moved ${data.updatedChapters.length} chapter${data.updatedChapters.length === 1 ? "" : "s"} to Review.`,
       );
+      setConfirmBulkReview(false);
       await loadChapters();
       if (selectedId) await loadDetail(selectedId);
     } catch (err) {
@@ -465,7 +579,7 @@ function ChapterStudio() {
 
   async function bulkApproveChapterQuestions(includeUnverified: boolean) {
     if (!selectedId) return;
-    setBulkApproveBusy(true);
+    setBulkApproveMode(includeUnverified ? "unverified" : "verified");
     setBulkApproveResult(null);
     setDetailError(null);
     try {
@@ -474,6 +588,7 @@ function ChapterStudio() {
         { includeUnverified },
       );
       setBulkApproveResult(data);
+      setConfirmUnverified(false);
       // Statuses changed underneath whatever's cached -- drop it so
       // re-opening a lesson shows fresh status/quality info instead of
       // stale pre-bulk-approve data.
@@ -483,11 +598,23 @@ function ChapterStudio() {
     } catch (err) {
       setDetailError(apiErrorMessage(err));
     } finally {
-      setBulkApproveBusy(false);
+      setBulkApproveMode(null);
     }
   }
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<ChapterFilter, number> = { ALL: chapters.length, DRAFT: 0, REVIEW: 0, PUBLISHED: 0, ARCHIVED: 0 };
+    for (const chapter of chapters) counts[chapter.status] += 1;
+    return counts;
+  }, [chapters]);
+  const visibleChapters = statusFilter === "ALL" ? chapters : chapters.filter((c) => c.status === statusFilter);
+
   const selected = chapters.find((c) => c.id === selectedId) ?? null;
+  // The open chapter's own detail, never the previous chapter's while the
+  // next one is still loading.
+  const currentDetail = detail && detail.id === selectedId ? detail : null;
+  const lessons = currentDetail?.conceptLessons ?? [];
+  const publishedLessons = lessons.filter((l) => l.status === "PUBLISHED").length;
 
   function closeChapterReview() {
     setSelectedId(null);
@@ -505,23 +632,53 @@ function ChapterStudio() {
               <div>
                 <CardTitle>Chapters</CardTitle>
                 <p className="mt-0.5 text-xs text-content-subtle">
-                  Every chapter, at any status — click one to open its dedicated review window
+                  Every chapter, at any status — open one to review its lessons and questions
                 </p>
               </div>
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              leadingIcon={<Send className="h-4 w-4" />}
-              loading={bulkReviewBusy}
-              onClick={sendAllChaptersToReview}
-            >
-              Send All to Review
-            </Button>
+            {!confirmBulkReview ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                leadingIcon={<Send className="h-4 w-4" />}
+                disabled={loadingChapters || listedDrafts.length === 0}
+                onClick={() => {
+                  setBulkReviewResult(null);
+                  setConfirmBulkReview(true);
+                }}
+              >
+                {listedDrafts.length === 0 && !loadingChapters
+                  ? "No Drafts to Send"
+                  : `Send ${anyScopeFilter ? "Listed" : "All"} Drafts to Review`}
+              </Button>
+            ) : null}
           </div>
 
+          {confirmBulkReview ? (
+            // brand-700 on surface-brand for the lead line: 9.3:1.
+            <div role="group" aria-label="Confirm sending drafts to review" className="flex flex-wrap items-center gap-3 rounded-2xl border border-line-brand bg-surface-brand px-4 py-3 animate-scale-in">
+              <p className="mr-auto text-[0.8125rem] leading-relaxed text-content-muted">
+                <strong className="font-semibold text-content-brand">
+                  Move {listedDrafts.length} Draft {listedDrafts.length === 1 ? "chapter" : "chapters"} into Review?
+                </strong>{" "}
+                {anyScopeFilter ? "Only the chapters matching the filters below. " : ""}Review isn&rsquo;t visible to any
+                school &mdash; only Published is.
+              </p>
+              <Button size="sm" variant="secondary" loading={bulkReviewBusy} loadingLabel="Moving" onClick={sendListedDraftsToReview}>
+                Move to Review
+              </Button>
+              <Button size="sm" variant="ghost" disabled={bulkReviewBusy} onClick={() => setConfirmBulkReview(false)}>
+                Cancel
+              </Button>
+            </div>
+          ) : null}
+
           {bulkReviewResult ? (
-            <p className="rounded-xl bg-jade-50 px-3 py-2 text-xs font-medium text-jade-800">{bulkReviewResult}</p>
+            // jade-800 on jade-50: 8.9:1.
+            <p role="status" className="flex items-center gap-2 rounded-xl bg-jade-50 px-3 py-2 text-xs font-medium text-jade-800">
+              <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {bulkReviewResult}
+            </p>
           ) : null}
 
           <div className="grid grid-cols-1 gap-3 rounded-2xl border border-line bg-surface-muted/60 p-3.5 sm:grid-cols-3">
@@ -546,6 +703,7 @@ function ChapterStudio() {
               value={filterClassLevelId}
               onChange={(e) => setFilterClassLevelId(e.target.value)}
               disabled={!filterBoardId}
+              hint={!filterBoardId ? "Pick a board first" : undefined}
             >
               <option value="">All Classes</option>
               {classLevelOptions.map((cl) => (
@@ -568,37 +726,75 @@ function ChapterStudio() {
             </SelectField>
           </div>
 
+          {/* Status is the question a content owner actually asks of this
+              list ("what's still waiting on me?"), so it gets one-tap
+              filters with live counts. Client-side: the list is already
+              scoped by the selects above and is at most a few hundred rows. */}
+          {!loadingChapters && chapters.length > 0 ? (
+            <div role="group" aria-label="Filter by status" className="flex flex-wrap items-center gap-1.5">
+              {CHAPTER_FILTERS.map((filter) => {
+                const pressed = statusFilter === filter;
+                const count = statusCounts[filter];
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    aria-pressed={pressed}
+                    onClick={() => setStatusFilter(filter)}
+                    disabled={filter !== "ALL" && count === 0 && !pressed}
+                    className={cn(
+                      "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.75rem] font-semibold transition disabled:pointer-events-none disabled:opacity-50",
+                      pressed
+                        ? "border border-brand-300 bg-surface-brand text-content-brand"
+                        : "border border-line-strong bg-surface text-content-muted hover:border-brand-300",
+                    )}
+                  >
+                    {filter === "ALL" ? "All" : STATUS_LABEL[filter]}
+                    <span className={cn("tabular", pressed ? "text-brand-600" : "text-content-subtle")}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
           {listError ? <ErrorBanner message={listError} /> : null}
 
           {loadingChapters ? (
-            <p className="text-sm text-content-subtle">Loading chapters&hellip;</p>
+            <ChapterListSkeleton />
           ) : chapters.length === 0 ? (
             <EmptyState
+              illustration={anyScopeFilter ? undefined : <BlueprintIllustration />}
               status={{
-                label: filterBoardId || filterClassLevelId || filterDisciplineId ? "No Matches" : "Nothing Imported Yet",
+                label: anyScopeFilter ? "No Matches" : "Nothing Imported Yet",
                 tone: "neutral",
               }}
-              title={filterBoardId || filterClassLevelId || filterDisciplineId ? "No chapters match these filters" : "No chapters yet"}
+              title={anyScopeFilter ? "No chapters match these filters" : "No chapters yet"}
               description={
-                filterBoardId || filterClassLevelId || filterDisciplineId
+                anyScopeFilter
                   ? "Try widening the board, class or subject filter above."
                   : "Import a chapter workbook to see it here — it lands in Draft, ready for review."
               }
             />
+          ) : visibleChapters.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-line-strong px-4 py-6 text-center text-sm text-content-subtle">
+              No {STATUS_LABEL[statusFilter as ChapterStatus].toLowerCase()} chapters in this view.
+            </p>
           ) : (
             <ul className="-mx-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
-              {chapters.map((chapter) => (
+              {visibleChapters.map((chapter) => (
                 <li key={chapter.id}>
                   <button
                     type="button"
+                    aria-haspopup="dialog"
                     onClick={() => setSelectedId(chapter.id)}
-                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition duration-200 ease-spring ${
+                    className={cn(
+                      "group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition duration-200 ease-spring",
                       chapter.id === selectedId
                         ? "bg-surface-brand ring-1 ring-inset ring-brand-200"
-                        : "hover:bg-surface-muted"
-                    }`}
+                        : "hover:bg-surface-muted",
+                    )}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-inset ring-brand-100">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-xs font-bold text-brand-700 ring-1 ring-inset ring-brand-100 tabular">
                       {chapter.chapterNo}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -608,9 +804,12 @@ function ChapterStudio() {
                       </span>
                     </span>
                     <Badge tone={CHAPTER_STATUS_TONE[chapter.status]} size="sm">
-                      {chapter.status}
+                      {STATUS_LABEL[chapter.status]}
                     </Badge>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-content-faint" aria-hidden />
+                    <ChevronRight
+                      className="h-4 w-4 shrink-0 text-content-faint transition-transform duration-200 ease-spring group-hover:translate-x-0.5"
+                      aria-hidden
+                    />
                   </button>
                 </li>
               ))}
@@ -623,106 +822,179 @@ function ChapterStudio() {
         open={Boolean(selected)}
         onClose={closeChapterReview}
         size="fullscreen"
-        eyebrow={selected?.code}
+        eyebrow={selected ? `${selected.code} · Chapter ${selected.chapterNo}` : undefined}
         title={selected?.title ?? "Chapter"}
-        meta={selected ? <Badge tone={CHAPTER_STATUS_TONE[selected.status]}>{selected.status}</Badge> : null}
+        meta={
+          selected ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={CHAPTER_STATUS_TONE[selected.status]} dot>
+                {STATUS_LABEL[selected.status]}
+              </Badge>
+              <span className="text-xs text-content-subtle tabular">
+                {selected.conceptLessonCount} lessons &middot; {selected.questionCount} questions
+              </span>
+            </div>
+          ) : null
+        }
       >
         {!selected ? null : (
-          <div className="space-y-6">
+          <div className="mx-auto max-w-[96rem] space-y-6">
             {detailError ? <ErrorBanner message={detailError} /> : null}
 
-              <div className="flex flex-wrap gap-2.5">
-                {selected.status === "DRAFT" ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    leadingIcon={<Send className="h-4 w-4" />}
-                    loading={chapterActionBusy}
-                    onClick={() => transitionChapter("REVIEW")}
+            {/* Two decks side by side on wide screens: the chapter's own
+                lifecycle on the left, the question bulk-approve on the right
+                -- the two decisions a reviewer makes before reading lessons. */}
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+              <section aria-labelledby="chapter-lifecycle" className="space-y-4 rounded-2xl border border-line p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 id="chapter-lifecycle" className="font-sans text-eyebrow font-bold uppercase text-content-subtle">
+                    Chapter status
+                  </h3>
+                  {lessons.length > 0 ? (
+                    <span className="text-xs font-medium text-content-subtle tabular">
+                      {publishedLessons} of {lessons.length} lessons published
+                    </span>
+                  ) : null}
+                </div>
+                {lessons.length > 0 ? (
+                  <div
+                    role="img"
+                    aria-label={`${publishedLessons} of ${lessons.length} lessons published`}
+                    className="h-1.5 overflow-hidden rounded-full bg-ink-100"
                   >
-                    Send to Review
-                  </Button>
+                    <span
+                      className="block h-full rounded-full bg-jade-500 transition-[width] duration-500 ease-out-expo"
+                      style={{ width: `${(publishedLessons / lessons.length) * 100}%` }}
+                    />
+                  </div>
                 ) : null}
-                {selected.status === "REVIEW" ? (
-                  <>
+                <div className="flex flex-wrap gap-2.5">
+                  {selected.status === "DRAFT" ? (
                     <Button
                       size="sm"
-                      variant="accent"
-                      leadingIcon={<CheckCircle2 className="h-4 w-4" />}
-                      loading={chapterActionBusy}
-                      onClick={() => transitionChapter("PUBLISHED")}
+                      variant="secondary"
+                      leadingIcon={<Send className="h-4 w-4" />}
+                      loading={pendingChapterStatus === "REVIEW"}
+                      onClick={() => transitionChapter("REVIEW")}
                     >
-                      Publish Chapter
+                      Send to Review
                     </Button>
+                  ) : null}
+                  {selected.status === "REVIEW" ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="accent"
+                        leadingIcon={<CheckCircle2 className="h-4 w-4" />}
+                        loading={pendingChapterStatus === "PUBLISHED"}
+                        disabled={pendingChapterStatus === "DRAFT"}
+                        onClick={() => transitionChapter("PUBLISHED")}
+                      >
+                        Publish Chapter
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        leadingIcon={<RotateCcw className="h-4 w-4" />}
+                        loading={pendingChapterStatus === "DRAFT"}
+                        disabled={pendingChapterStatus === "PUBLISHED"}
+                        onClick={() => transitionChapter("DRAFT")}
+                      >
+                        Send Back to Draft
+                      </Button>
+                    </>
+                  ) : null}
+                  {selected.status === "PUBLISHED" ? (
                     <Button
                       size="sm"
                       variant="ghost"
+                      leadingIcon={<Archive className="h-4 w-4" />}
+                      loading={pendingChapterStatus === "ARCHIVED"}
+                      onClick={() => transitionChapter("ARCHIVED")}
+                    >
+                      Archive
+                    </Button>
+                  ) : null}
+                  {selected.status === "ARCHIVED" ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
                       leadingIcon={<RotateCcw className="h-4 w-4" />}
-                      loading={chapterActionBusy}
+                      loading={pendingChapterStatus === "DRAFT"}
                       onClick={() => transitionChapter("DRAFT")}
                     >
-                      Send Back to Draft
+                      Restore to Draft
                     </Button>
-                  </>
-                ) : null}
-                {selected.status === "PUBLISHED" ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    leadingIcon={<Archive className="h-4 w-4" />}
-                    loading={chapterActionBusy}
-                    onClick={() => transitionChapter("ARCHIVED")}
-                  >
-                    Archive
-                  </Button>
-                ) : null}
-                {selected.status === "ARCHIVED" ? (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    leadingIcon={<RotateCcw className="h-4 w-4" />}
-                    loading={chapterActionBusy}
-                    onClick={() => transitionChapter("DRAFT")}
-                  >
-                    Restore to Draft
-                  </Button>
-                ) : null}
-              </div>
+                  ) : null}
+                </div>
+              </section>
 
-              <div className="space-y-2.5 rounded-2xl border border-line bg-surface-muted/60 p-4">
+              <section aria-labelledby="bulk-approve" className="space-y-3 rounded-2xl border border-line bg-surface-muted/60 p-4 sm:p-5">
                 <div className="flex items-start gap-2.5">
                   <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
                   <div>
-                    <p className="text-sm font-semibold text-content">Bulk-approve this chapter&apos;s questions</p>
-                    <p className="mt-0.5 text-xs text-content-subtle">
+                    <h3 id="bulk-approve" className="font-sans text-sm font-semibold text-content">
+                      Bulk-approve this chapter&apos;s questions
+                    </h3>
+                    <p className="mt-0.5 text-xs leading-relaxed text-content-subtle">
                       Runs the free automated checks (structural + computed-answer verification), then approves only
                       the questions those checks actually confirmed are correct. Anything flagged, or that no check
                       could verify either way, is left untouched for you to look at individually.
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    leadingIcon={<ShieldCheck className="h-4 w-4" />}
-                    loading={bulkApproveBusy}
-                    onClick={() => bulkApproveChapterQuestions(false)}
-                  >
-                    Approve All Verified
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    leadingIcon={<ShieldAlert className="h-4 w-4" />}
-                    loading={bulkApproveBusy}
-                    onClick={() => bulkApproveChapterQuestions(true)}
-                  >
-                    Also Approve Unverified
-                  </Button>
-                </div>
+                {!confirmUnverified ? (
+                  <div className="flex flex-wrap gap-2.5">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      leadingIcon={<ShieldCheck className="h-4 w-4" />}
+                      loading={bulkApproveMode === "verified"}
+                      loadingLabel="Checking and approving"
+                      disabled={bulkApproveMode === "unverified"}
+                      onClick={() => bulkApproveChapterQuestions(false)}
+                    >
+                      Approve All Verified
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      leadingIcon={<ShieldAlert className="h-4 w-4" />}
+                      disabled={bulkApproveMode !== null}
+                      onClick={() => setConfirmUnverified(true)}
+                    >
+                      Also Approve Unverified&hellip;
+                    </Button>
+                  </div>
+                ) : (
+                  // saffron-900 on saffron-50: 9.3:1.
+                  <div role="group" aria-label="Confirm approving unverified questions" className="space-y-3 rounded-xl border border-saffron-200 bg-saffron-50 p-3.5 animate-scale-in">
+                    <p className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-saffron-900">
+                      <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-saffron-700" aria-hidden />
+                      <span>
+                        <strong className="font-semibold">This also approves questions no check could verify.</strong>{" "}
+                        Their answer keys haven&rsquo;t been confirmed by anything but the import. Flagged questions
+                        are still skipped, and any approved question can be sent back later.
+                      </span>
+                    </p>
+                    <div className="flex flex-wrap gap-2.5">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={bulkApproveMode === "unverified"}
+                        loadingLabel="Approving"
+                        onClick={() => bulkApproveChapterQuestions(true)}
+                      >
+                        Approve Verified and Unverified
+                      </Button>
+                      <Button size="sm" variant="ghost" disabled={bulkApproveMode !== null} onClick={() => setConfirmUnverified(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {bulkApproveResult ? (
-                  <p className="text-xs leading-[1.6] text-content-muted">
+                  <p role="status" className="text-xs leading-[1.6] text-content-muted">
                     Approved <strong className="text-jade-700">{bulkApproveResult.approvedCount}</strong>.
                     {bulkApproveResult.skippedFlaggedCount > 0
                       ? ` ${bulkApproveResult.skippedFlaggedCount} flagged — needs your review.`
@@ -735,119 +1007,183 @@ function ChapterStudio() {
                       : ""}
                   </p>
                 ) : null}
-              </div>
+              </section>
+            </div>
 
-              <div className="space-y-2 border-t border-line pt-4">
-                <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Concept lessons</p>
-                <p className="text-xs text-content-faint">
-                  Open a lesson to read every question&apos;s actual text, options and correct answer before approving
-                  it — a status badge alone doesn&apos;t tell you what&apos;s about to publish.
+            <section aria-labelledby="concept-lessons" className="space-y-3 border-t border-line pt-5">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h3 id="concept-lessons" className="font-sans text-eyebrow font-bold uppercase text-content-subtle">
+                    Concept lessons
+                  </h3>
+                  {/* content-subtle, not content-faint: this is instruction,
+                      not decoration, and deserves the stronger step (6.4:1). */}
+                  <p className="mt-1 max-w-prose text-xs leading-relaxed text-content-subtle">
+                    Open a lesson to read every question&apos;s actual text, options and correct answer before approving
+                    it — a status badge alone doesn&apos;t tell you what&apos;s about to publish.
+                  </p>
+                </div>
+              </div>
+              {questionsError ? <ErrorBanner message={questionsError} /> : null}
+              {loadingDetail && !currentDetail ? (
+                <div aria-busy="true" className="space-y-2">
+                  <span className="sr-only" role="status">
+                    Loading lessons
+                  </span>
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} aria-hidden className="flex items-center gap-3 rounded-2xl border border-line px-3.5 py-3.5">
+                      <span className="h-4 w-4 animate-pulse rounded bg-ink-100" />
+                      <span className="h-3.5 w-1/3 animate-pulse rounded-full bg-ink-100" />
+                      <span className="ml-auto h-6 w-20 animate-pulse rounded-full bg-ink-100" />
+                    </div>
+                  ))}
+                </div>
+              ) : lessons.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-line-strong px-4 py-6 text-center text-sm text-content-subtle">
+                  No concept lessons on this chapter.
                 </p>
-                {questionsError ? <ErrorBanner message={questionsError} /> : null}
-                {loadingDetail ? (
-                  <p className="text-sm text-content-subtle">Loading&hellip;</p>
-                ) : !detail || detail.conceptLessons.length === 0 ? (
-                  <p className="text-sm text-content-subtle">No concept lessons on this chapter.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {detail.conceptLessons.map((lesson) => {
-                      const isExpanded = expandedLessonId === lesson.id;
-                      const lessonQuestions = questionsByLesson[lesson.id];
-                      return (
-                        <li key={lesson.id} className="rounded-2xl border border-line bg-surface-muted/60">
-                          <div className="flex flex-wrap items-center gap-3 px-3.5 py-3">
-                            <button
-                              type="button"
-                              onClick={() => toggleLesson(lesson.id)}
-                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 shrink-0 text-content-faint" aria-hidden />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 shrink-0 text-content-faint" aria-hidden />
+              ) : (
+                <ul className="space-y-2">
+                  {lessons.map((lesson) => {
+                    const isExpanded = expandedLessonId === lesson.id;
+                    const lessonQuestions = questionsByLesson[lesson.id];
+                    const panelId = `lesson-panel-${lesson.id}`;
+                    const pending = lessonAction?.id === lesson.id ? lessonAction.status : null;
+                    return (
+                      <li
+                        key={lesson.id}
+                        className={cn(
+                          "overflow-hidden rounded-2xl border transition-colors",
+                          isExpanded ? "border-line-brand bg-surface shadow-xs" : "border-line bg-surface-muted/60",
+                        )}
+                      >
+                        <div className="flex flex-wrap items-center gap-3 px-3.5 py-3">
+                          {/* Pointer shortcut only (tabIndex -1): the
+                              labelled button beside it is the one keyboard
+                              stop for the same action -- two stops that do
+                              the same thing is noise. */}
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => toggleLesson(lesson.id)}
+                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                          >
+                            <ChevronRight
+                              className={cn(
+                                "h-4 w-4 shrink-0 text-content-faint transition-transform duration-200 ease-spring",
+                                isExpanded && "rotate-90 text-brand-600",
                               )}
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-semibold text-content">{lesson.title}</span>
-                                <span className="block truncate text-xs text-content-subtle">
-                                  {lesson.code} &middot; {lesson.questionCount} question
-                                  {lesson.questionCount === 1 ? "" : "s"}
-                                </span>
+                              aria-hidden
+                            />
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold text-content">{lesson.title}</span>
+                              <span className="block truncate text-xs text-content-subtle tabular">
+                                {lesson.code} &middot; {lesson.questionCount} question
+                                {lesson.questionCount === 1 ? "" : "s"}
                               </span>
-                            </button>
-                            <Badge tone={LESSON_STATUS_TONE[lesson.status]} size="sm">
-                              {lesson.status}
-                            </Badge>
+                            </span>
+                          </button>
+                          <Badge tone={LESSON_STATUS_TONE[lesson.status]} size="sm">
+                            {STATUS_LABEL[lesson.status]}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant={isExpanded ? "secondary" : "ghost"}
+                            aria-expanded={isExpanded}
+                            aria-controls={panelId}
+                            leadingIcon={isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            onClick={() => toggleLesson(lesson.id)}
+                          >
+                            {isExpanded ? "Hide Questions" : "Review Questions"}
+                          </Button>
+                          {lesson.status === "DRAFT" ? (
                             <Button
                               size="sm"
-                              variant={isExpanded ? "secondary" : "ghost"}
-                              leadingIcon={isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                              onClick={() => toggleLesson(lesson.id)}
+                              variant="ghost"
+                              loading={pending === "REVIEW"}
+                              onClick={() => advanceLesson(lesson.id, "REVIEW")}
                             >
-                              {isExpanded ? "Hide Questions" : "Review Questions"}
+                              Send to Review
                             </Button>
-                            {lesson.status === "DRAFT" ? (
+                          ) : null}
+                          {lesson.status === "REVIEW" ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                loading={pending === "PUBLISHED"}
+                                disabled={pending === "DRAFT"}
+                                onClick={() => advanceLesson(lesson.id, "PUBLISHED")}
+                              >
+                                Approve
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                loading={lessonActionBusyId === lesson.id}
-                                onClick={() => advanceLesson(lesson.id, "REVIEW")}
+                                loading={pending === "DRAFT"}
+                                disabled={pending === "PUBLISHED"}
+                                onClick={() => advanceLesson(lesson.id, "DRAFT")}
                               >
-                                Send to Review
+                                Back to Draft
                               </Button>
-                            ) : null}
-                            {lesson.status === "REVIEW" ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  loading={lessonActionBusyId === lesson.id}
-                                  onClick={() => advanceLesson(lesson.id, "PUBLISHED")}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  loading={lessonActionBusyId === lesson.id}
-                                  onClick={() => advanceLesson(lesson.id, "DRAFT")}
-                                >
-                                  Back to Draft
-                                </Button>
-                              </>
-                            ) : null}
-                          </div>
-
-                          {isExpanded ? (
-                            <div className="border-t border-line px-3.5 py-3.5">
-                              {loadingQuestionsFor === lesson.id ? (
-                                <p className="text-sm text-content-subtle">Loading questions&hellip;</p>
-                              ) : !lessonQuestions || lessonQuestions.length === 0 ? (
-                                <p className="text-sm text-content-subtle">No questions in this lesson yet.</p>
-                              ) : (
-                                <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
-                                  {lessonQuestions.map((question) => (
-                                    <QuestionCard
-                                      key={question.id}
-                                      question={question}
-                                      busy={questionActionBusyId === question.id}
-                                      onAdvance={(status) => advanceQuestion(lesson.id, question.id, status)}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                            </>
                           ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
+                        </div>
+
+                        {isExpanded ? (
+                          <div id={panelId} className="border-t border-line bg-surface-muted/40 px-3.5 py-3.5">
+                            {loadingQuestionsFor === lesson.id ? (
+                              <div aria-busy="true" className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+                                <span className="sr-only" role="status">
+                                  Loading questions
+                                </span>
+                                {[0, 1].map((i) => (
+                                  <div key={i} aria-hidden className="space-y-3 rounded-2xl border border-line bg-surface p-4">
+                                    <span className="block h-3 w-1/3 animate-pulse rounded-full bg-ink-100" />
+                                    <span className="block h-3.5 w-full animate-pulse rounded-full bg-ink-100" />
+                                    <span className="block h-3.5 w-4/5 animate-pulse rounded-full bg-ink-100" />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : !lessonQuestions || lessonQuestions.length === 0 ? (
+                              <p className="text-sm text-content-subtle">No questions in this lesson yet.</p>
+                            ) : (
+                              <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+                                {lessonQuestions.map((question) => (
+                                  <QuestionCard
+                                    key={question.id}
+                                    question={question}
+                                    pendingStatus={questionAction?.id === question.id ? questionAction.status : null}
+                                    onAdvance={(status) => advanceQuestion(lesson.id, question.id, status)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
           </div>
         )}
       </Modal>
     </>
   );
+}
+
+/** "2026-09-14" -> "14 Sep 2026" for the map's planned dates, which the
+ *  API stores as plain ISO days. Parsed as a local date on purpose: new
+ *  Date("2026-09-14") is UTC midnight, which renders as the 13th anywhere
+ *  west of Greenwich. Anything unparseable is shown exactly as stored. */
+function formatPlannedDay(value: string | null): string | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) return value;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(date);
 }
 
 /**
@@ -885,6 +1221,11 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Removing a mapping takes a chapter out of a school's calendar -- and
+  // out of what its teachers can assign practice from -- so it asks once.
+  // (It was a single ghost-button click, sitting right beside "Edit
+  // Schedule".)
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   // Reschedule (19 Aug 2026) -- the actual fix for dates slipping because of
   // holidays, elections, festivals, health closures and the rest: a two-
@@ -1024,6 +1365,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
     setLoadError(null);
     try {
       await api.delete(`/curriculum-admin/school-curriculum-maps/${mapId}`);
+      setConfirmRemoveId(null);
       await loadMappings();
     } catch (err) {
       setLoadError(apiErrorMessage(err));
@@ -1215,65 +1557,132 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
           {loadError ? <ErrorBanner message={loadError} /> : null}
 
           {!schoolContextReady ? null : loading ? (
-            <p className="text-sm text-content-subtle">Loading&hellip;</p>
+            <div aria-busy="true" className="space-y-2">
+              <span className="sr-only" role="status">
+                Loading curriculum map
+              </span>
+              {[0, 1, 2].map((i) => (
+                <div key={i} aria-hidden className="flex items-center gap-3 rounded-2xl border border-line px-3.5 py-3">
+                  <span className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-ink-100" />
+                  <span className="flex-1 space-y-2">
+                    <span className="block h-3.5 w-1/2 animate-pulse rounded-full bg-ink-100" />
+                    <span className="block h-3 w-1/3 animate-pulse rounded-full bg-ink-100" />
+                  </span>
+                </div>
+              ))}
+            </div>
           ) : mappings.length === 0 ? (
             <EmptyState
               status={{ label: "Nothing Mapped Yet", tone: "neutral" }}
               title="No chapters mapped yet"
-              description="Use the form on the left to place a published chapter into a class."
+              description={
+                isPlatformAdmin
+                  ? "Use the form to place a published chapter into one of this school's classes. Its teachers can assign practice from it straight away."
+                  : "Use the form to place a published chapter into a class. Your teachers can assign practice from it straight away."
+              }
             />
           ) : (
             <ul className="space-y-2">
               {mappings.map((mapping) => {
+                // Title from the mapping itself (the list endpoint enriches
+                // every row with chapterTitle/chapterCode). It used to come
+                // from chapterById, which only holds the *form's* current
+                // chapter options -- published chapters matching whatever
+                // Board/Class/Subject is picked on the left -- so changing
+                // those selects turned every other mapped row into a bare
+                // "Chapter". The lookup stays as a fallback only.
                 const chapter = chapterById.get(mapping.chapterId);
+                const chapterTitle = mapping.chapterTitle ?? chapter?.title ?? "Chapter";
+                const chapterCode = mapping.chapterCode ?? chapter?.code ?? null;
                 const boardCourse = boardCourseById.get(mapping.boardCourseId);
                 const isRescheduling = reschedulingId === mapping.id;
+                const isConfirmingRemove = confirmRemoveId === mapping.id;
+                const start = formatPlannedDay(mapping.plannedStartDate);
+                const end = formatPlannedDay(mapping.plannedEndDate);
                 return (
                   <li
                     key={mapping.id}
-                    className="rounded-2xl border border-line bg-surface-muted/60 px-3.5 py-3"
+                    className={cn(
+                      "rounded-2xl border px-3.5 py-3 transition-colors",
+                      isConfirmingRemove ? "border-coral-200 bg-coral-50/50" : "border-line bg-surface-muted/60",
+                    )}
                   >
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-jade-50 text-jade-700 ring-1 ring-inset ring-jade-100">
                         <BookMarked className="h-4 w-4" aria-hidden />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-content">
-                          {chapter?.title ?? "Chapter"}
-                        </span>
+                        <span className="block truncate text-sm font-semibold text-content">{chapterTitle}</span>
                         <span className="block truncate text-xs text-content-subtle">
+                          {chapterCode ? `${chapterCode} · ` : ""}
                           {boardCourse?.displayName ?? "Board course"}
                           {mapping.className ? ` · Class ${mapping.className}` : ""}
                         </span>
-                        {!isRescheduling && (mapping.plannedStartDate || mapping.plannedEndDate) ? (
-                          <span className="mt-0.5 flex items-center gap-1.5 text-[0.6875rem] text-content-faint">
-                            <CalendarRange className="h-3 w-3" aria-hidden />
-                            {mapping.plannedStartDate ?? "—"} &rarr; {mapping.plannedEndDate ?? "—"}
+                        {!isRescheduling ? (
+                          // content-subtle (6.2:1 on this row), not
+                          // content-faint: faint measured 4.48:1 on the
+                          // muted row -- just under AA, for the one line that
+                          // tells a coordinator *when*.
+                          <span className="mt-0.5 flex items-center gap-1.5 text-[0.75rem] text-content-subtle tabular">
+                            <CalendarRange className="h-3 w-3 shrink-0" aria-hidden />
+                            {start || end ? (
+                              <>
+                                {start ?? "No start date"} &rarr; {end ?? "No end date"}
+                              </>
+                            ) : (
+                              "Dates not set"
+                            )}
                           </span>
                         ) : null}
                       </span>
-                      {isRescheduling ? null : (
-                        <>
+                      {isRescheduling || isConfirmingRemove ? null : (
+                        <span className="flex items-center gap-1">
                           <Button
                             size="sm"
                             variant="ghost"
+                            aria-label={`Edit schedule for ${chapterTitle}`}
                             leadingIcon={<Pencil className="h-4 w-4" />}
-                            onClick={() => startReschedule(mapping)}
+                            onClick={() => {
+                              setConfirmRemoveId(null);
+                              startReschedule(mapping);
+                            }}
                           >
                             Edit Schedule
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
+                            aria-label={`Remove ${chapterTitle} from the map`}
                             leadingIcon={<Trash2 className="h-4 w-4" />}
-                            loading={deletingId === mapping.id}
-                            onClick={() => handleDelete(mapping.id)}
+                            onClick={() => setConfirmRemoveId(mapping.id)}
                           >
                             Remove
                           </Button>
-                        </>
+                        </span>
                       )}
                     </div>
+
+                    {isConfirmingRemove ? (
+                      // coral-800 on the coral-50 wash: 8.7:1.
+                      <div role="group" aria-label={`Confirm removing ${chapterTitle}`} className="mt-3 flex flex-wrap items-center gap-2 border-t border-coral-200 pt-3 animate-fade-in">
+                        <p className="mr-auto text-[0.8125rem] leading-relaxed text-coral-800">
+                          Remove it from {mapping.className ? `Class ${mapping.className}'s` : "this"} calendar? Teachers
+                          won&rsquo;t be able to assign new practice from it. The chapter itself isn&rsquo;t affected.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          loading={deletingId === mapping.id}
+                          loadingLabel="Removing"
+                          onClick={() => handleDelete(mapping.id)}
+                        >
+                          Remove
+                        </Button>
+                        <Button size="sm" variant="ghost" disabled={deletingId === mapping.id} onClick={() => setConfirmRemoveId(null)}>
+                          Keep It
+                        </Button>
+                      </div>
+                    ) : null}
 
                     {isRescheduling ? (
                       <div className="mt-3 space-y-3 border-t border-line pt-3">
@@ -1362,20 +1771,29 @@ export default function CurriculumStudioPage() {
 
         {isPlatformAdmin ? (
           <>
-            <section className="space-y-4">
-              <div>
-                <h2 className="font-display text-display-sm text-content">Review &amp; Publish</h2>
-                <p className="mt-1 text-sm text-content-muted">
+            {/* Numbered, because it is a sequence: nothing in step 2 can
+                be mapped until step 1 has published it. The Eyebrow's
+                saffron rule ties both back to the page title above. */}
+            <section aria-labelledby="studio-review" className="space-y-5">
+              <div className="space-y-1.5">
+                <Eyebrow>Step 1 &middot; Content</Eyebrow>
+                <h2 id="studio-review" className="font-display text-display-sm text-content">
+                  Review &amp; Publish
+                </h2>
+                <p className="text-sm text-content-muted">
                   Draft &rarr; review &rarr; publish. Nothing reaches any school until it&apos;s published here.
                 </p>
               </div>
               <ChapterStudio />
             </section>
 
-            <section className="space-y-4 border-t border-line pt-8">
-              <div>
-                <h2 className="font-display text-display-sm text-content">Map Into a School</h2>
-                <p className="mt-1 text-sm text-content-muted">
+            <section aria-labelledby="studio-map" className="space-y-5 border-t border-line pt-10">
+              <div className="space-y-1.5">
+                <Eyebrow>Step 2 &middot; Schools</Eyebrow>
+                <h2 id="studio-map" className="font-display text-display-sm text-content">
+                  Map Into a School
+                </h2>
+                <p className="text-sm text-content-muted">
                   Pick any school and place a published chapter into its calendar — no second login needed.
                 </p>
               </div>
