@@ -9,12 +9,17 @@
  * legible at the small sizes admins live in and friendly enough for a
  * Class 5 student) paired with Fraunces (display -- an editorial serif
  * that gives headings warmth and stops the product reading as generic
- * dashboard software). Both are loaded from Google Fonts in app/layout.tsx
- * with system fallbacks below so nothing reflows into a default serif.
+ * dashboard software). Self-hosted via next/font/google in app/layout.tsx
+ * (B9 fix, 30 Sep 2026 review -- previously a runtime fonts.googleapis.com/
+ * fonts.gstatic.com fetch on every page load; now downloaded once at build
+ * time and served from this app's own origin, no third-party request at
+ * all). --font-plus-jakarta-sans/--font-fraunces are the CSS variables that
+ * loader generates; system fallbacks below still cover the rare case the
+ * self-hosted @font-face hasn't painted yet.
  */
 :root {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
 
   /* Mirrors tailwind.config.ts semantic roles for the few places raw CSS
      needs them (scrollbars, selection, form autofill). */

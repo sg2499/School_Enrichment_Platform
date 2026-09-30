@@ -577,6 +577,30 @@ def get_attempt_result(
 # --- Foundation Repair (TEACHER / ADMIN) ------------------------------------
 
 
+def _require_student_in_scope(db: Session, user: User, student: Student) -> None:
+    """A3 fix (30 Sep 2026 security/DPDP review): GET /foundation-repair had
+    no school-scope check at all -- proven by test, a TEACHER at school B
+    could request a school-A student's id and get their real mastery score
+    back. Applies the exact same boundary the sibling POST
+    /foundation-repair/approve endpoint already enforces (via
+    teacher.school_id), generalized to also cover ADMIN. SUPER_ADMIN is
+    platform-wide and exempt, matching every other scope check in this
+    codebase."""
+    if user.role == "SUPER_ADMIN":
+        return
+    if user.role == "TEACHER":
+        teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+        if not teacher or teacher.school_id != student.school_id:
+            api_error(403, "FORBIDDEN", "You can only view students in your own school.")
+        return
+    if user.role == "ADMIN":
+        school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
+        if not school_admin or school_admin.school_id != student.school_id:
+            api_error(403, "FORBIDDEN", "You can only view students in your own school.")
+        return
+    api_error(403, "FORBIDDEN", "You do not have permission for this action.")
+
+
 def _recommendation_dict(rec) -> dict:
     return {
         "recommendation": rec.recommendation,
@@ -593,12 +617,13 @@ def _recommendation_dict(rec) -> dict:
 def get_foundation_repair_recommendation(
     studentId: str,
     conceptLessonId: str,
-    _: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
+    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
     student = db.get(Student, studentId)
     if not student:
         api_error(404, "NOT_FOUND", "Student not found.")
+    _require_student_in_scope(db, user, student)
     concept_lesson = db.get(ConceptLesson, conceptLessonId)
     if not concept_lesson:
         api_error(404, "NOT_FOUND", "Concept lesson not found.")

@@ -1,0 +1,1420 @@
+diff --git a/backend/.env.example b/backend/.env.example
+index 9ed40c9..e12577e 100644
+--- a/backend/.env.example
++++ b/backend/.env.example
+@@ -1,4 +1,9 @@
+ DATABASE_URL=sqlite:///./school_enrichment.db
++# Local dev/CI only -- tells the app it's safe to fall back to the default
++# SECRET_KEY below and to allow the localhost:3000 CORS origin. Never set
++# this in a real deployment (Render doesn't; see render.yaml). See
++# app/core/config.py's SECRET_KEY startup guard (A13, 30 Sep 2026 review).
++ENVIRONMENT=development
+ SECRET_KEY=dev-secret-change-me
+ ACCESS_TOKEN_EXPIRE_MINUTES=1440
+ COOKIE_SECURE=false
+diff --git a/backend/alembic/versions/b7e4a1d9c3f5_add_must_change_password_and_totp_replay_guard.py b/backend/alembic/versions/b7e4a1d9c3f5_add_must_change_password_and_totp_replay_guard.py
+new file mode 100644
+index 0000000..7619f04
+--- /dev/null
++++ b/backend/alembic/versions/b7e4a1d9c3f5_add_must_change_password_and_totp_replay_guard.py
+@@ -0,0 +1,41 @@
++"""add must_change_password and totp_last_used_step columns
++
++Revision ID: b7e4a1d9c3f5
++Revises: f1a9c3e7b420
++Create Date: 2026-09-30 00:00:00.000000
++
++30 Sep 2026 security/DPDP review (see A6_SECURITY_DPDP_REVIEW.md, findings
++A1 and A9):
++
++- A1: admin-issued initial passwords are now random instead of a guessable
++  firstname-lastname pattern, and this column is what forces the recipient
++  to actually replace it (checked in dependencies.py's get_current_user(),
++  currently gated to ADMIN/SUPER_ADMIN only -- see routes_roster.py). Every
++  existing account defaults to False (nobody already logged in gets forced
++  through this retroactively; only newly created accounts are ever created
++  with it True).
++- A9: 2FA verification previously had no memory of which TOTP step it last
++  accepted, so the exact same 30-second code could be replayed. This column
++  records the last step consumed per account.
++"""
++import sqlalchemy as sa
++
++from alembic import op
++
++# revision identifiers, used by Alembic.
++revision = 'b7e4a1d9c3f5'
++down_revision = 'f1a9c3e7b420'
++branch_labels = None
++depends_on = None
++
++
++def upgrade() -> None:
++    with op.batch_alter_table('users') as batch_op:
++        batch_op.add_column(sa.Column('must_change_password', sa.Boolean(), nullable=False, server_default='false'))
++        batch_op.add_column(sa.Column('totp_last_used_step', sa.Integer(), nullable=True))
++
++
++def downgrade() -> None:
++    with op.batch_alter_table('users') as batch_op:
++        batch_op.drop_column('totp_last_used_step')
++        batch_op.drop_column('must_change_password')
+diff --git a/backend/app/api/routes_auth.py b/backend/app/api/routes_auth.py
+index 00f1005..b9316ac 100644
+--- a/backend/app/api/routes_auth.py
++++ b/backend/app/api/routes_auth.py
+@@ -21,7 +21,7 @@ from pathlib import Path
+ 
+ from fastapi import APIRouter, Depends, File, Request, UploadFile
+ from fastapi.responses import Response
+-from PIL import Image, UnidentifiedImageError
++from PIL import Image, ImageOps, UnidentifiedImageError
+ from pydantic import BaseModel
+ from sqlalchemy.orm import Session
+ 
+@@ -51,7 +51,16 @@ from app.database import get_db
+ from app.dependencies import MANDATORY_2FA_ROLES, get_current_session_id, get_current_user, require_roles
+ from app.models import Student, Teacher, User
+ from app.services.audit_service import log_audit_event
+-from app.services.auth_service import export_user_data, force_logout_user, login, user_payload
++from app.services.auth_service import (
++    LOCKOUT_DURATION_MINUTES,
++    export_user_data,
++    force_logout_user,
++    is_account_locked,
++    login,
++    record_failed_attempt,
++    reset_lockout,
++    user_payload,
++)
+ from app.services.session_service import (
+     list_active_sessions,
+     revoke_session,
+@@ -85,7 +94,14 @@ class TwoFactorVerifyLoginRequest(BaseModel):
+ 
+ 
+ @router.post("/login")
+-@limiter.limit("5/minute")
++# A6 fix (30 Sep 2026 review): raised from 5/minute now that rate_limit.py
++# keys on the real caller IP instead of a shared proxy hop (see
++# get_real_client_ip's docstring) -- raising the number alone, without that
++# key fix, would have just let more junk logins through the same shared
++# bucket. 60/minute is deliberately generous: a whole class signing in from
++# one school router/NAT at the start of a period is normal legitimate
++# traffic now that it isn't lumped in with every other school's traffic too.
++@limiter.limit("60/minute")
+ def login_route(request: Request, response: Response, payload: LoginRequest, db: Session = Depends(get_db)):
+     result = login(db, payload.identifier, payload.password, request=request)
+     if result.get("twoFactorRequired"):
+@@ -190,6 +206,23 @@ def save_profile_photo(upload: UploadFile, prefix: str) -> str:
+             f".{Suffix} extension. Please upload a genuine JPG, PNG, or WEBP file.",
+         )
+ 
++    # A14 fix (30 Sep 2026 review): uploaded photos kept their original
++    # EXIF/GPS metadata server-side -- the browser-side compression path
++    # (lib/imageCompression.ts) already strips it, but nothing enforced that
++    # server-side, so a client that skipped or bypassed it would still get
++    # its metadata stored and served back out. Re-opening the already-
++    # verified image, baking in its EXIF orientation as real pixels
++    # (exif_transpose, so photos taken in portrait don't end up sideways),
++    # and re-saving without passing exif= at all discards that metadata
++    # unconditionally, regardless of what the client did or didn't do.
++    with Image.open(BytesIO(Content)) as Source:
++        Normalized = ImageOps.exif_transpose(Source)
++        if MimeType == "image/jpeg" and Normalized.mode in ("RGBA", "P"):
++            Normalized = Normalized.convert("RGB")
++        OutputBuffer = BytesIO()
++        Normalized.save(OutputBuffer, format=ActualFormat)
++        Content = OutputBuffer.getvalue()
++
+     Encoded = base64.b64encode(Content).decode("ascii")
+     return f"data:{MimeType};base64,{Encoded}"
+ 
+@@ -215,11 +248,42 @@ def _decode_data_url(PhotoValue: str) -> tuple[bytes, str]:
+         api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
+ 
+ 
++def _requester_school_id(db: Session, user: User) -> str | None:
++    """The school the requesting user themselves belongs to, or None for
++    SUPER_ADMIN (platform-wide) or a role/account with no school profile
++    row at all. Used only for the same-school photo-access check below --
++    never for authorization decisions elsewhere, which already have their
++    own dedicated helpers (routes_roster.py's _resolve_school, etc.)."""
++    if user.role == "STUDENT":
++        profile = db.query(Student).filter(Student.user_id == user.id).first()
++        return profile.school_id if profile else None
++    if user.role == "TEACHER":
++        profile = db.query(Teacher).filter(Teacher.user_id == user.id).first()
++        return profile.school_id if profile else None
++    if user.role == "ADMIN":
++        from app.models import SchoolAdmin
++
++        profile = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
++        return profile.school_id if profile else None
++    return None  # SUPER_ADMIN
++
++
+ @router.get("/profile-photo/{user_id}")
+-def get_profile_photo(user_id: str, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
++def get_profile_photo(user_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+     TargetUser = db.query(User).filter(User.id == user_id).first()
+     if not TargetUser:
+         api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
++    # A4 fix (30 Sep 2026 security/DPDP review): this only checked that
++    # *someone* was logged in, not who was asking about whom -- proven by
++    # test, a STUDENT at school B could fetch a school-A student's photo.
++    # Allowed: viewing your own photo, SUPER_ADMIN (platform-wide), or
++    # same-school staff/students viewing someone else in their own school.
++    # Cross-school is blocked even for ADMIN/TEACHER.
++    if user.id != TargetUser.id and user.role != "SUPER_ADMIN":
++        requester_school_id = _requester_school_id(db, user)
++        target_school_id = _requester_school_id(db, TargetUser)
++        if not requester_school_id or requester_school_id != target_school_id:
++            api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
+     PhotoValue = _stored_photo_for_user(db, TargetUser)
+     if not PhotoValue:
+         api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
+@@ -292,6 +356,10 @@ def change_password(
+     from sqlalchemy.sql import func
+     user.password_hash = hash_password(NewPassword)
+     user.password_changed_at = func.now()
++    # A1 fix: clears the forced-change gate the moment someone actually
++    # takes ownership of the password -- see dependencies.py's
++    # MUST_CHANGE_PASSWORD_ROLES check.
++    user.must_change_password = False
+     log_audit_event(db, "auth.password_changed", user_id=user.id, request=request)
+     db.commit()
+     return {"updated": True, "message": "Password updated successfully."}
+@@ -449,6 +517,10 @@ def two_factor_enable(
+ 
+ 
+ @router.post("/2fa/disable")
++# A8 fix (30 Sep 2026 review): had no rate limit at all before -- a stolen
++# session could otherwise brute-force the account password (this endpoint's
++# real gate) with no friction.
++@limiter.limit("10/minute")
+ def two_factor_disable(
+     request: Request,
+     payload: TwoFactorDisableRequest,
+@@ -480,6 +552,10 @@ def two_factor_disable(
+ 
+ 
+ @router.post("/2fa/backup-codes/regenerate")
++# A8 fix (30 Sep 2026 review): explicitly called out in the review -- this
++# had no rate limit and no lockout, so a stolen session could brute-force
++# the account password (this endpoint's real gate) with no friction at all.
++@limiter.limit("10/minute")
+ def two_factor_regenerate_backup_codes(
+     request: Request,
+     payload: TwoFactorDisableRequest,
+@@ -518,9 +594,27 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
+     if not user or not user.is_active or not user.totp_enabled:
+         api_error(401, "UNAUTHORIZED", "This verification step has expired. Please log in again.")
+ 
++    # A9 fix (30 Sep 2026 review): this step previously had no per-account
++    # failure limit at all beyond a shared 10/minute IP limit -- an attacker
++    # who already has the password could brute-force the 2FA step (or the
++    # backup codes) with no meaningful friction. Reuses the exact same
++    # lockout mechanism as a wrong password (record_failed_attempt/
++    # is_account_locked/reset_lockout) so both attack paths against an
++    # account are covered by one consistent policy.
++    if is_account_locked(user):
++        log_audit_event(db, "auth.login.2fa_blocked_locked", user_id=user.id, request=request)
++        db.commit()
++        api_error(
++            423,
++            "ACCOUNT_LOCKED",
++            "Too many failed sign-in attempts. This account is temporarily locked -- please try again in a "
++            "few minutes.",
++        )
++
+     Code = (payload.code or "").strip()
+ 
+     def _issue_session(event_type: str) -> dict:
++        reset_lockout(user)
+         session_id = start_session(db, user, request=request)
+         log_audit_event(db, event_type, user_id=user.id, request=request)
+         db.commit()
+@@ -529,7 +623,21 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
+         set_csrf_cookie(response)
+         return {"tokenType": "Bearer", "user": user_payload(db, user)}
+ 
++    # A9 replay guard: valid_window=1 means a code stays acceptable across
++    # three 30-second steps, so without this, the *same* correct code could
++    # be replayed by anyone who observed it (e.g. shoulder-surfing, a
++    # network capture) for up to a minute after the legitimate holder used
++    # it. Scoped to an actual TOTP match only -- a backup code is a
++    # completely separate, single-use secret with no relationship to the
++    # TOTP step, and must still be checked below even when the current step
++    # was already consumed by an earlier TOTP login.
++    CurrentStep = int(datetime.now(timezone.utc).timestamp() // 30)
+     if verify_totp_code(user.totp_secret, Code):
++        if user.totp_last_used_step is not None and CurrentStep <= user.totp_last_used_step:
++            log_audit_event(db, "auth.login.2fa_replay_blocked", user_id=user.id, request=request)
++            db.commit()
++            api_error(401, "INVALID_CODE", "That code didn't match. Check your authenticator app and try again.")
++        user.totp_last_used_step = CurrentStep
+         return _issue_session("auth.login.success")
+ 
+     StoredHashes = json.loads(user.totp_backup_codes_json or "[]")
+@@ -539,8 +647,13 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
+             user.totp_backup_codes_json = json.dumps(StoredHashes)
+             return _issue_session("auth.login.success_via_backup_code")
+ 
+-    log_audit_event(db, "auth.login.2fa_failed", user_id=user.id, request=request)
+-    db.commit()
++    locked = record_failed_attempt(db, user, request, "auth.login.2fa_failed")
++    if locked:
++        api_error(
++            423,
++            "ACCOUNT_LOCKED",
++            f"Too many failed sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes.",
++        )
+     api_error(401, "INVALID_CODE", "That code didn't match. Check your authenticator app and try again.")
+ 
+ 
+diff --git a/backend/app/api/routes_curriculum_admin.py b/backend/app/api/routes_curriculum_admin.py
+index d4c26e0..5174323 100644
+--- a/backend/app/api/routes_curriculum_admin.py
++++ b/backend/app/api/routes_curriculum_admin.py
+@@ -178,6 +178,19 @@ def _resolve_school_id_for_read(db: Session, user: User, requested_school_id: st
+     return _resolve_school_id(db, user, requested_school_id)
+ 
+ 
++def _validate_teacher_in_school(db: Session, teacher_id: str | None, school_id: str) -> None:
++    """A12 fix (30 Sep 2026 security/DPDP review): teacherId was stored on a
++    SchoolCurriculumMap with no check it belongs to the mapping's own
++    school, so a mapping could reference another school's teacher. Mirrors
++    the check teacher_assignment_service.py already applies (`if not
++    teacher or teacher.school_id != school_id`)."""
++    if not teacher_id:
++        return
++    teacher = db.get(Teacher, teacher_id)
++    if not teacher or teacher.school_id != school_id:
++        api_error(422, "VALIDATION_ERROR", "teacherId must belong to the same school as this mapping.")
++
++
+ def _apply_transition(current_status: str, requested_status: str, transitions: dict[str, set[str]], label: str) -> None:
+     allowed = transitions.get(current_status, set())
+     if requested_status not in allowed:
+@@ -953,6 +966,8 @@ def create_school_curriculum_map(
+     if not board_course:
+         api_error(404, "NOT_FOUND", "Board course not found.")
+ 
++    _validate_teacher_in_school(db, payload.teacherId, school_id)
++
+     existing = (
+         db.query(SchoolCurriculumMap)
+         .filter(
+@@ -1037,6 +1052,7 @@ def reschedule_school_curriculum_map(
+ 
+     changes: dict = {}
+     if payload.teacherId is not None:
++        _validate_teacher_in_school(db, payload.teacherId, mapping.school_id)
+         changes["teacherId"] = {"from": mapping.teacher_id, "to": payload.teacherId}
+         mapping.teacher_id = payload.teacherId
+     if payload.plannedStartDate is not None:
+diff --git a/backend/app/api/routes_learning.py b/backend/app/api/routes_learning.py
+index abc7701..35f550a 100644
+--- a/backend/app/api/routes_learning.py
++++ b/backend/app/api/routes_learning.py
+@@ -577,6 +577,30 @@ def get_attempt_result(
+ # --- Foundation Repair (TEACHER / ADMIN) ------------------------------------
+ 
+ 
++def _require_student_in_scope(db: Session, user: User, student: Student) -> None:
++    """A3 fix (30 Sep 2026 security/DPDP review): GET /foundation-repair had
++    no school-scope check at all -- proven by test, a TEACHER at school B
++    could request a school-A student's id and get their real mastery score
++    back. Applies the exact same boundary the sibling POST
++    /foundation-repair/approve endpoint already enforces (via
++    teacher.school_id), generalized to also cover ADMIN. SUPER_ADMIN is
++    platform-wide and exempt, matching every other scope check in this
++    codebase."""
++    if user.role == "SUPER_ADMIN":
++        return
++    if user.role == "TEACHER":
++        teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
++        if not teacher or teacher.school_id != student.school_id:
++            api_error(403, "FORBIDDEN", "You can only view students in your own school.")
++        return
++    if user.role == "ADMIN":
++        school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
++        if not school_admin or school_admin.school_id != student.school_id:
++            api_error(403, "FORBIDDEN", "You can only view students in your own school.")
++        return
++    api_error(403, "FORBIDDEN", "You do not have permission for this action.")
++
++
+ def _recommendation_dict(rec) -> dict:
+     return {
+         "recommendation": rec.recommendation,
+@@ -593,12 +617,13 @@ def _recommendation_dict(rec) -> dict:
+ def get_foundation_repair_recommendation(
+     studentId: str,
+     conceptLessonId: str,
+-    _: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
++    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
+     db: Session = Depends(get_db),
+ ):
+     student = db.get(Student, studentId)
+     if not student:
+         api_error(404, "NOT_FOUND", "Student not found.")
++    _require_student_in_scope(db, user, student)
+     concept_lesson = db.get(ConceptLesson, conceptLessonId)
+     if not concept_lesson:
+         api_error(404, "NOT_FOUND", "Concept lesson not found.")
+diff --git a/backend/app/api/routes_roster.py b/backend/app/api/routes_roster.py
+index 4a0b39a..584ea60 100644
+--- a/backend/app/api/routes_roster.py
++++ b/backend/app/api/routes_roster.py
+@@ -11,21 +11,25 @@ a brand new school" event -- these are the everyday, session-authenticated,
+ in-product endpoints a signed-in admin uses afterwards to build out their
+ roster.
+ 
+-Initial password ("Shailesh, 19 Aug 2026: the initial password should be the
+-first and last name of the user separated by a hyphen all in small case,
+-with the user having the option of changing it once they gain access"):
+-generated by _generate_initial_password() below, deliberately NOT checked
+-against strong_password_issue() -- that function's own docstring already
+-documents this as the intended exception (admin-issued initial passwords
+-stay simple so bulk onboarding is practical; the real policy applies the
+-moment someone changes it themselves). Two people sharing a name can end up
+-with the same initial password -- that's fine, since it's a temporary,
+-must-be-shareable-by-an-adult credential, not the login identifier itself;
+-what has to stay unique is the account's email/student_code/teacher_code.
++Initial password -- **changed 30 Sep 2026, security/DPDP review, finding
++A1** (superseding the 19 Aug 2026 decision this docstring used to describe):
++the first-last-name pattern was proven exploitable end to end -- anyone who
++knows a child's (or a freshly created ADMIN's) name and school can compute
++their password, and since neither 2FA setup nor /change-password was gated
++on actually replacing it, whoever logged in first could permanently take
++the account over. _generate_initial_password() below now returns a random,
++unguessable password instead, and every new account is created with
++must_change_password=True (enforced in dependencies.py's get_current_user(),
++currently gated to ADMIN/SUPER_ADMIN only -- see that flag's own comment on
++the User model for why TEACHER/STUDENT aren't gated yet). Still
++deliberately NOT checked against strong_password_issue() -- that check is
++about a *person* picking a memorable-but-weak password, which doesn't apply
++to a random, never-reused, must-be-replaced-immediately value.
+ """
+ import csv
+ import io
+ import re
++import secrets
+ from datetime import datetime, timezone
+ 
+ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+@@ -45,14 +49,28 @@ router = APIRouter(prefix="/api/roster", tags=["roster"])
+ CREATABLE_ROLES = {"ADMIN", "TEACHER", "STUDENT"}
+ BULK_ROLES = {"TEACHER", "STUDENT"}  # bulk ADMIN creation isn't a real onboarding pattern -- one at a time is fine
+ 
++# A14 fix (30 Sep 2026 review): bulk import had no row cap at all -- an
++# arbitrarily large file would hash a password (bcrypt, deliberately slow)
++# per row on a single worker (render.yaml: -w 1), able to stall the whole
++# service for every school, not just the one importing. 2000 rows is well
++# above any real school's roster size in one file.
++MAX_BULK_IMPORT_ROWS = 2000
++
++# A1 fix: a short, easy-to-transcribe-by-hand random password -- unambiguous
++# character set (no 0/O/1/l/I) since this is read off a screen and typed by
++# an adult on behalf of a student/teacher, or handed to a new admin
++# verbally/in writing. 12 characters from a ~29-character alphabet is far
++# outside guessing range while still being something a person can type
++# without a password manager.
++_INITIAL_PASSWORD_ALPHABET = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
++
+ 
+ def _generate_initial_password(full_name: str) -> str:
+-    parts = [p for p in re.sub(r"[^A-Za-z\s]", "", full_name).lower().split() if p]
+-    if not parts:
+-        return "welcome-user"
+-    first = parts[0]
+-    last = parts[-1] if len(parts) > 1 else parts[0]
+-    return f"{first}-{last}"
++    # full_name is unused now (kept as a parameter so call sites don't need
++    # to change) -- the password is fully random and no longer derived from
++    # the name at all, closing the "computable from a public name" gap A1
++    # found.
++    return "".join(secrets.choice(_INITIAL_PASSWORD_ALPHABET) for _ in range(12))
+ 
+ 
+ def _school_prefix(school_name: str) -> str:
+@@ -129,6 +147,10 @@ def _create_person(
+         password_hash=hash_password(initial_password),
+         role=role,
+         is_active=True,
++        # A1 fix: set for every new account regardless of role -- see the
++        # User model's must_change_password comment for why enforcement is
++        # currently scoped to ADMIN/SUPER_ADMIN only.
++        must_change_password=True,
+     )
+     db.add(new_user)
+     db.flush()  # populate new_user.id
+@@ -434,6 +456,13 @@ def bulk_create_people(
+ 
+     if not rows:
+         api_error(422, "VALIDATION_ERROR", "The uploaded file has no data rows.")
++    if len(rows) > MAX_BULK_IMPORT_ROWS:
++        api_error(
++            422,
++            "VALIDATION_ERROR",
++            f"This file has {len(rows)} rows, over the {MAX_BULK_IMPORT_ROWS}-row limit per import. "
++            "Split it into smaller files.",
++        )
+ 
+     results = []
+     created_count = 0
+diff --git a/backend/app/core/config.py b/backend/app/core/config.py
+index d3f9b0b..e9564e8 100644
+--- a/backend/app/core/config.py
++++ b/backend/app/core/config.py
+@@ -13,7 +13,32 @@ load_dotenv()
+ # MathPath's own in-flight testing scaffolding for a feature School
+ # Enrichment doesn't have yet.
+ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./school_enrichment.db")
+-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
++
++# A14 fix (30 Sep 2026 review): distinguishes a real deployment from local
++# dev/CI so main.py can gate the localhost CORS origin and the SECRET_KEY
++# startup guard below to dev-only, without a separate env var for each.
++# Render's own environment doesn't set this, so it defaults to "production"
++# -- the safe-by-default direction (a forgotten env var means the stricter
++# checks stay ON, not OFF). Local dev/CI must set ENVIRONMENT=development
++# explicitly (see .env.example / CI workflow).
++ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
++IS_PRODUCTION = ENVIRONMENT.lower() == "production"
++
++_DEFAULT_SECRET_KEY = "dev-secret-change-me"
++SECRET_KEY = os.getenv("SECRET_KEY", _DEFAULT_SECRET_KEY)
++
++# A13 fix: fail closed instead of silently signing every JWT in production
++# with a value that's sitting in plain sight in this file's own git history.
++# Render always generates a real SECRET_KEY (render.yaml: generateValue:
++# true), so this should never actually fire there -- it exists purely so a
++# misconfigured deploy (env var missing/blank) refuses to boot instead of
++# quietly issuing forgeable tokens.
++if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
++    raise RuntimeError(
++        "SECRET_KEY is not set (falling back to the public default). Refusing to start in production -- "
++        "set a real SECRET_KEY, or set ENVIRONMENT=development if this really is a local/dev run."
++    )
++
+ ALGORITHM = "HS256"
+ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+ 
+diff --git a/backend/app/core/rate_limit.py b/backend/app/core/rate_limit.py
+index 9ac6037..573d727 100644
+--- a/backend/app/core/rate_limit.py
++++ b/backend/app/core/rate_limit.py
+@@ -1,4 +1,33 @@
++from fastapi import Request
+ from slowapi import Limiter
+ from slowapi.util import get_remote_address
+ 
+-limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
++
++def get_real_client_ip(request: Request) -> str:
++    """A6 fix (30 Sep 2026 security/DPDP review): the request path is
++    browser -> Vercel (a server-side rewrite proxy, see frontend/next.config.js
++    -- not a client-side redirect) -> Render's own front door -> this
++    container. request.client.host is only ever Render's ingress hop, which
++    is effectively the same for all traffic -- keying rate limits on it means
++    the whole platform shares one bucket (confirmed: this is almost certainly
++    why multi-account testing kept tripping the login limit even across
++    different accounts/browsers).
++
++    Vercel's rewrite proxy sets X-Forwarded-For to the IP it actually saw the
++    browser connect from when proxying to an external destination -- it does
++    not forward a client-supplied value for that hop unmodified, so the
++    *first* entry in the header is the real, trustworthy visitor IP; Render's
++    own front door appends its own hop after that. Falls back to
++    request.client.host (via get_remote_address) if the header is ever
++    absent entirely -- local dev and direct-to-backend calls that never went
++    through Vercel.
++    """
++    forwarded_for = request.headers.get("x-forwarded-for")
++    if forwarded_for:
++        first_hop = forwarded_for.split(",")[0].strip()
++        if first_hop:
++            return first_hop
++    return get_remote_address(request)
++
++
++limiter = Limiter(key_func=get_real_client_ip, default_limits=["200/minute"])
+diff --git a/backend/app/core/security.py b/backend/app/core/security.py
+index 6b2778c..f03351f 100644
+--- a/backend/app/core/security.py
++++ b/backend/app/core/security.py
+@@ -23,6 +23,26 @@ def verify_password(password: str, password_hash: str) -> bool:
+     return pwd_context.verify(password, password_hash)
+ 
+ 
++# A7 fix (30 Sep 2026 security/DPDP review): a login attempt against an
++# identifier that matches no account used to skip bcrypt entirely and return
++# immediately, while an attempt against a real account always ran a bcrypt
++# verify first -- bcrypt is deliberately slow (~100ms+), so the two cases
++# were trivially distinguishable by response time alone, letting an attacker
++# enumerate valid identifiers without ever seeing a different status code or
++# message. Hashed once at import time (a fixed, unguessable plaintext -- it
++# is never anyone's real password) so auth_service.login() can run the same
++# bcrypt verify on this constant when no user is found, equalizing the
++# timing of both code paths.
++_DUMMY_PASSWORD_HASH = hash_password("0f3a9c2e-7b1d-4e5a-9f8c-timing-equalization-only")
++
++
++def verify_dummy_password() -> None:
++    """Run a throwaway bcrypt verify, purely to burn the same wall-clock time
++    a real verify_password() call would have taken. See _DUMMY_PASSWORD_HASH
++    above for why this exists."""
++    pwd_context.verify("irrelevant-input", _DUMMY_PASSWORD_HASH)
++
++
+ # 2026-08-19 security hardening: a length/character-class check alone still
+ # lets through "Password1" or "Welcome123" -- both technically pass the old
+ # rule but are at the top of every real-world breach/credential-stuffing
+@@ -103,6 +123,21 @@ def strong_password_issue(password: str) -> str | None:
+     return None
+ 
+ 
++# B11 fix (30 Sep 2026 review): STUDENT sessions previously renewed on the
++# same 24-hour idle window as every other role, on shared/school-lab
++# computers, indefinitely for as long as the device kept being used by
++# *someone*. Roles not listed here keep the global ACCESS_TOKEN_EXPIRE_MINUTES
++# idle window unchanged; see session_service.py's MAX_SESSION_LIFETIME_MINUTES_BY_ROLE
++# for the companion absolute-lifetime cap on the same role.
++ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE: dict[str, int] = {
++    "STUDENT": 480,  # 8 hours -- covers a full school day without renewing indefinitely overnight
++}
++
++
++def expire_minutes_for_role(role: str) -> int:
++    return ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE.get(role, ACCESS_TOKEN_EXPIRE_MINUTES)
++
++
+ def create_access_token(subject: str, role: str, session_id: str | None = None) -> str:
+     """`session_id` (the "sid" claim) is the stable identifier of a single
+     login for the life of that login, distinct from `exp`/`iat` which move
+@@ -118,7 +153,7 @@ def create_access_token(subject: str, role: str, session_id: str | None = None)
+     the per-session revocation/lifetime checks in get_current_user().
+     """
+     now = datetime.now(timezone.utc)
+-    expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
++    expire = now + timedelta(minutes=expire_minutes_for_role(role))
+     payload = {"sub": subject, "role": role, "exp": expire, "iat": now}
+     if session_id:
+         payload["sid"] = session_id
+diff --git a/backend/app/dependencies.py b/backend/app/dependencies.py
+index 6b77445..1f1b55e 100644
+--- a/backend/app/dependencies.py
++++ b/backend/app/dependencies.py
+@@ -17,7 +17,7 @@ from app.core.cookies import (
+     touch_csrf_cookie,
+ )
+ from app.core.errors import api_error
+-from app.core.security import create_access_token, decode_token
++from app.core.security import create_access_token, decode_token, expire_minutes_for_role
+ from app.database import SessionLocal, get_db
+ from app.models import Student, Teacher, User
+ from app.services.session_service import is_session_valid, touch_session
+@@ -56,6 +56,32 @@ TWO_FACTOR_SETUP_EXEMPT_PATHS = {
+     "/api/auth/ping",
+ }
+ 
++# A1 fix (30 Sep 2026 security/DPDP review): an admin-issued initial
++# password is guessable-by-design no longer (see routes_roster.py), but that
++# only matters if the recipient is actually forced to replace it before
++# doing anything else -- otherwise a first-to-log-in race (including against
++# a freshly created ADMIN) can still permanently take the account over.
++# Scoped to ADMIN/SUPER_ADMIN only for now: TEACHER/STUDENT have no
++# change-password UI anywhere in the frontend yet (grepped -- only
++# frontend/app/admin/security/page.tsx has one), so gating them here today
++# would lock every one of them out with no way to comply. Every new account
++# still gets a random initial password and must_change_password=True
++# regardless of role -- this is a UI gap, not a data-model gap, and the
++# remaining rollout to TEACHER/STUDENT is flagged as a follow-up.
++MUST_CHANGE_PASSWORD_ROLES = {"ADMIN", "SUPER_ADMIN"}
++
++# Same allowlist shape as TWO_FACTOR_SETUP_EXEMPT_PATHS, checked first (see
++# below): a user who must change their password still needs to reach the
++# endpoint that lets them do it, plus the same baseline set (me/logout/
++# ping) the 2FA gate already exempts.
++MUST_CHANGE_PASSWORD_EXEMPT_PATHS = {
++    "/api/auth/me",
++    "/api/auth/logout",
++    "/api/auth/logout-all-sessions",
++    "/api/auth/change-password",
++    "/api/auth/ping",
++}
++
+ 
+ def _as_aware_utc(value: datetime) -> datetime:
+     """Normalize a DB-read timestamp to timezone-aware UTC, floored to whole
+@@ -237,18 +263,25 @@ def get_current_user(
+         try:
+             expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
+             remaining_seconds = (expires_at - datetime.now(timezone.utc)).total_seconds()
+-            half_lifetime_seconds = (ACCESS_TOKEN_EXPIRE_MINUTES * 60) / 2
++            half_lifetime_seconds = (expire_minutes_for_role(user.role) * 60) / 2
+             if 0 < remaining_seconds < half_lifetime_seconds:
+                 new_token = create_access_token(user.id, user.role, session_id=session_id)
+-                # Bearer-header callers (scripts) still read this response
+-                # header the same way they always have. Cookie-authenticated
+-                # browser requests instead get a fresh Set-Cookie -- the
+-                # browser applies it to its cookie jar automatically with no
+-                # JS involved, which is simpler than the old header-read
+-                # dance AND keeps the token out of JS's reach the whole time.
+-                response.headers["X-New-Access-Token"] = new_token
++                # A10 fix (30 Sep 2026 review): this header used to be set
++                # unconditionally, even for cookie-authenticated requests --
++                # meaning an indefinitely-renewable raw token was handed to
++                # page JS (and exposed cross-origin via CORS) for every
++                # browser session, defeating the entire point of the
++                # 2026-07-22 httpOnly cookie migration (any XSS could have
++                # read it straight off the response). Bearer-header callers
++                # (scripts, not browsers, so not subject to this risk) still
++                # read it exactly as before. Cookie-authenticated browser
++                # requests get ONLY a fresh Set-Cookie -- the browser applies
++                # it to its cookie jar with no JS involved, so nothing is
++                # lost by not also exposing it as a header.
+                 if used_cookie_auth:
+                     set_session_cookie(response, user.role, new_token)
++                else:
++                    response.headers["X-New-Access-Token"] = new_token
+         except Exception:
+             # Best-effort sliding-session refresh: a failure here just means
+             # this one request doesn't get a renewed token, not a security or
+@@ -262,6 +295,24 @@ def get_current_user(
+         active_users_cache[user.id] = True
+         background_tasks.add_task(_update_user_activity, user.id)
+ 
++    # Forced password change (A1 fix, 30 Sep 2026 review). Checked before the
++    # mandatory-2FA gate below -- a brand-new admin should replace their
++    # default password first, then go on to set up 2FA, not the other way
++    # around (setting up 2FA on a still-default password would let whoever
++    # logs in first permanently lock out the real owner). Server-side, same
++    # reasoning as the 2FA gate: a frontend-only redirect wouldn't stop a
++    # direct API call.
++    if (
++        user.role in MUST_CHANGE_PASSWORD_ROLES
++        and user.must_change_password
++        and request.url.path not in MUST_CHANGE_PASSWORD_EXEMPT_PATHS
++    ):
++        api_error(
++            403,
++            "PASSWORD_CHANGE_REQUIRED",
++            "You must change your password before you can continue.",
++        )
++
+     # Mandatory 2FA enforcement (2026-08-19 security hardening). Checked last
+     # -- everything above (token validity, revocation, password-change
+     # staleness) still applies first -- so a request that's actually
+diff --git a/backend/app/main.py b/backend/app/main.py
+index 7ecd8c2..baf756e 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
+ from fastapi.responses import JSONResponse
+ from slowapi import _rate_limit_exceeded_handler
+ from slowapi.errors import RateLimitExceeded
++from slowapi.middleware import SlowAPIMiddleware
+ 
+ from app.api.routes_auth import router as auth_router
+ from app.api.routes_curriculum_admin import router as curriculum_admin_router
+@@ -31,34 +32,96 @@ from app.api.routes_learning import router as learning_router
+ from app.api.routes_platform import router as platform_router
+ from app.api.routes_roster import router as roster_router
+ from app.api.routes_teacher_assignments import router as teacher_assignments_router
+-from app.core.config import FRONTEND_URL, SENTRY_DSN
++from app.core.config import FRONTEND_URL, IS_PRODUCTION, SENTRY_DSN
+ from app.core.rate_limit import limiter
+ 
+ logger = logging.getLogger("school_enrichment")
+ 
++# A5 fix (30 Sep 2026 security/DPDP review): verified against the pinned SDK
++# (sentry-sdk 2.68.0) that the Starlette integration attaches the raw
++# request body to events regardless of send_default_pii, and the default
++# scrubber only matches exact key names -- currentPassword/newPassword/
++# challengeToken/the TOTP code all passed through unscrubbed, and the
++# X-Platform-Key operator secret wasn't covered by the header filter either.
++_SENTRY_DENYLIST_FIELDS = [
++    "password", "currentpassword", "newpassword", "challengetoken", "code",
++    "secret", "totp_secret", "totp_pending_secret", "totp_backup_codes_json",
++    "authorization", "x-platform-key", "csrf",
++]
++
++
++def _sentry_before_send(event, hint):
++    """Belt-and-suspenders on top of max_request_body_size='never' and
++    EventScrubber below: strip any request body/headers/cookies that made it
++    onto the event anyway, so a future SDK change or an unanticipated event
++    shape can't reintroduce a leak silently."""
++    request_data = event.get("request")
++    if isinstance(request_data, dict):
++        request_data.pop("data", None)
++        request_data.pop("cookies", None)
++        headers = request_data.get("headers")
++        if isinstance(headers, dict):
++            for key in list(headers):
++                if key.lower() in {"authorization", "cookie", "x-platform-key"}:
++                    headers.pop(key, None)
++    return event
++
++
+ if SENTRY_DSN:
++    from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
++
+     sentry_sdk.init(
+         dsn=SENTRY_DSN,
+-        traces_sample_rate=1.0,
+-        profiles_sample_rate=1.0,
++        # Never attach the raw request body -- the Starlette integration
++        # otherwise does this regardless of send_default_pii.
++        max_request_body_size="never",
++        send_default_pii=False,
++        before_send=_sentry_before_send,
++        event_scrubber=EventScrubber(denylist=DEFAULT_DENYLIST + _SENTRY_DENYLIST_FIELDS, recursive=True),
++        # Lowered from 1.0 (100% of requests traced/profiled) -- that default
++        # was never a deliberate choice for this app's volume, and a lower
++        # sample rate is standard practice once a project is not just being
++        # bootstrapped. Errors are always captured regardless of this rate;
++        # this only affects performance-tracing/profiling volume.
++        traces_sample_rate=0.1,
++        profiles_sample_rate=0.1,
+     )
+ 
+ app = FastAPI(title="School Enrichment Backend", version="0.1.0")
+ 
+ app.state.limiter = limiter
+ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
++# A8 fix (30 Sep 2026 review): rate_limit.py's default_limits ("200/minute")
++# never actually applied to anything -- slowapi only enforces limits on
++# routes that install this middleware; without it, only the handful of
++# routes carrying an explicit @limiter.limit(...) decorator were ever
++# limited at all, and everything else (notably
++# /2fa/backup-codes/regenerate, since fixed with its own decorator -- see
++# routes_auth.py) had no limit whatsoever.
++app.add_middleware(SlowAPIMiddleware)
++
++# A14 fix: localhost:3000 stayed in the production CORS allow-list
++# unconditionally. Harmless in the sense that allow_origins is a fixed,
++# server-side list (not reflected from the request), but there is no reason
++# for a deployed backend to trust a local dev origin at all -- dev-only.
++_cors_origins = [FRONTEND_URL] if IS_PRODUCTION else [FRONTEND_URL, "http://localhost:3000"]
+ 
+ app.add_middleware(
+     CORSMiddleware,
+-    allow_origins=[FRONTEND_URL, "http://localhost:3000"],
++    allow_origins=_cors_origins,
+     allow_credentials=True,
+     allow_methods=["*"],
+     allow_headers=["*"],
+-    # X-New-Access-Token carries the sliding-session refresh (see
+-    # get_current_user() in dependencies.py) -- without explicitly exposing
+-    # it here, CORS hides all custom response headers from frontend JS by
+-    # default, so the refreshed token would be sent but invisible to axios.
+-    expose_headers=["X-New-Access-Token"],
++    # A10 fix (30 Sep 2026 review): X-New-Access-Token used to be exposed
++    # here so browser JS could read the sliding-session renewal off the
++    # response -- but the browser frontend is entirely cookie-authenticated
++    # (see dependencies.py's get_current_user(), which now only ever sets
++    # this header for Bearer-token requests, never cookie-auth ones). A
++    # Bearer-token caller is a script, not a browser page, so it isn't
++    # subject to CORS's header-visibility restriction in the first place --
++    # nothing legitimate needs this exposed, and leaving it exposed meant
++    # any XSS could read an indefinitely-renewable raw token straight off
++    # the response.
+ )
+ 
+ 
+diff --git a/backend/app/models/models.py b/backend/app/models/models.py
+index 9d4b261..7cb2930 100644
+--- a/backend/app/models/models.py
++++ b/backend/app/models/models.py
+@@ -93,6 +93,23 @@ class User(Base):
+     # auth_service.py's login(), at which point locked_until is set.
+     failed_login_attempts = Column(Integer, default=0, nullable=False)
+     locked_until = Column(DateTime(timezone=True), nullable=True)
++    # A1 fix (30 Sep 2026 security/DPDP review): an admin-issued initial
++    # password is now random, not a guessable firstname-lastname pattern --
++    # this flag is what forces the recipient to actually replace it before
++    # doing anything else. Enforced in dependencies.py's get_current_user()
++    # the same way MANDATORY_2FA_ROLES is, currently gated to ADMIN/
++    # SUPER_ADMIN only (see routes_roster.py's docstring for why: TEACHER/
++    # STUDENT have no change-password UI yet, so blocking them behind this
++    # would lock every one of them out with no way to comply). Set True for
++    # every newly created account regardless of role -- honest bookkeeping
++    # for the day a TEACHER/STUDENT flow exists -- but only ADMIN/SUPER_ADMIN
++    # are actually gated on it today.
++    must_change_password = Column(Boolean, default=False, nullable=False)
++    # A9 fix: the last TOTP step (30-second window) that was successfully
++    # consumed at login, so the exact same code can't be replayed a second
++    # time within its own validity window (pyotp's verify() alone has no
++    # memory of what it already accepted).
++    totp_last_used_step = Column(Integer, nullable=True)
+     created_at = Column(DateTime(timezone=True), server_default=func.now())
+     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+ 
+diff --git a/backend/app/services/auth_service.py b/backend/app/services/auth_service.py
+index b6b0eab..30adbe1 100644
+--- a/backend/app/services/auth_service.py
++++ b/backend/app/services/auth_service.py
+@@ -15,6 +15,7 @@ from app.core.errors import api_error
+ from app.core.security import (
+     create_access_token,
+     create_two_factor_challenge_token,
++    verify_dummy_password,
+     verify_password,
+ )
+ from app.models import School, SchoolAdmin, Student, Teacher, User
+@@ -39,6 +40,53 @@ def _is_locked(user: User) -> bool:
+     return bool(user.locked_until) and _aware_utc(user.locked_until) > datetime.now(timezone.utc)
+ 
+ 
++# Public alias -- routes_auth.py's two_factor_verify_login (A9 fix) needs the
++# same lockout check login() uses below, so this one is exported rather than
++# duplicated.
++is_account_locked = _is_locked
++
++
++def record_failed_attempt(db: Session, user: User, request: Request | None, event_type: str) -> bool:
++    """Increment the shared per-account lockout counter and lock the account
++    if it crosses the threshold. Returns True if this call just locked the
++    account.
++
++    A9 fix (30 Sep 2026 review): previously only used by login() below for a
++    wrong password -- routes_auth.py's two_factor_verify_login now calls this
++    too for a wrong 2FA code, so an attacker who already has the password but
++    not the second factor trips the same lockout as one guessing the
++    password itself, instead of being able to brute-force TOTP/backup codes
++    with only a shared 10/minute IP limit standing in the way.
++    """
++    user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
++    if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
++        user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
++        log_audit_event(
++            db,
++            f"{event_type}.locked",
++            user_id=user.id,
++            request=request,
++            details={"failedAttempts": user.failed_login_attempts},
++        )
++        db.commit()
++        return True
++    log_audit_event(
++        db,
++        event_type,
++        user_id=user.id,
++        request=request,
++        details={"failedAttempts": user.failed_login_attempts},
++    )
++    db.commit()
++    return False
++
++
++def reset_lockout(user: User) -> None:
++    if user.failed_login_attempts or user.locked_until:
++        user.failed_login_attempts = 0
++        user.locked_until = None
++
++
+ def _school_name(db: Session, school_id: str | None) -> str | None:
+     """Human-readable school name for display only (e.g. the login page's
+     "Issued by <school>" pill, remembered client-side per browser once a
+@@ -119,6 +167,11 @@ def user_payload(db: Session, user: User) -> dict:
+         "isActive": user.is_active,
+         "profilePhotoUrl": public_profile_photo_url(user, user.photo_url),
+         "twoFactorEnabled": bool(user.totp_enabled),
++        # A1 fix: lets the frontend redirect straight to the change-password
++        # flow instead of surfacing a raw 403 from the first blocked API
++        # call. See dependencies.py's MUST_CHANGE_PASSWORD_ROLES for the
++        # server-side enforcement this mirrors.
++        "mustChangePassword": bool(user.must_change_password),
+     }
+ 
+     if student:
+@@ -178,6 +231,15 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
+         user = teacher.user if teacher else None
+ 
+     if not user:
++        # A7 fix (30 Sep 2026 review): a nonexistent identifier used to
++        # return immediately here, skipping bcrypt entirely, while a real
++        # account always ran a bcrypt verify first (a deliberately slow,
++        # ~100ms+ operation) -- proven by test, the two cases were
++        # trivially distinguishable by response time alone, letting an
++        # attacker enumerate valid identifiers without needing a different
++        # status code or message. Running the same dummy bcrypt verify here
++        # equalizes the timing of both code paths.
++        verify_dummy_password()
+         api_error(401, "INVALID_CREDENTIALS", "Invalid login details.")
+ 
+     if _is_locked(user):
+@@ -191,37 +253,19 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
+         )
+ 
+     if not verify_password(password, user.password_hash):
+-        user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+-        if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
+-            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+-            log_audit_event(
+-                db,
+-                "auth.login.locked",
+-                user_id=user.id,
+-                request=request,
+-                details={"failedAttempts": user.failed_login_attempts},
+-            )
+-            db.commit()
++        locked = record_failed_attempt(db, user, request, "auth.login.failed")
++        if locked:
+             api_error(
+                 423,
+                 "ACCOUNT_LOCKED",
+                 f"Too many failed sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes.",
+             )
+-        log_audit_event(
+-            db,
+-            "auth.login.failed",
+-            user_id=user.id,
+-            request=request,
+-            details={"failedAttempts": user.failed_login_attempts},
+-        )
+-        db.commit()
+         api_error(401, "INVALID_CREDENTIALS", "Invalid login details.")
+ 
+     # Correct password -- clear any accumulated lockout state so a
+     # legitimate sign-in isn't held against a later, unrelated attempt.
+     if user.failed_login_attempts or user.locked_until:
+-        user.failed_login_attempts = 0
+-        user.locked_until = None
++        reset_lockout(user)
+         db.commit()
+ 
+     if not user.is_active:
+diff --git a/backend/app/services/session_service.py b/backend/app/services/session_service.py
+index 1d46bbc..71b723b 100644
+--- a/backend/app/services/session_service.py
++++ b/backend/app/services/session_service.py
+@@ -35,6 +35,11 @@ from app.models import User, UserSession
+ MAX_SESSION_LIFETIME_MINUTES_BY_ROLE: dict[str, int] = {
+     "SUPER_ADMIN": 12 * 60,   # 12 hours -- platform-wide access, highest value target
+     "ADMIN": 12 * 60,         # 12 hours -- whole-school access
++    # B11 fix (30 Sep 2026 review): STUDENT sessions previously had no
++    # absolute ceiling at all -- an actively-used session on a shared school
++    # computer could renew forever. Paired with the shorter idle window in
++    # core/security.py's ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE.
++    "STUDENT": 10 * 60,       # 10 hours -- a school day plus evening homework, not indefinite
+ }
+ 
+ 
+diff --git a/backend/scripts/create_super_admin.py b/backend/scripts/create_super_admin.py
+index efb3693..cc006a4 100644
+--- a/backend/scripts/create_super_admin.py
++++ b/backend/scripts/create_super_admin.py
+@@ -8,7 +8,7 @@ more restricted in a different direction: it has no school of its own
+ (auth_service.py's user_payload() skips the SchoolAdmin lookup for it
+ entirely), but it is the ONLY role allowed to move Chapter/ConceptLesson/
+ Question through draft -> review -> publish (routes_curriculum_admin.py) --
+-a school's own ADMIN (e.g. Ashalatha Gupta's MathPath account) can map
++a school's own ADMIN (e.g. a school coordinator's account) can map
+ already-published content into their school's calendar, but can never
+ publish anything themselves. Discovered this gap for real on 18 Aug 2026:
+ after loading all 15 real Class 5 Maths chapters, nobody could review or
+diff --git a/backend/tests/test_auth.py b/backend/tests/test_auth.py
+index 48e5ef2..37449bf 100644
+--- a/backend/tests/test_auth.py
++++ b/backend/tests/test_auth.py
+@@ -17,7 +17,7 @@ def _make_school(db_session) -> School:
+ 
+ def test_admin_login_and_me(client, db_session):
+     _make_school(db_session)
+-    user = User(full_name="Ashalatha Admin", email="admin@example.com", password_hash=hash_password("Passw0rd1"), role="ADMIN")
++    user = User(full_name="Test Admin", email="admin@example.com", password_hash=hash_password("Passw0rd1"), role="ADMIN")
+     db_session.add(user)
+     db_session.commit()
+ 
+diff --git a/backend/tests/test_platform.py b/backend/tests/test_platform.py
+index ee2ea49..e3e4e72 100644
+--- a/backend/tests/test_platform.py
++++ b/backend/tests/test_platform.py
+@@ -17,7 +17,7 @@ def _payload(email: str, school_name: str = "Green Valley Public School") -> dic
+         "schoolName": school_name,
+         "board": "CBSE",
+         "city": "Bengaluru",
+-        "adminFullName": "Ashalatha Gupta",
++        "adminFullName": "Test Admin",
+         "adminEmail": email,
+         "adminPassword": "Xk4$nQ8vPz",
+     }
+diff --git a/backend/tests/test_roster.py b/backend/tests/test_roster.py
+index bdab4fe..d6adfb0 100644
+--- a/backend/tests/test_roster.py
++++ b/backend/tests/test_roster.py
+@@ -1,8 +1,8 @@
+ """Proves the account-creation / roster endpoints (routes_roster.py):
+ SUPER_ADMIN creating ADMIN accounts, ADMIN creating TEACHER/STUDENT accounts
+-for their own school, the firstname-lastname initial-password scheme, code
+-generation, roster listing/search, status (activate/deactivate), and the
+-CSV bulk-import path.
++for their own school, the random initial-password scheme (A1 fix, 30 Sep
++2026 review -- previously firstname-lastname), code generation, roster
++listing/search, status (activate/deactivate), and the CSV bulk-import path.
+ 
+ Mirrors test_curriculum_admin.py's fixture/login pattern (2FA pre-enrolled,
+ CSRF token attached to every mutating request) rather than importing from
+@@ -87,13 +87,18 @@ def test_super_admin_creates_admin_for_existing_school(client, db_session):
+     assert response.status_code == 200
+     body = response.json()
+     assert body["role"] == "ADMIN"
+-    assert body["initialPassword"] == "priya-sharma"
++    # A1 fix (30 Sep 2026 review): initial passwords are now random, not
++    # derived from the name -- assert it's genuinely random/unguessable and
++    # that it actually works, rather than a fixed expected string.
++    assert body["initialPassword"] != "priya-sharma"
++    assert len(body["initialPassword"]) >= 12
+     assert body["code"] is None
+     assert body["schoolId"] == school.id
+ 
+     created = db_session.query(User).filter(User.email == "priya.sharma@dps.example.com").first()
+     assert created is not None
+-    assert verify_password("priya-sharma", created.password_hash)
++    assert verify_password(body["initialPassword"], created.password_hash)
++    assert created.must_change_password is True
+     assert db_session.query(SchoolAdmin).filter(SchoolAdmin.user_id == created.id).first() is not None
+ 
+ 
+@@ -119,7 +124,9 @@ def test_admin_creates_teacher_with_generated_code_and_password(client, db_sessi
+     assert response.status_code == 200
+     body = response.json()
+     assert body["role"] == "TEACHER"
+-    assert body["initialPassword"] == "ravi-kumar"
++    # A1 fix: random initial password, not derived from the name.
++    assert body["initialPassword"] != "ravi-kumar"
++    assert len(body["initialPassword"]) >= 12
+     assert body["code"].startswith("TCH-")
+     assert body["schoolId"] == school.id
+ 
+@@ -162,7 +169,12 @@ def test_admin_cannot_create_for_another_school(client, db_session):
+     assert response.status_code == 403
+ 
+ 
+-def test_single_name_generates_repeated_password_half(client, db_session):
++def test_single_name_still_generates_a_random_password(client, db_session):
++    """A1 fix (30 Sep 2026 review): this used to prove the firstname-lastname
++    scheme's single-name fallback ("cher-cher"). The password is now fully
++    random regardless of name shape -- this just proves a single-word name
++    doesn't crash account creation and still produces a real, working,
++    random password."""
+     admin, _school = _make_school_admin(db_session, "roster-admin5@example.com", "Sunrise School")
+     headers = _login(client, admin.email)
+     response = client.post(
+@@ -171,7 +183,8 @@ def test_single_name_generates_repeated_password_half(client, db_session):
+         headers=headers,
+     )
+     assert response.status_code == 200
+-    assert response.json()["initialPassword"] == "cher-cher"
++    assert response.json()["initialPassword"] != "cher-cher"
++    assert len(response.json()["initialPassword"]) >= 12
+ 
+ 
+ def test_duplicate_email_rejected(client, db_session):
+@@ -233,6 +246,9 @@ def test_admin_deactivates_teacher_and_login_is_blocked(client, db_session):
+         headers=headers,
+     )
+     person_id = create_response.json()["id"]
++    # A1 fix: the initial password is random now, so it has to be read back
++    # from the create response rather than assumed from the name.
++    initial_password = create_response.json()["initialPassword"]
+ 
+     status_response = client.patch(
+         f"/api/roster/people/{person_id}/status", json={"isActive": False}, headers=headers
+@@ -241,7 +257,7 @@ def test_admin_deactivates_teacher_and_login_is_blocked(client, db_session):
+     assert status_response.json()["isActive"] is False
+ 
+     login_response = client.post(
+-        "/api/auth/login", json={"identifier": "deactivate-me@example.com", "password": "deactivate-me"}
++        "/api/auth/login", json={"identifier": "deactivate-me@example.com", "password": initial_password}
+     )
+     assert login_response.status_code == 403
+     assert login_response.json()["detail"]["code"] == "ACCOUNT_INACTIVE"
+diff --git a/frontend/app/admin/security/page.tsx b/frontend/app/admin/security/page.tsx
+index e27b348..9bd47c9 100644
+--- a/frontend/app/admin/security/page.tsx
++++ b/frontend/app/admin/security/page.tsx
+@@ -160,8 +160,12 @@ function SecuritySettingsPageInner() {
+   const router = useRouter();
+   const searchParams = useSearchParams();
+   const setupRequired = searchParams.get("setup") === "required";
++  // A1 fix (30 Sep 2026 review): the forced-password-change deep link from
++  // useProtectedPage's redirect (a brand-new admin who hasn't replaced
++  // their random initial password yet).
++  const passwordChangeRequired = searchParams.get("passwordChange") === "required";
+ 
+-  const { user, status } = useProtectedPage("ADMIN", { allowWithoutTwoFactor: true });
++  const { user, status } = useProtectedPage("ADMIN", { allowWithoutTwoFactor: true, allowWithoutPasswordChange: true });
+   const roleForShell = user?.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
+ 
+   // Mirrors user.twoFactorEnabled locally so the UI updates the instant
+@@ -171,6 +175,17 @@ function SecuritySettingsPageInner() {
+     if (user) setTwoFactorEnabled(Boolean(user.twoFactorEnabled));
+   }, [user]);
+ 
++  // Same idea, for the A1 forced-password-change gate -- the Change
++  // Password card below needs to be reachable even before 2FA is set up
++  // when this is true (previously it only ever rendered once
++  // twoFactorEnabled was true, which meant a brand-new admin sent here to
++  // satisfy the password-change requirement had no way to actually see the
++  // form).
++  const [mustChangePassword, setMustChangePassword] = useState(false);
++  useEffect(() => {
++    if (user) setMustChangePassword(Boolean(user.mustChangePassword));
++  }, [user]);
++
+   // --- 2FA setup flow ---
+   const [setupStage, setSetupStage] = useState<SetupStage>("idle");
+   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+@@ -346,6 +361,7 @@ function SecuritySettingsPageInner() {
+     try {
+       await api.post("/auth/change-password", { currentPassword, newPassword });
+       setPasswordSuccess(true);
++      setMustChangePassword(false);
+       // A password change invalidates the token that issued the request
+       // (see backend/app/dependencies.py's password_changed_at check) --
+       // the current session is already effectively over, so this signs the
+@@ -386,6 +402,19 @@ function SecuritySettingsPageInner() {
+           }
+         />
+ 
++        {passwordChangeRequired && mustChangePassword ? (
++          <div className="flex items-start gap-3 rounded-3xl border border-saffron-200 bg-saffron-50 p-5 animate-scale-in">
++            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-saffron-700" aria-hidden />
++            <div>
++              <p className="text-sm font-bold text-saffron-900">Change your password to continue</p>
++              <p className="mt-1 text-[0.8125rem] leading-relaxed text-saffron-800">
++                This account was created with a temporary, one-time password. For security, you need to set your own
++                password before you can use the rest of the platform.
++              </p>
++            </div>
++          </div>
++        ) : null}
++
+         {setupRequired && !twoFactorEnabled ? (
+           <div className="flex items-start gap-3 rounded-3xl border border-saffron-200 bg-saffron-50 p-5 animate-scale-in">
+             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-saffron-700" aria-hidden />
+@@ -485,7 +514,17 @@ function SecuritySettingsPageInner() {
+               </div>
+             ) : (
+               <div className="space-y-5">
+-                {setupStage === "idle" ? (
++                {setupStage === "idle" && mustChangePassword ? (
++                  // A1 fix: the backend blocks /2fa/setup until the forced
++                  // password change is done (dependencies.py checks that
++                  // gate before the 2FA one), so showing the setup button
++                  // here would just produce a confusing 403. Point them at
++                  // the Change Password form below instead.
++                  <p className="text-[0.875rem] leading-relaxed text-content-muted">
++                    Change your password below first -- two-factor setup unlocks right after.
++                  </p>
++                ) : null}
++                {setupStage === "idle" && !mustChangePassword ? (
+                   <>
+                     <p className="text-[0.875rem] leading-relaxed text-content-muted">
+                       Scan a QR code with an authenticator app, confirm one code, and you&rsquo;re done. You&rsquo;ll
+@@ -702,7 +741,11 @@ function SecuritySettingsPageInner() {
+         ) : null}
+ 
+         {/* --- Change password --- */}
+-        {twoFactorEnabled ? (
++        {/* A1 fix: previously gated on twoFactorEnabled alone, which meant a
++            brand-new admin sent here specifically to change their default
++            password (mustChangePassword) couldn't see this form at all --
++            it wouldn't render until AFTER they'd already changed it. */}
++        {twoFactorEnabled || mustChangePassword ? (
+           <Card className="animate-fade-up delay-140">
+             <CardBody className="space-y-5">
+               <div className="flex items-center gap-3">
+diff --git a/frontend/app/globals.css b/frontend/app/globals.css
+index 1a701bc..7055812 100644
+--- a/frontend/app/globals.css
++++ b/frontend/app/globals.css
+@@ -9,12 +9,17 @@
+  * legible at the small sizes admins live in and friendly enough for a
+  * Class 5 student) paired with Fraunces (display -- an editorial serif
+  * that gives headings warmth and stops the product reading as generic
+- * dashboard software). Both are loaded from Google Fonts in app/layout.tsx
+- * with system fallbacks below so nothing reflows into a default serif.
++ * dashboard software). Self-hosted via next/font/google in app/layout.tsx
++ * (B9 fix, 30 Sep 2026 review -- previously a runtime fonts.googleapis.com/
++ * fonts.gstatic.com fetch on every page load; now downloaded once at build
++ * time and served from this app's own origin, no third-party request at
++ * all). --font-plus-jakarta-sans/--font-fraunces are the CSS variables that
++ * loader generates; system fallbacks below still cover the rare case the
++ * self-hosted @font-face hasn't painted yet.
+  */
+ :root {
+-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+-  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
++  --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
++  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+ 
+   /* Mirrors tailwind.config.ts semantic roles for the few places raw CSS
+      needs them (scrollbars, selection, form autofill). */
+diff --git a/frontend/app/layout.tsx b/frontend/app/layout.tsx
+index c1912a4..cbdfd57 100644
+--- a/frontend/app/layout.tsx
++++ b/frontend/app/layout.tsx
+@@ -1,7 +1,34 @@
+ import type { Metadata, Viewport } from "next";
++import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+ import "./globals.css";
+ import { Providers } from "./providers";
+ 
++// B9 fix (30 Sep 2026 security/DPDP review): previously loaded from a
++// fonts.googleapis.com/fonts.gstatic.com <link> in <head> below -- every
++// visitor's browser made a direct, unauthenticated request to Google for
++// those assets before this app rendered anything, which both leaks visitor
++// IPs/user-agents to a third party on every page load (a DPDP-relevant
++// exposure for what may be a child's device) and adds a render-blocking
++// third-party round trip. next/font/google downloads the font files at
++// BUILD time and self-hosts them from this app's own origin -- no runtime
++// request to Google ever happens, and the CSP's font-src 'self' (already
++// tightened for this reason, see next.config.js) is what actually stops it
++// now instead of just documenting an exception for it.
++const plusJakartaSans = Plus_Jakarta_Sans({
++  subsets: ["latin"],
++  weight: "variable",
++  variable: "--font-plus-jakarta-sans",
++  display: "swap",
++});
++
++const fraunces = Fraunces({
++  subsets: ["latin"],
++  weight: "variable",
++  axes: ["opsz"],
++  variable: "--font-fraunces",
++  display: "swap",
++});
++
+ export const metadata: Metadata = {
+   title: {
+     default: "School Enrichment",
+@@ -33,25 +60,7 @@ export const viewport: Viewport = {
+ 
+ export default function RootLayout({ children }: { children: React.ReactNode }) {
+   return (
+-    <html lang="en" className="h-full">
+-      <head>
+-        {/* Google Fonts is the only external dependency in the visual layer.
+-            Loaded as a stylesheet link (rather than next/font) so builds and
+-            CI never depend on egress to fonts.gstatic.com; system fallbacks
+-            in globals.css cover the offline case. */}
+-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+-        {/* eslint-disable-next-line @next/next/no-page-custom-font -- this rule
+-            guards against a font link placed in a single Pages-Router page
+-            (pages/_document.js doesn't exist in this project at all). This is
+-            the App Router *root* layout, which wraps every route by design --
+-            exactly the one place a global font link belongs. False positive
+-            for this architecture, not a real bug. */}
+-        <link
+-          rel="stylesheet"
+-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
+-        />
+-      </head>
++    <html lang="en" className={`h-full ${plusJakartaSans.variable} ${fraunces.variable}`}>
+       {/* suppressHydrationWarning here only silences mismatches on this exact
+           tag -- it's the standard Next.js fix for browser extensions (e.g.
+           Grammarly, translators) that inject attributes into <body> before
+diff --git a/frontend/lib/hooks/useProtectedPage.ts b/frontend/lib/hooks/useProtectedPage.ts
+index bd1b2b9..3d785e0 100644
+--- a/frontend/lib/hooks/useProtectedPage.ts
++++ b/frontend/lib/hooks/useProtectedPage.ts
+@@ -31,6 +31,11 @@ import type { CurrentUser, UserRole } from "@/types/auth";
+ // layer on top of that, so a not-yet-enrolled admin lands on the setup
+ // screen instead of a wall of 403s.
+ const MANDATORY_2FA_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
++// A1 fix (30 Sep 2026 security/DPDP review): mirrors the backend's
++// MUST_CHANGE_PASSWORD_ROLES (dependencies.py) -- scoped to ADMIN/
++// SUPER_ADMIN only today because TEACHER/STUDENT have no change-password
++// UI anywhere in the frontend yet.
++const MUST_CHANGE_PASSWORD_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
+ const SECURITY_SETUP_PATH = "/admin/security";
+ 
+ export interface UseProtectedPageOptions {
+@@ -38,13 +43,17 @@ export interface UseProtectedPageOptions {
+    *  enrolled yet can actually reach the page that lets them enroll,
+    *  instead of being bounced back to itself forever. */
+   allowWithoutTwoFactor?: boolean;
++  /** Same idea as allowWithoutTwoFactor, for the forced-password-change
++   *  gate below -- the security page passes this too, since it's also the
++   *  page that hosts the Change Password form itself. */
++  allowWithoutPasswordChange?: boolean;
+ }
+ 
+ export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPageOptions = {}) {
+   const router = useRouter();
+   const [user, setUser] = useState<CurrentUser | null>(null);
+   const [status, setStatus] = useState<"loading" | "ready" | "redirecting">("loading");
+-  const { allowWithoutTwoFactor = false } = options;
++  const { allowWithoutTwoFactor = false, allowWithoutPasswordChange = false } = options;
+ 
+   useEffect(() => {
+     let cancelled = false;
+@@ -59,6 +68,16 @@ export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPa
+           router.replace("/login");
+           return;
+         }
++        // Checked before the 2FA gate below, same order as the backend
++        // (dependencies.py's get_current_user): a brand-new admin should
++        // replace their default password before being walked into 2FA
++        // setup, not the other way around.
++        if (!allowWithoutPasswordChange && MUST_CHANGE_PASSWORD_ROLES.includes(data.role) && data.mustChangePassword) {
++          setSession(data);
++          setStatus("redirecting");
++          router.replace(`${SECURITY_SETUP_PATH}?passwordChange=required`);
++          return;
++        }
+         if (!allowWithoutTwoFactor && MANDATORY_2FA_ROLES.includes(data.role) && !data.twoFactorEnabled) {
+           setSession(data);
+           setStatus("redirecting");
+@@ -79,7 +98,7 @@ export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPa
+     return () => {
+       cancelled = true;
+     };
+-  }, [requiredRole, router, allowWithoutTwoFactor]);
++  }, [requiredRole, router, allowWithoutTwoFactor, allowWithoutPasswordChange]);
+ 
+   return { user, status };
+ }
+diff --git a/frontend/next.config.mjs b/frontend/next.config.mjs
+index 0a161fb..5a986d3 100644
+--- a/frontend/next.config.mjs
++++ b/frontend/next.config.mjs
+@@ -50,8 +50,12 @@ function buildCsp() {
+   const directives = {
+     "default-src": ["'self'"],
+     "script-src": ["'self'", "'unsafe-inline'", ...(isProd ? [] : ["'unsafe-eval'"])],
+-    "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+-    "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
++    // B9 fix (30 Sep 2026 review): fonts are self-hosted via next/font/google
++    // now (app/layout.tsx) -- no runtime request to Google ever happens, so
++    // the fonts.googleapis.com/fonts.gstatic.com CSP exceptions that existed
++    // only for the old <link> tags are gone too.
++    "style-src": ["'self'", "'unsafe-inline'"],
++    "font-src": ["'self'", "data:"],
+     // data: for base64 profile photos and server-generated 2FA QR codes
+     // (see backend/app/core/totp.py's totp_qr_code_data_url()); blob: for
+     // the backup-codes .txt download link (URL.createObjectURL).
+diff --git a/frontend/types/auth.ts b/frontend/types/auth.ts
+index d42859d..6e144c7 100644
+--- a/frontend/types/auth.ts
++++ b/frontend/types/auth.ts
+@@ -11,6 +11,9 @@ export type CurrentUser = {
+   isActive?: boolean;
+   profilePhotoUrl?: string | null;
+   twoFactorEnabled?: boolean;
++  // A1 fix (30 Sep 2026 security/DPDP review) -- see useProtectedPage.ts's
++  // allowWithoutPasswordChange for the redirect this drives.
++  mustChangePassword?: boolean;
+   student?: {
+     id: string;
+     schoolId: string;
