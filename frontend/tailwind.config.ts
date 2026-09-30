@@ -132,8 +132,33 @@ const config: Config = {
           faint: "#74728D",
           brand: "#3C3489",
           inverse: "#FFFFFF",
+          // Inverse ramp, for text on the indigo chrome (sidebar rail, login
+          // brand panel, inverse cards). Measured against the *lightest*
+          // point of that chrome, not its average: brand-700 (#3C3489) with
+          // the sidebar's brand-500/40 glow composited on top (~#4A40A0).
+          //   inverse-muted  0.78 -> 5.7:1 (6.9:1 on plain brand-700)
+          //   inverse-subtle 0.70 -> 5.0:1 (5.9:1)
+          //   inverse-faint  0.66 -> 4.6:1 (5.5:1) -- the floor, same role
+          //                         as `faint` on the light side.
+          // subtle/faint were added 30 Sep 2026: the rail had been using raw
+          // text-white/40 and /55 for section labels, "Soon" rows and the
+          // help line, which measured 2.7-4.3:1 -- under AA on exactly the
+          // cheap, washed-out classroom displays this product is used on.
+          // The login panel's aurora is brighter still where its blobs
+          // overlap, so text there should stay at inverse-muted or above.
           "inverse-muted": "rgba(255,255,255,0.78)",
+          "inverse-subtle": "rgba(255,255,255,0.70)",
+          "inverse-faint": "rgba(255,255,255,0.66)",
         },
+      },
+
+      // Tailwind 3's default opacity scale steps 0/5/10/15/20/25/...; it has
+      // no 12. The kit reaches for `/12` for frosted fills on dark chrome
+      // (the active sidebar row, inverse Badge, inverse CardIcon), and
+      // without this step those classes silently generated no CSS at all --
+      // the active nav row had been rendering with no fill, only its ring.
+      opacity: {
+        12: "0.12",
       },
 
       fontFamily: {
@@ -191,6 +216,14 @@ const config: Config = {
         // as physically lifted off the card rather than just re-bordered.
         "focus-field": "0 0 0 4px rgba(99,85,188,0.18), 0 14px 28px -16px rgba(60,52,137,0.85)",
         hairline: "inset 0 1px 0 rgba(255,255,255,0.55)",
+        // The same idea tuned for filled dark/warm surfaces (gradient
+        // buttons): a single lit top edge, so a button reads as a pressed
+        // shape catching light from above rather than a flat sticker.
+        sheen: "inset 0 1px 0 rgba(255,255,255,0.2)",
+        // The rail's right edge. A hairline of light plus a long, very soft
+        // cast onto the paper canvas, so the sidebar sits *on* the page
+        // instead of ending in a hard vertical cut.
+        rail: "1px 0 0 rgba(255,255,255,0.06), 18px 0 40px -28px rgba(23,19,56,0.55)",
       },
 
       backgroundImage: {
@@ -267,6 +300,20 @@ const config: Config = {
           from: { strokeDashoffset: "620" },
           to: { strokeDashoffset: "0" },
         },
+        // Side sheets (the mobile nav drawer) arrive from the edge they are
+        // anchored to. A plain fade reads as the panel materialising in
+        // place, which is not how a drawer physically behaves.
+        "sheet-in": {
+          from: { transform: "translate3d(-100%,0,0)" },
+          to: { transform: "translate3d(0,0,0)" },
+        },
+        // Dialogs rise a few pixels as they scale in -- the same settle as
+        // fade-up, compressed, so every surface that appears in this product
+        // arrives with one shared physical feel.
+        "dialog-in": {
+          from: { opacity: "0", transform: "translate3d(0,10px,0) scale(0.985)" },
+          to: { opacity: "1", transform: "translate3d(0,0,0) scale(1)" },
+        },
       },
 
       animation: {
@@ -283,6 +330,8 @@ const config: Config = {
         "spin-slow": "spin-slow 32s linear infinite",
         "pulse-ring": "pulse-ring 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite",
         "dash-draw": "dash-draw 2.4s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "sheet-in": "sheet-in 0.48s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "dialog-in": "dialog-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
     },
   },

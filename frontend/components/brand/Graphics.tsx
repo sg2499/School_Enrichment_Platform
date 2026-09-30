@@ -22,6 +22,13 @@ interface BackdropProps {
    * -- it is too heavy for the small hero cards on the dashboards.
    */
   vignette?: boolean;
+  /**
+   * Film-grain layer (see `.bg-grain` in globals.css). Inverse only, and off
+   * by default: it exists to dither banding out of *large* dark gradients --
+   * the full-height login panel and the sidebar rail -- and is invisible
+   * noise on anything card-sized.
+   */
+  grain?: boolean;
 }
 
 /**
@@ -53,7 +60,7 @@ export function AuroraBackdrop({ className, parallax = false }: BackdropProps) {
 }
 
 /** Dark-side version, for the login brand panel and inverse cards. */
-export function AuroraBackdropInverse({ className, parallax = false, vignette = false }: BackdropProps) {
+export function AuroraBackdropInverse({ className, parallax = false, vignette = false, grain = false }: BackdropProps) {
   return (
     <div aria-hidden className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}>
       <div className={cn("absolute -left-28 top-[-8rem] h-[34rem] w-[34rem]", blobLayer(parallax, "parallax-2"))}>
@@ -74,6 +81,109 @@ export function AuroraBackdropInverse({ className, parallax = false, vignette = 
       {vignette ? (
         <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_45%,transparent_32%,rgba(15,12,40,0.5)_100%)]" />
       ) : null}
+      {/* Last in the stack so it textures the blobs and the vignette alike,
+          but still inside this decorative layer -- content above it stays
+          perfectly crisp. */}
+      {grain ? <div className="bg-grain absolute inset-0" /> : null}
+    </div>
+  );
+}
+
+/**
+ * The orbit motif at architectural scale, for a large dark panel: concentric
+ * rings centred on a corner, so the panel's own edges crop them into arcs.
+ * A crop that big reads as deliberate framing -- unlike a small
+ * illustration half-hidden at an edge, which reads as an overflow bug (the
+ * reason LearningOrbit no longer sits in the login panel's corner).
+ *
+ * The outer rings are static framing. Only the innermost ring turns,
+ * carrying three milestone dots 120 degrees apart -- two lit, one still to
+ * come, the same vocabulary as the five-day loop. Just a quarter of that
+ * ring is ever on screen, so a dot drifts in past the corner, crosses and
+ * leaves again, and with three of them one is in view most of the time: "a
+ * learning path that keeps coming back around", literally. The dots ride
+ * the *smallest* ring on purpose -- on a larger one they swept through the
+ * headline, and a saffron dot parked beside "sticks." reads as a stray
+ * full stop.
+ *
+ * Performance: only one layer moves, and it rotates as a whole <svg>
+ * element (an HTML-level transform the compositor handles on the GPU),
+ * never via transforms on SVG children, which would repaint the whole
+ * canvas every frame on a school's cheapest laptop. 127s per turn: prime,
+ * and slow enough that the motion is sensed rather than watched.
+ *
+ * Size and position it from the call site; it fills its box (viewBox
+ * 1200, so at 60rem each unit is 0.8px).
+ */
+export function OrbitRings({ className }: { className?: string }) {
+  const RING = 232;
+  const dots = [
+    { angle: 128, lit: true },
+    { angle: 248, lit: true },
+    { angle: 8, lit: false },
+  ];
+  return (
+    <div aria-hidden className={cn("pointer-events-none", className)}>
+      <svg viewBox="0 0 1200 1200" role="presentation" className="absolute inset-0 h-full w-full">
+        <circle cx="600" cy="600" r="150" fill="none" stroke="rgba(255,255,255,0.2)" />
+        <circle
+          cx="600"
+          cy="600"
+          r="330"
+          fill="none"
+          stroke="rgba(255,255,255,0.22)"
+          strokeDasharray="1.5 10"
+          strokeLinecap="round"
+        />
+        <circle cx="600" cy="600" r="440" fill="none" stroke="rgba(255,255,255,0.14)" />
+      </svg>
+      <svg
+        viewBox="0 0 1200 1200"
+        role="presentation"
+        className="absolute inset-0 h-full w-full animate-spin-slow [animation-duration:127s]"
+      >
+        <defs>
+          <linearGradient id="orbit-rings-spark" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#FDDC92" />
+            <stop offset="100%" stopColor="#F08D0C" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx="600"
+          cy="600"
+          r={RING}
+          fill="none"
+          // The brightest ring in the set: it is the track the milestone
+          // dots ride, and a dot with no visible track reads as a stray
+          // speck rather than something in orbit.
+          stroke="rgba(255,255,255,0.3)"
+          strokeDasharray="14 12"
+          strokeLinecap="round"
+        />
+        {dots.map((dot) => {
+          // Rounded so server and client render byte-identical attribute
+          // strings (raw Math.cos output can differ in the last digit).
+          const rad = (dot.angle * Math.PI) / 180;
+          const cx = Math.round((600 + RING * Math.cos(rad)) * 100) / 100;
+          const cy = Math.round((600 + RING * Math.sin(rad)) * 100) / 100;
+          return dot.lit ? (
+            <g key={dot.angle}>
+              <circle cx={cx} cy={cy} r="16" fill="rgba(249,171,43,0.16)" />
+              <circle cx={cx} cy={cy} r="7" fill="url(#orbit-rings-spark)" />
+            </g>
+          ) : (
+            <circle
+              key={dot.angle}
+              cx={cx}
+              cy={cy}
+              r="6"
+              fill="rgba(255,255,255,0.22)"
+              stroke="rgba(255,255,255,0.5)"
+              strokeWidth="1.5"
+            />
+          );
+        })}
+      </svg>
     </div>
   );
 }

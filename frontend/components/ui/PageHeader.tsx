@@ -11,10 +11,16 @@ export interface PageHeaderProps {
 }
 
 /** Consistent top-of-page block: eyebrow, display title, one line of context,
- *  and a right-aligned action slot. */
+ *  and a right-aligned action slot.
+ *
+ *  Enters with the same fade-up the page cards already use (30 Sep 2026).
+ *  Every page staggers its cards at 0/70/140ms but the title used to just
+ *  *be there*, so the choreography started halfway down the screen; now
+ *  the title leads and the cards follow it. Reduced-motion users get it
+ *  instantly via the global override in globals.css. */
 export function PageHeader({ eyebrow, title, description, actions, meta, className }: PageHeaderProps) {
   return (
-    <header className={cn("flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between", className)}>
+    <header className={cn("flex flex-col gap-5 animate-fade-up lg:flex-row lg:items-end lg:justify-between", className)}>
       <div className="min-w-0 space-y-2">
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
         <h1 className="font-display text-display-md text-balance text-content sm:text-display-lg">{title}</h1>
