@@ -50,8 +50,12 @@ function buildCsp() {
   const directives = {
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", ...(isProd ? [] : ["'unsafe-eval'"])],
-    "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-    "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+    // B9 fix (30 Sep 2026 review): fonts are self-hosted via next/font/google
+    // now (app/layout.tsx) -- no runtime request to Google ever happens, so
+    // the fonts.googleapis.com/fonts.gstatic.com CSP exceptions that existed
+    // only for the old <link> tags are gone too.
+    "style-src": ["'self'", "'unsafe-inline'"],
+    "font-src": ["'self'", "data:"],
     // data: for base64 profile photos and server-generated 2FA QR codes
     // (see backend/app/core/totp.py's totp_qr_code_data_url()); blob: for
     // the backup-codes .txt download link (URL.createObjectURL).

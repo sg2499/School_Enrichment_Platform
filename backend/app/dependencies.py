@@ -17,7 +17,7 @@ from app.core.cookies import (
     touch_csrf_cookie,
 )
 from app.core.errors import api_error
-from app.core.security import create_access_token, decode_token
+from app.core.security import create_access_token, decode_token, expire_minutes_for_role
 from app.database import SessionLocal, get_db
 from app.models import Student, Teacher, User
 from app.services.session_service import is_session_valid, touch_session
@@ -52,6 +52,32 @@ TWO_FACTOR_SETUP_EXEMPT_PATHS = {
     "/api/auth/logout-all-sessions",
     "/api/auth/2fa/setup",
     "/api/auth/2fa/enable",
+    "/api/auth/change-password",
+    "/api/auth/ping",
+}
+
+# A1 fix (30 Sep 2026 security/DPDP review): an admin-issued initial
+# password is guessable-by-design no longer (see routes_roster.py), but that
+# only matters if the recipient is actually forced to replace it before
+# doing anything else -- otherwise a first-to-log-in race (including against
+# a freshly created ADMIN) can still permanently take the account over.
+# Scoped to ADMIN/SUPER_ADMIN only for now: TEACHER/STUDENT have no
+# change-password UI anywhere in the frontend yet (grepped -- only
+# frontend/app/admin/security/page.tsx has one), so gating them here today
+# would lock every one of them out with no way to comply. Every new account
+# still gets a random initial password and must_change_password=True
+# regardless of role -- this is a UI gap, not a data-model gap, and the
+# remaining rollout to TEACHER/STUDENT is flagged as a follow-up.
+MUST_CHANGE_PASSWORD_ROLES = {"ADMIN", "SUPER_ADMIN"}
+
+# Same allowlist shape as TWO_FACTOR_SETUP_EXEMPT_PATHS, checked first (see
+# below): a user who must change their password still needs to reach the
+# endpoint that lets them do it, plus the same baseline set (me/logout/
+# ping) the 2FA gate already exempts.
+MUST_CHANGE_PASSWORD_EXEMPT_PATHS = {
+    "/api/auth/me",
+    "/api/auth/logout",
+    "/api/auth/logout-all-sessions",
     "/api/auth/change-password",
     "/api/auth/ping",
 }
@@ -237,18 +263,25 @@ def get_current_user(
         try:
             expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
             remaining_seconds = (expires_at - datetime.now(timezone.utc)).total_seconds()
-            half_lifetime_seconds = (ACCESS_TOKEN_EXPIRE_MINUTES * 60) / 2
+            half_lifetime_seconds = (expire_minutes_for_role(user.role) * 60) / 2
             if 0 < remaining_seconds < half_lifetime_seconds:
                 new_token = create_access_token(user.id, user.role, session_id=session_id)
-                # Bearer-header callers (scripts) still read this response
-                # header the same way they always have. Cookie-authenticated
-                # browser requests instead get a fresh Set-Cookie -- the
-                # browser applies it to its cookie jar automatically with no
-                # JS involved, which is simpler than the old header-read
-                # dance AND keeps the token out of JS's reach the whole time.
-                response.headers["X-New-Access-Token"] = new_token
+                # A10 fix (30 Sep 2026 review): this header used to be set
+                # unconditionally, even for cookie-authenticated requests --
+                # meaning an indefinitely-renewable raw token was handed to
+                # page JS (and exposed cross-origin via CORS) for every
+                # browser session, defeating the entire point of the
+                # 2026-07-22 httpOnly cookie migration (any XSS could have
+                # read it straight off the response). Bearer-header callers
+                # (scripts, not browsers, so not subject to this risk) still
+                # read it exactly as before. Cookie-authenticated browser
+                # requests get ONLY a fresh Set-Cookie -- the browser applies
+                # it to its cookie jar with no JS involved, so nothing is
+                # lost by not also exposing it as a header.
                 if used_cookie_auth:
                     set_session_cookie(response, user.role, new_token)
+                else:
+                    response.headers["X-New-Access-Token"] = new_token
         except Exception:
             # Best-effort sliding-session refresh: a failure here just means
             # this one request doesn't get a renewed token, not a security or
@@ -261,6 +294,24 @@ def get_current_user(
     if user.id not in active_users_cache:
         active_users_cache[user.id] = True
         background_tasks.add_task(_update_user_activity, user.id)
+
+    # Forced password change (A1 fix, 30 Sep 2026 review). Checked before the
+    # mandatory-2FA gate below -- a brand-new admin should replace their
+    # default password first, then go on to set up 2FA, not the other way
+    # around (setting up 2FA on a still-default password would let whoever
+    # logs in first permanently lock out the real owner). Server-side, same
+    # reasoning as the 2FA gate: a frontend-only redirect wouldn't stop a
+    # direct API call.
+    if (
+        user.role in MUST_CHANGE_PASSWORD_ROLES
+        and user.must_change_password
+        and request.url.path not in MUST_CHANGE_PASSWORD_EXEMPT_PATHS
+    ):
+        api_error(
+            403,
+            "PASSWORD_CHANGE_REQUIRED",
+            "You must change your password before you can continue.",
+        )
 
     # Mandatory 2FA enforcement (2026-08-19 security hardening). Checked last
     # -- everything above (token validity, revocation, password-change

@@ -21,7 +21,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import Response
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -51,7 +51,16 @@ from app.database import get_db
 from app.dependencies import MANDATORY_2FA_ROLES, get_current_session_id, get_current_user, require_roles
 from app.models import Student, Teacher, User
 from app.services.audit_service import log_audit_event
-from app.services.auth_service import export_user_data, force_logout_user, login, user_payload
+from app.services.auth_service import (
+    LOCKOUT_DURATION_MINUTES,
+    export_user_data,
+    force_logout_user,
+    is_account_locked,
+    login,
+    record_failed_attempt,
+    reset_lockout,
+    user_payload,
+)
 from app.services.session_service import (
     list_active_sessions,
     revoke_session,
@@ -85,7 +94,14 @@ class TwoFactorVerifyLoginRequest(BaseModel):
 
 
 @router.post("/login")
-@limiter.limit("5/minute")
+# A6 fix (30 Sep 2026 review): raised from 5/minute now that rate_limit.py
+# keys on the real caller IP instead of a shared proxy hop (see
+# get_real_client_ip's docstring) -- raising the number alone, without that
+# key fix, would have just let more junk logins through the same shared
+# bucket. 60/minute is deliberately generous: a whole class signing in from
+# one school router/NAT at the start of a period is normal legitimate
+# traffic now that it isn't lumped in with every other school's traffic too.
+@limiter.limit("60/minute")
 def login_route(request: Request, response: Response, payload: LoginRequest, db: Session = Depends(get_db)):
     result = login(db, payload.identifier, payload.password, request=request)
     if result.get("twoFactorRequired"):
@@ -190,6 +206,23 @@ def save_profile_photo(upload: UploadFile, prefix: str) -> str:
             f".{Suffix} extension. Please upload a genuine JPG, PNG, or WEBP file.",
         )
 
+    # A14 fix (30 Sep 2026 review): uploaded photos kept their original
+    # EXIF/GPS metadata server-side -- the browser-side compression path
+    # (lib/imageCompression.ts) already strips it, but nothing enforced that
+    # server-side, so a client that skipped or bypassed it would still get
+    # its metadata stored and served back out. Re-opening the already-
+    # verified image, baking in its EXIF orientation as real pixels
+    # (exif_transpose, so photos taken in portrait don't end up sideways),
+    # and re-saving without passing exif= at all discards that metadata
+    # unconditionally, regardless of what the client did or didn't do.
+    with Image.open(BytesIO(Content)) as Source:
+        Normalized = ImageOps.exif_transpose(Source)
+        if MimeType == "image/jpeg" and Normalized.mode in ("RGBA", "P"):
+            Normalized = Normalized.convert("RGB")
+        OutputBuffer = BytesIO()
+        Normalized.save(OutputBuffer, format=ActualFormat)
+        Content = OutputBuffer.getvalue()
+
     Encoded = base64.b64encode(Content).decode("ascii")
     return f"data:{MimeType};base64,{Encoded}"
 
@@ -215,11 +248,42 @@ def _decode_data_url(PhotoValue: str) -> tuple[bytes, str]:
         api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
 
 
+def _requester_school_id(db: Session, user: User) -> str | None:
+    """The school the requesting user themselves belongs to, or None for
+    SUPER_ADMIN (platform-wide) or a role/account with no school profile
+    row at all. Used only for the same-school photo-access check below --
+    never for authorization decisions elsewhere, which already have their
+    own dedicated helpers (routes_roster.py's _resolve_school, etc.)."""
+    if user.role == "STUDENT":
+        profile = db.query(Student).filter(Student.user_id == user.id).first()
+        return profile.school_id if profile else None
+    if user.role == "TEACHER":
+        profile = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+        return profile.school_id if profile else None
+    if user.role == "ADMIN":
+        from app.models import SchoolAdmin
+
+        profile = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
+        return profile.school_id if profile else None
+    return None  # SUPER_ADMIN
+
+
 @router.get("/profile-photo/{user_id}")
-def get_profile_photo(user_id: str, db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+def get_profile_photo(user_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     TargetUser = db.query(User).filter(User.id == user_id).first()
     if not TargetUser:
         api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
+    # A4 fix (30 Sep 2026 security/DPDP review): this only checked that
+    # *someone* was logged in, not who was asking about whom -- proven by
+    # test, a STUDENT at school B could fetch a school-A student's photo.
+    # Allowed: viewing your own photo, SUPER_ADMIN (platform-wide), or
+    # same-school staff/students viewing someone else in their own school.
+    # Cross-school is blocked even for ADMIN/TEACHER.
+    if user.id != TargetUser.id and user.role != "SUPER_ADMIN":
+        requester_school_id = _requester_school_id(db, user)
+        target_school_id = _requester_school_id(db, TargetUser)
+        if not requester_school_id or requester_school_id != target_school_id:
+            api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
     PhotoValue = _stored_photo_for_user(db, TargetUser)
     if not PhotoValue:
         api_error(404, "PHOTO_NOT_FOUND", "Profile photo not found.")
@@ -292,6 +356,10 @@ def change_password(
     from sqlalchemy.sql import func
     user.password_hash = hash_password(NewPassword)
     user.password_changed_at = func.now()
+    # A1 fix: clears the forced-change gate the moment someone actually
+    # takes ownership of the password -- see dependencies.py's
+    # MUST_CHANGE_PASSWORD_ROLES check.
+    user.must_change_password = False
     log_audit_event(db, "auth.password_changed", user_id=user.id, request=request)
     db.commit()
     return {"updated": True, "message": "Password updated successfully."}
@@ -449,6 +517,10 @@ def two_factor_enable(
 
 
 @router.post("/2fa/disable")
+# A8 fix (30 Sep 2026 review): had no rate limit at all before -- a stolen
+# session could otherwise brute-force the account password (this endpoint's
+# real gate) with no friction.
+@limiter.limit("10/minute")
 def two_factor_disable(
     request: Request,
     payload: TwoFactorDisableRequest,
@@ -480,6 +552,10 @@ def two_factor_disable(
 
 
 @router.post("/2fa/backup-codes/regenerate")
+# A8 fix (30 Sep 2026 review): explicitly called out in the review -- this
+# had no rate limit and no lockout, so a stolen session could brute-force
+# the account password (this endpoint's real gate) with no friction at all.
+@limiter.limit("10/minute")
 def two_factor_regenerate_backup_codes(
     request: Request,
     payload: TwoFactorDisableRequest,
@@ -518,9 +594,27 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
     if not user or not user.is_active or not user.totp_enabled:
         api_error(401, "UNAUTHORIZED", "This verification step has expired. Please log in again.")
 
+    # A9 fix (30 Sep 2026 review): this step previously had no per-account
+    # failure limit at all beyond a shared 10/minute IP limit -- an attacker
+    # who already has the password could brute-force the 2FA step (or the
+    # backup codes) with no meaningful friction. Reuses the exact same
+    # lockout mechanism as a wrong password (record_failed_attempt/
+    # is_account_locked/reset_lockout) so both attack paths against an
+    # account are covered by one consistent policy.
+    if is_account_locked(user):
+        log_audit_event(db, "auth.login.2fa_blocked_locked", user_id=user.id, request=request)
+        db.commit()
+        api_error(
+            423,
+            "ACCOUNT_LOCKED",
+            "Too many failed sign-in attempts. This account is temporarily locked -- please try again in a "
+            "few minutes.",
+        )
+
     Code = (payload.code or "").strip()
 
     def _issue_session(event_type: str) -> dict:
+        reset_lockout(user)
         session_id = start_session(db, user, request=request)
         log_audit_event(db, event_type, user_id=user.id, request=request)
         db.commit()
@@ -529,7 +623,21 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
         set_csrf_cookie(response)
         return {"tokenType": "Bearer", "user": user_payload(db, user)}
 
+    # A9 replay guard: valid_window=1 means a code stays acceptable across
+    # three 30-second steps, so without this, the *same* correct code could
+    # be replayed by anyone who observed it (e.g. shoulder-surfing, a
+    # network capture) for up to a minute after the legitimate holder used
+    # it. Scoped to an actual TOTP match only -- a backup code is a
+    # completely separate, single-use secret with no relationship to the
+    # TOTP step, and must still be checked below even when the current step
+    # was already consumed by an earlier TOTP login.
+    CurrentStep = int(datetime.now(timezone.utc).timestamp() // 30)
     if verify_totp_code(user.totp_secret, Code):
+        if user.totp_last_used_step is not None and CurrentStep <= user.totp_last_used_step:
+            log_audit_event(db, "auth.login.2fa_replay_blocked", user_id=user.id, request=request)
+            db.commit()
+            api_error(401, "INVALID_CODE", "That code didn't match. Check your authenticator app and try again.")
+        user.totp_last_used_step = CurrentStep
         return _issue_session("auth.login.success")
 
     StoredHashes = json.loads(user.totp_backup_codes_json or "[]")
@@ -539,8 +647,13 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
             user.totp_backup_codes_json = json.dumps(StoredHashes)
             return _issue_session("auth.login.success_via_backup_code")
 
-    log_audit_event(db, "auth.login.2fa_failed", user_id=user.id, request=request)
-    db.commit()
+    locked = record_failed_attempt(db, user, request, "auth.login.2fa_failed")
+    if locked:
+        api_error(
+            423,
+            "ACCOUNT_LOCKED",
+            f"Too many failed sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes.",
+        )
     api_error(401, "INVALID_CODE", "That code didn't match. Check your authenticator app and try again.")
 
 

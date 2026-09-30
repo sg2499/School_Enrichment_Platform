@@ -31,6 +31,11 @@ import type { CurrentUser, UserRole } from "@/types/auth";
 // layer on top of that, so a not-yet-enrolled admin lands on the setup
 // screen instead of a wall of 403s.
 const MANDATORY_2FA_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
+// A1 fix (30 Sep 2026 security/DPDP review): mirrors the backend's
+// MUST_CHANGE_PASSWORD_ROLES (dependencies.py) -- scoped to ADMIN/
+// SUPER_ADMIN only today because TEACHER/STUDENT have no change-password
+// UI anywhere in the frontend yet.
+const MUST_CHANGE_PASSWORD_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
 const SECURITY_SETUP_PATH = "/admin/security";
 
 export interface UseProtectedPageOptions {
@@ -38,13 +43,17 @@ export interface UseProtectedPageOptions {
    *  enrolled yet can actually reach the page that lets them enroll,
    *  instead of being bounced back to itself forever. */
   allowWithoutTwoFactor?: boolean;
+  /** Same idea as allowWithoutTwoFactor, for the forced-password-change
+   *  gate below -- the security page passes this too, since it's also the
+   *  page that hosts the Change Password form itself. */
+  allowWithoutPasswordChange?: boolean;
 }
 
 export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPageOptions = {}) {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "redirecting">("loading");
-  const { allowWithoutTwoFactor = false } = options;
+  const { allowWithoutTwoFactor = false, allowWithoutPasswordChange = false } = options;
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +66,16 @@ export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPa
         if (normalizedRole !== requiredRole) {
           setStatus("redirecting");
           router.replace("/login");
+          return;
+        }
+        // Checked before the 2FA gate below, same order as the backend
+        // (dependencies.py's get_current_user): a brand-new admin should
+        // replace their default password before being walked into 2FA
+        // setup, not the other way around.
+        if (!allowWithoutPasswordChange && MUST_CHANGE_PASSWORD_ROLES.includes(data.role) && data.mustChangePassword) {
+          setSession(data);
+          setStatus("redirecting");
+          router.replace(`${SECURITY_SETUP_PATH}?passwordChange=required`);
           return;
         }
         if (!allowWithoutTwoFactor && MANDATORY_2FA_ROLES.includes(data.role) && !data.twoFactorEnabled) {
@@ -79,7 +98,7 @@ export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPa
     return () => {
       cancelled = true;
     };
-  }, [requiredRole, router, allowWithoutTwoFactor]);
+  }, [requiredRole, router, allowWithoutTwoFactor, allowWithoutPasswordChange]);
 
   return { user, status };
 }
