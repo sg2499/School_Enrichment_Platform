@@ -26,9 +26,31 @@ const ROLE_LABEL: Record<UserRole, string> = {
   STUDENT: "Student",
 };
 
-/** Renders the actual uploaded photo when one exists, the initials badge
- *  otherwise -- shared by every place an avatar appears so they all update
- *  together the instant a new photo is uploaded. */
+/**
+ * Renders the actual uploaded photo when one exists, the initials badge
+ * otherwise -- shared by every place an avatar appears so they all update
+ * together the instant a new photo is uploaded.
+ *
+ * Fetches the photo through the authenticated `api` client and displays it
+ * via a blob: object URL, rather than pointing a plain <img src="/api/...">
+ * straight at the endpoint (30 Sep 2026 fix). The backend endpoint
+ * (routes_auth.py's get_profile_photo) picks which of up to four per-role
+ * session cookies to check using the X-Auth-Role header -- necessary
+ * because ADMIN and SUPER_ADMIN can both be signed in at once in the same
+ * browser (see cookies.py). A bare <img> tag can never send that header,
+ * so when more than one role's cookie is present -- exactly the case for
+ * every account used to build and test this product -- the backend's
+ * cookie-scan fallback could silently authenticate the request as a
+ * DIFFERENT logged-in role than the one actually viewing the page. The
+ * same-school photo-access check (a real security control, the A4 fix)
+ * then correctly 404s that mismatched, wrong-account identity -- so the
+ * photo one account uploaded would only ever fail to appear for accounts
+ * sharing a browser with another role, silently and without an error
+ * anywhere, which is exactly what made this hard to catch. Routing the
+ * request through `api` guarantees the same X-Auth-Role header every other
+ * authenticated call already relies on, so the correct cookie is always
+ * selected regardless of what else is signed in alongside it.
+ */
 function Avatar({
   photoUrl,
   fullName,
@@ -39,11 +61,45 @@ function Avatar({
   size?: "sm" | "lg";
 }) {
   const dimension = size === "lg" ? "h-14 w-14 text-lg" : "h-8 w-8 text-xs";
-  if (photoUrl) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!photoUrl) {
+      setObjectUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let revokeUrl: string | null = null;
+
+    // `photoUrl` always arrives with a leading "/api/..." (see
+    // auth_service.py's public_profile_photo_url and the upload endpoint's
+    // response) -- `api`'s own baseURL already contributes that "/api"
+    // prefix, so it has to come off here or the request doubles it up into
+    // "/api/api/...".
+    const path = photoUrl.startsWith("/api/") ? photoUrl.slice(4) : photoUrl;
+    api
+      .get(path, { responseType: "blob" })
+      .then(({ data }) => {
+        if (cancelled) return;
+        revokeUrl = URL.createObjectURL(data as Blob);
+        setObjectUrl(revokeUrl);
+      })
+      .catch(() => {
+        // A genuine 404 (no photo yet) or any other failure both just fall
+        // back to the initials badge -- never a broken-image icon.
+        if (!cancelled) setObjectUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+      if (revokeUrl) URL.revokeObjectURL(revokeUrl);
+    };
+  }, [photoUrl]);
+
+  if (objectUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- served from our own API (auth cookie required), not an optimizable remote asset.
       <img
-        src={photoUrl}
+        src={objectUrl}
         alt=""
         className={cn("shrink-0 rounded-full object-cover ring-1 ring-inset ring-white/20", dimension)}
       />
