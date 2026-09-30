@@ -1,27 +1,27 @@
 fastapi==0.141.1
-uvicorn[standard]==0.32.1
-sqlalchemy==2.0.36
-pydantic==2.10.3
+uvicorn[standard]==0.52.4
+sqlalchemy==2.0.52
+pydantic==2.13.4
 python-jose[cryptography]==3.5.0
 pyasn1==0.6.4
 passlib==1.7.4
 bcrypt==4.0.1
-python-dotenv==1.2.2
+python-dotenv==1.2.3
 pytest==9.1.1
 httpx==0.28.1
 
 openpyxl==3.1.5
-python-multipart==0.0.31
-reportlab==4.4.9
-psycopg2-binary==2.9.10
-sentry-sdk[fastapi]==2.19.2
+python-multipart==0.0.32
+reportlab==5.0.1
+psycopg2-binary==2.9.12
+sentry-sdk[fastapi]==2.68.0
 gunicorn
 
 slowapi
 cachetools
 
-pyotp==2.9.0
-qrcode[pil]==7.4.2
+pyotp==2.10.0
+qrcode[pil]==8.2
 # Pillow was already an installed transitive dependency of qrcode[pil], but
 # it's pinned explicitly here now that routes_auth.py imports it directly
 # (2026-08-19 profile-photo content-sniffing) -- a transitive dependency can
