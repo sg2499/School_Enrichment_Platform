@@ -1,6 +1,7 @@
 """One-time helper: resets the password for an EXISTING account you already
-control, when you've forgotten it. Written for the MathPath test ADMIN
-account (balajeebloomingbuds@gmail.com) but works for any existing user.
+control, when you've forgotten it. Originally written for a MathPath test
+ADMIN account, but works for any existing user -- pass whichever email
+needs resetting on the command line.
 
 Why this exists: this platform has no self-service "forgot password" email
 flow yet (routes_auth.py only has an authenticated /change-password, which
@@ -17,7 +18,7 @@ IsStaleAfterPasswordChange check the next time they're used, the same as a
 normal in-app password change would.
 
 Usage (from backend/, with DATABASE_URL set to the target database):
-    python scripts/reset_test_account_password.py --email balajeebloomingbuds@gmail.com
+    python scripts/reset_test_account_password.py --email you@example.com
 You'll be prompted for a new password (not echoed, not passed on the
 command line where it could end up in shell history).
 """
