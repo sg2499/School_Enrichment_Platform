@@ -298,5 +298,33 @@ def test_bulk_csv_import_creates_students_and_reports_errors(client, db_session)
     assert statuses["Zara Khan"] == "created"
     assert statuses[""] == "skipped"
 
+    # Created rows carry the one-time initial password (and login) so the
+    # admin can actually hand bulk-created accounts off -- previously only
+    # `code` was returned and the random password was lost.
+    by_name = {r["fullName"]: r for r in body["results"]}
+    kabir = by_name["Kabir Singh"]
+    zara = by_name["Zara Khan"]
+    for row in (kabir, zara):
+        assert isinstance(row["initialPassword"], str)
+        assert row["initialPassword"]
+        assert len(row["initialPassword"]) >= 12
+        assert row["code"].startswith("STU-")
+    assert kabir["initialPassword"] != zara["initialPassword"]
+    assert kabir["email"] == "kabir.singh@example.com"
+    assert zara["email"] is None  # no email given -- the student code is the login
+    skipped = by_name[""]
+    assert "initialPassword" not in skipped
+    assert "email" not in skipped
+
     students = db_session.query(Student).join(User, Student.user_id == User.id).filter(Student.school_id == school.id).all()
     assert len(students) == 2
+
+    # The returned password is the real one: it verifies against the stored hash.
+    kabir_user = db_session.query(User).filter(User.email == "kabir.singh@example.com").first()
+    assert kabir_user is not None
+    assert verify_password(kabir["initialPassword"], kabir_user.password_hash)
+    assert kabir_user.must_change_password is True
+    zara_student = db_session.query(Student).filter(Student.student_code == zara["code"]).first()
+    assert zara_student is not None
+    zara_user = db_session.get(User, zara_student.user_id)
+    assert verify_password(zara["initialPassword"], zara_user.password_hash)

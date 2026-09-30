@@ -486,7 +486,21 @@ def bulk_create_people(
             )
             db.flush()
             created_count += 1
-            results.append({"row": idx, "fullName": full_name, "status": "created", "code": person["code"]})
+            # initialPassword/email are returned here the same way the
+            # single-entry endpoint returns them -- without them a
+            # bulk-created account has no deliverable password (the A1 fix
+            # made passwords random, and nothing else can reveal or reset
+            # one afterwards), so the student/teacher could never sign in.
+            results.append(
+                {
+                    "row": idx,
+                    "fullName": full_name,
+                    "status": "created",
+                    "code": person["code"],
+                    "email": person["email"],
+                    "initialPassword": person["initialPassword"],
+                }
+            )
         except ValueError as exc:
             results.append({"row": idx, "fullName": full_name, "status": "skipped", "error": str(exc)})
 
