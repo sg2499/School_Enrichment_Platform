@@ -188,7 +188,7 @@ def test_duplicate_email_rejected(client, db_session):
 
 
 def test_admin_lists_own_school_roster_with_search(client, db_session):
-    admin, school = _make_school_admin(db_session, "roster-admin7@example.com", "Lakeside School")
+    admin, _school = _make_school_admin(db_session, "roster-admin7@example.com", "Lakeside School")
     headers = _login(client, admin.email)
     client.post("/api/roster/people", json={"role": "TEACHER", "fullName": "Meera Nair"}, headers=headers)
     client.post("/api/roster/people", json={"role": "STUDENT", "fullName": "Arjun Iyer", "className": "6"}, headers=headers)
@@ -225,7 +225,7 @@ def test_super_admin_without_school_id_sees_only_admins(client, db_session):
 
 
 def test_admin_deactivates_teacher_and_login_is_blocked(client, db_session):
-    admin, school = _make_school_admin(db_session, "roster-admin9@example.com", "Birchwood School")
+    admin, _school = _make_school_admin(db_session, "roster-admin9@example.com", "Birchwood School")
     headers = _login(client, admin.email)
     create_response = client.post(
         "/api/roster/people",
@@ -249,7 +249,7 @@ def test_admin_deactivates_teacher_and_login_is_blocked(client, db_session):
 
 def test_admin_cannot_deactivate_admin_account(client, db_session):
     super_admin = _make_super_admin(db_session, "roster-sa3@example.com")
-    admin, school = _make_school_admin(db_session, "roster-admin10@example.com", "Fairview School")
+    admin, _school = _make_school_admin(db_session, "roster-admin10@example.com", "Fairview School")
 
     headers = _login(client, admin.email)
     response = client.patch(f"/api/roster/people/{super_admin.id}/status", json={"isActive": False}, headers=headers)

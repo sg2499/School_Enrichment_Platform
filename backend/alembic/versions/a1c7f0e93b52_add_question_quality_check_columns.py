@@ -10,9 +10,9 @@ FLAGGED | VERIFIED | UNVERIFIED), quality_flags (JSON list of reasons,
 only set when FLAGGED), quality_checked_at. Deliberately a separate axis
 from the existing `status` column -- see the model's own comment.
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'a1c7f0e93b52'

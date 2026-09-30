@@ -36,7 +36,6 @@ from app.core.errors import api_error
 from app.core.rate_limit import limiter
 from app.database import get_db
 from app.dependencies import get_current_student, get_current_teacher, require_roles
-from app.services.audit_service import log_audit_event
 from app.models import (
     ASSIGNMENT_REASONS,
     Assignment,
@@ -56,6 +55,7 @@ from app.models import (
     User,
 )
 from app.services import foundation_repair_service, learning_service
+from app.services.audit_service import log_audit_event
 
 router = APIRouter(prefix="/api/learning", tags=["learning"])
 

@@ -12,10 +12,9 @@ ADMIN/SUPER_ADMIN (Shailesh: "Yes, mandatory for both"):
 - TEACHER/STUDENT are unaffected -- 2FA is not mandatory for them.
 """
 import pyotp
-import pytest
 
 from app.core.security import hash_password
-from app.models import School, SchoolAdmin, Student, Teacher, User
+from app.models import School, SchoolAdmin, Teacher, User
 
 PASSWORD = "Passw0rd1"
 

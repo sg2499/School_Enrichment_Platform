@@ -15,9 +15,9 @@ edit path -- see the new PATCH /school-curriculum-maps/{id} endpoint
 (routes_curriculum_admin.py) added alongside this migration, which lets an
 admin push a mapping's dates without deleting and recreating it.
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'd8a3f6c1b2e7'

@@ -23,9 +23,8 @@ worth a stricter ceiling.
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Request
-from sqlalchemy.orm import Session
-
 from slowapi.util import get_remote_address
+from sqlalchemy.orm import Session
 
 from app.models import User, UserSession
 

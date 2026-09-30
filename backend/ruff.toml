@@ -7,4 +7,11 @@ ignore = [
                # files get written to disk in some tooling; not a real
                # code issue, and not something git preserves consistently
                # across platforms anyway.
+    "B008",    # function-call-in-default-argument -- this is FastAPI's own
+               # dependency-injection pattern (`Depends(...)` as a default
+               # argument value). It's idiomatic FastAPI, not a real bug, and
+               # was already being treated as a non-blocking convention
+               # throughout this codebase (156 occurrences) before this was
+               # ever added to config -- making that explicit here instead of
+               # leaving every lint run report 156 phantom "errors".
 ]
