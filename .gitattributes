@@ -1,0 +1,19 @@
+# Normalize line endings for anyone on Windows (the primary dev machine for
+# this repo) working alongside CI/Linux containers -- added during the A3
+# doc-reconciliation pass (30 Sep 2026) after noticing CRLF/LF drift showing
+# up as noisy diffs on files nobody had intentionally edited. Git will
+# store everything as LF in the repo and let the checkout layer convert to
+# the local platform's native line ending, so a Windows checkout still sees
+# CRLF in the working tree without that ever being what's actually committed.
+* text=auto eol=lf
+
+# Anything binary should never be run through line-ending conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.woff binary
+*.woff2 binary

@@ -1,6 +1,7 @@
 """One-time helper: resets the password for an EXISTING account you already
-control, when you've forgotten it. Written for the MathPath test ADMIN
-account (you@example.com) but works for any existing user.
+control, when you've forgotten it. Originally written for a MathPath test
+ADMIN account, but works for any existing user -- pass whichever email
+needs resetting on the command line.
 
 Why this exists: this platform has no self-service "forgot password" email
 flow yet (routes_auth.py only has an authenticated /change-password, which
