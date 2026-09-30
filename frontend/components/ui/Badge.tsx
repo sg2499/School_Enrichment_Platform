@@ -50,8 +50,13 @@ export function Badge({
     >
       {dot ? (
         <span aria-hidden className="relative flex h-1.5 w-1.5">
+          {/* pulse-ring rather than Tailwind's stock `animate-ping` (1s,
+              scale 2x): the system's own ring is slower and smaller, and is
+              the same "live" signal as the login page's Secure Sign-In dot,
+              so every live indicator in the product breathes at one rate
+              instead of some of them flickering. */}
           {pulse ? (
-            <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-70", t.dot, "animate-ping")} />
+            <span className={cn("absolute inline-flex h-full w-full rounded-full", t.dot, "animate-pulse-ring")} />
           ) : null}
           <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", t.dot)} />
         </span>
@@ -66,11 +71,19 @@ export function Badge({
   );
 }
 
-/** Wide, letter-spaced label that sits above a heading. */
+/**
+ * Wide, letter-spaced label that sits above a heading.
+ *
+ * Led by a short saffron rule (30 Sep 2026) -- the one editorial mark that
+ * ties every page title in the product back to the accent colour, the way a
+ * printed section opener does. Decorative only (aria-hidden); the label's
+ * own brand-700 text carries the meaning (9.7:1 on the paper canvas).
+ */
 export function Eyebrow({ className, children, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={cn("text-eyebrow font-bold uppercase text-content-brand", className)} {...props}>
-      {children}
+    <p className={cn("flex items-center gap-2.5 text-eyebrow font-bold uppercase text-content-brand", className)} {...props}>
+      <span aria-hidden className="h-[2px] w-5 shrink-0 rounded-full bg-accent-gradient" />
+      <span className="min-w-0">{children}</span>
     </p>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useId, useState } from "react";
-import { ChevronDown, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, ArrowBigUpDash, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
@@ -14,21 +14,78 @@ export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInput
   containerClassName?: string;
 }
 
+/** Joins the ids of every message that describes a control, so a screen
+ *  reader hears the hint, the error and any live warning -- not just
+ *  whichever one happened to be wired up. */
+function describedBy(...ids: (string | null | undefined | false)[]) {
+  const joined = ids.filter(Boolean).join(" ");
+  return joined || undefined;
+}
+
+/** Error line shared by TextField and SelectField. The icon means the state
+ *  is never carried by colour alone (WCAG 1.4.1), and coral-700 on white is
+ *  7.3:1. */
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <p id={id} className="flex items-start gap-1.5 text-[0.8125rem] font-semibold leading-snug text-coral-700 animate-fade-in">
+      <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span>{children}</span>
+    </p>
+  );
+}
+
 /**
  * One text input treatment for the whole product: generous 44px+ hit area,
  * visible label (never placeholder-only), inline hint slot for things like
  * "Forgot password?", and an error state that colours the border *and*
  * announces via aria-describedby.
+ *
+ * Password fields (type="password" or `revealable`) also warn when Caps Lock
+ * is on (30 Sep 2026). On a shared school laptop Caps Lock is very often
+ * left on by the previous user, and "wrong password" is otherwise the only
+ * clue -- which for a Class 5 student reads as "I forgot my password".
+ * Detected from the key events the field already receives, so there is
+ * nothing to configure and every password field in the product gets it.
  */
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
-  { label, hint, error, icon, revealable = false, className, containerClassName, id, type = "text", ...props },
+  {
+    label,
+    hint,
+    error,
+    icon,
+    revealable = false,
+    className,
+    containerClassName,
+    id,
+    type = "text",
+    onKeyDown,
+    onKeyUp,
+    onBlur,
+    "aria-describedby": callerDescribedBy,
+    ...props
+  },
   ref,
 ) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const describedById = `${inputId}-message`;
+  const hintId = `${inputId}-hint`;
+  const capsId = `${inputId}-caps`;
   const [revealed, setRevealed] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
   const resolvedType = revealable ? (revealed ? "text" : "password") : type;
+  const isSecret = revealable || type === "password";
+  const showCapsWarning = isSecret && capsLockOn;
+
+  // Read on both keydown and keyup: macOS reports the Caps Lock key itself
+  // on keydown when it turns on but on keyup when it turns off, so either
+  // one alone misses half the toggles. getModifierState can be missing on
+  // events synthesised by some on-screen keyboards -- then we just don't
+  // warn, which is the safe failure.
+  function syncCapsLock(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (!isSecret || typeof event.getModifierState !== "function") return;
+    setCapsLockOn(event.getModifierState("CapsLock"));
+  }
 
   return (
     <div className={cn("group/field space-y-2", containerClassName)}>
@@ -39,7 +96,11 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
         >
           {label}
         </label>
-        {hint ? <span className="text-[0.8125rem] font-medium text-content-subtle">{hint}</span> : null}
+        {hint ? (
+          <span id={hintId} className="text-[0.8125rem] font-medium text-content-subtle">
+            {hint}
+          </span>
+        ) : null}
       </div>
 
       {/* Wrapper lifts the whole field a hair on focus. The transform lives
@@ -61,7 +122,26 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           id={inputId}
           type={resolvedType}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? describedById : undefined}
+          aria-describedby={describedBy(
+            callerDescribedBy,
+            error && describedById,
+            hint && hintId,
+            showCapsWarning && capsId,
+          )}
+          onKeyDown={(event) => {
+            syncCapsLock(event);
+            onKeyDown?.(event);
+          }}
+          onKeyUp={(event) => {
+            syncCapsLock(event);
+            onKeyUp?.(event);
+          }}
+          onBlur={(event) => {
+            // The state can change while focus is elsewhere, so a stale
+            // warning is worse than none; the next keystroke re-reads it.
+            setCapsLockOn(false);
+            onBlur?.(event);
+          }}
           className={cn(
             // 1rem text is deliberate: it is the legibility floor the product
             // owner asked for, and it also stops iOS Safari zooming the page
@@ -92,18 +172,36 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             type="button"
             onClick={() => setRevealed((value) => !value)}
             aria-label={revealed ? "Hide password" : "Show password"}
+            aria-pressed={revealed}
             className="absolute right-2 top-1/2 z-10 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-content-subtle transition hover:bg-surface-brand hover:text-content-brand"
           >
             {revealed ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
           </button>
         ) : null}
+        {/* Always mounted, so assistive tech is already watching it when the
+            warning appears (a live region inserted together with its text
+            is often not announced). Visually hidden and absolutely
+            positioned -- it never takes up space in the field's rhythm. */}
+        {isSecret ? (
+          <span className="sr-only" aria-live="polite">
+            {showCapsWarning ? "Caps Lock is on." : ""}
+          </span>
+        ) : null}
       </div>
 
-      {error ? (
-        <p id={describedById} className="text-[0.8125rem] font-semibold text-coral-700">
-          {error}
+      {showCapsWarning ? (
+        // saffron-900 on saffron-50 is 9.3:1. Warm "heads up" rather than
+        // coral: nothing has gone wrong yet, and it shouldn't look like it.
+        <p
+          id={capsId}
+          className="inline-flex items-center gap-1.5 rounded-full bg-saffron-50 px-2.5 py-1 text-[0.75rem] font-semibold text-saffron-900 ring-1 ring-inset ring-saffron-200 animate-scale-in"
+        >
+          <ArrowBigUpDash className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Caps Lock is on
         </p>
       ) : null}
+
+      {error ? <FieldError id={describedById}>{error}</FieldError> : null}
     </div>
   );
 });
@@ -122,12 +220,13 @@ export interface SelectFieldProps extends Omit<React.SelectHTMLAttributes<HTMLSe
  *  School Enrichment dropdown so far is short enough that a native picker
  *  is not a usability compromise. */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
-  { label, hint, error, className, containerClassName, id, children, ...props },
+  { label, hint, error, className, containerClassName, id, children, "aria-describedby": callerDescribedBy, ...props },
   ref,
 ) {
   const generatedId = useId();
   const selectId = id ?? generatedId;
   const describedById = `${selectId}-message`;
+  const hintId = `${selectId}-hint`;
 
   return (
     <div className={cn("group/field space-y-2", containerClassName)}>
@@ -138,7 +237,11 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
         >
           {label}
         </label>
-        {hint ? <span className="text-[0.8125rem] font-medium text-content-subtle">{hint}</span> : null}
+        {hint ? (
+          <span id={hintId} className="text-[0.8125rem] font-medium text-content-subtle">
+            {hint}
+          </span>
+        ) : null}
       </div>
 
       <div className="relative transition-transform duration-300 ease-spring group-focus-within/field:-translate-y-px">
@@ -154,7 +257,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
           ref={ref}
           id={selectId}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? describedById : undefined}
+          aria-describedby={describedBy(callerDescribedBy, error && describedById, hint && hintId)}
           className={cn(
             "peer relative h-12 w-full appearance-none rounded-2xl border bg-surface px-4 pr-11 text-base text-content shadow-xs outline-none",
             "transition duration-200 ease-spring",
@@ -174,11 +277,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
         </span>
       </div>
 
-      {error ? (
-        <p id={describedById} className="text-[0.8125rem] font-semibold text-coral-700">
-          {error}
-        </p>
-      ) : null}
+      {error ? <FieldError id={describedById}>{error}</FieldError> : null}
     </div>
   );
 });

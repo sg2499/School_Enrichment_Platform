@@ -59,6 +59,15 @@
   h3,
   h4 {
     font-family: var(--font-display);
+    /* TODO(design-review): these two settings currently do nothing.
+       app/layout.tsx loads Fraunces with `axes: ["opsz"]`, so the served
+       file only carries opsz + wght -- SOFT and WONK are not in it, and
+       the browser ignores settings for axes a font doesn't have. Headings
+       are rendering in Fraunces' default (sharp, SOFT 0) cut. Adding
+       "SOFT" to that axes list would restore the intended rounder, warmer
+       heading voice, at the cost of a larger self-hosted font file (still
+       build-time, still no third-party request). Left for a human to
+       weigh the bytes; layout.tsx was outside this pass. */
     font-variation-settings: "SOFT" 24, "WONK" 0;
     font-weight: 600;
     color: #1c1b29;
@@ -147,6 +156,30 @@
   .bg-dots {
     background-image: radial-gradient(rgba(28, 27, 41, 0.09) 1px, transparent 1px);
     background-size: 18px 18px;
+  }
+
+  /* A whisper of film grain for the dark indigo chrome (login brand panel,
+     sidebar rail). It is the difference between a flat CSS gradient and a
+     surface that reads as art-directed: large gradients on cheap panels
+     band visibly, and a few percent of noise dithers that banding away
+     while giving the ink a paper-like tooth.
+
+     Applied to its own aria-hidden decorative layer (see
+     AuroraBackdropInverse's `grain` prop and RoleShell's rail), never as an
+     ::after on a content container -- a pseudo-element on the container
+     would paint *over* the text inside it and soften every glyph.
+
+     The tile is an inline SVG feTurbulence data: URI: no asset request, no
+     third party, and CSP-clean (img-src already allows data:, see
+     next.config.mjs). 168px tiles with stitchTiles so the repeat seam never
+     shows. */
+  .bg-grain {
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-repeat: repeat;
+    background-size: 168px 168px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='168'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   /* Masks a decorative background so it fades out instead of ending on a
@@ -260,16 +293,32 @@
     transition-delay: var(--stage-delay, 0ms);
   }
 
+  /* A line that draws itself left-to-right once the stage is ready -- used
+     for progress tracks (the login's five-day loop) so "how far along"
+     is shown as a movement rather than just stated. Same gate and same
+     --stage-delay contract as .stage-in, so it slots into one sequence. */
+  .stage-grow-x {
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 720ms var(--ease-out-expo);
+    transition-delay: var(--stage-delay, 0ms);
+  }
+
   [data-stage="ready"] .stage-in,
   [data-stage="ready"] .stage-zoom {
     opacity: 1;
     transform: none;
   }
 
+  [data-stage="ready"] .stage-grow-x {
+    transform: scaleX(1);
+  }
+
   /* Without JS the stage never flips, so show everything immediately. */
   @media (scripting: none) {
     .stage-in,
-    .stage-zoom {
+    .stage-zoom,
+    .stage-grow-x {
       opacity: 1;
       transform: none;
     }
@@ -288,6 +337,12 @@
   /* Entrance stagger helpers, so a group of cards doesn't all pop at once. */
   .delay-70 {
     animation-delay: 70ms;
+  }
+  /* The half-step. admin/security staggers four cards at 0/70/105/140 and
+     had been referencing this class before it existed, so its third card
+     silently popped in with the first. */
+  .delay-105 {
+    animation-delay: 105ms;
   }
   .delay-140 {
     animation-delay: 140ms;
@@ -365,6 +420,12 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    /* A stagger delay is choreography, and with the motion gone it is just
+       lag -- the login loop's dots would otherwise still pop on one by one,
+       up to ~0.9s late. Transition delays only: animation-delay is left
+       alone because some of those carry meaning rather than motion (the
+       LoadingScreen's "still connecting" line should still wait 4.5s). */
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 
@@ -372,7 +433,8 @@
      cursor. (The pointer listener is also skipped in JS, but this keeps the
      rules honest on their own.) */
   .stage-in,
-  .stage-zoom {
+  .stage-zoom,
+  .stage-grow-x {
     opacity: 1 !important;
     transform: none !important;
   }

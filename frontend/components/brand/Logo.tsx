@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,7 +14,19 @@ export function LogoMark({
   /** `brand` = indigo tile, `inverse` = glass tile for dark chrome. */
   variant?: "brand" | "inverse";
 }) {
-  const gradientId = variant === "brand" ? "se-mark-brand" : "se-mark-inverse";
+  // Per-instance gradient ids (30 Sep 2026). These used to be two fixed
+  // strings shared by every mark on the page, which only rendered because
+  // the first copy in the DOM happened to be visible: SVG paint servers
+  // resolve to the *first* element with a matching id, and one inside a
+  // display:none subtree (RoleShell's lg:hidden mobile bar, the login
+  // page's mobile header) paints nothing -- so reordering the chrome could
+  // silently blank every other logo. useId is safe here even when this is
+  // rendered from a Server Component (React exports it from its server
+  // build). Its punctuation varies by React version (":r1:", "«r1»",
+  // "_r_1_"), so anything that isn't a plain identifier character is
+  // stripped to keep the reference valid inside url(#...).
+  const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const gradientId = `se-mark-${variant}-${instanceId}`;
   return (
     <svg viewBox="0 0 44 44" role="img" aria-label="School Enrichment" className={cn("h-11 w-11", className)}>
       <defs>
@@ -67,7 +80,10 @@ export function Wordmark({
     <span className={cn("flex min-w-0 flex-col leading-none", className)}>
       <span
         className={cn(
-          "font-display font-semibold tracking-[-0.015em]",
+          // nowrap: the two words are one name. At narrow-but-not-mobile
+          // widths (the login brand panel at 1280px) flexbox would otherwise
+          // happily break it into "School / Enrichment" on two lines.
+          "whitespace-nowrap font-display font-semibold tracking-[-0.015em]",
           size === "lg" ? "text-[1.5rem] sm:text-[1.75rem]" : "text-[1.0625rem]",
           tone === "dark" ? "text-content" : "text-content-inverse",
         )}

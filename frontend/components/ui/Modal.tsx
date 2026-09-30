@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,7 +40,17 @@ const SIZES: Record<Exclude<ModalSize, "fullscreen">, string> = {
  * backdrop, and rounded corners entirely and occupies the exact viewport
  * edge-to-edge, the same as a native full-screen app window rather than a
  * dialog sitting on top of one.
+ *
+ * Focus (30 Sep 2026): opening moves keyboard focus into the dialog, Tab
+ * and Shift+Tab cycle inside it rather than wandering into the page hidden
+ * behind the backdrop, and closing hands focus back to whatever opened it.
+ * The dialog is also named by its own title (aria-labelledby), so a screen
+ * reader announces "Chapter review, dialog" instead of just "dialog". None
+ * of this changes the props -- both callers get it for free.
  */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({
   open,
   onClose,
@@ -60,19 +70,73 @@ export function Modal({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Latest onClose in a ref, so the effect below depends on `open` alone.
+  // Callers pass inline arrows (teacher/assignments does), which are a new
+  // function every render -- with onClose in the dependency list, the
+  // focus-on-open step would re-run and yank focus back to the dialog
+  // frame on every keystroke typed inside it.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const returnFocusTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    // After the portal has painted. The frame itself (tabIndex -1) takes
+    // focus rather than the first control: in a long review dialog the
+    // first control is usually the close button, and landing a keyboard
+    // user on "Close" is an invitation to dismiss by accident.
+    const frame = window.requestAnimationFrame(() => {
+      const root = dialogRef.current;
+      if (root && !root.contains(document.activeElement)) root.focus({ preventScroll: true });
+    });
+
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const root = dialogRef.current;
+      if (!root) return;
+      // offsetParent is null for anything display:none, so hidden controls
+      // are skipped rather than becoming invisible tab stops.
+      const items = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (el) => el.offsetParent !== null,
+      );
+      if (items.length === 0) {
+        event.preventDefault();
+        root.focus();
+        return;
+      }
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === root)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !root.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => {
+      window.cancelAnimationFrame(frame);
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
+      // Only if it's still in the document -- the trigger may have been a
+      // row that the action inside the dialog removed.
+      if (returnFocusTo && returnFocusTo.isConnected) returnFocusTo.focus({ preventScroll: true });
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -94,10 +158,16 @@ export function Modal({
         />
       ) : null}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className={cn(
-          "relative flex w-full flex-col overflow-hidden bg-surface animate-scale-in",
+          // outline-none on the frame only: it receives programmatic focus
+          // so Tab starts inside, but a ring around the whole dialog would
+          // read as an error state. Every control inside keeps its ring.
+          "relative flex w-full flex-col overflow-hidden bg-surface outline-none animate-dialog-in",
           isFullscreen
             ? "h-full max-h-none rounded-none border-0 shadow-none"
             : cn("max-h-[92vh] rounded-4xl border border-line shadow-panel", SIZES[size]),
@@ -108,16 +178,20 @@ export function Modal({
             {eyebrow ? (
               <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">{eyebrow}</p>
             ) : null}
-            <h2 className="mt-0.5 truncate font-display text-lg font-semibold text-content sm:text-xl">{title}</h2>
+            <h2 id={titleId} className="mt-0.5 truncate font-display text-lg font-semibold text-content sm:text-xl">
+              {title}
+            </h2>
             {meta ? <div className="mt-2">{meta}</div> : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-line-strong bg-surface text-content-muted transition hover:border-brand-300 hover:text-content-brand"
+            className="group/close inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-line-strong bg-surface text-content-muted transition duration-200 ease-spring hover:border-brand-300 hover:bg-surface-brand hover:text-content-brand active:scale-95"
           >
-            <X className="h-4 w-4" aria-hidden />
+            {/* The glyph turns a quarter on hover -- an X is symmetric, so it
+                lands looking unchanged; only the motion says "this closes". */}
+            <X className="h-4 w-4 transition-transform duration-300 ease-spring group-hover/close:rotate-90" aria-hidden />
           </button>
         </div>
 
