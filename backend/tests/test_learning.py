@@ -19,9 +19,7 @@ import pyotp
 
 from app.core.security import hash_password
 from app.models import (
-    Assignment,
     AssignmentTarget,
-    Attempt,
     Board,
     BoardCourse,
     Chapter,
@@ -33,7 +31,6 @@ from app.models import (
     PrerequisiteLink,
     Question,
     School,
-    SchoolAdmin,
     Student,
     SubjectGroup,
     Teacher,
@@ -407,7 +404,7 @@ def _setup_published_activity_with_two_questions(db, suffix):
 
 
 def test_attempt_lifecycle_scores_correctly_and_locks_after_submit(db_session):
-    chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT1")
+    _chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT1")
     school = _make_school(db_session, "att1")
     student = _make_student(db_session, school, "att1")
     db_session.commit()
@@ -452,7 +449,7 @@ def test_attempt_lifecycle_scores_correctly_and_locks_after_submit(db_session):
 
 
 def test_attempt_limit_is_enforced(db_session):
-    chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT2")
+    _chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT2")
     school = _make_school(db_session, "att2")
     student = _make_student(db_session, school, "att2")
     db_session.commit()
@@ -475,7 +472,7 @@ def test_grant_extra_attempt_raises_this_one_students_limit_only(db_session):
     """20 Aug 2026, teacher reattempt-approval surface: bonus_attempts is
     per-AssignmentTarget, so granting one student an extra attempt must not
     raise the limit for a second student sharing the same Assignment."""
-    chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT4")
+    _chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT4")
     school = _make_school(db_session, "att4")
     student = _make_student(db_session, school, "att4")
     other_student = _make_student(db_session, school, "att4-other")
@@ -523,7 +520,7 @@ def test_unanswered_question_is_scored_as_wrong_on_submit(db_session):
     """blueprint 8.2: 'Unattempted answers receive zero.' -- never touching
     a question at all must still count against max_score, not be silently
     excluded."""
-    chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT3")
+    _chapter, activity = _setup_published_activity_with_two_questions(db_session, "ATT3")
     school = _make_school(db_session, "att3")
     student = _make_student(db_session, school, "att3")
     db_session.commit()
@@ -542,7 +539,7 @@ def test_unanswered_question_is_scored_as_wrong_on_submit(db_session):
 
 
 def test_foundation_repair_no_recommendation_without_evaluations(db_session):
-    chapter, (skill1,) = _make_chapter_with_skills(db_session, "FR1", n_skills=1)
+    _chapter, (skill1,) = _make_chapter_with_skills(db_session, "FR1", n_skills=1)
     school = _make_school(db_session, "fr1")
     student = _make_student(db_session, school, "fr1")
     db_session.commit()

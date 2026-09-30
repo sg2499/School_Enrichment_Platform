@@ -296,7 +296,7 @@ def test_transfer_rejects_future_date(client, db_session):
     )
     assignment_id = assign_response.json()["id"]
 
-    far_future = (date.today() + timedelta(days=30)).isoformat()
+    far_future = (datetime.now(timezone.utc).date() + timedelta(days=30)).isoformat()
     response = client.post(
         f"/api/teacher-assignments/{assignment_id}/transfer",
         json={"newTeacherId": teacher_new.id, "transferDate": far_future},

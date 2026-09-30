@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import datetime, timezone
 
@@ -20,6 +21,8 @@ from app.core.security import create_access_token, decode_token
 from app.database import SessionLocal, get_db
 from app.models import Student, Teacher, User
 from app.services.session_service import is_session_valid, touch_session
+
+logger = logging.getLogger("school_enrichment")
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -93,6 +96,7 @@ def _update_user_activity(user_id: str):
         db.commit()
     except Exception:
         db.rollback()
+        logger.warning("Failed to update last_active_at for user %s", user_id, exc_info=True)
     finally:
         db.close()
 
@@ -103,6 +107,7 @@ def _touch_session_activity(session_id: str):
         touch_session(db, session_id)
     except Exception:
         db.rollback()
+        logger.warning("Failed to touch session %s", session_id, exc_info=True)
     finally:
         db.close()
 
@@ -245,7 +250,12 @@ def get_current_user(
                 if used_cookie_auth:
                     set_session_cookie(response, user.role, new_token)
         except Exception:
-            pass
+            # Best-effort sliding-session refresh: a failure here just means
+            # this one request doesn't get a renewed token, not a security or
+            # correctness issue (the existing token is still valid until its
+            # own expiry). Logged so a *repeated* failure is actually visible
+            # instead of silently invisible forever.
+            logger.warning("Sliding-session token refresh failed for user %s", user.id, exc_info=True)
 
     # MAANG-Tier Live Tracking: Debounce via LRU memory cache, update DB in background
     if user.id not in active_users_cache:

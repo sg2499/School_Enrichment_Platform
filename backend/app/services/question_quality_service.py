@@ -203,8 +203,7 @@ def _verify_arithmetic_sequence(stem: str, question: Question) -> bool | None:
         return None  # not a constant-difference sequence -- don't guess
     diff = diffs[0]
     blanks = stem.count("___")
-    if blanks < 1:
-        blanks = 1
+    blanks = max(blanks, 1)
     next_terms = [parsed[-1] + diff * (i + 1) for i in range(blanks)]
 
     if (question.question_type or "").strip() == "Single Select":

@@ -428,7 +428,7 @@ def test_get_questions_lazily_computes_and_persists_quality_status(client, db_se
 
 def test_recheck_quality_endpoint_forces_full_recompute(client, db_session):
     chapter, _ = _make_chapter(db_session, "quality02")
-    lesson, question = _add_lesson_with_question(db_session, chapter, "quality02")
+    lesson, _question = _add_lesson_with_question(db_session, chapter, "quality02")
     _make_super_admin(db_session, "sa-quality02@example.com")
     csrf = _login(client, "sa-quality02@example.com")
 
@@ -441,14 +441,14 @@ def test_recheck_quality_endpoint_forces_full_recompute(client, db_session):
 
 
 def _add_question(db, lesson, code, **overrides):
-    defaults = dict(
-        concept_lesson_id=lesson.id,
-        code=code,
-        question_type="Numeric Entry",
-        stem="Round 4,236 to the nearest 10.",
-        correct_answer="4240",
-        status="DRAFT",
-    )
+    defaults = {
+        "concept_lesson_id": lesson.id,
+        "code": code,
+        "question_type": "Numeric Entry",
+        "stem": "Round 4,236 to the nearest 10.",
+        "correct_answer": "4240",
+        "status": "DRAFT",
+    }
     defaults.update(overrides)
     question = Question(**defaults)
     db.add(question)
@@ -656,7 +656,7 @@ def test_teacher_can_read_but_not_write_own_school_curriculum_map(client, db_ses
     something to assign practice from -- see
     _resolve_school_id_for_read's docstring in routes_curriculum_admin.py."""
     chapter, board_course = _make_chapter(db_session, "map20", status="PUBLISHED")
-    admin_user, school = _make_school_admin(db_session, "admin-map20@example.com", "Map Test School Twenty")
+    _admin_user, school = _make_school_admin(db_session, "admin-map20@example.com", "Map Test School Twenty")
     admin_csrf = _login(client, "admin-map20@example.com")
     create_response = client.post(
         "/api/curriculum-admin/school-curriculum-maps",

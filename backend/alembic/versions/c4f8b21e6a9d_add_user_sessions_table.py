@@ -11,9 +11,9 @@ core/security.py's create_access_token and dependencies.py's
 get_current_user). See app/models/models.py's UserSession docstring for the
 full rationale.
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'c4f8b21e6a9d'
