@@ -42,6 +42,7 @@ def test_two_logins_show_as_two_separate_sessions(client, db_session):
     """Simulates "logged in on two devices" by using two separate
     TestClients (each with its own cookie jar) against the same backend DB."""
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     _make_user(db_session, "session-multi@example.com")
@@ -64,6 +65,7 @@ def test_two_logins_show_as_two_separate_sessions(client, db_session):
 
 def test_revoking_another_session_ends_it_without_touching_the_current_one(client, db_session):
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     _make_user(db_session, "session-revoke@example.com")
@@ -112,6 +114,7 @@ def test_revoked_session_token_is_rejected_on_its_next_request(client, db_sessio
 
 def test_logout_revokes_only_the_current_device_session(client, db_session):
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     _make_user(db_session, "session-logout@example.com")

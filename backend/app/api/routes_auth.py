@@ -15,7 +15,7 @@ phase, not built yet).
 import base64
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
@@ -128,7 +128,7 @@ def safe_profile_photo_name(filename: str, prefix: str) -> str:
     if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
         api_error(400, "INVALID_FILE", "Only JPG, PNG, and WEBP images are allowed.")
     SafePrefix = re.sub(r"[^a-zA-Z0-9_-]", "-", prefix or "profile")[:80]
-    Stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+    Stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     return f"{SafePrefix}-{Stamp}{suffix}"
 
 
@@ -262,7 +262,7 @@ def upload_profile_photo(
     log_audit_event(db, "auth.profile_photo.updated", user_id=user.id, request=request)
     db.commit()
     db.refresh(user)
-    PublicPhotoUrl = f"/api/auth/profile-photo/{user.id}?v={datetime.utcnow().strftime('%Y%m%d%H%M%S%f')}"
+    PublicPhotoUrl = f"/api/auth/profile-photo/{user.id}?v={datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
     UpdatedUser = user_payload(db, user)
     UpdatedUser["profilePhotoUrl"] = PublicPhotoUrl
     return {"updated": True, "photoUrl": PublicPhotoUrl, "user": UpdatedUser}

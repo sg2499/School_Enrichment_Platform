@@ -11,9 +11,9 @@ AssignmentTarget (one student's row), not Assignment (shared by every
 student targeted by it), so a teacher approving one student's re-attempt
 never raises the limit for the rest of the class.
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '8d3c4f5632ad'

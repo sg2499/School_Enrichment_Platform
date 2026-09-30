@@ -25,7 +25,7 @@ are not filtered by this module at all, matching every other
 admin-vs-teacher scoping split already in this codebase (see
 routes_curriculum_admin.py's _resolve_school_id docstring).
 """
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -131,7 +131,7 @@ def transfer_teacher(
         )
     if transfer_date < assignment.start_date:
         api_error(422, "INVALID_TRANSFER_DATE", "Transfer date cannot be before the current assignment started.")
-    if transfer_date > date.today():
+    if transfer_date > datetime.now(timezone.utc).date():
         api_error(
             422,
             "INVALID_TRANSFER_DATE",

@@ -14,9 +14,9 @@ why this never surfaced until the first real write against a real
 Postgres instance. Widened to 255 for real headroom rather than the bare
 minimum.
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'cef118ee4f2f'

@@ -86,7 +86,7 @@ def main() -> int:
                 print("They are already a SUPER_ADMIN -- nothing to do.")
                 return 0
             if not args.yes:
-                answer = input(f"Promote this existing account to SUPER_ADMIN? Type YES to proceed: ")
+                answer = input("Promote this existing account to SUPER_ADMIN? Type YES to proceed: ")
                 if answer.strip() != "YES":
                     print("Aborted.")
                     return 1

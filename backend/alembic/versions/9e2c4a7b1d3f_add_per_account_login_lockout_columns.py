@@ -11,9 +11,9 @@ a single high-value account from a shared school network where blocking
 the IP would also lock out legitimate users. This adds a per-account
 counter and lockout window, checked/updated in auth_service.py's login().
 """
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '9e2c4a7b1d3f'

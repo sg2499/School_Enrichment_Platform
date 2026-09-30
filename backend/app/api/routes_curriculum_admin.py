@@ -38,10 +38,9 @@ for students.
 import json
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
-
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.core.errors import api_error
 from app.database import get_db

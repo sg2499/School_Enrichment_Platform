@@ -181,7 +181,9 @@ def approve_recommendation(
 ) -> Assignment:
     """Teacher-in-the-loop step turning a recommendation into a real
     Assignment (Section 11: assignment stays under teacher control)."""
-    from app.services.learning_service import create_assignment  # local import avoids a service-to-service circular import
+    from app.services.learning_service import (
+        create_assignment,  # local import avoids a service-to-service circular import
+    )
 
     if recommendation.recommendation == "NONE" or not recommendation.recommended_activity:
         api_error(422, "NO_RECOMMENDATION", "There is no Foundation Repair recommendation to approve for this student/concept.")

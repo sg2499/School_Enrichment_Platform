@@ -41,6 +41,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             in globals.css cover the offline case. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font -- this rule
+            guards against a font link placed in a single Pages-Router page
+            (pages/_document.js doesn't exist in this project at all). This is
+            the App Router *root* layout, which wraps every route by design --
+            exactly the one place a global font link belongs. False positive
+            for this architecture, not a real bug. */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400..800&display=swap"

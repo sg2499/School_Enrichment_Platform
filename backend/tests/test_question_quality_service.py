@@ -13,15 +13,15 @@ from app.services.question_quality_service import evaluate_question, find_duplic
 
 
 def _q(**kwargs) -> Question:
-    defaults = dict(
-        id=kwargs.pop("id", "q1"),
-        code=kwargs.pop("code", "Q1"),
-        concept_lesson_id="lesson1",
-        question_type="Numeric Entry",
-        stem="stem",
-        correct_answer="1",
-        marks=1,
-    )
+    defaults = {
+        "id": kwargs.pop("id", "q1"),
+        "code": kwargs.pop("code", "Q1"),
+        "concept_lesson_id": "lesson1",
+        "question_type": "Numeric Entry",
+        "stem": "stem",
+        "correct_answer": "1",
+        "marks": 1,
+    }
     defaults.update(kwargs)
     return Question(**defaults)
 
