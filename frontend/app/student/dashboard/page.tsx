@@ -510,6 +510,12 @@ type LoadState =
   | { kind: "error"; message: string }
   | { kind: "ready"; summary: Summary };
 
+/** The hero's paragraphs carry no max-w-prose (1 Oct 2026). From lg up the
+ *  grid's text column is already narrower than 68ch (about 360-735px), so
+ *  the cap never engaged there. Below lg the column is the full card, and
+ *  between roughly 870 and 1023px wide it did: it stranded a word on a
+ *  line of its own ("...or open Daily" / "Practice directly.") with the
+ *  card's width still free beside it. The skeleton bar matches. */
 function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
   if (state.kind === "loading") {
     return (
@@ -521,7 +527,7 @@ function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
           <SkeletonLine inverse className="h-6 w-32" />
           <SkeletonLine inverse className="h-9 w-4/5" />
           <div className="space-y-2 pt-1">
-            <SkeletonLine inverse className="h-3.5 w-full max-w-prose" />
+            <SkeletonLine inverse className="h-3.5 w-full" />
             <SkeletonLine inverse className="h-3.5 w-2/3" />
           </div>
           <div className="flex gap-3 pt-2">
@@ -541,7 +547,7 @@ function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
       <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
         <div className="space-y-4">
           <h2 className="font-display text-display-md text-balance text-content-inverse">Your practice lives here.</h2>
-          <p className="max-w-prose text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
+          <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
             We couldn&rsquo;t check what&rsquo;s been set for you just now. Try again in a moment, or open Daily
             Practice directly.
           </p>
@@ -576,7 +582,7 @@ function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
             Your first practice is on its way.
           </h2>
           {/* content-inverse-muted over the aurora's glow: 5.7:1. */}
-          <p className="max-w-prose text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
+          <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
             Your teachers are loading this year&apos;s syllabus into School Enrichment. When they set your first
             practice, it will appear right here &mdash; a short set of questions, marked the moment you submit, with the
             right answer for anything you missed.
@@ -613,7 +619,7 @@ function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
                 4.3:1 -- past the 3:1 large-text bar at display-md. */}
             You&rsquo;re all caught up. <span className="text-gradient-warm">Nice work.</span>
           </h2>
-          <p className="max-w-prose text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
+          <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
             {done === 1 ? "The practice set" : `All ${done} practice sets`} your teacher has given you{" "}
             {done === 1 ? "is" : "are"} done. The next one will show up here the moment it&rsquo;s set &mdash; and
             your results are always there to look back on.
@@ -646,7 +652,7 @@ function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
           {waitingCount} Waiting
         </Badge>
         <h2 className="font-display text-display-md text-balance text-content-inverse">{headline}</h2>
-        <p className="max-w-prose text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
+        <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
           {next.status === "IN_PROGRESS" ? (
             <>
               You started <strong className="font-semibold text-content-inverse">{next.learningActivity.title}</strong>
@@ -794,7 +800,10 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
             </p>
           </div>
         </div>
-        <p className="max-w-prose text-sm leading-relaxed text-content-muted">
+        {/* No max-w-prose (1 Oct 2026), like the hero above: the card bounds
+            it, and on a single-column tablet layout the cap split it in two
+            with the card's width still free. */}
+        <p className="text-sm leading-relaxed text-content-muted text-pretty">
           Nothing you&rsquo;ve done is lost &mdash; this page just couldn&rsquo;t reach the list. School networks can be
           slow; it usually works on a second try.
         </p>

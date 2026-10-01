@@ -596,8 +596,11 @@ function NextStepCard({ step }: { step: NextStep | null }) {
             {/* brand-700 on the brand-tinted card: 9.3:1. */}
             <p className="text-eyebrow font-bold uppercase text-content-brand">Your next step</p>
             <p className="font-display text-lg font-semibold tracking-tight text-content">{step.title}</p>
-            {/* content-muted on surface-brand: 7.8:1. */}
-            <p className="max-w-prose text-[0.875rem] leading-relaxed text-content-muted">{step.body}</p>
+            {/* content-muted on surface-brand: 7.8:1. No max-w-prose (1 Oct
+                2026): flex-1 beside the icon and action link already bounds
+                it, and the 68ch cap wrapped most of these one-sentence
+                steps onto a second line they don't need. */}
+            <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">{step.body}</p>
           </div>
         ) : (
           <div className="min-w-0 flex-1 space-y-2" aria-busy="true">
