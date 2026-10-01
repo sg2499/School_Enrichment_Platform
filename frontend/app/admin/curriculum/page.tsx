@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Archive,
   BookMarked,
+  Building2,
   CalendarRange,
   Check,
   CheckCircle2,
@@ -35,6 +36,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SelectField, TextField } from "@/components/ui/Field";
+import { PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -361,7 +363,7 @@ function ChapterListSkeleton() {
       <span className="sr-only" role="status">
         Loading chapters
       </span>
-      <ul aria-hidden className="-mx-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+      <ul aria-hidden className="-mx-2 grid gap-1.5 sm:grid-cols-2 2xl:grid-cols-3">
         {Array.from({ length: 6 }, (_, i) => (
           <li key={i} className="flex items-center gap-3 rounded-2xl px-3 py-3">
             <span className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-ink-100" />
@@ -780,7 +782,11 @@ function ChapterStudio() {
               No {STATUS_LABEL[statusFilter as ChapterStatus].toLowerCase()} chapters in this view.
             </p>
           ) : (
-            <ul className="-mx-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+            // Three across only from 2xl. At xl (a 1440px laptop with the
+            // rail open) three columns left each row ~330px, and with the
+            // status badge and chevron beside it nearly every title and
+            // its lesson/question counts were cut off mid-word.
+            <ul className="-mx-2 grid gap-1.5 sm:grid-cols-2 2xl:grid-cols-3">
               {visibleChapters.map((chapter) => (
                 <li key={chapter.id}>
                   <button
@@ -1404,9 +1410,12 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1.05fr]">
-      <Card className="animate-fade-up">
-        <CardBody className="space-y-5">
+    // SplitLayout: the form and the map always stretch to one height, and
+    // whichever is shorter centres its empty state in the space it's given
+    // rather than leaving a bare lower half.
+    <SplitLayout columns="lg:grid-cols-[1fr_1.05fr]">
+      <StretchCard className="animate-fade-up">
+        <PanelStack gap="gap-5">
           <div className="flex items-start gap-3">
             <CardIcon tone="accent">
               <MapIcon className="h-5 w-5" aria-hidden />
@@ -1441,11 +1450,13 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
           ) : null}
 
           {isPlatformAdmin && !selectedSchoolId ? (
-            <EmptyState
-              status={{ label: "No School Selected", tone: "neutral" }}
-              title="Pick a school above"
-              description="Choose which school you're mapping this chapter into, then filter down to a chapter by board, class and subject."
-            />
+            <div className="flex flex-1 flex-col justify-center">
+              <EmptyState
+                status={{ label: "No School Selected", tone: "neutral" }}
+                title="Pick a school above"
+                description="Choose which school you're mapping this chapter into, then filter down to a chapter by board, class and subject."
+              />
+            </div>
           ) : (
             <form onSubmit={handleCreateMapping} className="space-y-4">
               <SelectField label="Board" value={boardId} onChange={(e) => handleBoardChange(e.target.value)} required>
@@ -1535,11 +1546,11 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
               </Button>
             </form>
           )}
-        </CardBody>
-      </Card>
+        </PanelStack>
+      </StretchCard>
 
-      <Card className="animate-fade-up delay-70">
-        <CardBody className="space-y-5">
+      <StretchCard className="animate-fade-up delay-70">
+        <PanelStack gap="gap-5">
           <div className="flex items-start gap-3">
             <CardIcon tone="jade">
               <ListChecks className="h-5 w-5" aria-hidden />
@@ -1556,7 +1567,21 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
 
           {loadError ? <ErrorBanner message={loadError} /> : null}
 
-          {!schoolContextReady ? null : loading ? (
+          {!schoolContextReady ? (
+            // Was `null`: a super admin who hadn't picked a school yet saw
+            // this card as a title over ~250px of nothing. A dashed
+            // placeholder -- the same treatment as "No concept lessons on
+            // this chapter" in the review modal -- marks where the map will
+            // appear, and fills whatever height the form beside it sets.
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-muted text-content-faint ring-1 ring-inset ring-line">
+                <Building2 className="h-5 w-5" aria-hidden />
+              </span>
+              <p className="max-w-[18rem] text-sm leading-relaxed text-content-subtle">
+                Choose a school on the left to see the chapters in its calendar.
+              </p>
+            </div>
+          ) : loading ? (
             <div aria-busy="true" className="space-y-2">
               <span className="sr-only" role="status">
                 Loading curriculum map
@@ -1572,15 +1597,17 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
               ))}
             </div>
           ) : mappings.length === 0 ? (
-            <EmptyState
-              status={{ label: "Nothing Mapped Yet", tone: "neutral" }}
-              title="No chapters mapped yet"
-              description={
-                isPlatformAdmin
-                  ? "Use the form to place a published chapter into one of this school's classes. Its teachers can assign practice from it straight away."
-                  : "Use the form to place a published chapter into a class. Your teachers can assign practice from it straight away."
-              }
-            />
+            <div className="flex flex-1 flex-col justify-center">
+              <EmptyState
+                status={{ label: "Nothing Mapped Yet", tone: "neutral" }}
+                title="No chapters mapped yet"
+                description={
+                  isPlatformAdmin
+                    ? "Use the form to place a published chapter into one of this school's classes. Its teachers can assign practice from it straight away."
+                    : "Use the form to place a published chapter into a class. Your teachers can assign practice from it straight away."
+                }
+              />
+            </div>
           ) : (
             <ul className="space-y-2">
               {mappings.map((mapping) => {
@@ -1731,9 +1758,9 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
               })}
             </ul>
           )}
-        </CardBody>
-      </Card>
-    </div>
+        </PanelStack>
+      </StretchCard>
+    </SplitLayout>
   );
 }
 
