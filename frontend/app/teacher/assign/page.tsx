@@ -18,18 +18,19 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowRight, ClipboardCheck, Send, Users } from "lucide-react";
+import { AlertCircle, ArrowRight, Check, ClipboardCheck, Send, Users } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { SelectField, TextField } from "@/components/ui/Field";
+import { SplitColumn, SplitLayout } from "@/components/ui/SplitLayout";
 import { RosterIllustration } from "@/components/brand/Graphics";
+import { cn } from "@/lib/utils";
 import { api, apiErrorMessage } from "@/lib/api";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { Assignment, AssignmentReason, LearningActivity } from "@/types/learning";
@@ -263,7 +264,10 @@ export default function AssignPracticePage() {
           }
         />
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        {/* SplitLayout: the rail's last card absorbs any height the form
+            card has over it, so both columns end on one line instead of
+            the rail stopping ~40px short. */}
+        <SplitLayout columns="lg:grid-cols-[minmax(0,1fr)_20rem]" className="gap-6">
           <Card className="animate-fade-up">
             <CardBody className="space-y-6">
               <div className="flex items-center gap-3">
@@ -427,7 +431,7 @@ export default function AssignPracticePage() {
             </CardBody>
           </Card>
 
-          <aside className="space-y-4 animate-fade-up delay-70" aria-label="Your sections">
+          <SplitColumn as="aside" fill="last" className="animate-fade-up delay-70" aria-label="Your sections">
             <Card tone="muted">
               <CardBody className="space-y-4 sm:p-6">
                 <div className="flex items-center gap-3">
@@ -440,19 +444,56 @@ export default function AssignPracticePage() {
                   </div>
                 </div>
                 {sectionsLoading ? (
-                  <p className="text-sm text-content-muted">Loading…</p>
+                  // Skeleton rows in the shape of what's coming, like the
+                  // dashboard's -- it used to be a bare "Loading…" line.
+                  <div className="space-y-2" aria-busy="true">
+                    <span className="sr-only" role="status">
+                      Loading your sections
+                    </span>
+                    {[0, 1].map((i) => (
+                      <div key={i} aria-hidden className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-3 py-2.5">
+                        <span className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-ink-100" />
+                        <span className="h-3.5 w-28 animate-pulse rounded-full bg-ink-100" />
+                      </div>
+                    ))}
+                  </div>
                 ) : sections.length === 0 ? (
                   <p className="text-sm text-content-muted">None yet.</p>
                 ) : (
-                  <ul className="flex flex-wrap gap-2">
-                    {sections.map((section) => (
-                      <li key={section.id}>
-                        <Badge tone={section.id === selectedSectionId ? "brand" : "neutral"} size="md">
-                          {section.classLevelCode}
-                          {section.section} &middot; {section.boardCourseName ?? "Course"}
-                        </Badge>
-                      </li>
-                    ))}
+                  // Rows, not pills. These were Badges, which are a fixed
+                  // h-7 single line: a long course name ("Mathematics
+                  // (Advanced Problem Solving)") wrapped to two lines and
+                  // spilled out of the pill. Same monogram tile as the
+                  // dashboard's Your Sections, so a section looks the same
+                  // wherever a teacher meets it, and the name wraps freely.
+                  <ul className="space-y-2">
+                    {sections.map((section) => {
+                      const selected = section.id === selectedSectionId;
+                      return (
+                        <li
+                          key={section.id}
+                          className={cn(
+                            "flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-colors duration-200",
+                            selected ? "border-brand-200 bg-surface-brand" : "border-line bg-surface",
+                          )}
+                        >
+                          {/* brand-700 on brand-50: 9.3:1. */}
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 font-display text-sm font-semibold text-brand-700 ring-1 ring-inset ring-brand-100">
+                            {section.classLevelCode}
+                            {section.section}
+                          </span>
+                          <span className="min-w-0 flex-1 text-[0.8125rem] font-semibold leading-snug text-content">
+                            {section.boardCourseName ?? "Course"}
+                          </span>
+                          {selected ? (
+                            <>
+                              <Check className="h-4 w-4 shrink-0 text-brand-600" aria-hidden />
+                              <span className="sr-only">(selected)</span>
+                            </>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </CardBody>
@@ -466,8 +507,8 @@ export default function AssignPracticePage() {
                 </p>
               </CardBody>
             </Card>
-          </aside>
-        </div>
+          </SplitColumn>
+        </SplitLayout>
       </div>
     </RoleShell>
   );

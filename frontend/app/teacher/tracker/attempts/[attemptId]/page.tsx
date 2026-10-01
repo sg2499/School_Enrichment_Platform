@@ -393,7 +393,9 @@ function AttemptWorkspace() {
 
   return (
     <RoleShell role="TEACHER" user={user}>
-      <div className="space-y-7">
+      {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
+          Practice); dashboards use space-y-10. This family alone was 7. */}
+      <div className="space-y-8">
         <BackLink href={backHref}>{backLabel}</BackLink>
 
         {query.error ? <AlertBanner tone="error" message={`Couldn't open this attempt (${query.error}).`} /> : null}
@@ -431,6 +433,12 @@ function AttemptWorkspace() {
               }
             />
 
+            {/* items-start is deliberate here, unlike the dashboards'
+                SplitLayout: the right column is a sticky rail (xl:sticky
+                below) that follows the teacher down a long answer list. A
+                stretched grid item would be as tall as that list, leaving
+                sticky no room to move -- so this one keeps its own height.
+                Checked in the 1 Oct 2026 polish pass. */}
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
               <ol className="space-y-4" aria-label="Answers">
                 {review.answers.map((answer, index) => (

@@ -52,6 +52,7 @@ import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
+import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { RosterIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -475,7 +476,7 @@ function buildChecklist({ sections, maps, practice, assignments }: Signals): Che
 
 function ReadinessCard({ checks }: { checks: Check[] }) {
   return (
-    <div className="space-y-6">
+    <PanelStack>
       <div className="flex items-start gap-3">
         <CardIcon tone="accent">
           <ListChecks className="h-5 w-5" aria-hidden />
@@ -495,9 +496,16 @@ function ReadinessCard({ checks }: { checks: Check[] }) {
                 {style.icon}
               </span>
               <span className="min-w-0 flex-1 pt-0.5">
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-sm font-semibold text-content">{check.title}</span>
-                  <Badge tone={style.tone} size="sm">
+                {/* Title left, badge in a fixed right-hand slot. It used to
+                    flow inline after the title and wrap onto its own line
+                    whenever the title ran long, so in this narrow column
+                    the badges zig-zagged between "after the text" and
+                    "under it" from one row to the next. Now every badge
+                    sits on the same right edge, level with its title's
+                    first line, and only the title wraps. */}
+                <span className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 pt-0.5 text-sm font-semibold text-content">{check.title}</span>
+                  <Badge tone={style.tone} size="sm" className="shrink-0">
                     {check.badge ?? style.badge}
                   </Badge>
                 </span>
@@ -513,11 +521,13 @@ function ReadinessCard({ checks }: { checks: Check[] }) {
         })}
       </ol>
 
-      <p className="border-t border-line pt-4 text-xs text-content-subtle">
-        Live rows are re-read on every visit. The planned row was checked against the build on{" "}
-        {STATIC_CLAIMS_VERIFIED_ON}.
-      </p>
-    </div>
+      <PanelFooter>
+        <p className="text-xs text-content-subtle">
+          Live rows are re-read on every visit. The planned row was checked against the build on{" "}
+          {STATIC_CLAIMS_VERIFIED_ON}.
+        </p>
+      </PanelFooter>
+    </PanelStack>
   );
 }
 
@@ -669,7 +679,7 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
   const classCount = new Set(sections.data.map((s) => s.classLevelCode)).size;
 
   return (
-    <div className="space-y-6">
+    <PanelStack>
       <SectionsHeading />
 
       <div className="grid grid-cols-3 gap-4 border-y border-line py-4">
@@ -719,7 +729,10 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
                 {section.section}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-content">
+                {/* Up to two lines, then clamp: on a phone a one-line
+                    truncate cut "Class 5 · Section A · …" before the
+                    course name, the part that tells two rows apart. */}
+                <span className="line-clamp-2 text-sm font-semibold text-content">
                   Class {section.classLevelCode ?? "?"} &middot; Section {section.section}
                   {section.boardCourseName ? (
                     <span className="font-medium text-content-muted"> &middot; {section.boardCourseName}</span>
@@ -745,8 +758,10 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
         })}
       </ul>
 
-      <TextLink href="/teacher/assign">Assign Practice To A Section</TextLink>
-    </div>
+      <PanelFooter>
+        <TextLink href="/teacher/assign">Assign Practice To A Section</TextLink>
+      </PanelFooter>
+    </PanelStack>
   );
 }
 
@@ -804,11 +819,13 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
 
   if (assignments.state === "error") {
     return (
-      <div className="space-y-4">
+      <PanelStack gap="gap-4">
         {heading}
         <InlineError>Couldn&rsquo;t load your assignments just now ({assignments.message}).</InlineError>
-        <TextLink href="/teacher/tracker">Open Practice Tracker</TextLink>
-      </div>
+        <PanelFooter>
+          <TextLink href="/teacher/tracker">Open Practice Tracker</TextLink>
+        </PanelFooter>
+      </PanelStack>
     );
   }
 
@@ -816,7 +833,7 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
   const active = rows.filter((a) => a.status === "ACTIVE").length;
 
   return (
-    <div className="space-y-5">
+    <PanelStack gap="gap-5">
       {heading}
       {rows.length === 0 ? (
         <p className="text-[0.875rem] leading-relaxed text-content-muted">
@@ -834,7 +851,11 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
               return (
                 <li key={assignment.id} className="flex items-start justify-between gap-3">
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-content">
+                    {/* Two lines, then clamp: activity titles run long ("Fish
+                        Tale extra practice — word problems with large
+                        numbers and estimation"), and a one-line truncate
+                        cut the part that tells two sets apart. */}
+                    <span className="line-clamp-2 text-sm font-semibold text-content">
                       {assignment.learningActivityTitle ?? "Learning activity"}
                     </span>
                     {/* Since 1 Oct 2026 the assignment row records its
@@ -860,10 +881,12 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
           </ul>
         </>
       )}
-      <TextLink href={rows.length === 0 ? "/teacher/assign" : "/teacher/tracker"}>
-        {rows.length === 0 ? "Assign Practice" : "Open Practice Tracker"}
-      </TextLink>
-    </div>
+      <PanelFooter>
+        <TextLink href={rows.length === 0 ? "/teacher/assign" : "/teacher/tracker"}>
+          {rows.length === 0 ? "Assign Practice" : "Open Practice Tracker"}
+        </TextLink>
+      </PanelFooter>
+    </PanelStack>
   );
 }
 
@@ -996,32 +1019,30 @@ export default function TeacherDashboardPage() {
 
         <NextStepCard step={deriveNextStep(signals)} />
 
-        {/* Two independent columns rather than two grid rows: the checklist
-            is naturally taller than a short section list, and in a row
-            layout that left a card-height gap under Your Sections. Stacked,
-            each column just flows. Order on a phone: sections, practice,
-            checklist, profile. */}
-        <div className="grid items-start gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-4">
-            <Card className="animate-fade-up delay-70">
-              <CardBody className="sm:p-8">
-                <SectionsPanel sections={signals.sections} maps={signals.maps} assignments={signals.assignments} />
-              </CardBody>
-            </Card>
+        {/* Two columns that always finish level (SplitLayout's own comment
+            has the full rule). This used to be `items-start`, which let
+            each column stop at its own height: with a typical three
+            sections the checklist column ran 263px past the sections
+            column, leaving a bare patch of canvas right above Your
+            Toolkit. Now the shorter column's fill card grows instead --
+            Recent Practice on the left, the checklist on the right -- and
+            its footer pins level with the other column's last card.
+            Order on a phone: sections, practice, checklist, profile. */}
+        <SplitLayout columns="lg:grid-cols-[1.1fr_0.9fr]">
+          <SplitColumn fill="last">
+            <StretchCard className="animate-fade-up delay-70" bodyClassName="sm:p-8">
+              <SectionsPanel sections={signals.sections} maps={signals.maps} assignments={signals.assignments} />
+            </StretchCard>
 
-            <Card className="animate-fade-up delay-210">
-              <CardBody>
-                <RecentPractice assignments={signals.assignments} />
-              </CardBody>
-            </Card>
-          </div>
+            <StretchCard className="animate-fade-up delay-210">
+              <RecentPractice assignments={signals.assignments} />
+            </StretchCard>
+          </SplitColumn>
 
-          <div className="space-y-4">
-            <Card className="animate-fade-up delay-140">
-              <CardBody>
-                <ReadinessCard checks={checks} />
-              </CardBody>
-            </Card>
+          <SplitColumn fill="first">
+            <StretchCard className="animate-fade-up delay-140">
+              <ReadinessCard checks={checks} />
+            </StretchCard>
 
             <Card tone="brand" className="animate-fade-up delay-280">
               <CardBody className="space-y-4">
@@ -1039,8 +1060,8 @@ export default function TeacherDashboardPage() {
                 </dl>
               </CardBody>
             </Card>
-          </div>
-        </div>
+          </SplitColumn>
+        </SplitLayout>
 
         <section aria-labelledby="toolkit-heading" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-4">
