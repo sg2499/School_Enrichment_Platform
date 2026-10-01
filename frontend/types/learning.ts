@@ -85,6 +85,11 @@ export type StudentAssignmentSummary = {
   dueDate: string | null;
   reason: AssignmentReason;
   maxAttempts: number;
+  // This student's own teacher-granted extra attempts (30 Sep 2026) -- the
+  // same AssignmentTarget.bonus_attempts the teacher view already exposes.
+  // The real ceiling is always maxAttempts + bonusAttempts, exactly as
+  // learning_service.start_attempt enforces it.
+  bonusAttempts: number;
   latestAttempt: LatestAttemptSummary | null;
 };
 
@@ -128,6 +133,11 @@ export type AttemptQuestion = {
   marks: number;
   timeSeconds: number | null;
   responseFormat: string | null;
+  // The student's own previously-saved answer on THIS attempt (30 Sep 2026),
+  // null for a fresh attempt or an unanswered question -- so a resumed
+  // attempt can show back what autosave already stored, instead of a blank
+  // form. Their answer, never the key.
+  responseText: string | null;
 };
 
 export type AttemptDetail = {
@@ -155,6 +165,14 @@ export type AttemptAnswerResult = {
 
 export type AttemptResult = EvaluationResult & {
   attemptNumber: number;
+  // Added 30 Sep 2026 so the result view can tell whether "Try Again" would
+  // actually start anything: attempts remaining = maxAttempts +
+  // bonusAttempts - attemptsUsed, the same sum start_attempt checks.
+  // attemptsUsed counts every attempt on this target so far, this one
+  // included.
+  maxAttempts: number;
+  bonusAttempts: number;
+  attemptsUsed: number;
   answers: AttemptAnswerResult[];
 };
 
