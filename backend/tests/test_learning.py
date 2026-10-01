@@ -15,10 +15,14 @@ existing test files' own convention -- see test_curriculum_admin.py's
 docstring on why: cross-role setup goes through direct ORM/service calls
 instead of juggling multiple simultaneous cookie logins in one client).
 """
+from datetime import date
+
 import pyotp
+from fastapi import HTTPException
 
 from app.core.security import hash_password
 from app.models import (
+    Assignment,
     AssignmentTarget,
     Board,
     BoardCourse,
@@ -31,12 +35,13 @@ from app.models import (
     PrerequisiteLink,
     Question,
     School,
+    SchoolAdmin,
     Student,
     SubjectGroup,
     Teacher,
     User,
 )
-from app.services import foundation_repair_service, learning_service
+from app.services import foundation_repair_service, learning_service, teacher_assignment_service
 from app.services.learning_service import classify_assignment_code, grade_answer
 
 PASSWORD = "Passw0rd1"
@@ -113,6 +118,9 @@ _CHAPTER_NUM = {
     "ATT1": 5, "ATT2": 6, "ATT3": 7, "ATT4": 14,
     "FR2": 8, "FR3": 9,
     "API1": 10, "API2": 11, "API3": 12, "API4": 13, "API5": 15, "API6": 16,
+    "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
+    "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
+    "API8B": 27,
 }
 
 
@@ -159,6 +167,23 @@ def _make_student(db, school: School, suffix: str) -> Student:
     return student
 
 
+def _make_sectioned_student(db, school: School, suffix: str, *, class_name: str, section: str | None, is_active: bool = True) -> Student:
+    """A student shaped the way routes_roster.py actually stores one: class
+    and section as two separate fields (class_name="5", section="A"), not
+    _make_student's older combined "5A" -- see the section-targeting tests
+    below (30 Sep 2026)."""
+    user = User(full_name=f"Student {suffix}", email=f"student-{suffix}@example.com", password_hash=hash_password(PASSWORD), role="STUDENT")
+    db.add(user)
+    db.flush()
+    student = Student(
+        user_id=user.id, school_id=school.id, student_code=f"STU-{suffix}", class_name=class_name, section=section, is_active=is_active,
+    )
+    db.add(student)
+    db.flush()
+    db.commit()
+    return student
+
+
 def _make_teacher(db, school: School, suffix: str) -> Teacher:
     user = User(full_name=f"Teacher {suffix}", email=f"teacher-{suffix}@example.com", password_hash=hash_password(PASSWORD), role="TEACHER")
     db.add(user)
@@ -175,6 +200,37 @@ def _make_super_admin(db, suffix: str) -> User:
     db.add(user)
     db.commit()
     return user
+
+
+def _make_school_admin(db, school: School, suffix: str) -> User:
+    """Same shape as test_teacher_assignments.py's _make_school_admin: an
+    ADMIN user with 2FA pre-enrolled plus the SchoolAdmin row
+    routes_learning._resolve_school looks up."""
+    user = User(
+        full_name=f"Admin {suffix}", email=f"admin-{suffix}@example.com", password_hash=hash_password(PASSWORD),
+        role="ADMIN", totp_enabled=True, totp_secret=TEST_TOTP_SECRET,
+    )
+    db.add(user)
+    db.flush()
+    db.add(SchoolAdmin(user_id=user.id, school_id=school.id))
+    db.commit()
+    return user
+
+
+def _assign_teacher_section(db, teacher: Teacher, board_course_id: str, section: str, class_code: str = "5"):
+    """Makes `teacher` the current teacher of record for (class, section,
+    course) -- the TeacherSectionAssignment row routes_learning.create_assignment
+    checks via teacher_may_currently_act_on (30 Sep 2026). Goes through
+    teacher_assignment_service.assign_teacher_to_section directly, exactly
+    as test_teacher_assignments.py's own access-scope tests set one up,
+    rather than logging in an ADMIN just to spend login budget on setup."""
+    class_level = db.query(ClassLevel).filter(ClassLevel.code == class_code).first()
+    row = teacher_assignment_service.assign_teacher_to_section(
+        db, school_id=teacher.school_id, teacher_id=teacher.id, class_level_id=class_level.id,
+        section=section, board_course_id=board_course_id, start_date=date(2026, 4, 1), admin_user_id=None,
+    )
+    db.commit()
+    return row
 
 
 def _login(client, email: str) -> dict:
@@ -388,6 +444,89 @@ def test_create_assignment_materializes_one_target_per_student(db_session):
     )
     targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
     assert {t.student_id for t in targets} == {s1.id, s2.id}
+
+
+def _published_single_activity(db, suffix: str) -> LearningActivity:
+    chapter, (skill1,) = _make_chapter_with_skills(db, suffix, n_skills=1)
+    _add_question(db, skill1, f"{suffix.upper()}-P01-01", assignment_code=_ac(suffix, "P01"))
+    db.commit()
+    [activity] = learning_service.generate_activities_for_chapter(db, chapter, created_by_user_id=None)
+    _publish(db, activity)
+    return activity
+
+
+def test_create_assignment_with_section_targets_only_that_section(db_session):
+    """30 Sep 2026, confirmed live in production: real students store class
+    and section separately (class_name="5", section="A"), so class_name
+    alone could only ever target every section of Class 5 at once. Passing
+    section must narrow it to that one section -- and still respect the
+    school, the class and is_active exactly as before."""
+    activity = _published_single_activity(db_session, "asg3")
+    school = _make_school(db_session, "asg3")
+    other_school = _make_school(db_session, "asg3-other")
+    in_5a = _make_sectioned_student(db_session, school, "asg3-5a", class_name="5", section="A")
+    in_5b = _make_sectioned_student(db_session, school, "asg3-5b", class_name="5", section="B")
+    in_6a = _make_sectioned_student(db_session, school, "asg3-6a", class_name="6", section="A")
+    inactive_5a = _make_sectioned_student(db_session, school, "asg3-5a-left", class_name="5", section="A", is_active=False)
+    other_school_5a = _make_sectioned_student(db_session, other_school, "asg3-5a-elsewhere", class_name="5", section="A")
+
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        class_name="5", section="A",
+    )
+    targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    targeted = {t.student_id for t in targets}
+    assert targeted == {in_5a.id}
+    assert not targeted & {in_5b.id, in_6a.id, inactive_5a.id, other_school_5a.id}
+
+
+def test_create_assignment_without_section_still_targets_every_section_of_the_class(db_session):
+    """Backward compatibility for the section fix above: any caller that
+    omits section (every caller before 30 Sep 2026, and ADMIN/SUPER_ADMIN
+    via the same endpoint) still gets the whole class, every section. A
+    blank section is treated as omitted, not as "students with no
+    section"."""
+    school = _make_school(db_session, "asg4")
+    in_5a = _make_sectioned_student(db_session, school, "asg4-5a", class_name="5", section="A")
+    in_5b = _make_sectioned_student(db_session, school, "asg4-5b", class_name="5", section="B")
+    no_section = _make_sectioned_student(db_session, school, "asg4-5x", class_name="5", section=None)
+    _make_sectioned_student(db_session, school, "asg4-6a", class_name="6", section="A")
+    activity = _published_single_activity(db_session, "asg4")
+
+    for section_arg in ({}, {"section": None}, {"section": "  "}):
+        assignment = learning_service.create_assignment(
+            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+            class_name="5", **section_arg,
+        )
+        targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+        assert {t.student_id for t in targets} == {in_5a.id, in_5b.id, no_section.id}, section_arg
+
+
+def test_create_assignment_empty_section_error_names_the_section_searched(db_session):
+    """The "no students" error must say what was actually searched for --
+    before 30 Sep 2026 it could only name the class."""
+    school = _make_school(db_session, "asg5")
+    _make_sectioned_student(db_session, school, "asg5-5a", class_name="5", section="A")
+    activity = _published_single_activity(db_session, "asg5")
+
+    try:
+        learning_service.create_assignment(
+            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+            class_name="5", section="C",
+        )
+        assert False, "expected a 422 for a section with no students"
+    except HTTPException as exc:
+        assert exc.status_code == 422
+        assert exc.detail["message"] == "No active students found in class '5', section 'C'."
+
+    try:
+        learning_service.create_assignment(
+            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", class_name="9",
+        )
+        assert False, "expected a 422 for a class with no students"
+    except HTTPException as exc:
+        assert exc.status_code == 422
+        assert exc.detail["message"] == "No active students found in class '9'."
 
 
 # --- attempt lifecycle ----------------------------------------------------
@@ -651,7 +790,13 @@ def test_super_admin_generate_publish_then_teacher_assigns_then_student_complete
     super_admin = _make_super_admin(db_session, "api2")
     school = _make_school(db_session, "api2")
     teacher = _make_teacher(db_session, school, "api2")
-    student = _make_student(db_session, school, "api2")
+    # 30 Sep 2026: a TEACHER must now name a section they currently own
+    # (create_assignment's section-ownership check), so this end-to-end run
+    # uses a real sectioned student plus a TeacherSectionAssignment instead
+    # of the old combined className "5A", which the API now rejects for a
+    # TEACHER (no section, and "5A" is not a ClassLevel code).
+    student = _make_sectioned_student(db_session, school, "api2", class_name="5", section="A")
+    _assign_teacher_section(db_session, teacher, chapter.board_course_id, "A")
     db_session.commit()
 
     sa_headers = _login(client, super_admin.email)
@@ -667,10 +812,10 @@ def test_super_admin_generate_publish_then_teacher_assigns_then_student_complete
     teacher_headers = _login(client, teacher.user.email)
     assign_response = client.post(
         "/api/learning/assignments",
-        json={"learningActivityId": activity_id, "className": "5A"},
+        json={"learningActivityId": activity_id, "className": "5", "section": "A"},
         headers=teacher_headers,
     )
-    assert assign_response.status_code == 200
+    assert assign_response.status_code == 200, assign_response.text
     assert assign_response.json()["targetCount"] == 1
     # 20 Aug 2026, Phase 3 frontend: enriched so the teacher "My Assignments"
     # list doesn't need a second round-trip just to show what was assigned.
@@ -878,3 +1023,318 @@ def test_get_attempt_result_is_scoped_for_teacher_and_admin(client, db_session):
     owned_result = client.get(f"/api/learning/attempts/{attempt.id}/result", headers=teacher_headers)
     assert owned_result.status_code == 200
     assert owned_result.json()["answers"][0]["correctAnswer"] == "A"
+
+
+def test_teacher_can_assign_to_one_section_through_the_api(client, db_session):
+    """30 Sep 2026: the same section fix, end to end through
+    POST /api/learning/assignments the way the teacher Assign Practice
+    picker now calls it (className = the section's classLevelCode, plus
+    section).
+
+    Updated 30 Sep 2026 for the section-ownership check added the same day
+    (routes_learning.create_assignment): the teacher now needs a current
+    TeacherSectionAssignment for each section it assigns to, and omitting
+    section is a 422 for a TEACHER rather than "whole class" -- the
+    whole-class path is still covered for ADMIN/SUPER_ADMIN by
+    test_admin_and_super_admin_create_assignment_skip_section_ownership."""
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "API7", n_skills=1)
+    _add_question(db_session, skill1, "API7-Q1", assignment_code=_ac("API7", "P01"), question_type="Single Select", correct_answer="A", marks=1)
+    db_session.commit()
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+
+    school = _make_school(db_session, "api7")
+    teacher = _make_teacher(db_session, school, "api7")
+    in_5a = _make_sectioned_student(db_session, school, "api7-5a", class_name="5", section="A")
+    _make_sectioned_student(db_session, school, "api7-5b", class_name="5", section="B")
+    # Owns A (has students) and C (has none) -- so the "no students in that
+    # section" 422 below is still reached past the ownership check.
+    _assign_teacher_section(db_session, teacher, chapter.board_course_id, "A")
+    _assign_teacher_section(db_session, teacher, chapter.board_course_id, "C")
+    db_session.commit()
+
+    headers = _login(client, teacher.user.email)
+    section_response = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": activity.id, "className": "5", "section": "A"},
+        headers=headers,
+    )
+    assert section_response.status_code == 200
+    assert section_response.json()["targetCount"] == 1
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == section_response.json()["id"]).all()
+    assert target.student_id == in_5a.id
+
+    whole_class_response = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": activity.id, "className": "5"},
+        headers=headers,
+    )
+    assert whole_class_response.status_code == 422
+    assert whole_class_response.json()["detail"]["message"] == "Choose a section to assign to."
+
+    empty_section_response = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": activity.id, "className": "5", "section": "C"},
+        headers=headers,
+    )
+    assert empty_section_response.status_code == 422
+    assert empty_section_response.json()["detail"]["message"] == "No active students found in class '5', section 'C'."
+
+
+def test_teacher_cannot_assign_to_a_section_or_course_they_do_not_currently_own(client, db_session):
+    """30 Sep 2026: POST /learning/assignments used to trust whatever
+    className/section a TEACHER sent, scoped only by Teacher.school_id --
+    the "your own sections only" rule lived solely in the frontend picker.
+    Now enforced server-side via teacher_assignment_service.
+    teacher_may_currently_act_on, which covers all three dimensions of a
+    TeacherSectionAssignment row plus its end_date: another section of the
+    same class, the same section but a different course's content, and a
+    section the teacher was transferred off are all 403; a missing/blank
+    section or an unknown class code are 422."""
+    activity = _published_single_activity(db_session, "API8")
+    own_course_id = db_session.get(Chapter, activity.chapter_id).board_course_id
+    # A second chapter on its own BoardCourse (_get_or_create_board_course
+    # makes a new one per suffix): same class, same section letter, but a
+    # course this teacher was never assigned.
+    other_course_activity = _published_single_activity(db_session, "API8X")
+
+    school = _make_school(db_session, "api8")
+    teacher = _make_teacher(db_session, school, "api8")
+    successor = _make_teacher(db_session, school, "api8-successor")
+    for section in ("A", "B", "D"):
+        _make_sectioned_student(db_session, school, f"api8-5{section.lower()}", class_name="5", section=section)
+    _assign_teacher_section(db_session, teacher, own_course_id, "A")
+    handed_over = _assign_teacher_section(db_session, teacher, own_course_id, "D")
+    teacher_assignment_service.transfer_teacher(
+        db_session, assignment=handed_over, new_teacher_id=successor.id, transfer_date=date(2026, 8, 20), admin_user_id=None,
+    )
+    db_session.commit()
+
+    headers = _login(client, teacher.user.email)
+
+    def post(**body):
+        return client.post("/api/learning/assignments", json={"learningActivityId": activity.id, **body}, headers=headers)
+
+    forbidden = "You are not currently assigned to teach this class, section and course."
+
+    # Same class, same school, real students -- but not this teacher's section.
+    other_section = post(className="5", section="B")
+    assert other_section.status_code == 403
+    assert other_section.json()["detail"]["message"] == forbidden
+
+    # This teacher's own section letter, but content from a course they don't teach there.
+    other_course = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": other_course_activity.id, "className": "5", "section": "A"},
+        headers=headers,
+    )
+    assert other_course.status_code == 403
+
+    # A section they used to own but were transferred off (end_date set):
+    # write access is current-only, per teacher_assignment_service's docstring.
+    transferred_off = post(className="5", section="D")
+    assert transferred_off.status_code == 403
+
+    for missing_section in ({}, {"section": None}, {"section": "   "}):
+        response = post(className="5", **missing_section)
+        assert response.status_code == 422, missing_section
+        assert response.json()["detail"]["message"] == "Choose a section to assign to."
+
+    unknown_class = post(className="5A", section="A")  # the old combined form is not a ClassLevel code
+    assert unknown_class.status_code == 422
+    assert unknown_class.json()["detail"]["message"] == "Unknown class."
+
+    # Nothing above created an Assignment row; the owned section still works.
+    assert db_session.query(Assignment).filter(Assignment.assigned_by_user_id == teacher.user_id).count() == 0
+    own_section = post(className="5", section=" A ")  # stripped, same as TeacherSectionAssignment.section
+    assert own_section.status_code == 200, own_section.text
+    assert own_section.json()["targetCount"] == 1
+
+
+def test_teacher_cannot_bypass_section_ownership_with_student_ids(client, db_session):
+    """30 Sep 2026: learning_service.create_assignment ignores class_name/
+    section entirely once student_ids is given, so a TEACHER naming a
+    section they genuinely own while also sending studentIds would pass the
+    ownership check above and still land on whichever students they named --
+    any active student at the school, not just their own section. Closed by
+    rejecting studentIds from a TEACHER outright (no frontend page ever
+    sends it). ADMIN keeps the capability, unaffected."""
+    activity = _published_single_activity(db_session, "API8B")
+    school = _make_school(db_session, "api8b")
+    teacher = _make_teacher(db_session, school, "api8b")
+    own_course_id = db_session.get(Chapter, activity.chapter_id).board_course_id
+    _assign_teacher_section(db_session, teacher, own_course_id, "A")
+    in_own_section = _make_sectioned_student(db_session, school, "api8b-5a", class_name="5", section="A")
+    elsewhere = _make_sectioned_student(db_session, school, "api8b-6c", class_name="6", section="C")
+    db_session.commit()
+
+    headers = _login(client, teacher.user.email)
+    response = client.post(
+        "/api/learning/assignments",
+        json={
+            "learningActivityId": activity.id,
+            "className": "5",
+            "section": "A",
+            "studentIds": [in_own_section.id, elsewhere.id],
+        },
+        headers=headers,
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"]["message"] == "Assign by class and section, not by naming students directly."
+    assert db_session.query(Assignment).filter(Assignment.assigned_by_user_id == teacher.user_id).count() == 0
+
+
+def test_admin_and_super_admin_create_assignment_skip_section_ownership(client, db_session):
+    """30 Sep 2026: the TEACHER-only section-ownership check must not change
+    ADMIN/SUPER_ADMIN behaviour at all -- no section required (whole class,
+    every section, exactly as before), and no TeacherSectionAssignment
+    needed for any section they do name. teacher_assignment_service's
+    module docstring: admins bypass its access checks at the route layer."""
+    activity = _published_single_activity(db_session, "API9")
+    school = _make_school(db_session, "api9")
+    in_5a = _make_sectioned_student(db_session, school, "api9-5a", class_name="5", section="A")
+    in_5b = _make_sectioned_student(db_session, school, "api9-5b", class_name="5", section="B")
+    admin = _make_school_admin(db_session, school, "api9")
+    super_admin = _make_super_admin(db_session, "api9")
+    # Deliberately no TeacherSectionAssignment rows for this school at all.
+
+    admin_headers = _login(client, admin.email)
+    admin_whole_class = client.post(
+        "/api/learning/assignments", json={"learningActivityId": activity.id, "className": "5"}, headers=admin_headers,
+    )
+    assert admin_whole_class.status_code == 200, admin_whole_class.text
+    targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == admin_whole_class.json()["id"]).all()
+    assert {t.student_id for t in targets} == {in_5a.id, in_5b.id}
+    admin_one_section = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": activity.id, "className": "5", "section": "B"},
+        headers=admin_headers,
+    )
+    assert admin_one_section.status_code == 200, admin_one_section.text
+    assert admin_one_section.json()["targetCount"] == 1
+
+    client.cookies.clear()
+    sa_headers = _login(client, super_admin.email)
+    sa_whole_class = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": activity.id, "schoolId": school.id, "className": "5"},
+        headers=sa_headers,
+    )
+    assert sa_whole_class.status_code == 200, sa_whole_class.text
+    assert sa_whole_class.json()["targetCount"] == 2
+
+
+def test_resuming_an_attempt_returns_previously_saved_answers(client, db_session):
+    """30 Sep 2026: POST /learning/attempts on an IN_PROGRESS attempt
+    (resume) used to return every question blank even though
+    PUT /attempts/{id}/answers had already persisted the student's answers
+    to AttemptAnswer.response_text. Each question now carries its saved
+    responseText (None when unanswered), a brand-new attempt comes back all
+    None -- including a re-attempt, which must never inherit the previous
+    attempt's answers -- and the answer key is still never included."""
+    _chapter, activity = _setup_published_activity_with_two_questions(db_session, "API10")
+    school = _make_school(db_session, "api10")
+    student = _make_student(db_session, school, "api10")
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id],
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+
+    headers = _login(client, student.user.email)
+    fresh = client.post("/api/learning/attempts", json={"assignmentTargetId": target.id}, headers=headers)
+    assert fresh.status_code == 200
+    fresh_body = fresh.json()
+    assert [q["responseText"] for q in fresh_body["questions"]] == [None, None]
+    q1_id, q2_id = (q["id"] for q in fresh_body["questions"])
+
+    saved = client.put(
+        f"/api/learning/attempts/{fresh_body['id']}/answers", json={"questionId": q1_id, "responseText": "A"}, headers=headers,
+    )
+    assert saved.status_code == 200
+
+    resumed = client.post("/api/learning/attempts", json={"assignmentTargetId": target.id}, headers=headers)
+    assert resumed.status_code == 200
+    resumed_body = resumed.json()
+    assert resumed_body["id"] == fresh_body["id"]  # the same attempt, resumed
+    by_id = {q["id"]: q for q in resumed_body["questions"]}
+    assert by_id[q1_id]["responseText"] == "A"
+    assert by_id[q2_id]["responseText"] is None
+    for question in resumed_body["questions"]:
+        assert "correctAnswer" not in question
+        assert "explanation" not in question
+
+    submitted = client.post(f"/api/learning/attempts/{fresh_body['id']}/submit", headers=headers)
+    assert submitted.status_code == 200
+    reattempt = client.post("/api/learning/attempts", json={"assignmentTargetId": target.id}, headers=headers)
+    assert reattempt.status_code == 200
+    assert reattempt.json()["attemptNumber"] == 2
+    assert [q["responseText"] for q in reattempt.json()["questions"]] == [None, None]
+
+
+def test_student_sees_bonus_attempts_and_attempts_used(client, db_session):
+    """30 Sep 2026: a teacher-granted extra attempt (bonus_attempts) was
+    invisible to the student -- GET /learning/assignments carried only
+    maxAttempts, and GET /attempts/{id}/result carried neither, so the
+    student UI computed "attempt X of Y" and whether to offer Try Again
+    against max_attempts alone. Both now expose bonusAttempts, and the
+    result also carries maxAttempts and attemptsUsed (counted across ALL
+    of this target's attempts, not "as of" the attempt being viewed)."""
+    _chapter, activity = _setup_published_activity_with_two_questions(db_session, "API11")
+    school = _make_school(db_session, "api11")
+    student = _make_student(db_session, school, "api11")
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        student_ids=[student.id], max_attempts=1,
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    first = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.submit_attempt(db_session, student, first.id)
+
+    headers = _login(client, student.user.email)
+    [before_grant] = client.get("/api/learning/assignments", headers=headers).json()["assignments"]
+    assert before_grant["maxAttempts"] == 1
+    assert before_grant["bonusAttempts"] == 0
+    first_result = client.get(f"/api/learning/attempts/{first.id}/result", headers=headers).json()
+    assert (first_result["maxAttempts"], first_result["bonusAttempts"], first_result["attemptsUsed"]) == (1, 0, 1)
+
+    # grant_extra_attempt deliberately doesn't commit (the route commits it
+    # with its audit row) -- commit here in its place.
+    learning_service.grant_extra_attempt(db_session, target)
+    db_session.commit()
+
+    [after_grant] = client.get("/api/learning/assignments", headers=headers).json()["assignments"]
+    assert after_grant["bonusAttempts"] == 1
+
+    second = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.submit_attempt(db_session, student, second.id)
+    second_result = client.get(f"/api/learning/attempts/{second.id}/result", headers=headers).json()
+    assert second_result["attemptNumber"] == 2
+    assert (second_result["maxAttempts"], second_result["bonusAttempts"], second_result["attemptsUsed"]) == (1, 1, 2)
+    # attemptsUsed is per target, so an older attempt's result reports the same total.
+    assert client.get(f"/api/learning/attempts/{first.id}/result", headers=headers).json()["attemptsUsed"] == 2
+
+
+def test_student_list_hides_cancelled_assignments_but_keeps_closed_ones(client, db_session):
+    """30 Sep 2026, defensive: nothing in the codebase sets
+    Assignment.status away from ACTIVE yet, so this is set directly on the
+    rows here. A CANCELLED assignment must be absent from the student's
+    list entirely; a CLOSED one stays visible (review is fine --
+    start_attempt already refuses a new attempt on it)."""
+    activity = _published_single_activity(db_session, "API12")
+    school = _make_school(db_session, "api12")
+    student = _make_student(db_session, school, "api12")
+    by_status = {}
+    for status in ("ACTIVE", "CLOSED", "CANCELLED"):
+        assignment = learning_service.create_assignment(
+            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id],
+        )
+        assignment.status = status
+        by_status[status] = assignment.id
+    db_session.commit()
+
+    headers = _login(client, student.user.email)
+    response = client.get("/api/learning/assignments", headers=headers)
+    assert response.status_code == 200
+    listed = {row["assignmentId"] for row in response.json()["assignments"]}
+    assert listed == {by_status["ACTIVE"], by_status["CLOSED"]}
+    assert by_status["CANCELLED"] not in listed

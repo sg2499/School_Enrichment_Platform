@@ -48,6 +48,55 @@ const ASSIGNMENT_STATUS_TONE: Record<Assignment["status"], BadgeTone> = {
   CANCELLED: "danger",
 };
 
+/**
+ * One of the signed-in teacher's own current sections, from
+ * GET /teacher-assignments/my-sections -- mirrors the subset of
+ * routes_teacher_assignments.py's _assignment_dict this page reads.
+ * Declared here rather than in types/ to keep this change inside the two
+ * teacher pages; the dashboard declares the same shape.
+ *
+ * classLevelCode is ClassLevel.code ("5".."10"), the same format
+ * routes_roster.py stores in Student.class_name, and section is stored
+ * verbatim in both places -- so the pair is exactly what
+ * POST /learning/assignments needs to reach one section's students.
+ * boardCourseName is the course's display name (e.g. "Mathematics"), not
+ * the board; the endpoint does not return the board code.
+ */
+type TeacherSection = {
+  id: string;
+  classLevelCode: string | null;
+  section: string;
+  boardCourseId: string;
+  boardCourseName: string | null;
+};
+
+function sectionLabel(section: TeacherSection): string {
+  return [`Class ${section.classLevelCode ?? "?"}`, `Section ${section.section}`, section.boardCourseName]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Class numerically ("10" after "9", not after "1"), then section, then
+ *  course -- the order a timetable lists them in. */
+function compareSections(a: TeacherSection, b: TeacherSection): number {
+  const byClass = (Number(a.classLevelCode) || 0) - (Number(b.classLevelCode) || 0);
+  if (byClass !== 0) return byClass;
+  return a.section.localeCompare(b.section) || (a.boardCourseName ?? "").localeCompare(b.boardCourseName ?? "");
+}
+
+/**
+ * The teacher's sections this chapter's mapping plausibly belongs to: same
+ * class AND same board course. A mapping (SchoolCurriculumMap) is one
+ * schedule per class and course, shared by every section of that class
+ * (curriculum.py: section was removed from it on 19 Aug 2026), so the
+ * mapping alone never says which section is meant -- only the teacher's
+ * own roster can narrow it down.
+ */
+function sectionsForChapter(mapping: SchoolCurriculumMapEntry | undefined, sections: TeacherSection[]): TeacherSection[] {
+  if (!mapping?.className) return [];
+  return sections.filter((s) => s.classLevelCode === mapping.className && s.boardCourseId === mapping.boardCourseId);
+}
+
 function AlertBanner({ tone, message }: { tone: "error" | "success"; message: string }) {
   const isError = tone === "error";
   return (
@@ -216,7 +265,20 @@ export default function TeacherAssignmentsPage() {
   const [activitiesError, setActivitiesError] = useState<string | null>(null);
   const [selectedActivityId, setSelectedActivityId] = useState("");
 
-  const [className, setClassName] = useState("");
+  // Replaces a free-text "Class" box (30 Sep 2026). Its own hint said "e.g.
+  // 5A", but students store class and section separately (class_name "5",
+  // section "A"), so "5A" matched nobody and "5" reached every section of
+  // Class 5 -- a teacher could not target one section at all. The picker
+  // only offers sections an admin has actually assigned to this teacher.
+  const [sections, setSections] = useState<TeacherSection[]>([]);
+  const [sectionsLoading, setSectionsLoading] = useState(true);
+  const [sectionsError, setSectionsError] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState("");
+  // True only while the current pick is one this page made for the teacher
+  // (see handleChapterChange), so a later chapter change can withdraw its
+  // own guess without ever discarding a section the teacher chose.
+  const [sectionAutoFilled, setSectionAutoFilled] = useState(false);
+
   const [reason, setReason] = useState<AssignmentReason>("SCHEDULED");
   const [dueDate, setDueDate] = useState("");
   const [maxAttempts, setMaxAttempts] = useState(3);
@@ -272,11 +334,25 @@ export default function TeacherAssignmentsPage() {
     }
   }, []);
 
+  const loadSections = useCallback(async () => {
+    setSectionsLoading(true);
+    setSectionsError(null);
+    try {
+      const { data } = await api.get<{ sections: TeacherSection[] }>("/teacher-assignments/my-sections");
+      setSections([...data.sections].sort(compareSections));
+    } catch (err) {
+      setSectionsError(apiErrorMessage(err));
+    } finally {
+      setSectionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (status !== "ready") return;
     loadMappings();
+    loadSections();
     loadAssignments();
-  }, [status, loadMappings, loadAssignments]);
+  }, [status, loadMappings, loadSections, loadAssignments]);
 
   useEffect(() => {
     if (!selectedChapterId) {
@@ -305,10 +381,40 @@ export default function TeacherAssignmentsPage() {
     };
   }, [selectedChapterId]);
 
-  useEffect(() => {
-    const mapping = mappings.find((m) => m.chapterId === selectedChapterId);
-    if (mapping?.className) setClassName(mapping.className);
-  }, [selectedChapterId, mappings]);
+  /**
+   * Chapter first, then (maybe) the section.
+   *
+   * This used to copy the chapter mapping's class straight into the Class
+   * box. A mapping names a class, never a section, and a teacher routinely
+   * teaches several sections of one class ("Maths to 4 sections in the 5th
+   * standard" -- teacher_assignment.py's own docstring), so copying it
+   * across would be a guess. Now the section is filled in only when the
+   * guess can't be wrong: exactly one of this teacher's sections has the
+   * chapter's class and course. Two or more, none, or a chapter mapped for
+   * no particular class, and the teacher picks.
+   *
+   * Done here, in the change handler, rather than in an effect watching the
+   * chapter: an effect would also re-run when the section list or mappings
+   * reload, and could then overwrite a section the teacher had already
+   * chosen by hand. The chapter select stays disabled until the sections
+   * have loaded, so the list is always ready when this runs.
+   */
+  function handleChapterChange(chapterId: string) {
+    setSelectedChapterId(chapterId);
+    const candidates = sectionsForChapter(
+      mappings.find((m) => m.chapterId === chapterId),
+      sections,
+    );
+    if (candidates.length === 1) {
+      setSelectedSectionId(candidates[0].id);
+      setSectionAutoFilled(true);
+    } else if (sectionAutoFilled) {
+      // Withdraw our own earlier guess -- it was made for a different
+      // chapter. A section the teacher picked themselves is left alone.
+      setSelectedSectionId("");
+      setSectionAutoFilled(false);
+    }
+  }
 
   async function handleAssign(event: React.FormEvent) {
     event.preventDefault();
@@ -318,20 +424,27 @@ export default function TeacherAssignmentsPage() {
       setAssignError("Choose an activity to assign first.");
       return;
     }
-    if (!className.trim()) {
-      setAssignError("A class is required (e.g. 5A).");
+    const target = sections.find((s) => s.id === selectedSectionId);
+    if (!target || !target.classLevelCode) {
+      setAssignError("Choose which of your sections to assign this to.");
       return;
     }
     setAssigning(true);
     try {
       const { data } = await api.post<Assignment>("/learning/assignments", {
         learningActivityId: selectedActivityId,
-        className: className.trim(),
+        // classLevelCode matches Student.class_name's format and section
+        // matches Student.section, so this reaches exactly one section
+        // (learning_service.create_assignment's section filter).
+        className: target.classLevelCode,
+        section: target.section,
         reason,
         dueDate: dueDate || null,
         maxAttempts,
       });
-      setAssignSuccess(`Assigned to ${data.targetCount} student${data.targetCount === 1 ? "" : "s"} in class ${className.trim()}.`);
+      setAssignSuccess(
+        `Assigned to ${data.targetCount} student${data.targetCount === 1 ? "" : "s"} in Class ${target.classLevelCode} · Section ${target.section}.`,
+      );
       loadAssignments();
     } catch (err) {
       setAssignError(apiErrorMessage(err));
@@ -409,6 +522,27 @@ export default function TeacherAssignmentsPage() {
     return mapping ? `${mapping.chapterTitle ?? mapping.chapterCode ?? "Chapter"}` : null;
   }, [mappings, selectedChapterId]);
 
+  const selectedMapping = mappings.find((m) => m.chapterId === selectedChapterId);
+  const chapterSections = sectionsForChapter(selectedMapping, sections);
+  const selectedSection = sections.find((s) => s.id === selectedSectionId) ?? null;
+  // Assigning across classes is allowed (a teacher may deliberately set an
+  // earlier class's chapter as revision), so this is a note, not a block --
+  // but it should never happen silently.
+  const classMismatch = Boolean(
+    selectedMapping?.className && selectedSection && selectedSection.classLevelCode !== selectedMapping.className,
+  );
+
+  // The short hint on the Section label: says *why* a section is already
+  // chosen, or why one isn't, so the teacher never wonders whether the page
+  // guessed.
+  const sectionHint = sectionAutoFilled
+    ? "Matched to this chapter"
+    : selectedMapping?.className && chapterSections.length > 1 && !selectedSectionId
+      ? `You teach ${chapterSections.length} sections of Class ${selectedMapping.className}`
+      : undefined;
+  const sectionsBlocked = !sectionsLoading && !sectionsError && sections.length === 0;
+  const formLoading = mappingsLoading || sectionsLoading;
+
   if (status !== "ready") {
     return <LoadingScreen />;
   }
@@ -430,13 +564,28 @@ export default function TeacherAssignmentsPage() {
               </CardIcon>
               <div>
                 <CardTitle>Assign Practice</CardTitle>
-                <p className="mt-0.5 text-xs text-content-subtle">Pick a published chapter, an activity, and a class</p>
+                <p className="mt-0.5 text-xs text-content-subtle">Pick a published chapter, an activity, and one of your sections</p>
               </div>
             </div>
 
             {mappingsError ? <AlertBanner tone="error" message={mappingsError} /> : null}
+            {sectionsError ? (
+              <AlertBanner tone="error" message={`Couldn't load your sections (${sectionsError}). Refresh the page to try again.`} />
+            ) : null}
 
-            {!mappingsLoading && !mappingsError && mappings.length === 0 ? (
+            {sectionsBlocked ? (
+              // Blocked, not broken: with no section to aim at, the form
+              // could only ever fail on submit. A teacher can't fix this
+              // themselves -- sections are assigned by an admin
+              // (routes_teacher_assignments.py: writes are ADMIN/SUPER_ADMIN
+              // only) -- so the copy says who to ask.
+              <EmptyState
+                illustration={<RosterIllustration />}
+                status={{ label: "No Sections Assigned", tone: "neutral" }}
+                title="You don't have any sections yet"
+                description="Practice is assigned to a section you teach, and none are assigned to you yet. Ask your school admin to assign you to your sections — they'll appear here straight away."
+              />
+            ) : !mappingsLoading && !mappingsError && mappings.length === 0 ? (
               <EmptyState
                 status={{ label: "No Published Chapters Yet", tone: "brand" }}
                 title="Nothing to assign yet"
@@ -448,10 +597,10 @@ export default function TeacherAssignmentsPage() {
                   <SelectField
                     label="Chapter"
                     value={selectedChapterId}
-                    onChange={(event) => setSelectedChapterId(event.target.value)}
-                    disabled={mappingsLoading}
+                    onChange={(event) => handleChapterChange(event.target.value)}
+                    disabled={formLoading}
                   >
-                    <option value="">{mappingsLoading ? "Loading…" : "Choose a chapter"}</option>
+                    <option value="">{formLoading ? "Loading…" : "Choose a chapter"}</option>
                     {mappings.map((mapping) => (
                       <option key={mapping.id} value={mapping.chapterId}>
                         {mapping.chapterTitle ?? mapping.chapterCode ?? mapping.chapterId}
@@ -485,13 +634,25 @@ export default function TeacherAssignmentsPage() {
                 ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <TextField
-                    label="Class"
-                    hint="e.g. 5A"
-                    value={className}
-                    onChange={(event) => setClassName(event.target.value)}
-                    placeholder="5A"
-                  />
+                  <SelectField
+                    label="Section"
+                    hint={sectionHint}
+                    value={selectedSectionId}
+                    onChange={(event) => {
+                      setSelectedSectionId(event.target.value);
+                      setSectionAutoFilled(false);
+                    }}
+                    disabled={sectionsLoading || Boolean(sectionsError)}
+                  >
+                    <option value="">
+                      {sectionsLoading ? "Loading…" : sectionsError ? "Couldn't load sections" : "Choose a section"}
+                    </option>
+                    {sections.map((section) => (
+                      <option key={section.id} value={section.id} disabled={!section.classLevelCode}>
+                        {sectionLabel(section)}
+                      </option>
+                    ))}
+                  </SelectField>
                   <SelectField label="Reason" value={reason} onChange={(event) => setReason(event.target.value as AssignmentReason)}>
                     {REASON_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -508,6 +669,20 @@ export default function TeacherAssignmentsPage() {
                   />
                 </div>
 
+                {classMismatch && selectedSection && selectedMapping ? (
+                  // saffron-900 on saffron-50 is 9.3:1 (the same "heads up,
+                  // nothing is wrong yet" treatment as Field.tsx's Caps Lock
+                  // note). The icon carries the state as well as the colour.
+                  <p className="flex items-start gap-2 rounded-2xl bg-saffron-50 px-3.5 py-2.5 text-[0.8125rem] font-medium leading-snug text-saffron-900 ring-1 ring-inset ring-saffron-200 animate-scale-in">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span>
+                      This chapter is in Class {selectedMapping.className}&rsquo;s calendar, but you&rsquo;ve picked a
+                      Class {selectedSection.classLevelCode} section. You can still assign it &mdash; just check
+                      it&rsquo;s the one you meant.
+                    </span>
+                  </p>
+                ) : null}
+
                 <TextField
                   label="Max Attempts"
                   type="number"
@@ -522,7 +697,7 @@ export default function TeacherAssignmentsPage() {
                 {assignSuccess ? <AlertBanner tone="success" message={assignSuccess} /> : null}
 
                 <Button type="submit" variant="primary" loading={assigning} leadingIcon={<Send className="h-4 w-4" />}>
-                  Assign to Class
+                  Assign to Section
                 </Button>
               </form>
             )}

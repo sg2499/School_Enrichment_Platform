@@ -18,8 +18,10 @@ Authorization model:
   SUPER_ADMIN-only" precedent (routes_curriculum_admin.py) -- a
   LearningActivity is master content derived from master content.
 - Assignment creation is TEACHER or ADMIN/SUPER_ADMIN. A TEACHER is always
-  scoped to their own school (Teacher.school_id); ADMIN the same way
-  routes_roster.py's _resolve_school works, SUPER_ADMIN must pass schoolId.
+  scoped to their own school (Teacher.school_id) and, since 30 Sep 2026, to
+  a section + course they currently own per TeacherSectionAssignment (see
+  create_assignment); ADMIN the same way routes_roster.py's _resolve_school
+  works, SUPER_ADMIN must pass schoolId.
 - The attempt lifecycle (start/save/submit/result) is STUDENT-only, always
   scoped to attempts the authenticated student's own AssignmentTarget rows
   own -- see learning_service._get_owned_target/_get_owned_attempt, which
@@ -43,6 +45,7 @@ from app.models import (
     Attempt,
     AttemptAnswer,
     Chapter,
+    ClassLevel,
     ConceptLesson,
     Evaluation,
     LearningActivity,
@@ -54,7 +57,7 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import foundation_repair_service, learning_service
+from app.services import foundation_repair_service, learning_service, teacher_assignment_service
 from app.services.audit_service import log_audit_event
 
 router = APIRouter(prefix="/api/learning", tags=["learning"])
@@ -178,6 +181,12 @@ class CreateAssignmentRequest(BaseModel):
     learningActivityId: str
     schoolId: str | None = None  # required for SUPER_ADMIN, ignored for TEACHER/ADMIN
     className: str | None = None
+    # Optional (30 Sep 2026): narrows a className target to one section,
+    # matched against Student.section. Omit it to target every section of
+    # the class, exactly as before -- see learning_service.create_assignment.
+    # Required for a TEACHER (30 Sep 2026, section-ownership check in
+    # create_assignment below); still optional for ADMIN/SUPER_ADMIN.
+    section: str | None = None
     studentIds: list[str] | None = None
     reason: str = "SCHEDULED"
     pacingMode: str = "FIVE_DAY"
@@ -232,12 +241,70 @@ def create_assignment(
     if not activity:
         api_error(404, "NOT_FOUND", "Learning activity not found.")
 
+    if user.role == "TEACHER":
+        # 30 Sep 2026: studentIds bypasses class_name/section entirely
+        # (learning_service.create_assignment only reads class_name/section
+        # when student_ids is empty), so a TEACHER naming one of their own
+        # owned sections below while also sending studentIds would pass the
+        # section-ownership check just added and still land on whichever
+        # students they named -- any active student at the school, not just
+        # their own section. No frontend page ever sends studentIds (grep),
+        # so closing it here costs nothing real today. ADMIN/SUPER_ADMIN are
+        # untouched -- targeted-student assignment stays available to them.
+        if payload.studentIds:
+            api_error(422, "VALIDATION_ERROR", "Assign by class and section, not by naming students directly.")
+        # Section ownership (30 Sep 2026). Until now a TEACHER could POST any
+        # className/section at their school -- the only check above is
+        # Teacher.school_id -- and the "only your own sections" rule lived
+        # entirely in the frontend picker (teacher/assignments/page.tsx only
+        # ever offers GET /teacher-assignments/my-sections rows). The server
+        # side check has existed since 20 Aug 2026 as
+        # teacher_assignment_service.teacher_may_currently_act_on, whose own
+        # module docstring says it "gates WRITE actions (assign practice,
+        # ...)" -- but nothing ever called it (grep: its only callers were
+        # test_teacher_assignments.py). This is that call.
+        #
+        # A section is mandatory for a TEACHER: TeacherSectionAssignment rows
+        # are per (class_level, section, board_course), so "every section of
+        # Class 5" is not something any single teacher is ever recorded as
+        # owning, and the picker always sends exactly one section anyway.
+        # Stripped the same way assign_teacher_to_section stores
+        # TeacherSectionAssignment.section and learning_service.create_assignment
+        # matches Student.section, so " A" can't slip past the lookup.
+        # ADMIN/SUPER_ADMIN are deliberately untouched (no section required,
+        # no ownership check) -- see teacher_assignment_service's module
+        # docstring: they bypass both of its access checks at the route layer.
+        section = (payload.section or "").strip()
+        if not section:
+            api_error(422, "VALIDATION_ERROR", "Choose a section to assign to.")
+        # className is the ClassLevel code ("5"), which is what the picker
+        # sends (TeacherSection.classLevelCode, see routes_teacher_assignments
+        # _assignment_dict) and what routes_roster.py stores in
+        # Student.class_name.
+        class_level = db.query(ClassLevel).filter(ClassLevel.code == payload.className).first()
+        if not class_level:
+            api_error(422, "VALIDATION_ERROR", "Unknown class.")
+        # The subject being assigned comes from the activity's own chapter
+        # (Chapter.board_course_id, never nullable -- curriculum.py), not
+        # from anything the client sends, so a teacher can't claim a course
+        # they own to push another course's content into the same section.
+        chapter = db.get(Chapter, activity.chapter_id)
+        if not chapter or not teacher_assignment_service.teacher_may_currently_act_on(
+            db,
+            teacher_id=teacher.id,
+            class_level_id=class_level.id,
+            section=section,
+            board_course_id=chapter.board_course_id,
+        ):
+            api_error(403, "FORBIDDEN", "You are not currently assigned to teach this class, section and course.")
+
     assignment = learning_service.create_assignment(
         db,
         school=school,
         learning_activity=activity,
         assigned_by_user_id=assigned_by,
         class_name=payload.className,
+        section=payload.section,
         student_ids=payload.studentIds,
         reason=payload.reason,
         pacing_mode=payload.pacingMode,
@@ -309,6 +376,18 @@ def list_assignments(
         results = []
         for target in targets:
             assignment = target.assignment
+            # 30 Sep 2026, defensive: a CANCELLED assignment is withdrawn, not
+            # merely finished, so it must never appear on a student's list at
+            # all. Unreachable today -- learning_service.create_assignment is
+            # the only place an Assignment row is ever built, it never sets
+            # status, and no route or service assigns Assignment.status
+            # anywhere (grep), so every row is still the model's ACTIVE
+            # default -- but closed here before a cancel/close route exists
+            # rather than after. CLOSED stays visible on purpose: reviewing
+            # past work is fine, and start_attempt already refuses a fresh
+            # attempt on any non-ACTIVE assignment (ASSIGNMENT_CLOSED).
+            if assignment.status == "CANCELLED":
+                continue
             activity = assignment.learning_activity
             results.append(
                 {
@@ -319,6 +398,16 @@ def list_assignments(
                     "dueDate": assignment.due_date,
                     "reason": assignment.reason,
                     "maxAttempts": assignment.max_attempts,
+                    # 30 Sep 2026: this student's own teacher-granted extra
+                    # attempts (grant_extra_attempt). Without it the student
+                    # UI computed "Attempt X of Y" and whether to offer Try
+                    # Again against max_attempts alone -- a lower ceiling
+                    # than start_attempt actually enforces
+                    # (max_attempts + bonus_attempts), so a granted retry
+                    # stayed invisible. The teacher-facing
+                    # list_assignment_targets rows have carried this since
+                    # 20 Aug 2026.
+                    "bonusAttempts": target.bonus_attempts,
                     "latestAttempt": _latest_attempt_summary(db, target.id),
                 }
             )
@@ -458,6 +547,22 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
         .order_by(LearningActivityQuestion.sequence)
         .all()
     )
+    # 30 Sep 2026: resume used to come back blank. start_attempt returns the
+    # existing IN_PROGRESS attempt on resume (learning_service.start_attempt,
+    # "Resume an already-open attempt"), and every answer the student already
+    # typed IS persisted server-side (PUT /attempts/{id}/answers ->
+    # learning_service.save_answer -> AttemptAnswer.response_text) -- but
+    # this response never included any of it, so a refresh or coming back
+    # later showed empty inputs over answers that were still saved and would
+    # still be graded on submit. Echoing the student's OWN response back is
+    # safe mid-attempt; _question_public_dict's answer-key exclusions are
+    # untouched (it stays unchanged -- this is its only caller, so the extra
+    # field is added here rather than widening its shape). A fresh attempt
+    # has no AttemptAnswer rows, so every responseText is None.
+    saved = {
+        answer.question_id: answer.response_text
+        for answer in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()
+    }
     return {
         "id": attempt.id,
         "assignmentTargetId": attempt.assignment_target_id,
@@ -465,7 +570,7 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
         "status": attempt.status,
         "startedAt": attempt.started_at.isoformat() if attempt.started_at else None,
         "activity": _activity_dict(activity),
-        "questions": [_question_public_dict(q) for q in questions],
+        "questions": [{**_question_public_dict(q), "responseText": saved.get(q.id)} for q in questions],
     }
 
 
@@ -570,6 +675,17 @@ def get_attempt_result(
 
     result = _evaluation_dict(evaluation)
     result["attemptNumber"] = attempt.attempt_number
+    # 30 Sep 2026: the result page decides whether to offer "Try Again" and
+    # shows "attempt X of Y", but had nothing to compute that from except
+    # attemptNumber -- so it guessed against max_attempts alone, ignoring
+    # any teacher-granted bonus_attempts. These are the same three fields
+    # (and the same _attempt_history count) that grant_extra_attempt and
+    # list_assignment_targets already return, so every surface agrees with
+    # start_attempt's real limit: attemptsUsed < maxAttempts + bonusAttempts.
+    target = attempt.assignment_target
+    result["maxAttempts"] = target.assignment.max_attempts
+    result["bonusAttempts"] = target.bonus_attempts
+    result["attemptsUsed"] = len(_attempt_history(db, target.id))
     result["answers"] = breakdown
     return result
 
