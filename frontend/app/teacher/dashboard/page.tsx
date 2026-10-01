@@ -20,7 +20,7 @@
  *  - GET /curriculum-admin/school-curriculum-maps   (TEACHER-readable via
  *    _resolve_school_id_for_read; always the teacher's own school)
  *  - GET /learning/activities?chapterId=   (ADMIN/SUPER_ADMIN/TEACHER;
- *    used by teacher/assignments today)
+ *    used by teacher/assign today)
  *  - GET /learning/assignments   (for a TEACHER, only rows where
  *    assigned_by_user_id is them -- routes_learning.list_assignments)
  * Each is loaded and fails independently: one endpoint being down turns
@@ -62,11 +62,11 @@ import type { SchoolCurriculumMapEntry } from "@/types/curriculum";
 /** Date the static claims below (the "planned" checklist row and the
  *  toolkit statuses) were last checked against the code. The live rows
  *  need no date -- they are re-read on every visit. */
-const STATIC_CLAIMS_VERIFIED_ON = "30 Sep 2026";
+const STATIC_CLAIMS_VERIFIED_ON = "1 Oct 2026";
 
 /** One of the teacher's own current sections -- the subset of
  *  routes_teacher_assignments.py's _assignment_dict this page reads. Same
- *  shape as teacher/assignments/page.tsx's; declared locally to keep this
+ *  shape as teacher/assign/page.tsx's; declared locally to keep this
  *  change inside the teacher pages. boardCourseName is the course's
  *  display name (e.g. "Mathematics"), not the board. */
 type TeacherSection = {
@@ -456,16 +456,18 @@ function buildChecklist({ sections, maps, practice, assignments }: Signals): Che
             },
   );
 
-  // Static, checked 30 Sep 2026 -- nothing a TEACHER can call could prove
-  // otherwise, because it doesn't exist: grade_answer is all-or-nothing per
-  // question; Evaluation.final_score always equals auto_score (teacher
-  // score/rubric/override fields are deferred to Phase 4 in
-  // models/learning.py); no endpoint writes a manual score. README records
-  // Phase 4 (School marking engine) as "not started".
+  // Static, re-checked 1 Oct 2026. Teacher-awarded marks now exist for
+  // answers auto-marking can't score (Constructed Response): POST
+  // /learning/tracker/attempts/{id}/grades, any whole number from 0 to the
+  // question's marks -- that is the "Marking written answers" toolkit card
+  // below. What is still planned is part/method marks on questions that
+  // ARE auto-marked: grade_answer is still all-or-nothing per question, and
+  // a teacher can't override an automatic mark (models/learning.py,
+  // Evaluation docstring).
   checks.push({
-    title: "Part marks and teacher-awarded scores",
+    title: "Method marks on automatically marked questions",
     state: "planned",
-    detail: "Answers are marked right or wrong today; part marks arrive with the marking engine.",
+    detail: "Written answers already get your marks in the Practice Tracker; part marks on auto-marked questions arrive with the marking engine.",
   });
 
   return checks;
@@ -552,20 +554,20 @@ function deriveNextStep({ sections, maps, practice, assignments }: Signals): Nex
     return {
       title: "Assign your first practice",
       body: "Pick a chapter, an activity and one of your sections. Students see it straight away, and every answer is marked when they submit.",
-      action: { href: "/teacher/assignments", label: "Assign Practice" },
+      action: { href: "/teacher/assign", label: "Assign Practice" },
     };
   }
   if (assignments.state === "ok") {
     return {
       title: "See how your sections did",
-      body: "Open any assignment to see each student's score and answers, and grant another attempt where it would help.",
-      action: { href: "/teacher/assignments", label: "View Results" },
+      body: "The Practice Tracker shows every section's progress, each student's answers, and any written answers waiting for your marks.",
+      action: { href: "/teacher/tracker", label: "Open Practice Tracker" },
     };
   }
   return {
     title: "Some of your setup couldn't be checked",
-    body: "Part of this page couldn't load just now; the checklist shows which. Everything is still available from Assignments.",
-    action: { href: "/teacher/assignments", label: "Open Assignments" },
+    body: "Part of this page couldn't load just now; the checklist shows which. Everything is still available from the Practice Tracker.",
+    action: { href: "/teacher/tracker", label: "Open Practice Tracker" },
   };
 }
 
@@ -743,7 +745,7 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
         })}
       </ul>
 
-      <TextLink href="/teacher/assignments">Assign practice to a section</TextLink>
+      <TextLink href="/teacher/assign">Assign Practice To A Section</TextLink>
     </div>
   );
 }
@@ -805,7 +807,7 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
       <div className="space-y-4">
         {heading}
         <InlineError>Couldn&rsquo;t load your assignments just now ({assignments.message}).</InlineError>
-        <TextLink href="/teacher/assignments">Open Assignments</TextLink>
+        <TextLink href="/teacher/tracker">Open Practice Tracker</TextLink>
       </div>
     );
   }
@@ -835,13 +837,12 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
                     <span className="block truncate text-sm font-semibold text-content">
                       {assignment.learningActivityTitle ?? "Learning activity"}
                     </span>
-                    {/* Assignment.className holds the class only -- the
-                        section a teacher picked isn't stored on the
-                        assignment row (no column for it), so this can't
-                        name it. */}
+                    {/* Since 1 Oct 2026 the assignment row records its
+                        section too (Assignment.section), so "5A" rather
+                        than just "Class 5" where it's known. */}
                     <span className="block truncate text-xs text-content-subtle">
                       {[
-                        assignment.className ? `Class ${assignment.className}` : null,
+                        assignment.className ? `Class ${assignment.className}${assignment.section ?? ""}` : null,
                         plural(assignment.targetCount, "student"),
                         assignment.learningActivityType ? ACTIVITY_TYPE_LABEL[assignment.learningActivityType] : null,
                         assignment.dueDate ? `due ${formatDay(assignment.dueDate)}` : null,
@@ -859,7 +860,9 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
           </ul>
         </>
       )}
-      <TextLink href="/teacher/assignments">{rows.length === 0 ? "Assign Practice" : "Open Assignments"}</TextLink>
+      <TextLink href={rows.length === 0 ? "/teacher/assign" : "/teacher/tracker"}>
+        {rows.length === 0 ? "Assign Practice" : "Open Practice Tracker"}
+      </TextLink>
     </div>
   );
 }
@@ -889,15 +892,16 @@ type Module = {
 const MODULES: Module[] = [
   {
     icon: <ClipboardList className="h-5 w-5" aria-hidden />,
-    title: "Assignments",
-    // Was "Set a chapter, a practice set or a mock paper ...". There is no
-    // paper/mock model or route anywhere (admin dashboard: checked 30 Sep
-    // 2026), so the mock paper is gone from the promise.
-    description: "Assign a chapter's published practice to one of your sections, then review every student's answers.",
+    title: "Practice Tracker",
+    // No paper/mock model or route exists anywhere (admin dashboard:
+    // checked 30 Sep 2026), so no mock paper in the promise.
+    description: "Assign a chapter's practice to your sections, then follow every student's progress and answers.",
     tone: "accent",
-    // Live: /teacher/assignments is a real route in RoleShell's NAV.
+    // Live: /teacher/tracker (and /teacher/assign, linked from its header)
+    // are real routes in RoleShell's NAV since 1 Oct 2026. The old
+    // /teacher/assignments redirects to the tracker.
     status: "live",
-    href: "/teacher/assignments",
+    href: "/teacher/tracker",
   },
   {
     icon: <Users className="h-5 w-5" aria-hidden />,
@@ -911,13 +915,14 @@ const MODULES: Module[] = [
   },
   {
     icon: <ClipboardCheck className="h-5 w-5" aria-hidden />,
-    title: "Marking",
-    description: "School-style marking with part marks, so scores here mean the same thing they do on paper.",
+    title: "Marking Written Answers",
+    description: "Answers that can't be marked automatically wait in one queue for your marks, question by question.",
     tone: "jade",
-    // "Planned": same evidence as the checklist's planned row. Reviewing
-    // auto-marked answers and granting re-attempts already live inside
-    // Assignments; teacher-awarded marks do not exist yet.
-    status: "planned",
+    // Live since 1 Oct 2026: the tracker's Needs Review tab and
+    // /teacher/tracker/attempts/{id}. Method marks on auto-marked
+    // questions are still planned -- see the checklist's planned row.
+    status: "live",
+    href: "/teacher/tracker?tab=review",
   },
   {
     icon: <BarChart3 className="h-5 w-5" aria-hidden />,

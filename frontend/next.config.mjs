@@ -95,6 +95,17 @@ const nextConfig = {
         destination: "/.well-known/security.txt",
         permanent: false,
       },
+      // 1 Oct 2026: /teacher/assignments was one page holding the assign
+      // form, the assignment list and a results modal. It split into
+      // /teacher/assign (setting practice) and /teacher/tracker (reviewing
+      // it). Old links and bookmarks were overwhelmingly "how did they do",
+      // so they land on the tracker. Not permanent, so the old path stays
+      // free to reuse.
+      {
+        source: "/teacher/assignments",
+        destination: "/teacher/tracker",
+        permanent: false,
+      },
     ];
   },
   async headers() {

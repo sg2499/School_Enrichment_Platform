@@ -29,6 +29,12 @@ Authorization model:
   codebase's "don't disclose another student's resource exists" rule.
 - Foundation Repair is TEACHER/ADMIN-only (Section 11: recommendations stay
   under teacher control).
+- Reading an existing assignment's results (targets, attempt results) and
+  granting an extra attempt go through practice_access_service (1 Oct
+  2026): a TEACHER reads what they created or what was set for a section
+  they teach/taught inside their own window, and may only change it while
+  they are that section's current teacher. The Practice Tracker's paginated
+  views and manual grading live in routes_practice_tracker.py.
 """
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -57,7 +63,12 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import foundation_repair_service, learning_service, teacher_assignment_service
+from app.services import (
+    foundation_repair_service,
+    learning_service,
+    practice_access_service,
+    teacher_assignment_service,
+)
 from app.services.audit_service import log_audit_event
 
 router = APIRouter(prefix="/api/learning", tags=["learning"])
@@ -205,6 +216,11 @@ def _assignment_dict(assignment: Assignment, target_count: int) -> dict:
         "learningActivityTitle": assignment.learning_activity.title if assignment.learning_activity else None,
         "learningActivityType": assignment.learning_activity.activity_type if assignment.learning_activity else None,
         "className": assignment.class_name,
+        # 1 Oct 2026: the section scope now stored on the row (None for a
+        # whole-class or single-student assignment) -- see Assignment.section.
+        "section": assignment.section,
+        "classLevelId": assignment.class_level_id,
+        "boardCourseId": assignment.board_course_id,
         "reason": assignment.reason,
         "pacingMode": assignment.pacing_mode,
         "dueDate": assignment.due_date,
@@ -431,21 +447,21 @@ def list_assignments(
 
 
 def _check_assignment_scope(db: Session, user: User, assignment: Assignment) -> None:
-    """Raises 404 (never 403) if `user` (TEACHER/ADMIN/SUPER_ADMIN) has no
-    scope over `assignment` -- a TEACHER only over assignments they created,
-    an ADMIN only over their own school's, SUPER_ADMIN over everything.
-    Matches this file's existing "don't disclose another school's/teacher's
-    resource exists" rule (see module docstring). Factored out 20 Aug 2026
-    so get_attempt_result could reuse list_assignment_targets' scoping
-    check -- get_attempt_result had none before this pass (any
-    authenticated TEACHER/ADMIN could look up any attempt_id, in any
-    school, by guessing/enumerating it)."""
-    if user.role == "TEACHER" and assignment.assigned_by_user_id != user.id:
-        api_error(404, "NOT_FOUND", "Assignment not found.")
-    if user.role == "ADMIN":
-        school = _resolve_school(db, user, None)
-        if assignment.school_id != school.id:
-            api_error(404, "NOT_FOUND", "Assignment not found.")
+    """Raises 404 (never 403) if `user` (TEACHER/ADMIN/SUPER_ADMIN) may not
+    read `assignment`. Matches this file's existing "don't disclose another
+    school's/teacher's resource exists" rule (see module docstring).
+    Factored out 20 Aug 2026 so get_attempt_result could reuse
+    list_assignment_targets' scoping check -- get_attempt_result had none
+    before that pass.
+
+    1 Oct 2026: delegates to practice_access_service.can_read_assignment, so
+    these endpoints and the Practice Tracker agree on exactly who sees what.
+    For a TEACHER that is still "assignments they created", plus -- new --
+    assignments set for a section/course they teach or taught, created
+    inside their own window for it (teacher_may_read_record, the 20 Aug
+    handover policy). ADMIN (own school) and SUPER_ADMIN (all) unchanged."""
+    viewer = practice_access_service.resolve_viewer(db, user)
+    practice_access_service.require_readable_assignment(db, viewer, assignment)
 
 
 def _get_scoped_assignment(db: Session, user: User, assignment_id: str) -> Assignment:
@@ -511,6 +527,16 @@ def grant_extra_attempt(
     target = db.get(AssignmentTarget, target_id)
     if not target or target.assignment_id != assignment.id:
         api_error(404, "NOT_FOUND", "Assignment target not found.")
+    # 1 Oct 2026: granting is a WRITE, so a TEACHER must also be the
+    # section's CURRENT teacher (teacher_may_currently_act_on, whose own
+    # docstring has always listed "grant an extra attempt" among the writes
+    # it gates -- it just was never called here). A teacher who can still
+    # read a handed-over assignment gets a 403 explaining why. Assignments
+    # with no recorded section keep the old creator-only rule; see
+    # practice_access_service.
+    practice_access_service.require_actionable_assignment(
+        db, practice_access_service.resolve_viewer(db, user), assignment
+    )
 
     target = learning_service.grant_extra_attempt(db, target)
     log_audit_event(
@@ -608,6 +634,9 @@ def _evaluation_dict(evaluation) -> dict:
     return {
         "attemptId": evaluation.attempt_id,
         "autoScore": evaluation.auto_score,
+        # 1 Oct 2026, manual grading: marks a teacher has awarded (None until
+        # they award any); finalScore = autoScore + teacherScore.
+        "teacherScore": evaluation.teacher_score,
         "maxScore": evaluation.max_score,
         "finalScore": evaluation.final_score,
         "reviewStatus": evaluation.review_status,
@@ -667,6 +696,9 @@ def get_attempt_result(
                 "responseText": answer.response_text,
                 "isCorrect": answer.is_correct,
                 "autoScore": answer.auto_score,
+                # 1 Oct 2026: a teacher's mark for an answer auto-marking left
+                # unscored (routes_practice_tracker's grading endpoint).
+                "manualScore": answer.manual_score,
                 "maxScore": answer.max_score,
                 "correctAnswer": question.correct_answer,
                 "explanation": question.explanation,
