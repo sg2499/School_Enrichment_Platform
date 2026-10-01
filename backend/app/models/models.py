@@ -37,6 +37,7 @@ import uuid
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import relationship
 
+from app.core.totp_crypto import decrypt_totp_secret, encrypt_totp_secret
 from app.database import Base
 
 
@@ -79,8 +80,22 @@ class User(Base):
     # a pending/unconfirmed secret lives in totp_pending_secret so a user
     # who never finishes setup can't be locked into a half-configured
     # state. Backup codes are stored hashed, never in plaintext.
-    totp_secret = Column(Text, nullable=True)
-    totp_pending_secret = Column(Text, nullable=True)
+    #
+    # Encrypted at rest since 1 Oct 2026 (A6 review remainder): the DB
+    # columns are still named totp_secret / totp_pending_secret, but they
+    # hold Fernet tokens, mapped here to the private _..._ciphertext
+    # attributes. The public totp_secret / totp_pending_secret names are
+    # the properties defined below this column list, which encrypt on set
+    # and decrypt on get (app/core/totp_crypto.py) -- so every existing
+    # caller (routes_auth.py's 2FA setup/enable/disable/verify-login, the
+    # test fixtures that pre-enrol 2FA via User(totp_secret=...)) reads and
+    # writes plaintext exactly as before, and no code path can write
+    # plaintext to the column. A value that can't be decrypted raises
+    # TotpSecretDecryptionError; it is never treated as "no secret".
+    # Querying/filtering on these columns is not supported (nothing does,
+    # and a ciphertext comparison would be meaningless anyway).
+    _totp_secret_ciphertext = Column("totp_secret", Text, nullable=True)
+    _totp_pending_secret_ciphertext = Column("totp_pending_secret", Text, nullable=True)
     totp_enabled = Column(Boolean, default=False, nullable=False)
     totp_backup_codes_json = Column(Text, nullable=True)
     # Per-account lockout (2026-08-19 security hardening): the existing
@@ -112,6 +127,27 @@ class User(Base):
     totp_last_used_step = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # --- TOTP secrets: plaintext in Python, Fernet ciphertext in the DB ---
+    # (see the comment on _totp_secret_ciphertext above)
+
+    @property
+    def totp_secret(self) -> str | None:
+        stored = self._totp_secret_ciphertext
+        return None if stored is None else decrypt_totp_secret(stored)
+
+    @totp_secret.setter
+    def totp_secret(self, value: str | None) -> None:
+        self._totp_secret_ciphertext = None if value is None else encrypt_totp_secret(value)
+
+    @property
+    def totp_pending_secret(self) -> str | None:
+        stored = self._totp_pending_secret_ciphertext
+        return None if stored is None else decrypt_totp_secret(stored)
+
+    @totp_pending_secret.setter
+    def totp_pending_secret(self, value: str | None) -> None:
+        self._totp_pending_secret_ciphertext = None if value is None else encrypt_totp_secret(value)
 
 
 class Student(Base):

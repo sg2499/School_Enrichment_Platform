@@ -120,7 +120,7 @@ _CHAPTER_NUM = {
     "API1": 10, "API2": 11, "API3": 12, "API4": 13, "API5": 15, "API6": 16,
     "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
     "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
-    "API8B": 27,
+    "API8B": 27, "FR4": 28,
 }
 
 
@@ -1338,3 +1338,112 @@ def test_student_list_hides_cancelled_assignments_but_keeps_closed_ones(client, 
     listed = {row["assignmentId"] for row in response.json()["assignments"]}
     assert listed == {by_status["ACTIVE"], by_status["CLOSED"]}
     assert by_status["CANCELLED"] not in listed
+
+
+# --- Foundation Repair section ownership (A11 completeness pass, 1 Oct 2026) ---
+
+
+def _student_with_low_mastery(db, school, suffix, activity, *, class_name, section):
+    """A student who has one EVALUATED CORE_PRACTICE attempt on `activity`
+    scored 0%, so get_recommendation returns LOW_ACCURACY for its concept."""
+    student = _make_sectioned_student(db, school, suffix, class_name=class_name, section=section)
+    assignment = learning_service.create_assignment(
+        db, school=school, learning_activity=activity, assigned_by_user_id=None, student_ids=[student.id],
+    )
+    target = db.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).first()
+    attempt = learning_service.start_attempt(db, student, target.id)
+    question_id = next(iter(learning_service._activity_question_ids(db, activity.id)))
+    learning_service.save_answer(db, student, attempt.id, question_id, "B")  # wrong -- correct_answer is "A"
+    learning_service.submit_attempt(db, student, attempt.id)
+    return student
+
+
+def _rescue_assignment_count(db, student) -> int:
+    return (
+        db.query(Assignment)
+        .join(AssignmentTarget, AssignmentTarget.assignment_id == Assignment.id)
+        .filter(AssignmentTarget.student_id == student.id, Assignment.reason == "LOW_ACCURACY")
+        .count()
+    )
+
+
+def test_foundation_repair_requires_current_section_ownership(client, db_session):
+    """Gap found in the A11 completeness pass: GET /foundation-repair and
+    POST /foundation-repair/approve only checked Teacher.school_id, so ANY
+    teacher at the school could read any student's concept mastery and
+    approve a rescue Assignment (a practice WRITE) for them. Before the fix
+    every 403 asserted below was a 200 (verified by running this test
+    against the pre-fix routes_learning.py). Now only the student's CURRENT
+    section teacher for that course may do either; a since-transferred
+    teacher may do neither; ADMIN is unaffected."""
+    chapter, (skill,) = _make_chapter_with_skills(db_session, "FR4", n_skills=1)
+    _add_question(db_session, skill, "FR4-P01-01", assignment_code=_ac("FR4", "P01"), correct_answer="A")
+    db_session.commit()
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+
+    school = _make_school(db_session, "fr4")
+    current = _make_teacher(db_session, school, "fr4-current")
+    former = _make_teacher(db_session, school, "fr4-former")
+    # `former` taught 5A for this course from 1 Apr 2026 and was transferred
+    # off it on 20 Aug 2026; `current` has held it since.
+    row = _assign_teacher_section(db_session, former, chapter.board_course_id, "A")
+    teacher_assignment_service.transfer_teacher(
+        db_session, assignment=row, new_teacher_id=current.id, transfer_date=date(2026, 8, 20), admin_user_id=None,
+    )
+    db_session.commit()
+
+    in_5a = _student_with_low_mastery(db_session, school, "fr4-a", activity, class_name="5", section="A")
+    in_5b = _student_with_low_mastery(db_session, school, "fr4-b", activity, class_name="5", section="B")
+    no_section = _student_with_low_mastery(db_session, school, "fr4-n", activity, class_name="5", section=None)
+
+    def recommendation(student, headers):
+        return client.get(
+            "/api/learning/foundation-repair",
+            params={"studentId": student.id, "conceptLessonId": skill.id},
+            headers=headers,
+        )
+
+    def approve(student, headers):
+        return client.post(
+            "/api/learning/foundation-repair/approve",
+            json={"studentId": student.id, "conceptLessonId": skill.id},
+            headers=headers,
+        )
+
+    # Current 5A teacher, own student: both still work exactly as before.
+    headers = {**_login(client, current.user.email), "x-auth-role": "TEACHER"}
+    read = recommendation(in_5a, headers)
+    assert read.status_code == 200, read.text
+    assert read.json()["recommendation"] == "LOW_ACCURACY"
+    approved = approve(in_5a, headers)
+    assert approved.status_code == 200, approved.text
+    assert approved.json()["targetCount"] == 1
+    assert _rescue_assignment_count(db_session, in_5a) == 1
+
+    # Same teacher, same school, a section they don't teach (the gap): no
+    # mastery read, no rescue assignment written.
+    for student in (in_5b, no_section):
+        denied_read = recommendation(student, headers)
+        assert denied_read.status_code == 403, denied_read.text
+        assert "currentScorePercent" not in denied_read.text
+        denied_write = approve(student, headers)
+        assert denied_write.status_code == 403, denied_write.text
+        assert _rescue_assignment_count(db_session, student) == 0
+
+    # Transferred-off teacher: was 5A's teacher, isn't any more -- neither
+    # the read nor the write is allowed on a 5A student now.
+    client.cookies.clear()
+    headers = {**_login(client, former.user.email), "x-auth-role": "TEACHER"}
+    assert recommendation(in_5a, headers).status_code == 403
+    assert approve(in_5a, headers).status_code == 403
+    assert _rescue_assignment_count(db_session, in_5a) == 1  # unchanged
+
+    # ADMIN is not section-scoped (teacher_assignment_service's module
+    # docstring) -- still reads any student in their own school.
+    client.cookies.clear()
+    admin = _make_school_admin(db_session, school, "fr4")
+    headers = {**_login(client, admin.email), "x-auth-role": "ADMIN"}
+    admin_read = recommendation(in_5b, headers)
+    assert admin_read.status_code == 200, admin_read.text
+    assert admin_read.json()["recommendation"] == "LOW_ACCURACY"

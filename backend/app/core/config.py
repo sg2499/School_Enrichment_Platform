@@ -39,6 +39,63 @@ if IS_PRODUCTION and SECRET_KEY == _DEFAULT_SECRET_KEY:
         "set a real SECRET_KEY, or set ENVIRONMENT=development if this really is a local/dev run."
     )
 
+# --- TOTP secret encryption at rest (1 Oct 2026, A6 review remainder) -----
+# users.totp_secret / users.totp_pending_secret hold each enrolled admin's
+# TOTP shared secret -- a DB leak used to hand an attacker the second factor
+# too. They are now Fernet-encrypted (app/core/totp_crypto.py, wired in on
+# the User model) with this key.
+#
+# Format: one or more Fernet keys, comma-separated. Each is exactly what
+# `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+# prints: 32 random bytes, url-safe base64 (44 characters ending in "=").
+# The FIRST key encrypts; every key is tried when decrypting, so a key can
+# be rotated by prepending a new one and keeping the old one listed until
+# every stored secret has been re-encrypted under the new key.
+#
+# Losing this key is not like losing SECRET_KEY: every stored secret becomes
+# undecryptable and every 2FA-enrolled account fails at its TOTP step until
+# its 2FA is reset at the DB level. Back it up wherever SECRET_KEY-level
+# secrets are kept.
+#
+# Same fail-closed rule as SECRET_KEY above (A13): production refuses to
+# boot -- and, since render.yaml runs `alembic upgrade head` in the build,
+# refuses to migrate -- on a missing, blank or dev-default key. Local dev/CI
+# (ENVIRONMENT=development) falls back to the public dev key below, which is
+# in git history and so protects nothing.
+_DEV_TOTP_ENCRYPTION_KEY = "_KNNgPl5NmwVpSsw_RdfuTMyvtNyi4qIx9J3qzmKvK0="
+_configured_totp_key = (os.getenv("TOTP_ENCRYPTION_KEY") or "").strip()
+TOTP_ENCRYPTION_KEYS = [
+    key.strip() for key in (_configured_totp_key or _DEV_TOTP_ENCRYPTION_KEY).split(",") if key.strip()
+]
+
+if IS_PRODUCTION and (not _configured_totp_key or _DEV_TOTP_ENCRYPTION_KEY in TOTP_ENCRYPTION_KEYS):
+    raise RuntimeError(
+        "TOTP_ENCRYPTION_KEY is not set (or is the public dev default). Refusing to start in production -- "
+        "set it to a Fernet key (see backend/.env.example for how to generate one), or set "
+        "ENVIRONMENT=development if this really is a local/dev run."
+    )
+if not TOTP_ENCRYPTION_KEYS:
+    raise RuntimeError("TOTP_ENCRYPTION_KEY contains no keys.")
+
+
+def _validate_fernet_keys(keys: list[str]) -> None:
+    # Checked at import (boot and every alembic run) rather than on first
+    # 2FA use, so a malformed key fails the deploy instead of the first
+    # admin's login. The key values themselves never go into the message.
+    from cryptography.fernet import Fernet
+
+    for position, key in enumerate(keys, start=1):
+        try:
+            Fernet(key)
+        except (ValueError, TypeError):  # bad base64 (binascii.Error is a ValueError) / wrong length
+            raise RuntimeError(
+                f"TOTP_ENCRYPTION_KEY entry #{position} is not a valid Fernet key (expected 32 url-safe "
+                "base64-encoded bytes, as printed by Fernet.generate_key())."
+            ) from None
+
+
+_validate_fernet_keys(TOTP_ENCRYPTION_KEYS)
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
