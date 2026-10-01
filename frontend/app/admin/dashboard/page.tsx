@@ -95,7 +95,7 @@ const STAGES: Stage[] = [
     body: "Practice that teachers assign, students attempt, and the platform marks the moment it's submitted.",
     // Was "planned". Changed to "partial" 30 Sep 2026 -- evidence:
     //  LIVE end to end: teacher POST /learning/assignments
-    //  (app/teacher/assignments) -> student POST /learning/attempts, PUT
+    //  (app/teacher/assign since 1 Oct 2026) -> student POST /learning/attempts, PUT
     //  .../answers, POST .../submit, GET .../result
     //  (app/student/practice/[assignmentTargetId]) -> learning_service
     //  .grade_answer auto-marks and writes an Evaluation. Teachers also
@@ -125,14 +125,19 @@ const STAGES: Stage[] = [
   {
     title: "School Marking Engine",
     body: "Part marks, method marks and teacher-awarded scores, so results match what teachers give on paper.",
-    // Left "planned" after checking, 30 Sep 2026: grade_answer is strictly
-    // all-or-nothing (full marks or 0 per question); Evaluation stores
-    // auto_score only and final_score always equals it -- teacher_score /
-    // rubric / override fields are explicitly deferred to Phase 4
-    // (models/learning.py). No endpoint anywhere writes a manual score, and
-    // Constructed Response attempts sit in PENDING_REVIEW with no queue to
-    // review them. README records Phase 4 as "not started".
-    state: "planned",
+    // "planned" until 1 Oct 2026, now "partial". LIVE: teacher-awarded
+    // marks for answers auto-marking can't score -- Constructed Response
+    // attempts land in the Practice Tracker's Needs Review queue and a
+    // teacher marks each answer 0..its marks (POST
+    // /learning/tracker/attempts/{id}/grades; Evaluation.teacher_score,
+    // final_score = auto + teacher, FINALISED once all are marked).
+    // NOT LIVE: grade_answer is still all-or-nothing on auto-marked
+    // questions (no method/part marks there, no teacher override of an
+    // automatic mark), no rubric tables, and the measurement/unit-tolerance
+    // spec is its own separate pass.
+    state: "partial",
+    shipped: ["Teachers mark written answers question by question"],
+    pending: ["Part and method marks on auto-marked questions", "Unit and tolerance rules for measurement answers"],
   },
   {
     title: "Papers, Mocks and Reports",

@@ -20,6 +20,13 @@ rather than re-deriving the logic:
     on their watch, and gains no visibility into anything created after
     their end_date.
 
+  readable_record_window_clause -- the same rule as teacher_may_read_record,
+    expressed as a SQL EXISTS clause so a paginated list endpoint can filter
+    a whole result set by it in the database instead of loading every row
+    and calling teacher_may_read_record per row. The two MUST stay in step;
+    test_practice_tracker.py checks them against each other on the
+    boundary cases (start date inclusive, end date exclusive).
+
 ADMIN/SUPER_ADMIN bypass both checks entirely at the route layer -- they
 are not filtered by this module at all, matching every other
 admin-vs-teacher scoping split already in this codebase (see
@@ -27,6 +34,7 @@ routes_curriculum_admin.py's _resolve_school_id docstring).
 """
 from datetime import date, datetime, timezone
 
+from sqlalchemy import exists, func, or_
 from sqlalchemy.orm import Session
 
 from app.core.errors import api_error
@@ -217,4 +225,32 @@ def teacher_may_read_record(
     return any(
         record_date >= start_date and (end_date is None or record_date < end_date)
         for start_date, end_date in windows
+    )
+
+
+def readable_record_window_clause(*, teacher_id: str, class_level_id_col, section_col, board_course_id_col, created_at_col):
+    """SQL twin of teacher_may_read_record: an EXISTS that is true for a row
+    whose (class_level, section, board_course) and creation DATE fall inside
+    any window -- current or ended -- this teacher ever held for that exact
+    triple. Start date inclusive, end date exclusive, same as the Python
+    version: a record created ON a teacher's end_date belongs to the
+    incoming teacher, whose window starts that same day.
+
+    Compares date(created_at) -- exactly what the Python version does with
+    `.date()` -- rather than the raw timestamp against the date column. The
+    raw comparison is equivalent on Postgres, but on SQLite (tests, local
+    dev) a timestamp is an ISO string that can never equal a bare date
+    string, so the inclusive/exclusive edges would silently stop being
+    distinguishable. date() is a plain function call on both engines. The
+    filter only ever runs inside an EXISTS over teacher_section_assignments
+    (a handful of rows per teacher), so losing an index on created_at here
+    costs nothing."""
+    tsa = TeacherSectionAssignment
+    return exists().where(
+        tsa.teacher_id == teacher_id,
+        tsa.class_level_id == class_level_id_col,
+        tsa.section == section_col,
+        tsa.board_course_id == board_course_id_col,
+        func.date(created_at_col) >= tsa.start_date,
+        or_(tsa.end_date.is_(None), func.date(created_at_col) < tsa.end_date),
     )

@@ -64,6 +64,7 @@ from app.models import (
     Attempt,
     AttemptAnswer,
     Chapter,
+    ClassLevel,
     ConceptLesson,
     Evaluation,
     LearningActivity,
@@ -264,11 +265,27 @@ def create_assignment(
             where = f"class {class_name!r}, section {section!r}" if section is not None else f"class {class_name!r}"
             api_error(422, "VALIDATION_ERROR", f"No active students found in {where}.")
 
+    # Section scope (1 Oct 2026, Practice Tracker): record which
+    # (class_level, section, board_course) this assignment was set for, so
+    # read access and the tracker's section filters can be answered from
+    # the row itself -- see the Assignment model's comment. Purely
+    # descriptive: nothing above (who gets targeted) depends on it. Only a
+    # class-wide assignment gets a class level/section; a student_ids
+    # assignment is not section-scoped (section stays None, matching the
+    # targeting rule above, which ignores section in that case too).
+    class_level = None
+    if class_name and not student_ids:
+        class_level = db.query(ClassLevel).filter(ClassLevel.code == class_name).first()
+    chapter = db.get(Chapter, learning_activity.chapter_id)
+
     assignment = Assignment(
         school_id=school.id,
         learning_activity_id=learning_activity.id,
         assigned_by_user_id=assigned_by_user_id,
         class_name=class_name,
+        section=None if student_ids else section,
+        class_level_id=class_level.id if class_level else None,
+        board_course_id=chapter.board_course_id if chapter else None,
         reason=reason,
         source_prerequisite_link_id=source_prerequisite_link_id,
         pacing_mode=pacing_mode,
@@ -574,6 +591,101 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
     db.commit()
     db.refresh(evaluation)
     return evaluation
+
+
+# --- Manual grading (1 Oct 2026) -------------------------------------------
+
+
+def needs_manual_grade(answer: AttemptAnswer) -> bool:
+    """True for an answer grade_answer left unscored on submit (auto_score
+    IS NULL -- Constructed Response and any other non-auto-gradable type).
+    These, and only these, are what a teacher marks; an auto-scored answer
+    is never re-marked by hand (see AttemptAnswer.manual_score's comment)."""
+    return answer.auto_score is None
+
+
+def apply_manual_grades(
+    db: Session,
+    *,
+    attempt: Attempt,
+    grades: dict[str, int],
+    grader_user_id: str,
+) -> tuple[Evaluation, list[dict]]:
+    """Records a teacher's marks for some or all of an attempt's unscored
+    answers, then recomputes the attempt's Evaluation.
+
+    `grades` maps question_id -> marks awarded. Partial submissions are
+    fine (mark three answers now, the fourth later); re-marking an answer
+    that already has a manual_score is a correction and simply replaces it
+    -- including after the attempt is FINALISED, since a teacher who typed
+    the wrong number must be able to fix it. Every change is returned as
+    {questionId, previousScore, score, maxScore} so the route can write one
+    audit row describing exactly what moved.
+
+    Validation, all-or-nothing (nothing is written if any entry is bad):
+      - the attempt must have been submitted (it has an Evaluation);
+      - every question_id must be an answer on this attempt that needs a
+        manual grade -- 422 for an auto-scored answer, 404-style 422 for a
+        question that isn't on the attempt at all;
+      - each score must be an integer in 0..that answer's own max_score
+        (the snapshot taken at answer time, not today's Question.marks).
+
+    Rollup: teacher_score = sum of manual_score over marked answers;
+    final_score = auto_score + teacher_score. Once every answer that needs a
+    manual grade has one, review_status flips PENDING_REVIEW -> FINALISED,
+    the attempt moves SUBMITTED -> EVALUATED (the same status a fully
+    auto-marked attempt gets on submit), and finalised_by/at are stamped.
+    is_correct is set to "full marks or not" for a marked answer, so the
+    existing correct/incorrect tallies (student result view, tracker) count
+    it rather than leaving it permanently "pending".
+
+    Does not commit -- the route logs its audit event and commits both in
+    one transaction, audit_service.py's convention.
+    """
+    evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
+    if not evaluation:
+        api_error(422, "NOT_SUBMITTED", "This attempt has not been submitted yet.")
+    if not grades:
+        api_error(422, "VALIDATION_ERROR", "Provide at least one mark.")
+
+    answers = {a.question_id: a for a in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()}
+    for question_id, score in grades.items():
+        answer = answers.get(question_id)
+        if answer is None:
+            api_error(422, "VALIDATION_ERROR", "One of these questions is not part of this attempt.")
+        if not needs_manual_grade(answer):
+            api_error(422, "NOT_MANUALLY_GRADABLE", "This answer was marked automatically and can't be re-marked by hand.")
+        if isinstance(score, bool) or not isinstance(score, int):
+            api_error(422, "VALIDATION_ERROR", "Marks must be a whole number.")
+        if score < 0 or score > answer.max_score:
+            api_error(
+                422,
+                "SCORE_OUT_OF_RANGE",
+                f"Marks for this question must be between 0 and {answer.max_score}.",
+            )
+
+    now = datetime.now(timezone.utc)
+    changes: list[dict] = []
+    for question_id, score in grades.items():
+        answer = answers[question_id]
+        previous = answer.manual_score
+        answer.manual_score = score
+        answer.is_correct = score == answer.max_score
+        answer.graded_by_user_id = grader_user_id
+        answer.graded_at = now
+        changes.append({"questionId": question_id, "previousScore": previous, "score": score, "maxScore": answer.max_score})
+
+    manual_answers = [a for a in answers.values() if needs_manual_grade(a)]
+    teacher_score = sum(a.manual_score for a in manual_answers if a.manual_score is not None)
+    evaluation.teacher_score = teacher_score
+    evaluation.final_score = evaluation.auto_score + teacher_score
+    if all(a.manual_score is not None for a in manual_answers):
+        if evaluation.review_status != "FINALISED":
+            evaluation.review_status = "FINALISED"
+            evaluation.finalised_by_user_id = grader_user_id
+            evaluation.finalised_at = now
+        attempt.status = "EVALUATED"
+    return evaluation, changes
 
 
 def get_result(db: Session, attempt_id: str) -> Evaluation | None:

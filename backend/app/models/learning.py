@@ -60,9 +60,10 @@ stretched 3-week cadence via Assignment.pacing_mode -- pacing_day is
 scheduling guidance the frontend/teacher calendar can use, not a constraint
 the attempt-lifecycle logic below ever checks.
 
-Evaluation here covers AUTO only (blueprint 8.1's `auto_score`/`final_score`
-split, minus `teacher_score`/`rubric_version_id`/override fields -- those are
-Phase 4 territory once HYBRID/HANUAL subjective content exists). Every
+Evaluation originally covered AUTO only (blueprint 8.1's `auto_score`/
+`final_score` split). Since 1 Oct 2026 a teacher can also mark the answers
+auto-marking leaves unscored (`teacher_score`, see the Evaluation class
+docstring); `rubric_version_id`/override fields remain Phase 4 territory. Every
 Class 5 Maths question currently in the bank is `auto_gradable=True`
 (496/500 in Chapter 1; the 4 non-auto-gradable Constructed Response items are
 graded manually and simply never receive an `auto_score` here -- see
@@ -76,6 +77,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -210,6 +212,26 @@ class Assignment(Base):
     # this assignment targets specific student(s) only (e.g. a Foundation
     # Repair rescue), not a whole class.
     class_name = Column(String(50), nullable=True)
+    # The (class_level, section, board_course) this assignment was set for
+    # -- added 1 Oct 2026 (Practice Tracker redesign). Before this, only the
+    # free-text class_name above was stored: the section a teacher picked
+    # was used once to pick the target students and then thrown away, and
+    # the course was only reachable through learning_activity -> chapter.
+    # That made it impossible to answer "which assignments belong to
+    # section 5A Maths" without re-deriving it per row, which is exactly
+    # what teacher_assignment_service.teacher_may_read_record needs (it is
+    # keyed on that triple) and what a paginated tracker must be able to
+    # filter on in SQL. All three are nullable and purely descriptive:
+    # learning_service.create_assignment fills them from what the caller
+    # already sent (class_name -> ClassLevel.code, section verbatim after
+    # the same strip(), board_course from the activity's chapter). A row
+    # with no section (an ADMIN whole-class assignment, a Foundation Repair
+    # single-student assignment, or a pre-1-Oct row the migration could not
+    # pin to one section) is simply not section-scoped -- see
+    # practice_access_service for how that is treated.
+    section = Column(String(50), nullable=True)
+    class_level_id = Column(String, ForeignKey("class_levels.id", ondelete="SET NULL"), nullable=True)
+    board_course_id = Column(String, ForeignKey("board_courses.id", ondelete="SET NULL"), nullable=True)
     reason = Column(String(30), nullable=False, default="SCHEDULED")
     # Set only when reason == PREREQUISITE_GAP -- which earlier concept's gap
     # triggered this, for audit/explanation (blueprint Section 11's "Store
@@ -235,6 +257,17 @@ class Assignment(Base):
     school = relationship("School")
     learning_activity = relationship("LearningActivity")
     source_prerequisite_link = relationship("PrerequisiteLink")
+    class_level = relationship("ClassLevel")
+    board_course = relationship("BoardCourse")
+    assigned_by = relationship("User", foreign_keys=[assigned_by_user_id])
+
+    __table_args__ = (
+        # The tracker's two hot paths: "this section's assignments" (the
+        # handover-window join in practice_access_service) and "newest
+        # first within a school".
+        Index("ix_assignments_scope", "school_id", "class_level_id", "section", "board_course_id"),
+        Index("ix_assignments_school_created", "school_id", "created_at"),
+    )
 
 
 class AssignmentTarget(Base):
@@ -305,31 +338,61 @@ class AttemptAnswer(Base):
     auto_score = Column(Integer, nullable=True)
     max_score = Column(Integer, nullable=False, default=1)
     answered_at = Column(DateTime(timezone=True), nullable=True)
+    # Manual grading (1 Oct 2026). Only ever set on an answer grade_answer
+    # could not score (auto_score IS NULL -- Constructed Response and any
+    # other non-auto-gradable type); an auto-scored answer is never
+    # overwritten here, so "what the machine said" and "what a teacher
+    # said" stay separately recorded per blueprint 8.1. 0..max_score,
+    # enforced in learning_service.apply_manual_grades. Who and when are
+    # kept on the answer itself (not only in the audit log) so the review
+    # screen can say "Marked by X on Y" without parsing audit JSON.
+    manual_score = Column(Integer, nullable=True)
+    graded_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    graded_at = Column(DateTime(timezone=True), nullable=True)
 
     attempt = relationship("Attempt")
     question = relationship("Question")
+    graded_by = relationship("User", foreign_keys=[graded_by_user_id])
 
     __table_args__ = (UniqueConstraint("attempt_id", "question_id", name="uq_attempt_answer"),)
 
 
 class Evaluation(Base):
     """Attempt-level rollup (blueprint 8.1: "Store automatic and final
-    marking separately"). Phase 3 scope is AUTO only -- final_score always
-    equals auto_score here; the teacher_score/rubric_version_id/
-    evaluated_by/override_reason fields blueprint 8.1 also lists are Phase
-    4 additions for once HYBRID/MANUAL subjective content exists, deferred
-    the same way curriculum.py deferred rubric tables."""
+    marking separately").
+
+    Since 1 Oct 2026 this carries manual marks too: teacher_score is the sum
+    of AttemptAnswer.manual_score over the answers a teacher has marked so
+    far, and final_score = auto_score + teacher_score (see
+    learning_service.apply_manual_grades, the only writer). auto_score is
+    never touched by manual grading. While review_status is PENDING_REVIEW,
+    final_score is provisional (it counts only what has been marked yet);
+    once every unscored answer has a manual_score the row flips to
+    FINALISED and finalised_by/finalised_at record who completed it.
+
+    Still deliberately NOT here: rubric_version_id and override_reason
+    (blueprint 8.1). There are no rubric tables (curriculum.py), and a
+    teacher can only mark answers the machine could not -- overriding an
+    auto-scored answer is not supported, so there is nothing to give a
+    reason for."""
     __tablename__ = "evaluations"
     id = Column(String, primary_key=True, default=uuid_str)
     attempt_id = Column(String, ForeignKey("attempts.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     auto_score = Column(Integer, nullable=False, default=0)
     max_score = Column(Integer, nullable=False, default=0)
     final_score = Column(Integer, nullable=False, default=0)
+    # Sum of manual marks awarded so far; NULL until a teacher marks
+    # anything (so an AUTO_FINALISED row is visibly "no human involved").
+    teacher_score = Column(Integer, nullable=True)
     # "AUTO_FINALISED" (every answer was auto-gradable) | "PENDING_REVIEW"
-    # (at least one answer needs a human -- Phase 4's review queue; Phase 3
-    # simply leaves such attempts in this state) | "FINALISED" (Phase 4).
-    review_status = Column(String(20), nullable=False, default="AUTO_FINALISED")
+    # (at least one answer still needs a teacher's mark -- the Practice
+    # Tracker's Needs Review queue) | "FINALISED" (every such answer has
+    # since been marked by a teacher).
+    review_status = Column(String(20), nullable=False, default="AUTO_FINALISED", index=True)
     evaluated_at = Column(DateTime(timezone=True), server_default=func.now())
+    finalised_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    finalised_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     attempt = relationship("Attempt")
+    finalised_by = relationship("User", foreign_keys=[finalised_by_user_id])

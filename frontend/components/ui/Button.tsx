@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -132,3 +133,59 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     </button>
   );
 });
+
+/**
+ * A link that looks exactly like a Button (1 Oct 2026). Navigation should be
+ * a real <a> -- middle-click, "open in new tab", and screen readers
+ * announcing "link" all depend on it -- but several actions ("View In
+ * Tracker", "Mark Answers") are navigations that sit beside real buttons
+ * and must look like them. Same variants and sizes; no loading state,
+ * since a link never waits.
+ */
+export function ButtonLink({
+  href,
+  variant = "primary",
+  size = "md",
+  leadingIcon,
+  trailingIcon,
+  fullWidth,
+  className,
+  children,
+  ...props
+}: Omit<React.ComponentProps<typeof Link>, "className"> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  leadingIcon?: React.ReactNode;
+  trailingIcon?: React.ReactNode;
+  fullWidth?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link href={href} className={cn(BASE, VARIANTS[variant], SIZES[size], fullWidth && "w-full", className)} {...props}>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/[0.09] group-active:bg-black/[0.07]"
+      />
+      {HAS_SHEEN[variant] ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-sheen" />
+      ) : null}
+      <span className="relative z-10 inline-flex min-w-0 items-center gap-2">
+        {leadingIcon ? (
+          <span aria-hidden className="-ml-0.5 inline-flex shrink-0">
+            {leadingIcon}
+          </span>
+        ) : null}
+        <span className="truncate">{children}</span>
+        {trailingIcon ? (
+          <span
+            aria-hidden
+            className="-mr-0.5 inline-flex shrink-0 transition-transform duration-200 ease-spring group-hover:translate-x-0.5"
+          >
+            {trailingIcon}
+          </span>
+        ) : null}
+      </span>
+    </Link>
+  );
+}
