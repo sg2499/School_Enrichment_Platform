@@ -53,7 +53,22 @@ export function EmptyState({
           </Badge>
         ) : null}
         <h3 className="font-display text-display-sm text-balance text-content">{title}</h3>
-        <p className={cn("max-w-prose text-[0.9375rem] leading-relaxed text-content-muted", centered && "mx-auto")}>
+        {/* The 68ch cap is for the centred layout only (1 Oct 2026). There,
+            a capped, mx-auto block is what makes the space either side read
+            as deliberate. Left-aligned, the column is already bounded by
+            flex-1 beside the illustration, so the cap only ever cut a line
+            short of the room it had: measured across every left-aligned
+            empty state at 1440 and 1920px, it changed nothing in most and,
+            where it did engage, pushed a lone word onto a second line
+            (Daily Practice: "...ten to fifteen minutes'" / "work.") --
+            the same "wraps with plenty of room left" PageHeader.tsx's
+            description had. Don't add it back to the left variant. */}
+        <p
+          className={cn(
+            "text-[0.9375rem] leading-relaxed text-content-muted text-pretty",
+            centered && "mx-auto max-w-prose",
+          )}
+        >
           {description}
         </p>
 

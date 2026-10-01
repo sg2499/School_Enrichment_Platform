@@ -1023,8 +1023,11 @@ function ChapterStudio() {
                     Concept lessons
                   </h3>
                   {/* content-subtle, not content-faint: this is instruction,
-                      not decoration, and deserves the stronger step (6.4:1). */}
-                  <p className="mt-1 max-w-prose text-xs leading-relaxed text-content-subtle">
+                      not decoration, and deserves the stronger step (6.4:1).
+                      No max-w-prose (1 Oct 2026): at text-xs, 68ch is ~610px,
+                      which broke this one-line note in two beside an empty
+                      strip of up to ~900px across the panel. */}
+                  <p className="mt-1 text-xs leading-relaxed text-content-subtle text-pretty">
                     Open a lesson to read every question&apos;s actual text, options and correct answer before approving
                     it — a status badge alone doesn&apos;t tell you what&apos;s about to publish.
                   </p>
@@ -1577,6 +1580,10 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-muted text-content-faint ring-1 ring-inset ring-line">
                 <Building2 className="h-5 w-5" aria-hidden />
               </span>
+              {/* This cap stays (checked 1 Oct 2026, unlike the uncapped
+                  notes elsewhere): centred in the dashed well, it sets the
+                  line as a balanced two-line block under the icon. Uncapped,
+                  it runs almost edge to edge of the well on one line. */}
               <p className="max-w-[18rem] text-sm leading-relaxed text-content-subtle">
                 Choose a school on the left to see the chapters in its calendar.
               </p>

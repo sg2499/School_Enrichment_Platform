@@ -81,9 +81,19 @@ function deviceLabel(userAgent: string | null): string {
   return [browser, os].filter(Boolean).join(" on ") || (isMobile ? "Mobile device" : "Desktop device");
 }
 
+/** "3 min ago" for a server timestamp. The backend serialises aware
+ *  datetimes with isoformat(), which ends in "+00:00", never "Z" -- this used
+ *  to test only for a trailing "Z", so every real timestamp became
+ *  "...+00:00Z", parsed to NaN, and every session read "Active NaN days ago"
+ *  (1 Oct 2026). Zone detection is deliberately the same as lib/tracker.ts's
+ *  formatDateTime -- keep the two in step: a "Z" or an offset is used as
+ *  sent, a bare timestamp is the backend's UTC. Anything still unparseable
+ *  degrades to "Unknown", never NaN. */
 function relativeTime(iso: string | null): string {
   if (!iso) return "Unknown";
-  const then = new Date(iso.endsWith("Z") ? iso : `${iso}Z`).getTime();
+  const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso);
+  const then = new Date(hasZone ? iso : `${iso.replace(" ", "T")}Z`).getTime();
+  if (Number.isNaN(then)) return "Unknown";
   const diffSeconds = Math.max(0, Math.floor((Date.now() - then) / 1000));
   if (diffSeconds < 60) return "Just now";
   const diffMinutes = Math.floor(diffSeconds / 60);
@@ -969,7 +979,11 @@ function SecuritySettingsPageInner() {
               <div className="space-y-3 border-t border-line pt-5">
                 {!confirmSignOutAll ? (
                   <>
-                    <p className="max-w-prose text-[0.875rem] leading-relaxed text-content-muted">
+                    {/* No max-w-prose (1 Oct 2026): the card already bounds
+                        this, and the 68ch cap stopped it 230-570px short of
+                        the card edge on desktop, a line longer than it needed
+                        to be -- the problem PageHeader.tsx's description had. */}
+                    <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">
                       If you signed in on a shared or public computer and forgot to sign out, or you suspect someone
                       else has access to your account, end every active session at once instead &mdash; including this
                       one. You&rsquo;ll need to log in again afterwards.
@@ -1032,7 +1046,9 @@ function SecuritySettingsPageInner() {
                   </CardDescription>
                 </div>
               </div>
-              <p className="max-w-prose text-[0.875rem] leading-relaxed text-content-muted">
+              {/* Uncapped, as the sign-out-everywhere note above: it fits on
+                  one line at desktop widths instead of breaking at 68ch. */}
+              <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">
                 This includes your account and profile details, your recent login sessions, and your
                 recent account activity, as a JSON file you can keep for your own records.
               </p>

@@ -1108,7 +1108,9 @@ function BulkImportForm({
   return (
     <div className="space-y-5 rounded-3xl border border-line bg-surface-muted/40 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="max-w-prose text-[0.8125rem] leading-relaxed text-content-muted">
+        {/* No max-w-prose (1 Oct 2026): the form's max-w-3xl already bounds
+            this, and the cap broke a note that fits on one line in two. */}
+        <p className="text-[0.8125rem] leading-relaxed text-content-muted text-pretty">
           Upload a .csv or .xlsx file with a header row. Only <strong className="text-content">fullName</strong> is
           required; the template has every column in the right order.
         </p>
