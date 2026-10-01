@@ -56,6 +56,37 @@ BULK_ROLES = {"TEACHER", "STUDENT"}  # bulk ADMIN creation isn't a real onboardi
 # above any real school's roster size in one file.
 MAX_BULK_IMPORT_ROWS = 2000
 
+# A14 remainder (1 Oct 2026, email enumeration): User.email is unique across
+# the WHOLE platform, and this used to answer "A user with email
+# x@y.com already exists." -- so any school ADMIN (the everyday caller here)
+# could confirm whether an arbitrary address was registered anywhere on the
+# platform: another school's teacher, a student, another school's admin, the
+# super admin. The rejection is now one fixed message, identical whoever
+# the address belongs to (this school, another school, any role), that
+# never echoes the address and never says it exists -- while still telling a
+# legitimate admin what to do next. Nothing logs the address either: the
+# audit row for a rejection (roster.person_create_email_rejected) records
+# only role/school/count -- audit rows reach a user through their own
+# /me/export, so the address must not be in them.
+#
+# What this deliberately can't hide: with platform-wide unique emails and
+# synchronous creation, "created" vs "not created" is itself an answer.
+# The rejection no longer says WHY or for WHOM, and each "free" probe leaves
+# a real account in the school's roster plus an audit row, so it is noisy;
+# closing it entirely would need a design change (per-school email
+# uniqueness, or invite-and-verify account creation).
+EMAIL_NOT_ACCEPTED_MESSAGE = (
+    "This account could not be created with that email address. Check that it is typed correctly; "
+    "if it is, use a different email address, or for a teacher or student leave the email blank "
+    "(they can sign in with their login code instead)."
+)
+
+
+class _EmailNotAccepted(ValueError):
+    """The email is already taken somewhere on the platform. A ValueError
+    like every other _create_person rejection (same 422 shape to the
+    client); a separate class only so the audit trail can count these."""
+
 # A1 fix: a short, easy-to-transcribe-by-hand random password -- unambiguous
 # character set (no 0/O/1/l/I) since this is read off a screen and typed by
 # an adult on behalf of a student/teacher, or handed to a new admin
@@ -138,7 +169,8 @@ def _create_person(
     if role == "ADMIN" and not cleaned_email:
         raise ValueError("email is required for an ADMIN account (no fallback login code exists for admins).")
     if cleaned_email and db.query(User).filter(User.email == cleaned_email).first():
-        raise ValueError(f"A user with email {cleaned_email} already exists.")
+        # Never echo the address or say it exists -- see EMAIL_NOT_ACCEPTED_MESSAGE.
+        raise _EmailNotAccepted(EMAIL_NOT_ACCEPTED_MESSAGE)
 
     initial_password = _generate_initial_password(full_name)
     new_user = User(
@@ -243,6 +275,20 @@ def create_person(
             subject_specialization=payload.subjectSpecialization,
             qualification=payload.qualification,
         )
+    except _EmailNotAccepted:
+        db.rollback()
+        # Recorded (without the address) so repeated rejections from one
+        # account -- the signature of someone probing for registered
+        # emails -- are visible to the platform operator afterwards.
+        log_audit_event(
+            db,
+            "roster.person_create_email_rejected",
+            user_id=user.id,
+            request=request,
+            details={"role": role, "schoolId": school.id, "count": 1},
+        )
+        db.commit()
+        api_error(422, "VALIDATION_ERROR", EMAIL_NOT_ACCEPTED_MESSAGE)
     except ValueError as exc:
         db.rollback()
         api_error(422, "VALIDATION_ERROR", str(exc))
@@ -466,8 +512,29 @@ def bulk_create_people(
 
     results = []
     created_count = 0
+    email_rejected_count = 0
+    # Email (normalised the way _create_person normalises it) -> the first
+    # row of THIS file that used it. A repeat within the upload is reported
+    # as exactly that: it tells the admin nothing about the rest of the
+    # platform -- they typed both rows -- and is far more useful than the
+    # generic message would be.
+    first_row_for_email: dict[str, int] = {}
     for idx, row in enumerate(rows, start=2):  # row 1 is the header
         full_name = str(row.get("fullName") or "").strip()
+        email = str(row.get("email")).strip() if row.get("email") else None
+        email_key = email.lower() if email else None
+        if email_key and email_key in first_row_for_email:
+            results.append(
+                {
+                    "row": idx,
+                    "fullName": full_name,
+                    "status": "skipped",
+                    "error": f"This email address is already used on row {first_row_for_email[email_key]} of this file.",
+                }
+            )
+            continue
+        if email_key:
+            first_row_for_email[email_key] = idx
         try:
             person = _create_person(
                 db,
@@ -475,7 +542,7 @@ def bulk_create_people(
                 school=school,
                 role=role,
                 full_name=full_name,
-                email=(str(row.get("email")).strip() if row.get("email") else None),
+                email=email,
                 class_name=(str(row.get("className")).strip() if row.get("className") else None),
                 section=(str(row.get("section")).strip() if row.get("section") else None),
                 designation=(str(row.get("designation")).strip() if row.get("designation") else None),
@@ -502,6 +569,10 @@ def bulk_create_people(
                 }
             )
         except ValueError as exc:
+            # _EmailNotAccepted's message is the fixed generic one -- the
+            # address is never echoed back per row either.
+            if isinstance(exc, _EmailNotAccepted):
+                email_rejected_count += 1
             results.append({"row": idx, "fullName": full_name, "status": "skipped", "error": str(exc)})
 
     log_audit_event(
@@ -509,7 +580,14 @@ def bulk_create_people(
         "roster.bulk_import",
         user_id=user.id,
         request=request,
-        details={"role": role, "schoolId": school.id, "created": created_count, "attempted": len(rows)},
+        details={
+            "role": role,
+            "schoolId": school.id,
+            "created": created_count,
+            "attempted": len(rows),
+            # Count only, never the addresses -- see EMAIL_NOT_ACCEPTED_MESSAGE.
+            "emailRejected": email_rejected_count,
+        },
     )
     db.commit()
     return {"created": created_count, "attempted": len(rows), "results": results}
