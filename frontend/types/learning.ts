@@ -47,6 +47,11 @@ export type Assignment = {
   learningActivityTitle?: string | null;
   learningActivityType?: ActivityType | null;
   className: string | null;
+  // The section scope recorded on the assignment (1 Oct 2026) -- null for a
+  // whole-class or single-student assignment.
+  section?: string | null;
+  classLevelId?: string | null;
+  boardCourseId?: string | null;
   reason: AssignmentReason;
   pacingMode: string;
   dueDate: string | null;
@@ -57,12 +62,21 @@ export type Assignment = {
   createdAt: string | null;
 };
 
+// AUTO_FINALISED: every answer was marked automatically. PENDING_REVIEW: at
+// least one answer is waiting for a teacher's mark (finalScore is
+// provisional until then). FINALISED (1 Oct 2026): a teacher has marked
+// every such answer.
+export type ReviewStatus = "AUTO_FINALISED" | "PENDING_REVIEW" | "FINALISED";
+
 export type EvaluationResult = {
   attemptId: string;
   autoScore: number;
+  // Marks a teacher has awarded so far; null until they award any.
+  // finalScore = autoScore + (teacherScore ?? 0).
+  teacherScore?: number | null;
   maxScore: number;
   finalScore: number;
-  reviewStatus: "AUTO_FINALISED" | "PENDING_REVIEW";
+  reviewStatus: ReviewStatus;
   evaluatedAt: string | null;
 };
 
@@ -158,6 +172,8 @@ export type AttemptAnswerResult = {
   responseText: string | null;
   isCorrect: boolean | null;
   autoScore: number | null;
+  // A teacher's mark for an answer auto-marking couldn't score (1 Oct 2026).
+  manualScore?: number | null;
   maxScore: number;
   correctAnswer: string;
   explanation: string | null;

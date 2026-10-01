@@ -102,8 +102,14 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/teacher/dashboard" },
         { label: "My Classes", icon: Users, soon: true },
-        { label: "Assignments", icon: ClipboardList, href: "/teacher/assignments" },
-        { label: "Marking", icon: ClipboardCheck, soon: true },
+        // 1 Oct 2026: the old single "Assignments" page (assign form,
+        // results list and a results modal on one screen) is now two
+        // routes -- setting practice and reviewing it are different jobs.
+        // "Marking" stopped being a placeholder the same day: written
+        // answers are marked in the tracker's Needs Review tab, so it no
+        // longer gets a row of its own.
+        { label: "Assign Practice", icon: ClipboardList, href: "/teacher/assign" },
+        { label: "Practice Tracker", icon: ClipboardCheck, href: "/teacher/tracker" },
       ],
     },
     {
@@ -179,6 +185,24 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
 function isActiveHref(href: string | undefined, pathname: string) {
   if (!href) return false;
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Detail views that get the whole screen (1 Oct 2026, Practice Tracker):
+ * one assignment's class list, one student's history, one attempt being
+ * marked. On these routes the desktop rail collapses to its icon column
+ * automatically and the content column drops its max width, so a wide
+ * table or a marking screen isn't squeezed beside the navigation -- the
+ * same mechanism the MathPath reference uses for its per-student route
+ * (PROJECT_REFERENCE.md). Matching is by route pattern, so any future
+ * detail route opts in by being added here, not by each page toggling the
+ * shell. The user's own saved collapse preference is untouched: leaving a
+ * focus route restores whatever they had.
+ */
+const FOCUS_ROUTES: RegExp[] = [/^\/teacher\/tracker\/(assignments|students|attempts)\/[^/]+\/?$/];
+
+function isFocusRoute(pathname: string) {
+  return FOCUS_ROUTES.some((pattern) => pattern.test(pathname));
 }
 
 function currentNavItem(role: UserRole, pathname: string): NavItem | null {
@@ -515,8 +539,21 @@ export function RoleShell({
   }, [menuOpen]);
 
   const currentItem = currentNavItem(role, pathname);
+  const focusRoute = isFocusRoute(pathname);
+  // On a focus route the rail starts collapsed; the toggle can still open
+  // it for this visit, but that choice is not saved -- it resets on the
+  // next navigation, and the saved preference is never overwritten.
+  const [focusExpanded, setFocusExpanded] = useState(false);
+  useEffect(() => {
+    setFocusExpanded(false);
+  }, [pathname]);
+  const railCollapsed = focusRoute ? !focusExpanded : collapsed;
 
   function toggleCollapsed() {
+    if (focusRoute) {
+      setFocusExpanded((prev) => !prev);
+      return;
+    }
     setCollapsed((prev) => {
       const next = !prev;
       window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
@@ -554,14 +591,14 @@ export function RoleShell({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-40 hidden shadow-rail transition-[width] duration-300 ease-spring lg:block",
-          collapsed ? "w-sidebar-collapsed" : "w-sidebar",
+          railCollapsed ? "w-sidebar-collapsed" : "w-sidebar",
         )}
       >
         <SidebarContent
           role={role}
           user={effectiveUser}
           pathname={pathname}
-          collapsed={collapsed}
+          collapsed={railCollapsed}
           onSignOut={handleLogout}
           signingOut={signingOut}
           onToggleCollapse={toggleCollapsed}
@@ -637,7 +674,7 @@ export function RoleShell({
       <div
         className={cn(
           "relative transition-[padding] duration-300 ease-spring",
-          collapsed ? "lg:pl-sidebar-collapsed" : "lg:pl-sidebar",
+          railCollapsed ? "lg:pl-sidebar-collapsed" : "lg:pl-sidebar",
         )}
       >
         {/* mask-fade-b: the glow used to stop dead at 26rem, leaving a faint
@@ -719,12 +756,20 @@ export function RoleShell({
         <main
           id="main-content"
           tabIndex={-1}
-          className="relative z-10 mx-auto w-full max-w-shell px-4 py-8 outline-none sm:px-6 lg:px-8 lg:py-10"
+          className={cn(
+            "relative z-10 mx-auto w-full px-4 py-8 outline-none sm:px-6 lg:px-8 lg:py-10",
+            focusRoute ? "max-w-none 2xl:px-12" : "max-w-shell",
+          )}
         >
           {children}
         </main>
 
-        <footer className="relative z-10 mx-auto w-full max-w-shell px-4 pb-10 sm:px-6 lg:px-8">
+        <footer
+          className={cn(
+            "relative z-10 mx-auto w-full px-4 pb-10 sm:px-6 lg:px-8",
+            focusRoute ? "max-w-none 2xl:px-12" : "max-w-shell",
+          )}
+        >
           {/* content-subtle, not content-faint: faint is 4.6:1 on white but
               4.4:1 on this paper canvas, just under AA at 12px. */}
           <div className="flex flex-col gap-2 border-t border-line pt-5 text-xs text-content-subtle sm:flex-row sm:items-center sm:justify-between">
