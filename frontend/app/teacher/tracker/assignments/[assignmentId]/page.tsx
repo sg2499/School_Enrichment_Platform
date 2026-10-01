@@ -110,7 +110,9 @@ function AssignmentWorkspace() {
 
   return (
     <RoleShell role="TEACHER" user={user}>
-      <div className="space-y-7">
+      {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
+          Practice); dashboards use space-y-10. This family alone was 7. */}
+      <div className="space-y-8">
         <BackLink href="/teacher/tracker">Practice Tracker</BackLink>
 
         {header.error ? (

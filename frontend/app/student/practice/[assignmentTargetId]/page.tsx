@@ -485,7 +485,10 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                 )}
               />
               <CardBody className="space-y-3.5">
-                <div className="flex items-start justify-between gap-3">
+                {/* items-center: the one-line label and the 24px badge share
+                    a centre line (items-start left the label riding ~2px
+                    high of the badge's text). */}
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Question {index + 1}</p>
                   {state === "correct" ? (
                     <Badge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>
@@ -711,7 +714,9 @@ export default function StudentAttemptPage() {
 
   return (
     <RoleShell role="STUDENT" user={user}>
-      <div className="space-y-6">
+      {/* space-y-8, the working-page rhythm shared with Daily Practice
+          itself (was 6, the only page on that step). */}
+      <div className="space-y-8">
         <PageHeader
           eyebrow="Today's Practice"
           title={attempt?.activity.title ?? (result ? "Your Result" : "Practice")}

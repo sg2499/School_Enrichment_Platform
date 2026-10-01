@@ -48,6 +48,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { ModuleCard, DetailRow } from "@/components/ui/ModuleCard";
+import { PanelFooter, PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { AuroraBackdropInverse, PathIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -811,23 +812,27 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
 
   if (summary.countable === 0) {
     return (
-      <EmptyState
-        illustration={<PathIllustration />}
-        status={{ label: "Waiting on Your School", tone: "accent" }}
-        title="Nothing to practise today"
-        description="When your teacher sets your first practice, you'll see it here — usually ten to fifteen minutes' work, never a wall of homework."
-        // Replaced 30 Sep 2026: "Your streak and progress start counting
-        // from your first practice" (no streak exists anywhere in backend/
-        // or frontend/) and "Anything you get wrong comes back later"
-        // (README: Foundation Repair "not yet built"; nothing re-sets a
-        // missed question automatically). Both below are shipped behaviour:
-        // submit_attempt marks on submit; GET .../result returns the
-        // correct answer for each wrong one.
-        points={[
-          "Each set is marked the moment you submit it",
-          "You'll see the right answer for anything you got wrong",
-        ]}
-      />
+      // Centred, so it stays balanced when Your Details beside it is the
+      // taller card and this one is stretched to match (SplitLayout).
+      <div className="flex flex-1 flex-col justify-center">
+        <EmptyState
+          illustration={<PathIllustration />}
+          status={{ label: "Waiting on Your School", tone: "accent" }}
+          title="Nothing to practise today"
+          description="When your teacher sets your first practice, you'll see it here — usually ten to fifteen minutes' work, never a wall of homework."
+          // Replaced 30 Sep 2026: "Your streak and progress start counting
+          // from your first practice" (no streak exists anywhere in backend/
+          // or frontend/) and "Anything you get wrong comes back later"
+          // (README: Foundation Repair "not yet built"; nothing re-sets a
+          // missed question automatically). Both below are shipped behaviour:
+          // submit_attempt marks on submit; GET .../result returns the
+          // correct answer for each wrong one.
+          points={[
+            "Each set is marked the moment you submit it",
+            "You'll see the right answer for anything you got wrong",
+          ]}
+        />
+      </div>
     );
   }
 
@@ -836,7 +841,7 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
   const listCount = caughtUp ? summary.completed.length : summary.waiting.length;
 
   return (
-    <div className="space-y-5">
+    <PanelStack gap="gap-5">
       <div className="flex items-start gap-3">
         <CardIcon tone={caughtUp ? "jade" : "accent"}>
           {caughtUp ? <CheckCircle2 className="h-5 w-5" aria-hidden /> : <Target className="h-5 w-5" aria-hidden />}
@@ -855,14 +860,16 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
           <AssignmentRow key={item.assignmentTargetId} item={item} today={today} />
         ))}
       </ul>
-      <TextLink href="/student/practice">
-        {listCount > rows.length
-          ? `See all ${listCount} in Daily Practice`
-          : caughtUp
-            ? "See everything in Daily Practice"
-            : "Open Daily Practice"}
-      </TextLink>
-    </div>
+      <PanelFooter>
+        <TextLink href="/student/practice">
+          {listCount > rows.length
+            ? `See all ${listCount} in Daily Practice`
+            : caughtUp
+              ? "See everything in Daily Practice"
+              : "Open Daily Practice"}
+        </TextLink>
+      </PanelFooter>
+    </PanelStack>
   );
 }
 
@@ -931,7 +938,9 @@ export default function StudentDashboardPage() {
 
   return (
     <RoleShell role="STUDENT" user={user}>
-      <div className="space-y-8">
+      {/* space-y-10, the same rhythm as the Admin and Teacher dashboards
+          (this one alone was space-y-8), so the three read as one family. */}
+      <div className="space-y-10">
         <PageHeader
           eyebrow={greeting}
           title={
@@ -959,15 +968,18 @@ export default function StudentDashboardPage() {
           </CardBody>
         </Card>
 
-        <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-          <Card className="animate-fade-up delay-70">
-            <CardBody className={cn(state.kind === "ready" && state.summary.countable === 0 && "sm:p-9")}>
-              <PracticePanel state={state} onRetry={load} />
-            </CardBody>
-          </Card>
+        {/* SplitLayout, as on the other two dashboards: both cards end on
+            one line, and each pins its closing element to the bottom. */}
+        <SplitLayout columns="lg:grid-cols-[1.35fr_0.65fr]">
+          <StretchCard
+            className="animate-fade-up delay-70"
+            bodyClassName={cn(state.kind === "ready" && state.summary.countable === 0 && "sm:p-9")}
+          >
+            <PracticePanel state={state} onRetry={load} />
+          </StretchCard>
 
-          <Card className="animate-fade-up delay-140">
-            <CardBody className="space-y-5">
+          <StretchCard className="animate-fade-up delay-140">
+            <PanelStack gap="gap-5">
               <div className="flex items-center gap-3">
                 <CardIcon tone="brand">
                   <CalendarCheck className="h-5 w-5" aria-hidden />
@@ -979,14 +991,15 @@ export default function StudentDashboardPage() {
                 <DetailRow label="Class" value={classLabel ?? "Not assigned yet"} />
                 <DetailRow label="Student ID" value={student?.studentCode ?? "—"} />
               </dl>
-              {/* content-muted on surface-brand: 7.8:1. */}
-              <p className="flex items-start gap-2.5 rounded-2xl bg-surface-brand p-3.5 text-[0.8125rem] leading-relaxed text-content-muted">
+              {/* content-muted on surface-brand: 7.8:1. Pinned to the card's
+                  foot (mt-auto) so it lines up with Up Next's footer link. */}
+              <p className="mt-auto flex items-start gap-2.5 rounded-2xl bg-surface-brand p-3.5 text-[0.8125rem] leading-relaxed text-content-muted">
                 <MessageCircleQuestion className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
                 Something here looks wrong? Tell your class teacher &mdash; they can correct it for you.
               </p>
-            </CardBody>
-          </Card>
-        </div>
+            </PanelStack>
+          </StretchCard>
+        </SplitLayout>
 
         <section aria-labelledby="modules-heading" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-4">

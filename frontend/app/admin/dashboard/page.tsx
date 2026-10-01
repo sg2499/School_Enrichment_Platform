@@ -26,6 +26,7 @@ import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
+import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -415,15 +416,17 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
 
   if (error) {
     return (
-      <div className="space-y-4">
+      <PanelStack gap="gap-4">
         <PanelHeading isPlatformAdmin={isPlatformAdmin} />
         {/* coral-700 on white: 7.3:1. */}
         <p role="alert" className="text-[0.8125rem] font-medium leading-relaxed text-coral-700">
           Couldn&rsquo;t load curriculum status just now ({error}). Everything is still available in Curriculum
           Studio.
         </p>
-        <TextLink href="/admin/curriculum">Open Curriculum Studio</TextLink>
-      </div>
+        <PanelFooter>
+          <TextLink href="/admin/curriculum">Open Curriculum Studio</TextLink>
+        </PanelFooter>
+      </PanelStack>
     );
   }
 
@@ -437,22 +440,27 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   const available = chapterRows.length;
 
   if (mapRows.length === 0) {
+    // Centred in whatever height the card is given: when the Rollout card
+    // beside it stretches this one, a top-pinned empty state would leave
+    // its lower half bare.
     return (
-      <EmptyState
-        illustration={<BlueprintIllustration />}
-        status={
-          available > 0
-            ? { label: `${available} ${available === 1 ? "Chapter" : "Chapters"} Ready to Map`, tone: "brand" }
-            : { label: "No Chapters Published Yet", tone: "neutral" }
-        }
-        title="Nothing is in your school's calendar yet"
-        description={
-          available > 0
-            ? "Published chapters are ready for you. Map one into a class and its teachers can start assigning practice from it straight away."
-            : "Chapters move through draft, review and publish before any school can use them. As soon as one is published, you can map it here."
-        }
-        actions={available > 0 ? <TextLink href="/admin/curriculum">Map a Chapter</TextLink> : undefined}
-      />
+      <div className="flex flex-1 flex-col justify-center">
+        <EmptyState
+          illustration={<BlueprintIllustration />}
+          status={
+            available > 0
+              ? { label: `${available} ${available === 1 ? "Chapter" : "Chapters"} Ready to Map`, tone: "brand" }
+              : { label: "No Chapters Published Yet", tone: "neutral" }
+          }
+          title="Nothing is in your school's calendar yet"
+          description={
+            available > 0
+              ? "Published chapters are ready for you. Map one into a class and its teachers can start assigning practice from it straight away."
+              : "Chapters move through draft, review and publish before any school can use them. As soon as one is published, you can map it here."
+          }
+          actions={available > 0 ? <TextLink href="/admin/curriculum">Map a Chapter</TextLink> : undefined}
+        />
+      </div>
     );
   }
 
@@ -467,7 +475,7 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
     .slice(0, 3);
 
   return (
-    <div className="space-y-6">
+    <PanelStack>
       <PanelHeading isPlatformAdmin={false} />
 
       <div className="grid grid-cols-3 gap-4 border-y border-line py-4">
@@ -517,8 +525,10 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         </div>
       ) : null}
 
-      <TextLink href="/admin/curriculum">Manage in Curriculum Studio</TextLink>
-    </div>
+      <PanelFooter>
+        <TextLink href="/admin/curriculum">Manage in Curriculum Studio</TextLink>
+      </PanelFooter>
+    </PanelStack>
   );
 }
 
@@ -558,16 +568,27 @@ function PlatformPipeline({ chapters }: { chapters: ChapterSummary[] }) {
   const summary = counts.map((c) => `${c.count} ${c.label.toLowerCase()}`).join(", ");
 
   return (
-    <div className="space-y-6">
+    <PanelStack>
       <PanelHeading isPlatformAdmin />
 
-      {total === 0 ? (
-        <p className="text-sm leading-relaxed text-content-muted">
-          No chapters have been imported yet. Imported chapters arrive in Draft and appear here.
-        </p>
-      ) : (
-        <>
-          <div className="space-y-3">
+      {/* The pipeline is centred in whatever height the card is given.
+          For a super admin this card sits beside the full Rollout timeline
+          and is stretched to match it (SplitLayout), so a top-pinned block
+          left most of the card bare. The legend is a per-status breakdown
+          for the same reason: the same four counts, each on its own row
+          with its own share of the total, instead of one wrapping line. */}
+      <div className="relative flex flex-1 flex-col justify-center">
+        {/* The kit's graph-paper wash (globals.css .bg-grid, "behind hero
+            and empty-state areas"), radially masked: under a short card it
+            is a faint halo behind the figures, and when the card is
+            stretched it gives the extra height a surface to sit on. */}
+        <span aria-hidden className="pointer-events-none absolute -inset-x-6 inset-y-0 bg-grid mask-fade-radial opacity-70 sm:-inset-x-8" />
+        {total === 0 ? (
+          <p className="relative text-sm leading-relaxed text-content-muted">
+            No chapters have been imported yet. Imported chapters arrive in Draft and appear here.
+          </p>
+        ) : (
+          <div className="relative space-y-5">
             <p className="flex items-baseline gap-2">
               <span className="font-display text-display-md tabular text-content">{total}</span>
               <span className="text-sm text-content-muted">{total === 1 ? "chapter" : "chapters"} in total</span>
@@ -582,20 +603,28 @@ function PlatformPipeline({ chapters }: { chapters: ChapterSummary[] }) {
                   <span key={c.status} className={cn("h-full first:rounded-l-full last:rounded-r-full", c.bar)} style={{ width: `${(c.count / total) * 100}%` }} />
                 ))}
             </div>
-            <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-content-muted">
+            {/* Decorative repeat of the bar above, row by row; the bar's
+                aria-label already says all of it, so the tracks are hidden. */}
+            <ul className="divide-y divide-line/70 border-y border-line/70">
               {counts.map((c) => (
-                <li key={c.status} className="flex items-center gap-1.5">
-                  <span aria-hidden className={cn("h-2 w-2 rounded-full", c.bar)} />
-                  <span className="font-semibold tabular text-content">{c.count}</span> {c.label}
+                <li key={c.status} className="flex items-center gap-3 py-2.5">
+                  <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", c.bar)} />
+                  <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-content-muted">{c.label}</span>
+                  <span aria-hidden className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-ink-100 sm:block">
+                    <span className={cn("block h-full rounded-full", c.bar)} style={{ width: `${(c.count / total) * 100}%` }} />
+                  </span>
+                  <span className="w-8 text-right text-[0.8125rem] font-semibold tabular text-content">{c.count}</span>
                 </li>
               ))}
             </ul>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
-      <TextLink href="/admin/curriculum">Open Curriculum Studio</TextLink>
-    </div>
+      <PanelFooter>
+        <TextLink href="/admin/curriculum">Open Curriculum Studio</TextLink>
+      </PanelFooter>
+    </PanelStack>
   );
 }
 
@@ -653,9 +682,15 @@ export default function AdminDashboardPage() {
           }
         />
 
-        <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <Card className="animate-fade-up">
-            <CardBody className="space-y-6">
+        {/* SplitLayout: both columns finish level. The grid already
+            stretched here, but the right column was a plain space-y-4
+            block, so its two cards stopped ~230px (school admin) to ~480px
+            (super admin) short of Rollout's bottom edge and the gap sat on
+            the bare canvas above Modules. Now the curriculum card takes up
+            the slack and its link pins to its footer. */}
+        <SplitLayout columns="lg:grid-cols-[0.95fr_1.05fr]">
+          <StretchCard className="animate-fade-up">
+            <PanelStack>
               <div className="flex items-start gap-3">
                 <CardIcon tone="brand">
                   <ShieldCheck className="h-5 w-5" aria-hidden />
@@ -750,18 +785,18 @@ export default function AdminDashboardPage() {
               {/* Dated, so a reader can judge how fresh the claims above are
                   -- and so the next person editing STAGES has a visible
                   reason to re-check them rather than just add to them. */}
-              <p className="border-t border-line pt-4 text-xs text-content-subtle">
-                Status checked against the live build on {ROLLOUT_VERIFIED_ON}.
-              </p>
-            </CardBody>
-          </Card>
+              <PanelFooter>
+                <p className="text-xs text-content-subtle">
+                  Status checked against the live build on {ROLLOUT_VERIFIED_ON}.
+                </p>
+              </PanelFooter>
+            </PanelStack>
+          </StretchCard>
 
-          <div className="space-y-4">
-            <Card className="animate-fade-up delay-70">
-              <CardBody className="sm:p-8">
-                <CurriculumPanel isPlatformAdmin={isPlatformAdmin} />
-              </CardBody>
-            </Card>
+          <SplitColumn fill="first">
+            <StretchCard className="animate-fade-up delay-70" bodyClassName="sm:p-8">
+              <CurriculumPanel isPlatformAdmin={isPlatformAdmin} />
+            </StretchCard>
 
             <Card tone="brand" className="animate-fade-up delay-140">
               <CardBody className="space-y-4">
@@ -787,8 +822,8 @@ export default function AdminDashboardPage() {
                 </dl>
               </CardBody>
             </Card>
-          </div>
-        </div>
+          </SplitColumn>
+        </SplitLayout>
 
         <section aria-labelledby="modules-heading" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-4">

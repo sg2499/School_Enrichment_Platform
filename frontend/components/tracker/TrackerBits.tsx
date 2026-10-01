@@ -117,7 +117,10 @@ export function StatTile({
       {/* content-subtle on white 6.4:1, on surface-accent 6.1:1. */}
       <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">{label}</p>
       <p className="mt-1 font-display text-display-sm leading-none text-content tabular">{value}</p>
-      {hint ? <p className="mt-1.5 truncate text-xs text-content-subtle">{hint}</p> : null}
+      {/* Wraps rather than truncates: tiles sit in an equal-height grid,
+          so a two-line hint costs nothing, while truncate cut the one
+          tile whose hint mattered ("Students with written answe…"). */}
+      {hint ? <p className="mt-1.5 text-xs leading-snug text-content-subtle text-pretty">{hint}</p> : null}
     </div>
   );
 }

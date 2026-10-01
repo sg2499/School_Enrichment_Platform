@@ -393,9 +393,14 @@ export default function StudentPracticePage() {
 
         {assignments && assignments.length > 0 ? (
           <div className="space-y-8">
+            {/* font-sans on the group labels below: globals.css gives every
+                h2 the display serif, so these small tracked uppercase labels
+                were rendering in Fraunces -- the only eyebrow-style label in
+                the product that wasn't in the sans (cf. Curriculum Studio's
+                "Chapter status", the dashboards' "Next in the calendar"). */}
             {waiting.length > 0 ? (
               <section aria-labelledby="practice-waiting" className="space-y-3">
-                <h2 id="practice-waiting" className="flex items-center gap-2 text-eyebrow font-bold uppercase text-content-subtle">
+                <h2 id="practice-waiting" className="flex items-center gap-2 font-sans text-eyebrow font-bold uppercase text-content-subtle">
                   Waiting for you
                   <span className="tabular text-content">{waiting.length}</span>
                 </h2>
@@ -404,7 +409,7 @@ export default function StudentPracticePage() {
             ) : null}
             {completed.length > 0 ? (
               <section aria-labelledby="practice-finished" className="space-y-3">
-                <h2 id="practice-finished" className="flex items-center gap-2 text-eyebrow font-bold uppercase text-content-subtle">
+                <h2 id="practice-finished" className="flex items-center gap-2 font-sans text-eyebrow font-bold uppercase text-content-subtle">
                   Done
                   <span className="tabular text-content">{completed.length}</span>
                 </h2>
@@ -417,7 +422,7 @@ export default function StudentPracticePage() {
                 note above), and kept out of "Done" when it isn't. */}
             {skipped.length > 0 ? (
               <section aria-labelledby="practice-skipped" className="space-y-3">
-                <h2 id="practice-skipped" className="flex items-center gap-2 text-eyebrow font-bold uppercase text-content-subtle">
+                <h2 id="practice-skipped" className="flex items-center gap-2 font-sans text-eyebrow font-bold uppercase text-content-subtle">
                   Skipped
                   <span className="tabular text-content">{skipped.length}</span>
                 </h2>
