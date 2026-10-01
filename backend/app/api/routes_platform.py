@@ -75,7 +75,18 @@ def provision_school(request: Request, payload: SchoolProvisionRequest, db: Sess
 
     existing = db.query(User).filter(User.email == admin_email).first()
     if existing:
-        api_error(409, "EMAIL_IN_USE", "A user with this email already exists.")
+        # 1 Oct 2026 (A14 remainder, email enumeration): same rule as
+        # routes_roster.EMAIL_NOT_ACCEPTED_MESSAGE -- don't state that the
+        # address is registered. Only the operator-key holder can reach this,
+        # so it was never the realistic probe; aligned anyway so a leaked
+        # operator key isn't also a free "is this email registered?" oracle,
+        # and so no endpoint keeps the old wording to be copied from. Still a
+        # 409 (the request conflicts with existing state).
+        api_error(
+            409,
+            "ACCOUNT_NOT_CREATED",
+            "The admin account could not be created with that email address. Use a different email address.",
+        )
 
     school = School(name=school_name, board=payload.board, city=payload.city, state=payload.state)
     db.add(school)

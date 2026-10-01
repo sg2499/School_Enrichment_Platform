@@ -44,6 +44,15 @@ services:
                        # Documented here (2026-08-19 secrets audit) purely so this required
                        # var isn't invisible/forgotten in IaC -- `sync: false` means Render
                        # will never read or overwrite a value for it from this file.
+      - key: TOTP_ENCRYPTION_KEY
+        sync: false   # REQUIRED (1 Oct 2026): Fernet key that encrypts every 2FA secret at
+                       # rest -- see backend/.env.example for the exact format and how to
+                       # generate one. Set manually in the Render dashboard BEFORE deploying
+                       # the commit that introduced it: buildCommand's `alembic upgrade head`
+                       # and the app itself both refuse to run in production without it.
+                       # Not `generateValue: true` -- Render's generated value isn't
+                       # guaranteed to be a valid Fernet key, and this key must be backed up
+                       # outside Render (losing it means resetting every user's 2FA).
       # File storage: Render persistent disk for now (see
       # ENGINEERING_OPERATING_SYSTEM.md Section 2) — no object-storage
       # account exists yet. Attach a Render disk to this service

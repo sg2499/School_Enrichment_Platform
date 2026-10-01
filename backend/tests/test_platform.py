@@ -85,3 +85,8 @@ def test_provision_rejects_duplicate_admin_email(client):
         "/api/platform/schools", json=_payload("admin-dupe@example.com", school_name="Another School"), headers=HEADERS
     )
     assert second.status_code == 409
+    # A14 remainder (1 Oct 2026): rejected without echoing the address or
+    # stating that it's registered.
+    assert second.json()["detail"]["code"] == "ACCOUNT_NOT_CREATED"
+    assert "admin-dupe@example.com" not in second.text
+    assert "exist" not in second.text.lower()

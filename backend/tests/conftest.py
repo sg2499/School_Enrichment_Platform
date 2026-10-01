@@ -12,6 +12,10 @@ import os
 os.environ.setdefault("COOKIE_SECURE", "false")
 os.environ.setdefault("SECRET_KEY", "test-secret")
 os.environ.setdefault("PLATFORM_OPERATOR_KEY", "test-platform-operator-key")
+# TOTP secrets are Fernet-encrypted at rest (app/core/totp_crypto.py).
+# Tests don't set ENVIRONMENT, so config.py treats them as production and
+# refuses the public dev key -- this is a separate, test-only key.
+os.environ.setdefault("TOTP_ENCRYPTION_KEY", "9tU2qGEj4EMXW66H5xHqQGDIB5QHBs7WkHrZd5hFh7w=")
 
 import pytest
 from fastapi.testclient import TestClient

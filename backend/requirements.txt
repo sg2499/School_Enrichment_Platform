@@ -28,6 +28,11 @@ qrcode[pil]==8.2
 # be dropped or re-ranged by an unrelated package update, silently breaking
 # a direct import; pinning what you actually import is the correct pattern.
 pillow==12.3.0
+# Fernet encryption of TOTP secrets at rest (app/core/totp_crypto.py and
+# alembic f7c2a9d4e1b8, 1 Oct 2026). Already installed transitively via
+# python-jose[cryptography]; pinned explicitly for the same reason as
+# pillow above -- it's imported directly now.
+cryptography==50.0.2
 
 alembic
 ruff

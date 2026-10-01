@@ -328,3 +328,158 @@ def test_bulk_csv_import_creates_students_and_reports_errors(client, db_session)
     assert zara_student is not None
     zara_user = db_session.get(User, zara_student.user_id)
     assert verify_password(zara["initialPassword"], zara_user.password_hash)
+
+
+# --- Email enumeration (A14 remainder, 1 Oct 2026) ---------------------------
+
+
+def _taken_emails(db_session, own_school: School, tag: str) -> dict[str, str]:
+    """One registered address per place it could live: this school, another
+    school (teacher and admin), and the platform super admin."""
+    other_admin, other_school = _make_school_admin(db_session, f"enum-{tag}-other-admin@example.com", f"Other Enum School {tag}")
+    super_admin = _make_super_admin(db_session, f"enum-{tag}-super-admin@example.com")
+
+    def _person(email, role, school, profile):
+        user = User(full_name=f"Existing {role}", email=email, password_hash=hash_password(PASSWORD), role=role)
+        db_session.add(user)
+        db_session.flush()
+        db_session.add(profile(user, school))
+        return email
+
+    taken = {
+        "own_school_student": _person(
+            f"enum-{tag}-own-student@example.com", "STUDENT", own_school,
+            lambda u, s: Student(user_id=u.id, school_id=s.id, student_code=f"STU-ENUM-{tag}", class_name="5", section="A"),
+        ),
+        "other_school_teacher": _person(
+            f"enum-{tag}-other-teacher@example.com", "TEACHER", other_school,
+            lambda u, s: Teacher(user_id=u.id, school_id=s.id, teacher_code=f"TCH-ENUM-{tag}"),
+        ),
+        "other_school_admin": other_admin.email,
+        "super_admin": super_admin.email,
+    }
+    db_session.commit()
+    return taken
+
+
+def _audit_rows(db_session, event_type: str, user_id: str):
+    from app.models import AuditLog
+
+    return db_session.query(AuditLog).filter(AuditLog.event_type == event_type, AuditLog.user_id == user_id).all()
+
+
+def test_taken_email_rejection_is_identical_wherever_the_email_lives(client, db_session, caplog):
+    """The admin-facing response for a taken email is byte-identical whether
+    the address belongs to someone in the caller's own school, another
+    school's teacher or admin, or the super admin -- and never contains the
+    address or says it exists. Before this fix it read "A user with email
+    <address> already exists.", confirming existence platform-wide. No log
+    line at any level carries the address either. A genuinely free address
+    still creates the account normally."""
+    import logging
+
+    from app.api.routes_roster import EMAIL_NOT_ACCEPTED_MESSAGE
+
+    admin, school = _make_school_admin(db_session, "enum-admin@example.com", "Enum School")
+    taken = _taken_emails(db_session, school, "single")
+    headers = _login(client, admin.email)
+    users_before = db_session.query(User).count()
+
+    caplog.set_level(logging.DEBUG)
+    responses = {}
+    for where, email in {**taken, "case_and_space_variant": "  ENUM-single-Other-Teacher@Example.com "}.items():
+        response = client.post(
+            "/api/roster/people", json={"role": "TEACHER", "fullName": "New Teacher", "email": email}, headers=headers,
+        )
+        assert response.status_code == 422, (where, response.text)
+        body = response.json()
+        responses[where] = (response.status_code, body)
+        assert email.strip().lower() not in response.text.lower()
+        assert "exist" not in body["detail"]["message"].lower()
+
+    # One shape for all of them.
+    assert len({repr(r) for r in responses.values()}) == 1
+    _status, body = next(iter(responses.values()))
+    assert body["detail"] == {"code": "VALIDATION_ERROR", "message": EMAIL_NOT_ACCEPTED_MESSAGE, "details": {}}
+
+    # Nothing was created, and the address is in no log record or audit row.
+    assert db_session.query(User).count() == users_before
+    for email in taken.values():
+        assert not any(email in record.getMessage() for record in caplog.records)
+    rejections = _audit_rows(db_session, "roster.person_create_email_rejected", admin.id)
+    assert len(rejections) == len(responses)
+    for row in rejections:
+        assert "@" not in (row.event_data_json or "")
+
+    # A free address still works exactly as before.
+    created = client.post(
+        "/api/roster/people",
+        json={"role": "TEACHER", "fullName": "Fresh Teacher", "email": "enum-fresh-teacher@example.com"},
+        headers=headers,
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["email"] == "enum-fresh-teacher@example.com"
+    assert created.json()["initialPassword"]
+    assert db_session.query(User).filter(User.email == "enum-fresh-teacher@example.com").count() == 1
+
+
+def test_super_admin_creating_an_admin_gets_the_same_generic_rejection(client, db_session):
+    """The ADMIN-account path (email mandatory, SUPER_ADMIN only) -- the one
+    the review pointed at -- behaves the same way."""
+    from app.api.routes_roster import EMAIL_NOT_ACCEPTED_MESSAGE
+
+    super_admin = _make_super_admin(db_session, "enum-sa-caller@example.com")
+    _, school = _make_school_admin(db_session, "enum-sa-school-admin@example.com", "Enum SA School")
+    taken = _taken_emails(db_session, school, "sa")
+    headers = _login(client, super_admin.email)
+
+    bodies = []
+    for email in (taken["other_school_teacher"], taken["other_school_admin"], taken["super_admin"]):
+        response = client.post(
+            "/api/roster/people",
+            json={"role": "ADMIN", "fullName": "New Admin", "email": email, "schoolId": school.id},
+            headers=headers,
+        )
+        assert response.status_code == 422
+        assert email not in response.text
+        bodies.append(response.json())
+    assert all(b == bodies[0] for b in bodies)
+    assert bodies[0]["detail"]["message"] == EMAIL_NOT_ACCEPTED_MESSAGE
+
+    created = client.post(
+        "/api/roster/people",
+        json={"role": "ADMIN", "fullName": "Real New Admin", "email": "enum-real-new-admin@example.com", "schoolId": school.id},
+        headers=headers,
+    )
+    assert created.status_code == 200, created.text
+    assert created.json()["role"] == "ADMIN"
+
+
+def test_bulk_import_never_echoes_a_taken_email_but_flags_in_file_duplicates(client, db_session):
+    from app.api.routes_roster import EMAIL_NOT_ACCEPTED_MESSAGE
+
+    admin, school = _make_school_admin(db_session, "enum-bulk-admin@example.com", "Enum Bulk School")
+    taken = _taken_emails(db_session, school, "bulk")
+    headers = _login(client, admin.email)
+
+    csv_content = (
+        "fullName,email,className,section\n"
+        f"Taken Elsewhere,{taken['other_school_teacher']},7,A\n"
+        "Free Student,enum-bulk-free@example.com,7,A\n"
+        "Typed Twice,ENUM-BULK-FREE@example.com,7,B\n"
+    )
+    files = {"file": ("roster.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
+    response = client.post("/api/roster/people/bulk", data={"role": "STUDENT"}, files=files, headers=headers)
+    assert response.status_code == 200, response.text
+    assert taken["other_school_teacher"] not in response.text
+
+    by_name = {r["fullName"]: r for r in response.json()["results"]}
+    assert by_name["Taken Elsewhere"]["status"] == "skipped"
+    assert by_name["Taken Elsewhere"]["error"] == EMAIL_NOT_ACCEPTED_MESSAGE
+    assert by_name["Free Student"]["status"] == "created"
+    assert by_name["Typed Twice"]["status"] == "skipped"
+    assert by_name["Typed Twice"]["error"] == "This email address is already used on row 3 of this file."
+
+    [bulk_audit] = _audit_rows(db_session, "roster.bulk_import", admin.id)
+    assert '"emailRejected": 1' in bulk_audit.event_data_json
+    assert "@" not in bulk_audit.event_data_json

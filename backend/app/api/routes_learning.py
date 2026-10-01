@@ -28,7 +28,10 @@ Authorization model:
   return 404 (never 403) for anything outside that scope, matching this
   codebase's "don't disclose another student's resource exists" rule.
 - Foundation Repair is TEACHER/ADMIN-only (Section 11: recommendations stay
-  under teacher control).
+  under teacher control). Since 1 Oct 2026 (A11 completeness pass) a
+  TEACHER must also be the CURRENT teacher of the student's own section for
+  the concept's course, on both the recommendation read and the approve
+  write -- see _require_teacher_currently_teaches_student.
 - Reading an existing assignment's results (targets, attempt results) and
   granting an extra attempt go through practice_access_service (1 Oct
   2026): a TEACHER reads what they created or what was set for a section
@@ -749,6 +752,65 @@ def _require_student_in_scope(db: Session, user: User, student: Student) -> None
     api_error(403, "FORBIDDEN", "You do not have permission for this action.")
 
 
+def _require_teacher_currently_teaches_student(
+    db: Session, teacher: Teacher | None, student: Student, concept_lesson: ConceptLesson
+) -> None:
+    """A11 completeness pass (1 Oct 2026): both Foundation Repair endpoints
+    were only school-scoped for a TEACHER -- any teacher could pull any
+    same-school student's concept mastery (computed from that student's
+    attempts/evaluations across EVERY teacher's assignments) and, worse,
+    approve a rescue Assignment for them: a practice WRITE with no section
+    ownership check at all, which teacher_assignment_service's own module
+    docstring lists as exactly what teacher_may_currently_act_on gates.
+
+    The triple checked is the student's OWN (class level, section) plus the
+    course of the concept being repaired -- the concept the teacher is
+    looking at in their own class. Deliberately not the recommended rescue
+    activity's course: a PREREQUISITE_GAP rescue can come from an earlier
+    class's BoardCourse (BoardCourse is per class level), which no teacher
+    of the student's current section is ever recorded as owning.
+
+    The class level is resolved as ClassLevel.code == Student.class_name,
+    the same pairing practice_access_service.current_roster_clause and
+    create_assignment above already use. A student with no section, or a
+    class_name that isn't a ClassLevel code, can't be tied to any
+    TeacherSectionAssignment, so no TEACHER may act on them here (an ADMIN
+    still can through the ordinary admin paths).
+
+    Used for the GET recommendation too, not just the approve write: the
+    mastery figure is a live aggregate over all of the student's attempts
+    with no single creation date, so teacher_may_read_record's "record
+    created inside one of your windows" test can't be applied to it --
+    letting a since-transferred teacher keep reading it would show them
+    attempts made after their end_date, which is exactly what the 20 Aug
+    2026 handover policy rules out. Only today's teacher of that section
+    sees it."""
+    if not teacher or not teacher.is_active:
+        api_error(403, "FORBIDDEN", "Teacher profile not found or inactive.")
+    class_level = (
+        db.query(ClassLevel).filter(ClassLevel.code == student.class_name).first() if student.class_name else None
+    )
+    section = (student.section or "").strip()
+    chapter = db.get(Chapter, concept_lesson.chapter_id)
+    if (
+        class_level is None
+        or not section
+        or chapter is None
+        or not teacher_assignment_service.teacher_may_currently_act_on(
+            db,
+            teacher_id=teacher.id,
+            class_level_id=class_level.id,
+            section=section,
+            board_course_id=chapter.board_course_id,
+        )
+    ):
+        api_error(
+            403,
+            "FORBIDDEN",
+            "You are not currently assigned to teach this student's class, section and course.",
+        )
+
+
 def _recommendation_dict(rec) -> dict:
     return {
         "recommendation": rec.recommendation,
@@ -775,6 +837,9 @@ def get_foundation_repair_recommendation(
     concept_lesson = db.get(ConceptLesson, conceptLessonId)
     if not concept_lesson:
         api_error(404, "NOT_FOUND", "Concept lesson not found.")
+    if user.role == "TEACHER":
+        teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+        _require_teacher_currently_teaches_student(db, teacher, student, concept_lesson)
     recommendation = foundation_repair_service.get_recommendation(db, student, concept_lesson)
     return _recommendation_dict(recommendation)
 
@@ -800,6 +865,9 @@ def approve_foundation_repair_recommendation(
         api_error(404, "NOT_FOUND", "Concept lesson not found.")
     if student.school_id != teacher.school_id:
         api_error(403, "FORBIDDEN", "You can only manage students in your own school.")
+    # A11 (1 Oct 2026): approving creates a real Assignment -- a WRITE -- so
+    # the teacher must currently own the student's section for this course.
+    _require_teacher_currently_teaches_student(db, teacher, student, concept_lesson)
 
     recommendation = foundation_repair_service.get_recommendation(db, student, concept_lesson)
     school = db.get(School, teacher.school_id)
