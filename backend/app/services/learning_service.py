@@ -221,6 +221,7 @@ def create_assignment(
     learning_activity: LearningActivity,
     assigned_by_user_id: str,
     class_name: str | None = None,
+    section: str | None = None,
     student_ids: list[str] | None = None,
     reason: str = "SCHEDULED",
     source_prerequisite_link_id: str | None = None,
@@ -242,9 +243,26 @@ def create_assignment(
         if missing:
             api_error(404, "NOT_FOUND", f"Student(s) not found in this school: {', '.join(sorted(missing))}.")
     else:
-        students = targets_query.filter(Student.class_name == class_name).all()
+        # `section` (30 Sep 2026) narrows a class-wide assignment to one
+        # section. Students store class and section as two separate fields
+        # (routes_roster.py: class_name="5", section="A"), so a class_name
+        # alone can only ever mean "every section of Class 5" -- there was
+        # no way for a teacher to target 5A on its own, and typing "5A"
+        # (the old form's own hint) matched nobody. Omitting it (None) keeps
+        # the original whole-class behaviour exactly, for every existing
+        # caller. Blank/whitespace is treated the same as omitted, and a real
+        # value is stripped the same way teacher_assignment_service stores
+        # TeacherSectionAssignment.section, which is where the teacher UI
+        # reads the value from. Ignored when student_ids is given, like
+        # class_name itself.
+        section = (section or "").strip() or None
+        class_query = targets_query.filter(Student.class_name == class_name)
+        if section is not None:
+            class_query = class_query.filter(Student.section == section)
+        students = class_query.all()
         if not students:
-            api_error(422, "VALIDATION_ERROR", f"No active students found in class {class_name!r}.")
+            where = f"class {class_name!r}, section {section!r}" if section is not None else f"class {class_name!r}"
+            api_error(422, "VALIDATION_ERROR", f"No active students found in {where}.")
 
     assignment = Assignment(
         school_id=school.id,
