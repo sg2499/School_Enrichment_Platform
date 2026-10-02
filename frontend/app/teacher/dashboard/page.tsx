@@ -25,6 +25,16 @@
  *    assigned_by_user_id is them -- routes_learning.list_assignments)
  * Each is loaded and fails independently: one endpoint being down turns
  * only its own rows into "Couldn't check", never into a guess.
+ *
+ * UI revamp, Phase A (2 Oct 2026). Nothing about what this page claims or
+ * fetches changed; what changed is how its actions and numbers present:
+ *  - The local TextLink (coloured text and an arrow, no container) is gone.
+ *    Card-footer links are the shared InlineLink.
+ *  - "Your next step" is the page's hero: an inverse card on the aurora
+ *    with a real accent button, in place of a pale card whose action was a
+ *    text link. It is the one thing here that asks the teacher to act.
+ *  - The five headline figures count up (useCountUp, via <CountUp>).
+ *  - The page sits on the teacher ambience at its dashboard level.
  */
 
 import { useEffect, useState } from "react";
@@ -49,11 +59,15 @@ import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
+import { CountUp } from "@/components/ui/CountUp";
+import { InlineLink } from "@/components/ui/InlineLink";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
-import { RosterIllustration } from "@/components/brand/Graphics";
+import { AuroraBackdropInverse, RosterIllustration } from "@/components/brand/Graphics";
+import { TeacherAmbience } from "@/components/tracker/TrackerBits";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -208,27 +222,15 @@ function SkeletonLine({ className }: { className?: string }) {
   return <span aria-hidden className={cn("block animate-pulse rounded-full bg-ink-100", className)} />;
 }
 
-/** A link that reads as a quiet text action. brand-700 on white is 10.3:1,
- *  on the brand-tinted card 9.3:1. */
-function TextLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="group inline-flex items-center gap-1.5 rounded-full text-sm font-semibold text-content-brand transition-colors hover:text-brand-900"
-    >
-      {children}
-      <ArrowRight
-        aria-hidden
-        className="h-4 w-4 transition-transform duration-200 ease-spring group-hover:translate-x-0.5"
-      />
-    </Link>
-  );
-}
-
+/** A headline figure. A number counts up from zero when it appears (and
+ *  stays still under prefers-reduced-motion -- useCountUp); the "—" shown
+ *  while its source is unavailable is printed as it is. */
 function Stat({ value, label }: { value: number | string; label: string }) {
   return (
     <div className="min-w-0">
-      <p className="font-display text-display-sm tabular text-content">{value}</p>
+      <p className="font-display text-display-sm tabular text-content">
+        {typeof value === "number" ? <CountUp value={value} /> : value}
+      </p>
       {/* content-subtle on white: 6.4:1. */}
       <p className="mt-0.5 text-xs font-medium text-content-subtle">{label}</p>
     </div>
@@ -583,38 +585,70 @@ function deriveNextStep({ sections, maps, practice, assignments }: Signals): Nex
 
 function NextStepCard({ step }: { step: NextStep | null }) {
   return (
-    <Card tone="brand" className="animate-fade-up">
+    // The dashboard's hero (2 Oct 2026): an inverse card carrying the
+    // aurora, the same construction as the student dashboard's hero (Card
+    // tone="inverse" + AuroraBackdropInverse) so the two landing pages open
+    // the same way. It was a pale brand-tinted card whose action was a text
+    // link -- the one card on the page that asks something of the teacher,
+    // and the quietest thing on it.
+    //
+    // This is where the dashboard's "fuller" atmosphere lives, rather than
+    // in a stronger page-level wash: the page backdrop is capped by text
+    // contrast on the bare canvas (TeacherAmbience has the measurements),
+    // whereas inside a card the edges are designed and the text colours are
+    // the inverse ramp built for exactly this surface. Restrained the way
+    // the student hero is: no parallax, no vignette, no grain -- those are
+    // the sign-in page's, for a full-height panel seen once.
+    //
+    // The aurora runs at 70%, and that number is a contrast measurement,
+    // not a taste: at full strength its saffron and indigo washes overlap
+    // inside a card this small (on a phone the saffron blob alone is wider
+    // than the card) and lift the brightest point to about #6A6880, where
+    // the body text, content-inverse-muted, measured 4.0:1 and the
+    // saffron-200 label 4.0:1 -- both under AA. At 70% the worst rendered
+    // pixel anywhere text can sit, across widths from 320 to 1920px and
+    // through the whole drift cycle, gives: title content-inverse 7.4:1,
+    // body content-inverse-muted 5.3:1, label saffron-200 5.6:1.
+    <Card tone="inverse" className="animate-fade-up">
+      <AuroraBackdropInverse className="opacity-70" />
       {/* A saffron edge marks this as the one card that asks something of
           the teacher -- the same accent rule the page eyebrows use. */}
-      <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-accent-gradient" />
-      <CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-        <CardIcon tone="accent">
+      <span aria-hidden className="absolute inset-y-0 left-0 z-10 w-1 bg-accent-gradient" />
+      <CardBody className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5 sm:p-8">
+        <CardIcon tone="inverse" className="text-saffron-200">
           <Compass className="h-5 w-5" aria-hidden />
         </CardIcon>
         {step ? (
           <div className="min-w-0 flex-1 space-y-1" aria-live="polite">
-            {/* brand-700 on the brand-tinted card: 9.3:1. */}
-            <p className="text-eyebrow font-bold uppercase text-content-brand">Your next step</p>
-            <p className="font-display text-lg font-semibold tracking-tight text-content">{step.title}</p>
-            {/* content-muted on surface-brand: 7.8:1. No max-w-prose (1 Oct
-                2026): flex-1 beside the icon and action link already bounds
-                it, and the 68ch cap wrapped most of these one-sentence
-                steps onto a second line they don't need. */}
-            <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">{step.body}</p>
+            <p className="text-eyebrow font-bold uppercase text-saffron-200">Your next step</p>
+            <p className="font-display text-xl font-semibold tracking-tight text-content-inverse">{step.title}</p>
+            {/* No max-w-prose (1 Oct 2026): flex-1 beside the icon and the
+                action already bounds it, and the 68ch cap wrapped most of
+                these one-sentence steps onto a second line they don't
+                need. */}
+            <p className="text-[0.875rem] leading-relaxed text-content-inverse-muted text-pretty">{step.body}</p>
           </div>
         ) : (
           <div className="min-w-0 flex-1 space-y-2" aria-busy="true">
             <span className="sr-only" role="status">
               Checking your setup
             </span>
-            <SkeletonLine className="h-3 w-24 bg-brand-100" />
-            <SkeletonLine className="h-5 w-72 max-w-full bg-brand-100" />
-            <SkeletonLine className="h-3 w-96 max-w-full bg-brand-100" />
+            <SkeletonLine className="h-3 w-24 bg-white/15" />
+            <SkeletonLine className="h-5 w-72 max-w-full bg-white/15" />
+            <SkeletonLine className="h-3 w-96 max-w-full bg-white/15" />
           </div>
         )}
+        {/* A real button, not a text link. `accent` is reserved for "the
+            single most inviting action on a view" (Button.tsx), and on this
+            page that is, by construction, this: no other filled button
+            exists on the dashboard. Its label, brand-950 on the saffron
+            gradient, runs from 11.2:1 at the lightest stop to 4.9:1 at the
+            darkest -- the same pairing as the student hero's action. */}
         {step?.action ? (
           <div className="shrink-0 sm:pl-2">
-            <TextLink href={step.action.href}>{step.action.label}</TextLink>
+            <ButtonLink href={step.action.href} variant="accent" trailingIcon={<ArrowRight className="h-4 w-4" />}>
+              {step.action.label}
+            </ButtonLink>
           </div>
         ) : null}
       </CardBody>
@@ -762,7 +796,7 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
       </ul>
 
       <PanelFooter>
-        <TextLink href="/teacher/assign">Assign Practice To A Section</TextLink>
+        <InlineLink href="/teacher/assign">Assign Practice To A Section</InlineLink>
       </PanelFooter>
     </PanelStack>
   );
@@ -826,7 +860,7 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
         {heading}
         <InlineError>Couldn&rsquo;t load your assignments just now ({assignments.message}).</InlineError>
         <PanelFooter>
-          <TextLink href="/teacher/tracker">Open Practice Tracker</TextLink>
+          <InlineLink href="/teacher/tracker">Open Practice Tracker</InlineLink>
         </PanelFooter>
       </PanelStack>
     );
@@ -885,9 +919,9 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
         </>
       )}
       <PanelFooter>
-        <TextLink href={rows.length === 0 ? "/teacher/assign" : "/teacher/tracker"}>
+        <InlineLink href={rows.length === 0 ? "/teacher/assign" : "/teacher/tracker"}>
           {rows.length === 0 ? "Assign Practice" : "Open Practice Tracker"}
-        </TextLink>
+        </InlineLink>
       </PanelFooter>
     </PanelStack>
   );
@@ -983,7 +1017,12 @@ export default function TeacherDashboardPage() {
 
   return (
     <RoleShell role="TEACHER" user={user}>
-      <div className="space-y-10">
+      {/* The dashboard level: a step stronger than the working screens'
+          and the only one that drifts. TeacherAmbience (TrackerBits.tsx)
+          has the measurements behind both numbers. */}
+      <TeacherAmbience level="dashboard" />
+      {/* `relative` so the page paints above the ambience. */}
+      <div className="relative space-y-10">
         <PageHeader
           // Not "Teaching Workspace": RoleShell's breadcrumb already says
           // exactly that one line above (ROLE_TAGLINE.TEACHER).

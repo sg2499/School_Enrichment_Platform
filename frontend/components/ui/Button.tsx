@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "quiet" | "danger";
+export type ButtonVariant = "primary" | "accent" | "secondary" | "tinted" | "ghost" | "quiet" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const BASE =
@@ -27,9 +27,38 @@ const VARIANTS: Record<ButtonVariant, string> = {
   accent:
     "bg-accent-gradient text-brand-950 shadow-accent hover:-translate-y-0.5 hover:brightness-[1.04] " +
     "active:translate-y-0 active:scale-[0.985] focus-visible:shadow-focus-accent",
+  // White and bordered -- the committed alternative beside a primary, or a
+  // row's one action that needs doing now ("Mark Answers").
   secondary:
     "border border-line-strong bg-surface text-content shadow-xs hover:border-brand-300 hover:bg-surface-brand " +
     "hover:text-content-brand focus-visible:shadow-focus",
+  // Ink-tinted -- a standalone action that repeats down a list or sits alone
+  // in a card ("Review", "Grant Extra Attempt"): visibly a button at rest,
+  // but quiet enough to appear thirty times on one screen. Reach for it
+  // whenever the action is the only one on offer; `secondary` when it is the
+  // one to do next; `ghost` only beside a committed button.
+  //
+  // Added 2 Oct 2026 (Shailesh, from a screenshot of the assignment view:
+  // "the buttons... appear like floating text giving away a very casual and
+  // lanky feel"). Those row actions were `ghost`, which has no fill, border
+  // or shadow until hover -- correct for a Cancel next to a Save, where the
+  // neighbour supplies the "these are buttons" cue, and wrong for an action
+  // on its own, where nothing does.
+  //
+  // The fill and border are the same pair Card tone="brand" and the info
+  // AlertBanner already use, so no new colour enters the system. Label:
+  // brand-700 on surface-brand 9.3:1 at rest, brand-900 on brand-100 11.7:1
+  // on hover. The fill itself is only 1.1:1 against a white row and is not
+  // what makes the control identifiable -- the label is; the fill is the
+  // affordance cue (WCAG 1.4.11 asks 3:1 of a boundary only when the
+  // boundary is the sole way to find the control).
+  tinted:
+    "border border-line-brand bg-surface-brand text-content-brand hover:border-brand-300 hover:bg-brand-100 " +
+    "hover:text-brand-900 focus-visible:shadow-focus",
+  // No chrome at rest -- only for the de-emphasised half of a pair, where
+  // the committed button beside it supplies the "these are buttons" cue
+  // (Cancel next to Save). Never as a row's or a card's only action: that
+  // is what `tinted` is for.
   ghost:
     "border border-transparent text-content-muted hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus",
   // For dark chrome (sidebar, brand panels).
@@ -40,12 +69,16 @@ const VARIANTS: Record<ButtonVariant, string> = {
 };
 
 // Filled variants get a lit top edge (shadow-sheen). Outline/ghost/quiet
-// variants have no fill for light to catch, so they don't.
+// variants have no fill for light to catch, so they don't -- and neither
+// does tinted: its fill is nearly as pale as the highlight (white at 20%
+// over brand-50 moves it by about two levels in 255), so there is nothing
+// for the eye to catch.
 const HAS_SHEEN: Record<ButtonVariant, boolean> = {
   primary: true,
   accent: true,
   danger: true,
   secondary: false,
+  tinted: false,
   ghost: false,
   quiet: false,
 };

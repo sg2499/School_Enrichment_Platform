@@ -21,6 +21,13 @@
  * What a teacher sees follows the admin's section assignments, including
  * the handover rule: a past section's history stays readable (marked
  * "Past" / "Read Only"), anything set after the handover isn't shown.
+ *
+ * UI revamp, Phase A (2 Oct 2026): the four summary tiles count up
+ * (StatTile does it for any plain number) and the page sits on the quiet
+ * teacher ambience. Nothing else here needed rebuilding -- this page never
+ * had a bare-text action -- but its three panels live in
+ * components/tracker/ and were outside this pass: their "Clear Search"
+ * buttons are still `ghost` where the new rule says `tinted`.
  */
 
 import { Suspense } from "react";
@@ -35,7 +42,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { SubTabs, type SubTab } from "@/components/ui/SubTabs";
-import { SectionPicker, StatTile } from "@/components/tracker/TrackerBits";
+import { SectionPicker, StatTile, TeacherAmbience } from "@/components/tracker/TrackerBits";
 import { AssignmentsPanel } from "@/components/tracker/AssignmentsPanel";
 import { StudentsPanel } from "@/components/tracker/StudentsPanel";
 import { ReviewQueuePanel } from "@/components/tracker/ReviewQueuePanel";
@@ -102,9 +109,11 @@ function TrackerWorkspace() {
 
   return (
     <RoleShell role="TEACHER" user={user}>
+      <TeacherAmbience />
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7. */}
-      <div className="space-y-8">
+          Practice); dashboards use space-y-10. This family alone was 7.
+          `relative` so the page paints above the ambience. */}
+      <div className="relative space-y-8">
         <PageHeader
           eyebrow="Teaching Workspace"
           title="Practice Tracker"
