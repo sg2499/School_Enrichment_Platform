@@ -15,6 +15,20 @@
  * teacher (GET /teacher-assignments/my-sections), and the server enforces
  * the same thing (routes_learning.create_assignment: a TEACHER must name a
  * section they currently own; studentIds are refused).
+ *
+ * UI revamp, Phase A (2 Oct 2026). Still the same form with the same
+ * fields, state and requests; what changed is how it is laid out:
+ *  - Six fields in three even rows of two. They used to run 2 / 3 / 1, with
+ *    Max Attempts alone on a line of its own at a quarter of the width --
+ *    the one field that looked left over.
+ *  - The submit button sits in a ruled footer pinned to the bottom of the
+ *    card. The card is stretched to the rail's height (SplitLayout), and
+ *    whenever the rail was the taller column the button used to float with
+ *    a band of empty card under it; now any spare height opens above the
+ *    rule, the way SplitLayout's PanelFooter intends.
+ *  - "View In Tracker" in the success banner was a `ghost` button -- bare
+ *    text on a green banner, and the only action in it. It is `secondary`.
+ *  - The quiet teacher ambience sits behind the page.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -28,8 +42,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { SelectField, TextField } from "@/components/ui/Field";
-import { SplitColumn, SplitLayout } from "@/components/ui/SplitLayout";
+import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { RosterIllustration } from "@/components/brand/Graphics";
+import { TeacherAmbience } from "@/components/tracker/TrackerBits";
 import { cn } from "@/lib/utils";
 import { api, apiErrorMessage } from "@/lib/api";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -252,7 +267,9 @@ export default function AssignPracticePage() {
 
   return (
     <RoleShell role="TEACHER" user={user}>
-      <div className="space-y-8">
+      <TeacherAmbience />
+      {/* `relative` so the page paints above the ambience. */}
+      <div className="relative space-y-8">
         <PageHeader
           eyebrow="Teaching Workspace"
           title="Assign Practice"
@@ -268,8 +285,10 @@ export default function AssignPracticePage() {
             card has over it, so both columns end on one line instead of
             the rail stopping ~40px short. */}
         <SplitLayout columns="lg:grid-cols-[minmax(0,1fr)_20rem]" className="gap-6">
-          <Card className="animate-fade-up">
-            <CardBody className="space-y-6">
+          {/* StretchCard + PanelStack so the form can pin its footer to the
+              card's bottom edge (see the note at the top of this file). */}
+          <StretchCard className="animate-fade-up">
+            <PanelStack>
               <div className="flex items-center gap-3">
                 <CardIcon tone="brand">
                   <Send className="h-5 w-5" aria-hidden />
@@ -301,7 +320,11 @@ export default function AssignPracticePage() {
                   description="Once your school admin maps a published chapter into your school's calendar, it will show up here to assign."
                 />
               ) : (
-                <form onSubmit={handleAssign} className="space-y-5">
+                // flex-1 column, gap instead of space-y: a sibling margin
+                // from space-y would cancel the footer's mt-auto (the same
+                // reason PanelStack takes a `gap`).
+                <form onSubmit={handleAssign} className="flex flex-1 flex-col gap-5">
+                  {/* What to assign. */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <SelectField
                       label="Chapter"
@@ -342,7 +365,8 @@ export default function AssignPracticePage() {
                     </p>
                   ) : null}
 
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  {/* Who gets it, and why. */}
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <SelectField
                       label="Section"
                       hint={sectionHint}
@@ -369,13 +393,6 @@ export default function AssignPracticePage() {
                         </option>
                       ))}
                     </SelectField>
-                    <TextField
-                      label="Due Date"
-                      hint="Optional"
-                      type="date"
-                      value={dueDate}
-                      onChange={(event) => setDueDate(event.target.value)}
-                    />
                   </div>
 
                   {classMismatch && selectedSection && selectedMapping ? (
@@ -390,46 +407,83 @@ export default function AssignPracticePage() {
                     </p>
                   ) : null}
 
-                  <TextField
-                    label="Max Attempts"
-                    type="number"
-                    min={1}
-                    max={5}
-                    containerClassName="max-w-[10rem]"
-                    value={maxAttempts}
-                    onChange={(event) => setMaxAttempts(Number(event.target.value) || 1)}
-                  />
+                  {/* The limits. */}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <TextField
+                      label="Due Date"
+                      hint="Optional"
+                      type="date"
+                      value={dueDate}
+                      onChange={(event) => setDueDate(event.target.value)}
+                    />
+                    <TextField
+                      label="Max Attempts"
+                      hint="1 to 5"
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={maxAttempts}
+                      onChange={(event) => setMaxAttempts(Number(event.target.value) || 1)}
+                    />
+                  </div>
 
                   {assignError ? <AlertBanner tone="error" message={assignError} /> : null}
                   {assigned ? (
+                    // The button is passed inside `message`, not as
+                    // AlertBanner's `action`. `action` is a fixed column
+                    // beside the text, which on a phone squeezed "Assigned
+                    // to 32 students in Class 5 · Section A · Mathematics."
+                    // into a five-line sliver next to the button; here the
+                    // two share a wrapping row, so the button sits on the
+                    // right while there is room and drops under the
+                    // sentence when there isn't. sm:items-center lines the
+                    // banner's icon up with them once they share a line.
                     <AlertBanner
                       tone="success"
+                      className="sm:items-center"
                       message={
-                        <>
-                          Assigned to {assigned.assignment.targetCount} student{assigned.assignment.targetCount === 1 ? "" : "s"} in{" "}
-                          {sectionLabel(assigned.section)}.
-                        </>
-                      }
-                      action={
-                        <ButtonLink
-                          href={`/teacher/tracker/assignments/${assigned.assignment.id}`}
-                          variant="ghost"
-                          size="sm"
-                          trailingIcon={<ArrowRight className="h-3.5 w-3.5" />}
-                        >
-                          View In Tracker
-                        </ButtonLink>
+                        <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+                          <span>
+                            Assigned to {assigned.assignment.targetCount} student
+                            {assigned.assignment.targetCount === 1 ? "" : "s"} in {sectionLabel(assigned.section)}.
+                          </span>
+                          {/* secondary, was ghost. It is the banner's only
+                              action and the obvious next step; `tinted`
+                              would put a lilac pill on a green banner, so
+                              it takes the white one. */}
+                          <ButtonLink
+                            href={`/teacher/tracker/assignments/${assigned.assignment.id}`}
+                            variant="secondary"
+                            size="sm"
+                            trailingIcon={<ArrowRight className="h-3.5 w-3.5" />}
+                          >
+                            View In Tracker
+                          </ButtonLink>
+                        </span>
                       }
                     />
                   ) : null}
 
-                  <Button type="submit" variant="primary" loading={assigning} leadingIcon={<Send className="h-4 w-4" />}>
-                    Assign to Section
-                  </Button>
+                  <PanelFooter>
+                    <Button type="submit" variant="primary" loading={assigning} loadingLabel="Assigning" leadingIcon={<Send className="h-4 w-4" />}>
+                      Assign to Section
+                    </Button>
+                    {/* The target, restated beside the button that commits
+                        it: the section is chosen three rows up and is
+                        sometimes filled in for the teacher (see
+                        handleChapterChange), so this is the last look
+                        before it goes to thirty students. content-subtle
+                        on white 6.4:1, content-muted 8.6:1. */}
+                    {selectedSection ? (
+                      <p className="text-xs text-content-subtle">
+                        Goes to <span className="font-semibold text-content-muted">{sectionLabel(selectedSection)}</span>
+                      </p>
+                    ) : null}
+                  </PanelFooter>
                 </form>
               )}
-            </CardBody>
-          </Card>
+            </PanelStack>
+          </StretchCard>
 
           <SplitColumn as="aside" fill="last" className="animate-fade-up delay-70" aria-label="Your sections">
             <Card tone="muted">

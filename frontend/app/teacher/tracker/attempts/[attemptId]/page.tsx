@@ -16,24 +16,33 @@
  * (each save is audit-logged server-side). A teacher who has handed the
  * section over sees everything read-only -- the server refuses their marks
  * too (routes_practice_tracker.submit_manual_grades).
+ *
+ * UI revamp, Phase A (2 Oct 2026): back link and header metadata brought up
+ * to the new shared standard (InlineLink, PageHeader `facts`), the headline
+ * score counts, the rail's two text-only links became real controls, and a
+ * save that finalises the attempt leaves a note for the assignment page's
+ * achievement spark (recordAttemptFinalised, in saveMarks below).
  */
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, Hourglass, Lock, PenLine, Save, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Clock3, Hourglass, IdCard, Lock, PenLine, Save, Users, XCircle } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
+import { recordAttemptFinalised } from "@/lib/hooks/useMarkingMilestone";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { CountUp } from "@/components/ui/CountUp";
+import { InlineLink } from "@/components/ui/InlineLink";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
-import { BackLink, ReadOnlyBadge, ScoreBadge } from "@/components/tracker/TrackerBits";
+import { ReadOnlyBadge, ScoreBadge, TeacherAmbience } from "@/components/tracker/TrackerBits";
 import { formatDateTime, plural, scopeShort, studentClassLabel } from "@/lib/tracker";
 import type { AttemptReview, Paginated, ReviewAnswer, ReviewQueueRow } from "@/types/tracker";
 
@@ -162,6 +171,11 @@ function MarksPicker({
   );
 }
 
+// The first few answers arrive in sequence behind the header, the way the
+// student page's history cards do; from the fifth on they share the last
+// step, so a 20-question attempt never keeps a teacher waiting on a cascade.
+const ANSWER_STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280"];
+
 function AnswerCard({
   answer,
   index,
@@ -184,7 +198,11 @@ function AnswerCard({
     <Card
       as="li"
       id={`q-${index + 1}`}
-      className={cn("scroll-mt-24", unmarked && canGrade && "ring-2 ring-inset ring-saffron-200")}
+      className={cn(
+        "scroll-mt-24 animate-fade-up",
+        ANSWER_STAGGER[Math.min(index, ANSWER_STAGGER.length - 1)],
+        unmarked && canGrade && "ring-2 ring-inset ring-saffron-200",
+      )}
     >
       {/* Edge rail: decoration only -- the badge names the state. */}
       <span
@@ -346,13 +364,21 @@ function AttemptWorkspace() {
         grades: changed.map((questionId) => ({ questionId, score: drafts[questionId] })),
       });
       const wasPending = review.evaluation.reviewStatus === "PENDING_REVIEW";
+      const justFinalised = wasPending && data.evaluation.reviewStatus === "FINALISED";
       query.setData(data);
+      // This save gave the attempt its last outstanding mark. Leave a note
+      // so the assignment's page can tell, when the teacher next opens it,
+      // whether its To Mark count reached zero by their own hand -- the
+      // achievement spark's trigger (2 Oct 2026; lib/hooks/
+      // useMarkingMilestone.ts explains why the note is needed at all).
+      // Client-side only: nothing is sent anywhere. A later correction to
+      // an already-final attempt is not a finalisation and leaves no note.
+      if (justFinalised) recordAttemptFinalised(data.assignment.id);
       setNotice({
         tone: "success",
-        message:
-          wasPending && data.evaluation.reviewStatus === "FINALISED"
-            ? `All answers marked. Final score ${data.evaluation.finalScore} / ${data.evaluation.maxScore}.`
-            : `${plural(changed.length, "mark")} saved.`,
+        message: justFinalised
+          ? `All answers marked. Final score ${data.evaluation.finalScore} / ${data.evaluation.maxScore}.`
+          : `${plural(changed.length, "mark")} saved.`,
       });
     } catch (err) {
       setNotice({ tone: "error", message: apiErrorMessage(err) });
@@ -391,24 +417,50 @@ function AttemptWorkspace() {
       : "/teacher/tracker";
   const backLabel = fromReview ? "Needs Review" : review?.assignment.title ?? "Practice Tracker";
 
+  // The header's old description ("STU-1042 · Class 5A · Submitted 30 Sept,
+  // 10:05 am") as the three facts it was. Submitted is left out when there
+  // is no timestamp, as before.
+  const submittedAt = review ? formatDateTime(review.attempt.submittedAt) : null;
+  const facts: PageHeaderFact[] = review
+    ? [
+        {
+          label: "Student Code",
+          value: <span className="font-mono">{review.student.studentCode}</span>,
+          icon: <IdCard className="h-3.5 w-3.5" />,
+        },
+        {
+          label: "Class",
+          value: studentClassLabel(review.student.className, review.student.section),
+          icon: <Users className="h-3.5 w-3.5" />,
+        },
+        ...(submittedAt ? [{ label: "Submitted", value: submittedAt, icon: <Clock3 className="h-3.5 w-3.5" /> }] : []),
+      ]
+    : [];
+
   return (
     <RoleShell role="TEACHER" user={user}>
+      <TeacherAmbience />
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7. */}
-      <div className="space-y-8">
-        <BackLink href={backHref}>{backLabel}</BackLink>
+          Practice); dashboards use space-y-10. This family alone was 7.
+          `relative` so the page paints above the ambience. */}
+      <div className="relative space-y-8">
+        {/* Back link and header as one block -- see the assignment page. */}
+        <div className="space-y-5">
+          <InlineLink href={backHref} direction="back">
+            {backLabel}
+          </InlineLink>
 
-        {query.error ? <AlertBanner tone="error" message={`Couldn't open this attempt (${query.error}).`} /> : null}
+          {query.error ? <AlertBanner tone="error" message={`Couldn't open this attempt (${query.error}).`} /> : null}
 
-        {!review && !query.error ? (
-          <div aria-hidden className="space-y-3">
-            <span className="block h-4 w-40 animate-pulse rounded-full bg-ink-100" />
-            <span className="block h-9 w-80 max-w-full animate-pulse rounded-full bg-ink-100" />
-          </div>
-        ) : null}
+          {!review && !query.error ? (
+            <div aria-hidden className="space-y-3">
+              <span className="block h-4 w-40 animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-9 w-80 max-w-full animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-11 w-[30rem] max-w-full animate-pulse rounded-2xl bg-ink-100" />
+            </div>
+          ) : null}
 
-        {review ? (
-          <>
+          {review ? (
             <PageHeader
               eyebrow={`${scopeShort(review.assignment)} · ${review.assignment.title ?? "Practice"}`}
               title={
@@ -417,12 +469,7 @@ function AttemptWorkspace() {
                   <span className="text-content-subtle"> &middot; Attempt {review.attempt.attemptNumber}</span>
                 </>
               }
-              description={[
-                `${review.student.studentCode} · Class ${studentClassLabel(review.student.className, review.student.section)}`,
-                review.attempt.submittedAt ? `Submitted ${formatDateTime(review.attempt.submittedAt)}` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+              facts={facts}
               meta={
                 <>
                   <ScoreBadge evaluation={review.evaluation} />
@@ -432,6 +479,11 @@ function AttemptWorkspace() {
                 </>
               }
             />
+          ) : null}
+        </div>
+
+        {review ? (
+          <>
 
             {/* items-start is deliberate here, unlike the dashboards'
                 SplitLayout: the right column is a sticky rail (xl:sticky
@@ -453,15 +505,19 @@ function AttemptWorkspace() {
                 ))}
               </ol>
 
-              <aside className="space-y-4 xl:sticky xl:top-6" aria-label="Score and marking">
+              <aside className="space-y-4 animate-fade-up delay-70 xl:sticky xl:top-6" aria-label="Score and marking">
                 <Card tone={pending ? "accent" : "default"}>
                   <CardBody className="space-y-4 sm:p-6">
                     <div>
                       <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">
                         {pending ? "Score So Far" : "Final Score"}
                       </p>
+                      {/* Counts up when the attempt opens, and rolls to the
+                          new total each time a mark is picked (from the
+                          figure on screen, not from zero) -- so choosing a
+                          mark visibly lands in the score. */}
                       <p className="mt-1 font-display text-display-md text-content tabular">
-                        {dirty ? draftFinal : review.evaluation.finalScore}
+                        <CountUp value={dirty ? draftFinal : review.evaluation.finalScore} />
                         <span className="text-content-subtle"> / {review.evaluation.maxScore}</span>
                       </p>
                       {dirty ? <p className="text-xs font-semibold text-saffron-900">Includes unsaved marks</p> : null}
@@ -533,25 +589,48 @@ function AttemptWorkspace() {
                   <Card>
                     <CardBody className="space-y-3 sm:p-6">
                       <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">All Attempts</p>
-                      <ul className="space-y-1.5">
+                      {/* Rows, not a list of blue words. An attempt you can
+                          open used to be bare brand-coloured text beside
+                          its score, indistinguishable from a label until
+                          hovered; now the whole row is the link, with a
+                          border, a hover fill and a chevron. The row shape
+                          is the one Assign Practice uses for Your Sections
+                          (selected = brand border on surface-brand), so
+                          "the one you are on" looks the same in both. */}
+                      <ul className="space-y-2">
                         {review.target.attempts.map((attempt) => {
                           const current = attempt.id === review.attempt.id;
+                          const row = "flex items-center justify-between gap-3 rounded-2xl border px-3 py-2";
                           return (
-                            <li key={attempt.id} className="flex items-center justify-between gap-3">
+                            <li key={attempt.id}>
                               {attempt.evaluation && !current ? (
                                 <Link
                                   href={`/teacher/tracker/attempts/${attempt.id}${fromReview ? "?from=review" : ""}`}
-                                  className="text-sm font-semibold text-content-brand hover:text-brand-900"
+                                  className={cn(
+                                    row,
+                                    "group border-line bg-surface transition duration-200 ease-spring hover:border-brand-300 hover:bg-surface-brand",
+                                  )}
                                 >
-                                  Attempt {attempt.attemptNumber}
+                                  {/* brand-700 on white 10.3:1, on surface-brand 9.3:1. */}
+                                  <span className="text-sm font-semibold text-content-brand">Attempt {attempt.attemptNumber}</span>
+                                  <span className="flex items-center gap-1.5">
+                                    <ScoreBadge evaluation={attempt.evaluation} />
+                                    <ChevronRight
+                                      aria-hidden
+                                      className="h-4 w-4 text-content-faint transition-transform duration-200 ease-spring group-hover:translate-x-0.5 group-hover:text-content-brand"
+                                    />
+                                  </span>
                                 </Link>
                               ) : (
-                                <span className={cn("text-sm", current ? "font-semibold text-content" : "text-content-muted")}>
-                                  Attempt {attempt.attemptNumber}
-                                  {current ? " (This One)" : attempt.status === "IN_PROGRESS" ? " · In Progress" : ""}
-                                </span>
+                                <div className={cn(row, current ? "border-brand-200 bg-surface-brand" : "border-line bg-surface-muted")}>
+                                  {/* content on surface-brand 15.3:1; content-muted on surface-muted 8.1:1. */}
+                                  <span className={cn("text-sm", current ? "font-semibold text-content" : "text-content-muted")}>
+                                    Attempt {attempt.attemptNumber}
+                                    {current ? " (This One)" : attempt.status === "IN_PROGRESS" ? " · In Progress" : ""}
+                                  </span>
+                                  <ScoreBadge evaluation={attempt.evaluation} />
+                                </div>
                               )}
-                              <ScoreBadge evaluation={attempt.evaluation} />
                             </li>
                           );
                         })}
@@ -560,13 +639,20 @@ function AttemptWorkspace() {
                   </Card>
                 ) : null}
 
-                <Link
+                {/* Was a hand-rolled bordered block of brand text with no
+                    arrow -- this page's third home-made link style, after
+                    the bare back link and the bare attempt links. It is the
+                    rail's one standalone navigation, so it is a tinted
+                    ButtonLink like every other "only action". */}
+                <ButtonLink
                   href={`/teacher/tracker/students/${review.student.studentId}`}
-                  className="block rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-content-brand transition hover:border-brand-300 hover:bg-surface-brand"
+                  variant="tinted"
+                  fullWidth
+                  trailingIcon={<ArrowRight className="h-4 w-4" />}
                 >
                   View Practice History
                   <span className="sr-only"> for {review.student.studentName ?? review.student.studentCode}</span>
-                </Link>
+                </ButtonLink>
               </aside>
             </div>
 
@@ -575,7 +661,9 @@ function AttemptWorkspace() {
                 pinned to the bottom keeps the running score and Save in
                 reach. (xl has the sticky side panel instead.) */}
             {review.canGrade && dirty ? (
-              <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 shadow-panel backdrop-blur xl:hidden">
+              // fade-up: it rises from the edge it is pinned to, on the
+              // first mark picked, rather than snapping into place.
+              <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 shadow-panel backdrop-blur animate-fade-up xl:hidden">
                 <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
                   <p className="text-sm text-content-muted">
                     <span className="font-display text-lg font-semibold text-content tabular">

@@ -11,21 +11,40 @@
  *
  * RoleShell collapses the sidebar on this route (FOCUS_ROUTES) so the table
  * gets the whole width. Filter, search and page live in the URL.
+ *
+ * UI revamp, Phase A (2 Oct 2026). This is the screen the revamp started
+ * from -- Shailesh's screenshot of it: "the buttons... appear like floating
+ * text giving away a very casual and lanky feel". Three things were behind
+ * that, all fixed here:
+ *  - The row actions were `ghost` buttons (no fill, border or shadow until
+ *    hover), so in the common case -- nothing to mark -- a row's actions
+ *    were coloured words. They are `tinted` now, and "Mark Answers" stays
+ *    `secondary` because it is the one that needs doing (Button.tsx has the
+ *    rule).
+ *  - The back link was bare text on the canvas. It is an InlineLink, and it
+ *    sits with the header it belongs to instead of a full section-gap above
+ *    it.
+ *  - The header's metadata was one middle-dot sentence. It is passed to
+ *    PageHeader as `facts` and drawn as a labelled strip.
+ * It is also where the achievement spark is wired in: see the To Mark tile.
  */
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Eye, PenLine, RotateCcw, Search } from "lucide-react";
+import { CalendarClock, Eye, ListChecks, PenLine, Repeat2, RotateCcw, Search, UserRound } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
+import { useMarkingMilestone } from "@/lib/hooks/useMarkingMilestone";
 import { api, apiErrorMessage } from "@/lib/api";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { AchievementSpark } from "@/components/brand/AchievementSpark";
+import { PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { InlineLink } from "@/components/ui/InlineLink";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { FilterChips } from "@/components/ui/FilterChips";
@@ -34,13 +53,13 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import {
   AssignmentStatusBadge,
-  BackLink,
   Initials,
   PercentText,
   ReadOnlyBadge,
   ScoreBadge,
   StatTile,
   TargetStatusBadge,
+  TeacherAmbience,
 } from "@/components/tracker/TrackerBits";
 import { formatDay, plural, scopeLabel, studentClassLabel } from "@/lib/tracker";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -79,6 +98,16 @@ function AssignmentWorkspace() {
     ready,
   );
 
+  // The achievement spark's trigger (2 Oct 2026). True when this page finds
+  // To Mark at zero AND this teacher finalised an attempt on this
+  // assignment earlier in the session -- i.e. the count reached zero by
+  // their own marking, on the attempt page, not because the assignment
+  // never had written answers. No request of its own: it reads the count
+  // the header query above already fetched. useMarkingMilestone has the
+  // full reasoning, including why this page can't simply watch its own
+  // number fall (it isn't mounted while the marking happens).
+  const justFinishedMarking = useMarkingMilestone(assignmentId, header.data?.progress.needsReview);
+
   const [grantingId, setGrantingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "error" | "success"; message: string } | null>(null);
 
@@ -108,31 +137,48 @@ function AssignmentWorkspace() {
     { value: "NEEDS_REVIEW" as const, label: "Needs Marking", count: counts?.needsReview },
   ];
 
+  // What used to be the header's one-sentence description ("Set by you on
+  // 20 Aug · Due 25 Aug · 8 questions · Up to 3 attempts each"), as the
+  // separate facts it always was. Same information, same conditions: Due is
+  // left out when no due date was set, exactly as the sentence left it out.
+  const setBy = a ? (a.isMine ? "You" : (a.assignedByName ?? "Your school")) : "";
+  const setOn = a ? formatDay(a.createdAt) : null;
+  const facts: PageHeaderFact[] = a
+    ? [
+        { label: "Set By", value: setOn ? `${setBy} on ${setOn}` : setBy, icon: <UserRound className="h-3.5 w-3.5" /> },
+        ...(a.dueDate
+          ? [{ label: "Due", value: formatDay(a.dueDate), icon: <CalendarClock className="h-3.5 w-3.5" /> }]
+          : []),
+        { label: "Questions", value: a.questionCount, icon: <ListChecks className="h-3.5 w-3.5" /> },
+        { label: "Attempts", value: `Up to ${a.maxAttempts} each`, icon: <Repeat2 className="h-3.5 w-3.5" /> },
+      ]
+    : [];
+
   return (
     <RoleShell role="TEACHER" user={user}>
+      <TeacherAmbience />
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7. */}
-      <div className="space-y-8">
-        <BackLink href="/teacher/tracker">Practice Tracker</BackLink>
+          Practice); dashboards use space-y-10. This family alone was 7.
+          `relative` so the page paints above the ambience. */}
+      <div className="relative space-y-8">
+        {/* The back link and the header are one block. The link used to be
+            a sibling of the header in the space-y-8 stack, a full 2rem
+            section gap above the title it leads back from -- the distance
+            that made it look like it belonged to nothing. */}
+        <div className="space-y-5">
+          <InlineLink href="/teacher/tracker" direction="back">
+            Practice Tracker
+          </InlineLink>
 
-        {header.error ? (
-          <AlertBanner tone="error" message={`Couldn't open this assignment (${header.error}).`} />
-        ) : null}
+          {header.error ? (
+            <AlertBanner tone="error" message={`Couldn't open this assignment (${header.error}).`} />
+          ) : null}
 
-        {a ? (
-          <>
+          {a ? (
             <PageHeader
               eyebrow={scopeLabel(a)}
               title={a.title ?? "Learning Activity"}
-              description={[
-                a.isMine ? "Set by you" : a.assignedByName ? `Set by ${a.assignedByName}` : "Set by your school",
-                a.createdAt ? `on ${formatDay(a.createdAt)}` : null,
-                a.dueDate ? `· Due ${formatDay(a.dueDate)}` : null,
-                `· ${plural(a.questionCount, "question")}`,
-                `· Up to ${plural(a.maxAttempts, "attempt")} each`,
-              ]
-                .filter(Boolean)
-                .join(" ")}
+              facts={facts}
               meta={
                 <>
                   <AssignmentStatusBadge status={a.status} />
@@ -141,7 +187,19 @@ function AssignmentWorkspace() {
                 </>
               }
             />
+          ) : !header.error ? (
+            // The header's own shape while it loads: eyebrow, title, and
+            // the facts band.
+            <div aria-hidden className="space-y-3">
+              <span className="block h-4 w-48 animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-9 w-96 max-w-full animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-11 w-[34rem] max-w-full animate-pulse rounded-2xl bg-ink-100" />
+            </div>
+          ) : null}
+        </div>
 
+        {a ? (
+          <>
             {!a.canAct ? (
               <AlertBanner
                 tone="info"
@@ -154,20 +212,39 @@ function AssignmentWorkspace() {
               <StatTile label="Completed" value={a.progress.completed} tone={a.progress.completed > 0 ? "good" : "default"} />
               <StatTile label="In Progress" value={a.progress.inProgress} />
               <StatTile label="Not Started" value={a.progress.notStarted} />
+              {/* Where the achievement spark lands. When the teacher's own
+                  marking has just taken this count to zero, the tile turns
+                  to its "good" tone, says so in words, and the saffron
+                  spark plays once in its corner (about a second) and stays
+                  as a still mark for this visit. A page that merely loads
+                  with nothing to mark gets none of it -- same quiet "0" as
+                  before. */}
               <StatTile
                 label="To Mark"
                 value={a.progress.needsReview}
-                tone={a.progress.needsReview > 0 ? "attention" : "default"}
-                hint={a.progress.needsReview > 0 ? "Students with written answers" : undefined}
+                tone={a.progress.needsReview > 0 ? "attention" : justFinishedMarking ? "good" : "default"}
+                hint={
+                  a.progress.needsReview > 0
+                    ? "Students with written answers"
+                    : justFinishedMarking
+                      ? "Every written answer is marked"
+                      : undefined
+                }
+                adornment={justFinishedMarking ? <AchievementSpark /> : undefined}
               />
-              <StatTile label="Average" value={<PercentText percent={a.progress.averagePercent} />} hint="Latest final scores" />
+              <StatTile
+                label="Average"
+                value={<PercentText percent={a.progress.averagePercent} animated />}
+                hint="Latest final scores"
+              />
             </div>
+            {/* The same moment for someone who can't see the spark. */}
+            {justFinishedMarking ? (
+              <span className="sr-only" role="status">
+                All written answers on this assignment are now marked.
+              </span>
+            ) : null}
           </>
-        ) : !header.error ? (
-          <div aria-hidden className="space-y-3">
-            <span className="block h-4 w-48 animate-pulse rounded-full bg-ink-100" />
-            <span className="block h-9 w-96 max-w-full animate-pulse rounded-full bg-ink-100" />
-          </div>
         ) : null}
 
         {!header.error ? (
@@ -199,7 +276,8 @@ function AssignmentWorkspace() {
                     {filter || q ? "No students match that" : "Nobody was targeted by this assignment"}
                   </p>
                   {filter || q ? (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => url.set({ status: null, q: null, page: null })}>
+                    // tinted, was ghost: it is the only action in this box.
+                    <Button type="button" variant="tinted" size="sm" onClick={() => url.set({ status: null, q: null, page: null })}>
                       Clear Search And Filters
                     </Button>
                   ) : null}
@@ -223,6 +301,7 @@ function AssignmentWorkspace() {
                     <TBody>
                       {students.data.items.map((row) => {
                         const open = attemptToOpen(row);
+                        const marking = Boolean(open?.needsMarks && students.data?.canAct);
                         const studentHref = `/teacher/tracker/students/${row.studentId}`;
                         return (
                           <TR key={row.assignmentTargetId}>
@@ -233,13 +312,20 @@ function AssignmentWorkspace() {
                                   <Link href={studentHref} className="block truncate font-semibold text-content hover:text-content-brand">
                                     {row.studentName ?? row.studentCode}
                                   </Link>
-                                  <span className="block font-mono text-[0.75rem] text-content-subtle">
+                                  {/* nowrap, here and on the status cell: on a
+                                      phone the table scrolls sideways (minWidth
+                                      56rem), but its columns still shrink to
+                                      their narrowest wrap first -- the code
+                                      broke as "STU-1041 ·" / "5A" and a
+                                      two-word status ("IN PROGRESS") wrapped
+                                      inside its fixed-height badge. */}
+                                  <span className="block whitespace-nowrap font-mono text-[0.75rem] text-content-subtle">
                                     {row.studentCode} · {studentClassLabel(row.className, row.section)}
                                   </span>
                                 </span>
                               </span>
                             </TD>
-                            <TD>
+                            <TD className="whitespace-nowrap">
                               <TargetStatusBadge status={row.status} />
                             </TD>
                             <TD className="whitespace-nowrap text-content-muted tabular">
@@ -248,32 +334,25 @@ function AssignmentWorkspace() {
                                 <span className="block text-xs text-content-subtle">{plural(row.bonusAttempts, "extra attempt")} granted</span>
                               ) : null}
                             </TD>
-                            <TD>
+                            <TD className="whitespace-nowrap">
                               <ScoreBadge evaluation={row.latestAttempt?.evaluation ?? null} />
                             </TD>
                             <TD align="right">
-                              <span className="inline-flex flex-wrap items-center justify-end gap-2">
-                                {open ? (
-                                  <ButtonLink
-                                    href={`/teacher/tracker/attempts/${open.attempt.id}`}
-                                    variant={open.needsMarks && students.data?.canAct ? "secondary" : "ghost"}
-                                    size="sm"
-                                    leadingIcon={
-                                      open.needsMarks && students.data?.canAct ? (
-                                        <PenLine className="h-3.5 w-3.5" />
-                                      ) : (
-                                        <Eye className="h-3.5 w-3.5" />
-                                      )
-                                    }
-                                    aria-label={`${open.needsMarks && students.data?.canAct ? "Mark" : "Review"} ${row.studentName ?? row.studentCode}'s attempt ${open.attempt.attemptNumber}`}
-                                  >
-                                    {open.needsMarks && students.data?.canAct ? "Mark Answers" : "Review"}
-                                  </ButtonLink>
-                                ) : null}
+                              {/* Grant first, Review/Mark last. Most rows have
+                                  only the second, so with this order it
+                                  forms one straight column down the table's
+                                  right edge and the occasional Grant sits
+                                  to its left. The other way round, "Review"
+                                  jumped ~190px sideways on every row that
+                                  also had a Grant. One line, never wrapped:
+                                  the table scrolls sideways when it runs out
+                                  of room, and two stacked buttons made that
+                                  one row half as tall again as the rest. */}
+                              <span className="inline-flex items-center justify-end gap-2 whitespace-nowrap">
                                 {row.canGrantAttempt ? (
                                   <Button
                                     type="button"
-                                    variant="ghost"
+                                    variant="tinted"
                                     size="sm"
                                     leadingIcon={<RotateCcw className="h-3.5 w-3.5" />}
                                     loading={grantingId === row.assignmentTargetId}
@@ -284,6 +363,20 @@ function AssignmentWorkspace() {
                                   >
                                     Grant Extra Attempt
                                   </Button>
+                                ) : null}
+                                {open ? (
+                                  // secondary when it needs this teacher's
+                                  // marks (the row's one to-do), tinted
+                                  // when it is just a look. Never ghost.
+                                  <ButtonLink
+                                    href={`/teacher/tracker/attempts/${open.attempt.id}`}
+                                    variant={marking ? "secondary" : "tinted"}
+                                    size="sm"
+                                    leadingIcon={marking ? <PenLine className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                    aria-label={`${marking ? "Mark" : "Review"} ${row.studentName ?? row.studentCode}'s attempt ${open.attempt.attemptNumber}`}
+                                  >
+                                    {marking ? "Mark Answers" : "Review"}
+                                  </ButtonLink>
                                 ) : null}
                               </span>
                             </TD>
