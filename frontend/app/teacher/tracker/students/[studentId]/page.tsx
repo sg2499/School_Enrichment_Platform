@@ -13,33 +13,40 @@
  * The student's numbers and history only ever include assignments the
  * teacher may read (practice_access_service): after a handover, an outgoing
  * teacher sees what they set, never what came after.
+ *
+ * UI revamp, Phase A (2 Oct 2026): same standard as the assignment page --
+ * InlineLink back link grouped with the header, the student code as a
+ * header fact rather than a lone line of monospace, `tinted` for each
+ * standalone row/card action (Review, Grant Extra Attempt) with `secondary`
+ * kept for Mark Answers, and the section-scope note as a proper banner.
  */
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Eye, PenLine, RotateCcw } from "lucide-react";
+import { Eye, IdCard, PenLine, RotateCcw } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { api, apiErrorMessage } from "@/lib/api";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { InlineLink } from "@/components/ui/InlineLink";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Pagination } from "@/components/ui/Pagination";
 import {
   AssignmentStatusBadge,
-  BackLink,
   PercentText,
   ReadOnlyBadge,
   ScoreBadge,
   StatTile,
   TargetStatusBadge,
+  TeacherAmbience,
   scopeParams,
 } from "@/components/tracker/TrackerBits";
 import { formatDateTime, formatDay, plural, scopeLabel, scopeShort, studentClassLabel } from "@/lib/tracker";
@@ -108,12 +115,20 @@ function HistoryCard({
                         : `Submitted ${formatDateTime(attempt.submittedAt) ?? "—"}`}
                     </span>
                   </span>
-                  <span className="flex items-center gap-2">
+                  {/* flex-wrap: on a phone the row is ~278px wide, and a
+                      "Needs Marking" badge beside "Mark Answers" needs
+                      ~283. Without it the badge's two words wrapped inside
+                      its fixed height and the button truncated to
+                      "Mark Ans…"; now the button drops to its own line. */}
+                  <span className="flex flex-wrap items-center gap-2">
                     <ScoreBadge evaluation={attempt.evaluation} />
                     {attempt.evaluation ? (
+                      // secondary when it needs this teacher's marks,
+                      // tinted when it is just a look; never ghost -- it
+                      // is the row's only action (Button.tsx has the rule).
                       <ButtonLink
                         href={`/teacher/tracker/attempts/${attempt.id}`}
-                        variant={markable ? "secondary" : "ghost"}
+                        variant={markable ? "secondary" : "tinted"}
                         size="sm"
                         leadingIcon={markable ? <PenLine className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         aria-label={`${markable ? "Mark" : "Review"} attempt ${attempt.attemptNumber} of ${a.title ?? "this practice"}`}
@@ -136,7 +151,7 @@ function HistoryCard({
           {item.canGrantAttempt ? (
             <Button
               type="button"
-              variant="ghost"
+              variant="tinted"
               size="sm"
               leadingIcon={<RotateCcw className="h-3.5 w-3.5" />}
               loading={granting}
@@ -192,41 +207,85 @@ function StudentWorkspace() {
   const data = history.data;
   const student = data?.student;
 
+  // The student code used to be the header's whole description: one line of
+  // monospace with nothing around it. It is the same fact, labelled.
+  const facts: PageHeaderFact[] = student
+    ? [
+        {
+          label: "Student Code",
+          value: <span className="font-mono">{student.studentCode}</span>,
+          icon: <IdCard className="h-3.5 w-3.5" />,
+        },
+      ]
+    : [];
+
   return (
     <RoleShell role="TEACHER" user={user}>
+      <TeacherAmbience />
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7. */}
-      <div className="space-y-8">
-        <BackLink href={`/teacher/tracker?tab=students${scope ? `&scope=${encodeURIComponent(scope)}` : ""}`}>
-          Students
-        </BackLink>
+          Practice); dashboards use space-y-10. This family alone was 7.
+          `relative` so the page paints above the ambience. */}
+      <div className="relative space-y-8">
+        {/* Back link and header as one block -- see the assignment page. */}
+        <div className="space-y-5">
+          <InlineLink href={`/teacher/tracker?tab=students${scope ? `&scope=${encodeURIComponent(scope)}` : ""}`} direction="back">
+            Students
+          </InlineLink>
 
-        {history.error ? <AlertBanner tone="error" message={`Couldn't open this student (${history.error}).`} /> : null}
+          {history.error ? <AlertBanner tone="error" message={`Couldn't open this student (${history.error}).`} /> : null}
 
-        {student ? (
-          <>
+          {student ? (
             <PageHeader
               eyebrow={`Class ${studentClassLabel(student.className, student.section)}`}
               title={student.studentName ?? student.studentCode}
-              description={
-                <span className="font-mono text-[0.875rem]">
-                  {student.studentCode}
-                  {!student.isActive ? " · Inactive" : ""}
-                </span>
-              }
+              facts={facts}
+              // Was " · Inactive" appended to the code in plain text. A
+              // state belongs in a badge, like every other state here.
+              meta={!student.isActive ? <Badge tone="neutral">Inactive</Badge> : undefined}
             />
+          ) : !history.error ? (
+            <div aria-hidden className="space-y-3">
+              <span className="block h-4 w-32 animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-9 w-72 max-w-full animate-pulse rounded-full bg-ink-100" />
+              <span className="block h-11 w-56 max-w-full animate-pulse rounded-2xl bg-ink-100" />
+            </div>
+          ) : null}
+        </div>
 
+        {student ? (
+          <>
             {scope ? (
-              <p className="flex flex-wrap items-center gap-2 text-sm text-content-muted">
-                <Badge tone="brand">{scopeSection ? scopeLabel({ ...scopeSection, className: null }) : "One Section"}</Badge>
-                Showing practice for this section only.
-                <Link
-                  href={`/teacher/tracker/students/${studentId}`}
-                  className="font-semibold text-content-brand underline-offset-4 hover:underline"
-                >
-                  Show All Practice
-                </Link>
-              </p>
+              // The scope note was a loose paragraph: a badge, a sentence
+              // and an underlined text link in a row on the bare canvas. It
+              // is a status with one action, which is what AlertBanner is
+              // for. The action is `secondary` rather than `tinted` because
+              // tinted's fill is surface-brand -- the info banner's own
+              // colour -- and would vanish on it; a white button on a
+              // tinted banner is the same pairing Assign Practice's success
+              // banner uses.
+              //
+              // The button rides inside `message` rather than in
+              // AlertBanner's fixed `action` column, so on a phone it drops
+              // under the sentence instead of squeezing it (Assign Practice
+              // does the same, and says why at more length).
+              <AlertBanner
+                tone="info"
+                className="sm:items-center"
+                message={
+                  <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+                    <span>
+                      Showing practice for{" "}
+                      <span className="font-semibold">
+                        {scopeSection ? scopeLabel({ ...scopeSection, className: null }) : "one section"}
+                      </span>{" "}
+                      only.
+                    </span>
+                    <ButtonLink href={`/teacher/tracker/students/${studentId}`} variant="secondary" size="sm">
+                      Show All Practice
+                    </ButtonLink>
+                  </span>
+                }
+              />
             ) : null}
 
             <div className="grid grid-cols-2 gap-3 animate-fade-up lg:grid-cols-4">
@@ -236,7 +295,11 @@ function StudentWorkspace() {
                 value={student.stats.completed}
                 hint={student.stats.assigned > 0 ? `of ${student.stats.assigned}` : undefined}
               />
-              <StatTile label="Average" value={<PercentText percent={student.stats.averagePercent} />} hint="Latest final scores" />
+              <StatTile
+                label="Average"
+                value={<PercentText percent={student.stats.averagePercent} animated />}
+                hint="Latest final scores"
+              />
               <StatTile
                 label="To Mark"
                 value={student.stats.needsReview}
@@ -245,11 +308,6 @@ function StudentWorkspace() {
               />
             </div>
           </>
-        ) : !history.error ? (
-          <div aria-hidden className="space-y-3">
-            <span className="block h-4 w-32 animate-pulse rounded-full bg-ink-100" />
-            <span className="block h-9 w-72 max-w-full animate-pulse rounded-full bg-ink-100" />
-          </div>
         ) : null}
 
         {notice ? <AlertBanner tone={notice.tone} message={notice.message} /> : null}
