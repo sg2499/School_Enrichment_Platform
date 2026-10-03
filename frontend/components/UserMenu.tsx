@@ -11,8 +11,9 @@ import {
   LogOut,
   ShieldCheck,
 } from "lucide-react";
-import { api, apiErrorMessage } from "@/lib/api";
-import { updateStoredUser } from "@/lib/auth";
+import { api, errorMessage } from "@/lib/api";
+import { clearSession, updateStoredUser } from "@/lib/auth";
+import { rememberSignedOut } from "@/lib/sessionNotice";
 import { compressImageForUpload } from "@/lib/imageCompression";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn, initialsFromName } from "@/lib/utils";
@@ -176,7 +177,10 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
     try {
       compressed = await compressImageForUpload(file);
     } catch (err) {
-      setPhotoError(err instanceof Error ? err.message : "That file isn't a supported image.");
+      // compressImageForUpload throws UserFacingErrors, whose wording is
+      // shown as written; anything else is an exception from the browser,
+      // whose text never is (lib/errors.ts).
+      setPhotoError(errorMessage(err, "prepare that photo"));
       setUploadingPhoto(false);
       return;
     }
@@ -193,7 +197,7 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
       updateStoredUser(data.user);
       onPhotoUpdated(data.photoUrl);
     } catch (err) {
-      setPhotoError(apiErrorMessage(err));
+      setPhotoError(errorMessage(err, "update your photo"));
     } finally {
       setUploadingPhoto(false);
     }
@@ -215,10 +219,12 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
       // current cookie is already effectively dead, so send the user back
       // to a real login instead of leaving a broken session sitting open.
       window.setTimeout(() => {
+        clearSession();
+        rememberSignedOut({ message: "Your password has been changed. Sign in with your new password." });
         window.location.href = "/login";
       }, 1800);
     } catch (err) {
-      setPasswordError(apiErrorMessage(err));
+      setPasswordError(errorMessage(err, "change your password"));
     } finally {
       setChangingPassword(false);
     }

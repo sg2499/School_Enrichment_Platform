@@ -10,9 +10,9 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SessionGate } from "@/components/SessionGate";
 import { PathIllustration } from "@/components/brand/Graphics";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentAssignmentSummary } from "@/types/learning";
@@ -177,7 +177,8 @@ function actionForAssignment(item: StudentAssignmentSummary): { label: string; t
 }
 
 export default function StudentPracticePage() {
-  const { user, status } = useProtectedPage("STUDENT");
+  const session = useProtectedPage("STUDENT");
+  const { user, status } = session;
   const [assignments, setAssignments] = useState<StudentAssignmentSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,7 +191,7 @@ export default function StudentPracticePage() {
       const sorted = [...data.assignments].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
       setAssignments(sorted);
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setError(errorMessage(err, "load your practice"));
     } finally {
       setLoading(false);
     }
@@ -202,7 +203,7 @@ export default function StudentPracticePage() {
   }, [status, load]);
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   const firstName = user?.fullName?.trim().split(/\s+/)[0] ?? "there";

@@ -52,7 +52,8 @@ import { PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { SessionGate } from "@/components/SessionGate";
+import { LoadError } from "@/components/ui/AlertBanner";
 import { SubTabs, type SubTab } from "@/components/ui/SubTabs";
 import { SectionPicker } from "@/components/tracker/TrackerBits";
 import { AssignmentsPanel } from "@/components/tracker/AssignmentsPanel";
@@ -68,12 +69,17 @@ function tabFromParam(value: string | null): TabKey {
 }
 
 function TrackerWorkspace() {
-  const { user, status } = useProtectedPage("TEACHER");
+  const session = useProtectedPage("TEACHER");
+  const { user, status } = session;
   const url = useUrlState();
   const ready = status === "ready";
-  const overview = useApiQuery<TrackerOverview>("/learning/tracker/overview", {}, ready);
+  const overview = useApiQuery<TrackerOverview>(
+    "/learning/tracker/overview",
+    {},
+    { action: "load your tracker summary", enabled: ready },
+  );
 
-  if (!ready) return <LoadingScreen />;
+  if (!ready) return <SessionGate session={session} />;
 
   const tab = tabFromParam(url.get("tab"));
   const scope = url.get("scope") ?? "";
@@ -172,9 +178,7 @@ function TrackerWorkspace() {
           }
         />
 
-        {overview.error ? (
-          <AlertBanner tone="error" message={`Couldn't load your tracker summary (${overview.error}).`} />
-        ) : null}
+        {overview.problem ? <LoadError problem={overview.problem} onRetry={overview.reload} /> : null}
 
         <Card className="animate-fade-up delay-70">
           <div className="flex flex-col gap-3 border-b border-line bg-surface-muted/60 px-5 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">

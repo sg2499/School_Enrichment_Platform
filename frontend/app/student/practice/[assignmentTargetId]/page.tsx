@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  CloudOff,
   Hourglass,
   Loader2,
   RotateCcw,
@@ -21,8 +22,12 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { api, apiErrorMessage } from "@/lib/api";
+import { AlertBanner } from "@/components/ui/AlertBanner";
+import { SessionGate } from "@/components/SessionGate";
+import { SignInAgainBanner } from "@/components/SignInAgainBanner";
+import { api, describeApiError } from "@/lib/api";
+import { wasRefused, type DescribedError } from "@/lib/errors";
+import { useSessionReturn } from "@/lib/hooks/useSessionReturn";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { AttemptDetail, AttemptQuestion, AttemptResult } from "@/types/learning";
@@ -52,6 +57,25 @@ import type { AttemptDetail, AttemptQuestion, AttemptResult } from "@/types/lear
  *    returns maxAttempts, bonusAttempts and attemptsUsed).
  *  - Navigation actions are links styled as buttons, not <Button> inside
  *    <Link>.
+ *
+ * Failure handling, 3 Oct 2026 (UI revamp Phase B, slice 2). Converting
+ * this page's errors to lib/errors.ts turned up four places where the
+ * problem was not the wording:
+ *  - An answer that failed to save was dropped silently, and Submit then
+ *    graded whatever the server last had -- so a student on a flaky school
+ *    connection could hand in a set with answers missing and never know.
+ *    A failed save is now remembered, shown on its question ("Not saved
+ *    yet"), sent again when the connection returns and again on Submit;
+ *    and Submit does not hand anything in while an answer is unsaved.
+ *  - A Submit that failed because the server could not be reached replaced
+ *    the whole set with a dead-end error card. It now stays on the
+ *    questions, says what happened, and Submit can be pressed again.
+ *  - A Submit that worked, followed by a result that would not load, said
+ *    "That didn't go through". It had gone through; it now says so.
+ *  - A session that ends mid-set must not send the tab to the sign-in page
+ *    (as lib/api.ts does everywhere else): answers not yet saved exist only
+ *    on this screen. The page stays, and says how to sign in again in
+ *    another tab.
  */
 
 const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"];
@@ -549,18 +573,75 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
 
 type Phase = "loading" | "answering" | "submitting" | "result" | "blocked";
 
+/** What the page shows in place of the questions when it cannot go on. */
+type Blocked = {
+  title: string;
+  message: string;
+  /** "done": nothing failed that matters -- the work is safe, only the next
+   *  screen would not load. */
+  tone: "problem" | "done";
+  /** Present when doing the same thing again could work. */
+  retry?: () => void;
+};
+
+/**
+ * The server answered, and the answer was no. Trying again will be refused
+ * again, so these end the attempt screen; everything else (no connection, a
+ * timeout, the server restarting) leaves the questions where they are. So
+ * does a session that has ended: that is cured by signing in again, with
+ * the answers still on screen.
+ */
+function isRefusal(problem: DescribedError): boolean {
+  // wasRefused: one of the server's own codes on a 4xx. A 403 or 404 with
+  // no code came from something in front of the server, says nothing about
+  // this attempt, and must not cost the student the questions on screen.
+  // (A rate limit is the server's too, but waiting cures it.)
+  return wasRefused(problem) && problem.kind !== "session" && problem.kind !== "rateLimited";
+}
+
+/** Failures whose own sentence is right to show above Submit as it stands. */
+const SAYS_WHY: ReadonlySet<DescribedError["kind"]> = new Set(["offline", "network", "unavailable", "server", "rateLimited"]);
+
 export default function StudentAttemptPage() {
   const params = useParams<{ assignmentTargetId: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, status } = useProtectedPage("STUDENT");
+  const session = useProtectedPage("STUDENT");
+  const { user, status } = session;
 
   const [phase, setPhase] = useState<Phase>("loading");
   const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [result, setResult] = useState<AttemptResult | null>(null);
-  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<Blocked | null>(null);
+  // Shown above Submit when handing in could not happen this time but can be
+  // tried again -- the questions stay on screen.
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  // Answers the server does not have: question id -> the value that failed
+  // to save. A ref, because the save chain and Submit read it between
+  // renders; `unsavedIds` mirrors its keys for the "Not saved yet" marker.
+  const unsavedRef = useRef<Record<string, string>>({});
+  const lastSaveProblemRef = useRef<DescribedError | null>(null);
+  const [unsavedIds, setUnsavedIds] = useState<Set<string>>(new Set());
+  // What is on screen for each question right now, readable from the save
+  // chain and from event handlers without waiting for a render.
+  const answersRef = useRef<Record<string, string>>({});
+  // The value carried by the most recent save issued for each question.
+  // Saves for one question run in order, so the last one issued is the last
+  // to finish -- and only it may say whether the question is saved. Without
+  // this, an older value succeeding (or failing) after a newer one was
+  // queued would mark the question with the wrong answer's outcome.
+  const issuedRef = useRef<Record<string, string>>({});
+  // The server says this session is over. Set by a save or by Submit; the
+  // page stays up (see SignInAgainBanner). Cleared by anything that shows
+  // the session works again, or that fails for some other reason -- so the
+  // banner never outlives what it says.
+  const [sessionEnded, setSessionEnded] = useState(false);
+  // A Submit that got no answer in time may have been accepted. Until one
+  // gets a definite answer the questions stay locked: an edit now could be
+  // an edit to a set that is already handed in.
+  const [submitUnconfirmed, setSubmitUnconfirmed] = useState(false);
   const startedRef = useRef(false);
   // Autosave used to fire one PUT per keystroke with no ordering guard, so a
   // fast typist could have an earlier (shorter) keystroke's request resolve
@@ -578,21 +659,46 @@ export default function StudentAttemptPage() {
 
   const viewOnlyAttemptId = searchParams.get("view") === "result" ? searchParams.get("attemptId") : null;
 
-  const loadResult = useCallback(async (attemptId: string) => {
+  // `justHandedIn`: this is the result of a set handed in a moment ago on
+  // this screen. If it will not load, that must not read as the hand-in
+  // having failed -- on the first try or on any Try Again after it.
+  const loadResult = useCallback(async (attemptId: string, justHandedIn = false) => {
     setPhase("loading");
     try {
       const { data } = await api.get<AttemptResult>(`/learning/attempts/${attemptId}/result`);
       setResult(data);
       setPhase("result");
     } catch (err) {
-      setBlockedMessage(apiErrorMessage(err));
+      const retryWith = (problem: DescribedError) =>
+        problem.retryable ? () => void loadResult(attemptId, justHandedIn) : undefined;
+      if (justHandedIn) {
+        const problem = describeApiError(err, "load your result");
+        setBlocked({
+          title: "Your practice is handed in",
+          message: `${problem.message} Your answers are safe, and your result will be in Today's Practice.`,
+          tone: "done",
+          retry: retryWith(problem),
+        });
+      } else {
+        // No action phrase: the title says what failed, so the sentence
+        // under it only has to say why.
+        const problem = describeApiError(err);
+        setBlocked({ title: "We couldn't load your result", message: problem.message, tone: "problem", retry: retryWith(problem) });
+      }
       setPhase("blocked");
     }
   }, []);
 
   const startOrResume = useCallback(async () => {
     setPhase("loading");
-    setBlockedMessage(null);
+    setBlocked(null);
+    setSubmitError(null);
+    unsavedRef.current = {};
+    issuedRef.current = {};
+    lastSaveProblemRef.current = null;
+    setUnsavedIds(new Set());
+    setSessionEnded(false);
+    setSubmitUnconfirmed(false);
     try {
       const { data } = await api.post<AttemptDetail>("/learning/attempts", {
         assignmentTargetId: params.assignmentTargetId,
@@ -605,10 +711,18 @@ export default function StudentAttemptPage() {
       // them. The data was never lost; the screen just didn't show it back.
       // POST /attempts now returns each question's own responseText (null
       // when fresh or unanswered).
-      setAnswers(Object.fromEntries(data.questions.map((q) => [q.id, q.responseText ?? ""])));
+      const seeded = Object.fromEntries(data.questions.map((q) => [q.id, q.responseText ?? ""]));
+      answersRef.current = seeded;
+      setAnswers(seeded);
       setPhase("answering");
     } catch (err) {
-      setBlockedMessage(apiErrorMessage(err));
+      const problem = describeApiError(err);
+      setBlocked({
+        title: "We couldn't open this practice",
+        message: problem.message,
+        tone: "problem",
+        retry: problem.retryable ? () => void startOrResume() : undefined,
+      });
       setPhase("blocked");
     }
   }, [params.assignmentTargetId]);
@@ -635,21 +749,52 @@ export default function StudentAttemptPage() {
       if (!attempt) return Promise.resolve();
       setSavingIds((prev) => new Set(prev).add(question.id));
       const attemptId = attempt.id;
+      issuedRef.current[question.id] = value;
+      const isNewest = () => issuedRef.current[question.id] === value;
       const previous = saveQueueRef.current[question.id] ?? Promise.resolve();
       // Chain onto the previous save for this question rather than firing
       // concurrently, so network responses can't land out of order and
       // overwrite a newer answer with a stale one.
       const thisSave = previous
         .catch(() => {})
-        .then(() => api.put(`/learning/attempts/${attemptId}/answers`, { questionId: question.id, responseText: value }))
-        .catch(() => {
-          // Best-effort autosave -- submit re-sends nothing itself (the
-          // backend grades whatever was last saved per question), so a
-          // transient save failure here just means that one answer may
-          // need re-entering before submit; not worth interrupting the
-          // student mid-attempt over.
+        .then(() =>
+          api.put(
+            `/learning/attempts/${attemptId}/answers`,
+            { questionId: question.id, responseText: value },
+            // If the session has ended, stay here: see SignInAgainBanner.
+            { keepPageOnSessionEnd: true },
+          ),
+        )
+        .then(() => {
+          // The session works (again).
+          setSessionEnded(false);
+          // A newer value for this question is queued behind this one and
+          // will have the last word on whether the question is saved.
+          if (!isNewest()) return;
+          if (question.id in unsavedRef.current) {
+            delete unsavedRef.current[question.id];
+            setUnsavedIds(new Set(Object.keys(unsavedRef.current)));
+          }
+        })
+        .catch((err) => {
+          const problem = describeApiError(err, "save your answers");
+          setSessionEnded(problem.kind === "session");
+          if (!isNewest()) return;
+          // The server grades whatever it last stored for each question, so
+          // an answer that did not save must not be forgotten: it is sent
+          // again when the connection returns and again before Submit, and
+          // Submit will not hand the set in without it. (Until 3 Oct 2026
+          // this was an empty catch. The student saw their answer on screen,
+          // the server never had it, and Submit graded it as blank.)
+          unsavedRef.current[question.id] = value;
+          lastSaveProblemRef.current = problem;
+          setUnsavedIds(new Set(Object.keys(unsavedRef.current)));
         })
         .finally(() => {
+          // Only the last save queued for this question takes "Saving…"
+          // down; an earlier one finishing while another is still to run
+          // would otherwise clear it with a save in flight.
+          if (saveQueueRef.current[question.id] !== thisSave) return;
           setSavingIds((prev) => {
             const next = new Set(prev);
             next.delete(question.id);
@@ -662,7 +807,52 @@ export default function StudentAttemptPage() {
     [attempt],
   );
 
+  /**
+   * Sends, now, the answer on screen for every question that is waiting on
+   * a debounce timer or whose last save failed. Always the value on screen
+   * (answersRef), never the value that failed: by the time this runs the
+   * student may have changed it, and re-sending the old one behind the new
+   * one would leave the server holding the old one.
+   */
+  const sendWaitingAnswers = useCallback(() => {
+    if (!attempt) return;
+    const timers = answerTimersRef.current;
+    const waiting = new Set([...Object.keys(timers), ...Object.keys(unsavedRef.current)]);
+    for (const questionId of waiting) {
+      if (timers[questionId]) {
+        clearTimeout(timers[questionId]);
+        delete timers[questionId];
+      }
+      const question = attempt.questions.find((q) => q.id === questionId);
+      if (question) void persistAnswer(question, answersRef.current[questionId] ?? "");
+    }
+  }, [attempt, persistAnswer]);
+
+  // The moment the browser reports a connection again, send whatever is
+  // waiting -- so by the time the student reaches Submit there is usually
+  // nothing left to catch up on.
+  useEffect(() => {
+    window.addEventListener("online", sendWaitingAnswers);
+    return () => window.removeEventListener("online", sendWaitingAnswers);
+  }, [sendWaitingAnswers]);
+
+  // They signed in again in another tab and came back: take the banner
+  // down and send whatever was waiting.
+  const resumeAfterSignIn = useCallback(() => {
+    setSessionEnded(false);
+    sendWaitingAnswers();
+  }, [sendWaitingAnswers]);
+  useSessionReturn(sessionEnded, user?.id, resumeAfterSignIn);
+
+  // Handing in is under way, or may already have happened: what is (being)
+  // handed in is what was on screen when Submit was pressed. An edit now
+  // could be saved after the set is graded, and would be shown as the
+  // answer when it was not.
+  const locked = phase === "submitting" || submitUnconfirmed;
+
   function handleAnswerChange(question: AttemptQuestion, value: string) {
+    if (locked) return;
+    answersRef.current = { ...answersRef.current, [question.id]: value };
     setAnswers((prev) => ({ ...prev, [question.id]: value }));
     if (!attempt) return;
     const timers = answerTimersRef.current;
@@ -674,46 +864,102 @@ export default function StudentAttemptPage() {
   }
 
   async function flushPendingSaves() {
-    if (!attempt) return;
-    const timers = answerTimersRef.current;
-    const pendingQuestionIds = Object.keys(timers);
-    pendingQuestionIds.forEach((id) => clearTimeout(timers[id]));
-    answerTimersRef.current = {};
     // Fire the latest value immediately for any question whose debounce
-    // hadn't elapsed yet, then wait for every question's save chain
-    // (freshly fired or already in flight) to settle before submitting --
-    // otherwise a submit right after typing could grade a stale answer.
-    for (const questionId of pendingQuestionIds) {
-      const question = attempt.questions.find((q) => q.id === questionId);
-      if (question) persistAnswer(question, answers[questionId] ?? "");
-    }
+    // hadn't elapsed yet -- and for any whose last save failed -- then wait
+    // for every question's save chain (freshly fired or already in flight)
+    // to settle before submitting. Otherwise a submit right after typing
+    // could grade a stale answer, and one after a dropped connection could
+    // grade a missing one.
+    sendWaitingAnswers();
     await Promise.all(Object.values(saveQueueRef.current).map((p) => p.catch(() => {})));
   }
 
   async function handleSubmit() {
     if (!attempt) return;
+    setSubmitError(null);
     setPhase("submitting");
-    try {
-      await flushPendingSaves();
-      await api.post(`/learning/attempts/${attempt.id}/submit`);
-      const { data } = await api.get<AttemptResult>(`/learning/attempts/${attempt.id}/result`);
-      setResult(data);
-      setPhase("result");
-    } catch (err) {
-      setBlockedMessage(apiErrorMessage(err));
-      setPhase("blocked");
+
+    // 1. Every answer must be on the server before anything is handed in.
+    await flushPendingSaves();
+    if (Object.keys(unsavedRef.current).length > 0) {
+      const problem = lastSaveProblemRef.current;
+      if (problem?.kind === "session") {
+        // SignInAgainBanner says what to do.
+        setSessionEnded(true);
+        setPhase("answering");
+        return;
+      }
+      setSessionEnded(false);
+      if (problem && isRefusal(problem)) {
+        // The server will not take answers for this attempt any more (it
+        // was handed in from another tab, say). Its sentence says why.
+        setBlocked({ title: "That didn't go through", message: problem.message, tone: "problem" });
+        setPhase("blocked");
+        return;
+      }
+      // Never "refresh the page" here: the answers that did not save exist
+      // only on this screen, and a refresh reloads the set from the server.
+      const why = !problem
+        ? "We couldn't save some of your answers just now."
+        : problem.kind === "timeout"
+          ? "We didn't hear back in time, so some of your answers may not be saved yet."
+          : SAYS_WHY.has(problem.kind)
+            ? problem.message
+            : "We couldn't save some of your answers just now.";
+      setSubmitError(`${why} Your answers are still on this page, and nothing has been handed in yet. Press Submit to try again.`);
+      setPhase("answering");
+      return;
     }
+
+    // 2. Hand it in.
+    try {
+      await api.post(`/learning/attempts/${attempt.id}/submit`, undefined, { keepPageOnSessionEnd: true });
+      setSubmitUnconfirmed(false);
+    } catch (err) {
+      const problem = describeApiError(err, "hand in your practice");
+      // No answer in time is the one outcome that leaves it unknown.
+      setSubmitUnconfirmed(problem.kind === "timeout");
+      if (problem.kind === "session") {
+        setSessionEnded(true);
+        setPhase("answering");
+        return;
+      }
+      setSessionEnded(false);
+      if (isRefusal(problem)) {
+        setBlocked({ title: "That didn't go through", message: problem.message, tone: "problem" });
+        setPhase("blocked");
+        return;
+      }
+      // Not refused, just not reached. Keep the questions on screen.
+      setSubmitError(
+        problem.kind === "timeout"
+          ? // It may have gone through. Pressing Submit again is safe -- the
+            // server hands in a set once and answers a second request with
+            // the same result (learning_service.submit_attempt) -- whereas
+            // refreshing would start a new attempt if it had.
+            "We didn't hear back in time, so we can't confirm your practice was handed in. Your answers are saved. Press Submit again to make sure: handing in twice does no harm."
+          : SAYS_WHY.has(problem.kind)
+            ? `${problem.message} Your answers are saved.`
+            : "We couldn't hand in your practice just now. Your answers are saved. Press Submit to try again.",
+      );
+      setPhase("answering");
+      return;
+    }
+
+    // 3. It is handed in. Showing the result is a separate request, and its
+    // failing must not read as the hand-in failing.
+    await loadResult(attempt.id, true);
   }
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   // attemptsUsed includes the attempt this result is for (GET .../result).
   const attemptsRemaining = result ? result.maxAttempts + result.bonusAttempts - result.attemptsUsed : 0;
 
   return (
-    <RoleShell role="STUDENT" user={user}>
+    <RoleShell role="STUDENT" user={user} title={[attempt?.activity.title ?? (result ? "Your Result" : null), "Daily Practice"]}>
       {/* space-y-8, the working-page rhythm shared with Daily Practice
           itself (was 6, the only page on that step). */}
       <div className="space-y-8">
@@ -764,21 +1010,41 @@ export default function StudentAttemptPage() {
           <Card className="animate-fade-up">
             <CardBody className="space-y-5">
               <div className="flex items-start gap-3">
-                <CardIcon tone="coral">
-                  <AlertCircle className="h-5 w-5" aria-hidden />
-                </CardIcon>
+                {blocked?.tone === "done" ? (
+                  <CardIcon tone="jade">
+                    <CheckCircle2 className="h-5 w-5" aria-hidden />
+                  </CardIcon>
+                ) : (
+                  <CardIcon tone="coral">
+                    <AlertCircle className="h-5 w-5" aria-hidden />
+                  </CardIcon>
+                )}
                 <div className="min-w-0 space-y-1.5">
-                  <CardTitle>That didn&rsquo;t go through</CardTitle>
-                  {/* coral-700 on white: 7.3:1. The message itself is the
-                      server's own (apiErrorMessage), shown verbatim. */}
-                  <p role="alert" className="text-[0.875rem] font-medium leading-[1.55] text-coral-700">
-                    {blockedMessage}
+                  <CardTitle>{blocked?.title ?? "That didn’t go through"}</CardTitle>
+                  {/* The sentence is written by lib/errors.ts or by the
+                      server, never a raw error. coral-700 on white: 7.3:1;
+                      content-muted on white: 8.6:1. */}
+                  <p
+                    role="alert"
+                    className={cn(
+                      "text-[0.875rem] font-medium leading-[1.55]",
+                      blocked?.tone === "done" ? "text-content-muted" : "text-coral-700",
+                    )}
+                  >
+                    {blocked?.message}
                   </p>
                 </div>
               </div>
-              <LinkAction href="/student/practice" variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>
-                Back to Today&apos;s Practice
-              </LinkAction>
+              <div className="flex flex-wrap items-center gap-3">
+                {blocked?.retry ? (
+                  <Button variant="primary" leadingIcon={<RotateCcw className="h-4 w-4" />} onClick={blocked.retry}>
+                    Try Again
+                  </Button>
+                ) : null}
+                <LinkAction href="/student/practice" variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>
+                  Back to Today&apos;s Practice
+                </LinkAction>
+              </div>
             </CardBody>
           </Card>
         ) : null}
@@ -796,6 +1062,12 @@ export default function StudentAttemptPage() {
                     {answeredCount} of {totalQuestions}
                   </span>{" "}
                   answered
+                  {/* This strip is the one thing always in view, so it is
+                      where an unsaved answer further up the page is made
+                      known. coral-700 on white: 7.3:1. */}
+                  {unsavedIds.size > 0 ? (
+                    <span className="font-semibold text-coral-700"> &middot; {unsavedIds.size} not saved yet</span>
+                  ) : null}
                 </p>
                 {/* The track is decoration; the fill is brand on ink-100 and
                     the count is printed beside it. role="progressbar" so a
@@ -819,7 +1091,14 @@ export default function StudentAttemptPage() {
               </CardBody>
             </Card>
 
-            <ol className="space-y-4">
+            {/* While handing in -- or after a Submit that may have landed --
+                the questions are what is (being) handed in: dimmed and
+                inert (handleAnswerChange also ignores edits, for the
+                keyboard). aria-busy tells assistive tech the same. */}
+            <ol
+              aria-busy={phase === "submitting"}
+              className={cn("space-y-4 transition-opacity", locked && "pointer-events-none opacity-60")}
+            >
               {attempt?.questions.map((question, index) => (
                 <Card
                   as="li"
@@ -850,6 +1129,13 @@ export default function StudentAttemptPage() {
                             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
                             Saving…
                           </span>
+                        ) : unsavedIds.has(question.id) ? (
+                          // Said in words and with an icon, not by colour
+                          // alone. coral-700 on white: 7.3:1.
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-coral-700 animate-fade-in">
+                            <CloudOff className="h-3 w-3" aria-hidden />
+                            Not saved yet
+                          </span>
                         ) : null}
                       </span>
                     </div>
@@ -863,6 +1149,15 @@ export default function StudentAttemptPage() {
                 </Card>
               ))}
             </ol>
+
+            {sessionEnded ? (
+              <SignInAgainBanner>
+                Your session has ended, so your answers can&rsquo;t be saved or handed in yet. Keep this page open:
+                your answers are still here. Sign in again in a new tab, then come back to this page and carry on.
+              </SignInAgainBanner>
+            ) : submitError ? (
+              <AlertBanner tone="error" message={submitError} />
+            ) : null}
 
             <Card tone="brand" className="animate-fade-up">
               <CardBody className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">

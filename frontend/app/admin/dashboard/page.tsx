@@ -24,11 +24,11 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SessionGate } from "@/components/SessionGate";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ChapterStatus, ChapterSummary, SchoolCurriculumMapEntry } from "@/types/curriculum";
 
@@ -379,7 +379,7 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         setMappings(mapRows);
       })
       .catch((err) => {
-        if (!cancelled) setError(apiErrorMessage(err));
+        if (!cancelled) setError(errorMessage(err, "load the curriculum status"));
       });
     return () => {
       cancelled = true;
@@ -420,8 +420,7 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         <PanelHeading isPlatformAdmin={isPlatformAdmin} />
         {/* coral-700 on white: 7.3:1. */}
         <p role="alert" className="text-[0.8125rem] font-medium leading-relaxed text-coral-700">
-          Couldn&rsquo;t load curriculum status just now ({error}). Everything is still available in Curriculum
-          Studio.
+          {error} Everything is still available in Curriculum Studio.
         </p>
         <PanelFooter>
           <TextLink href="/admin/curriculum">Open Curriculum Studio</TextLink>
@@ -629,10 +628,11 @@ function PlatformPipeline({ chapters }: { chapters: ChapterSummary[] }) {
 }
 
 export default function AdminDashboardPage() {
-  const { user, status } = useProtectedPage("ADMIN");
+  const session = useProtectedPage("ADMIN");
+  const { user, status } = session;
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   const schoolId = user?.admin?.schoolId ?? null;

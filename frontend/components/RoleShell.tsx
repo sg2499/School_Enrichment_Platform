@@ -29,31 +29,29 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, describeApiError } from "@/lib/api";
+import { wasRefused } from "@/lib/errors";
 import { clearSession } from "@/lib/auth";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { ROLE_LABEL } from "@/lib/pageTitle";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn } from "@/lib/utils";
 import { Ambience, type AmbienceLevel } from "@/components/brand/Ambience";
 import { Lockup, LogoMark } from "@/components/brand/Logo";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { UserMenu, SidebarUserMenu } from "@/components/UserMenu";
 
-// Title Case throughout -- this is the single source every surface in
-// RoleShell reads from (rail title, user card, mobile top bar, footer), so
-// fixing a label here fixes it everywhere at once. SUPER_ADMIN used to
-// collapse to "Admin" here, which was the real cause of a platform admin's
-// tab looking visually identical to a school admin's (18 Aug 2026,
-// Shailesh: two tabs signed into different admin variants at once still
-// "ended up as either admin or super admin, not both together" -- the
-// underlying per-tab session was actually fine, but nothing on screen ever
-// showed the difference, so it read as broken).
-const ROLE_LABEL: Record<UserRole, string> = {
-  ADMIN: "Admin",
-  SUPER_ADMIN: "Super Admin",
-  TEACHER: "Teacher",
-  STUDENT: "Student",
-};
+// ROLE_LABEL (Title Case throughout) is the single source every surface in
+// RoleShell reads from -- rail title, user card, mobile top bar, footer --
+// and, since 3 Oct 2026, the browser tab too, which is why it now lives in
+// lib/pageTitle.ts. SUPER_ADMIN used to collapse to "Admin" here, which was
+// the real cause of a platform admin's tab looking visually identical to a
+// school admin's (18 Aug 2026, Shailesh: two tabs signed into different
+// admin variants at once still "ended up as either admin or super admin,
+// not both together" -- the underlying per-tab session was actually fine,
+// but nothing on screen ever showed the difference, so it read as broken).
 
 const ROLE_TAGLINE: Record<UserRole, string> = {
   ADMIN: "School Control Centre",
@@ -61,6 +59,39 @@ const ROLE_TAGLINE: Record<UserRole, string> = {
   TEACHER: "Teaching Workspace",
   STUDENT: "Your Learning Space",
 };
+
+/**
+ * The line at the foot of the rail (3 Oct 2026). It used to read "Need
+ * help? Ask your school coordinator." for all four roles -- a role that
+ * does not exist in this product, and the wrong person for three of them.
+ * Each role is now pointed at whoever can actually do something for them:
+ * a teacher sets a student's work and can grant attempts; a school admin
+ * manages teachers' accounts and sections; admins are managed by the
+ * platform (routes_roster.py). A Super Admin has nobody above them inside
+ * the product, so their line says what their access means instead of
+ * pretending there is someone to ask.
+ */
+const HELP_LINE: Record<UserRole, { text: string; icon: React.ComponentType<{ className?: string }> }> = {
+  STUDENT: { text: "Stuck on something? Ask your teacher.", icon: LifeBuoy },
+  TEACHER: { text: "Need a hand? Ask your school admin.", icon: LifeBuoy },
+  ADMIN: { text: "Need a hand? Contact your platform administrator.", icon: LifeBuoy },
+  SUPER_ADMIN: { text: "Platform-wide access: changes here reach every school.", icon: ShieldCheck },
+};
+
+/**
+ * Where this person is signed in, for the footer: their school, and for a
+ * student their class and section too. A Super Admin belongs to no school.
+ */
+function signedInPlace(role: UserRole, user: CurrentUser | null): string | null {
+  if (role === "SUPER_ADMIN") return "All schools";
+  if (!user) return null;
+  if (role === "STUDENT") {
+    const classAndSection = [user.student?.className, user.student?.section].filter(Boolean).join(" ");
+    return [classAndSection, user.student?.schoolName].filter(Boolean).join(", ") || null;
+  }
+  if (role === "TEACHER") return user.teacher?.schoolName || null;
+  return user.admin?.schoolName || null;
+}
 
 type NavItem = {
   label: string;
@@ -323,6 +354,8 @@ function SidebarContent({
    *  corner; this reserves room for it so it never sits on the wordmark. */
   inDrawer?: boolean;
 }) {
+  const help = HELP_LINE[role];
+  const HelpIcon = help.icon;
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-brand-gradient">
       {/* Deliberately static -- the login panel's drifting aurora is a
@@ -424,8 +457,8 @@ function SidebarContent({
           // to two, and a centred icon then floats between them.
           // inverse-faint (4.6:1) -- was white/55 at ~3.7:1.
           <p className="flex items-start gap-2 text-xs leading-relaxed text-content-inverse-faint">
-            <LifeBuoy className="mt-[0.2rem] h-3.5 w-3.5 shrink-0" aria-hidden />
-            Need help? Ask your school coordinator.
+            <HelpIcon className="mt-[0.2rem] h-3.5 w-3.5 shrink-0" aria-hidden />
+            {help.text}
           </p>
         ) : null}
         {collapsed ? (
@@ -492,11 +525,21 @@ const SURFACED = "border border-line bg-surface/70 shadow-xs backdrop-blur";
 export function RoleShell({
   role,
   user,
+  title,
   ambience,
   children,
 }: {
   role: UserRole;
   user: CurrentUser | null;
+  /**
+   * What the browser tab calls this page (lib/pageTitle.ts). Leave it out
+   * and the tab is named after the navigation item the page belongs to --
+   * "Practice Tracker", "People" -- which is right for every top-level
+   * page. A detail view passes its own, most specific part first:
+   * `title={[student.name, "Practice Tracker"]}`. Parts that are still
+   * loading may be undefined; they are dropped until they arrive.
+   */
+  title?: string | Array<string | null | undefined>;
   /**
    * Opts this page into the workspace colour wash, at one of its two
    * levels (components/brand/Ambience.tsx has what each is and the contrast
@@ -520,6 +563,7 @@ export function RoleShell({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   // Starts expanded on both server and first client render (no window
   // during SSR) to avoid a hydration mismatch, then flips from localStorage
   // right after mount -- the one-frame flash this costs is the standard,
@@ -576,6 +620,8 @@ export function RoleShell({
   }, [menuOpen]);
 
   const currentItem = currentNavItem(role, pathname);
+  usePageTitle(title ?? currentItem?.label, role);
+  const place = signedInPlace(role, user);
   const focusRoute = isFocusRoute(pathname);
   // On a focus route the rail starts collapsed; the toggle can still open
   // it for this visit, but that choice is not saved -- it resets on the
@@ -598,14 +644,41 @@ export function RoleShell({
     });
   }
 
+  /**
+   * Signing out has to end the session on the server: the session lives in
+   * an httpOnly cookie this page cannot clear by itself. Until 3 Oct 2026 a
+   * sign-out request that never reached the server still sent the person to
+   * the sign-in page as though it had worked -- on a shared school computer
+   * the next person could open a link and be inside that account. If the
+   * request fails now, they stay where they are and are told so. What they
+   * are told depends on what is known: a refusal from the server means they
+   * are certainly still signed in; a request that got no answer may or may
+   * not have landed, so that one says to treat the device as signed in
+   * until signing out works. (A session the server says is already over is
+   * as signed out as it gets; that carries on to the sign-in page.)
+   */
   async function handleLogout() {
     setSigningOut(true);
+    setSignOutError(null);
     try {
       await api.post("/auth/logout");
-    } finally {
-      clearSession();
-      router.push("/login");
+    } catch (error) {
+      const problem = describeApiError(error, "sign you out");
+      if (problem.kind !== "session") {
+        setSignOutError(
+          `${problem.message} ${
+            wasRefused(problem)
+              ? "You're still signed in on this device."
+              : "Until signing out works, treat this device as still signed in."
+          }`,
+        );
+        setSigningOut(false);
+        setMenuOpen(false);
+        return;
+      }
     }
+    clearSession();
+    router.push("/login");
   }
 
   return (
@@ -851,10 +924,39 @@ export function RoleShell({
               </span>
               School Enrichment &middot; CBSE &amp; ICSE, Class 5&ndash;10
             </span>
-            <span>Signed In as {ROLE_LABEL[role]}</span>
+            {/* Who and where, not just which kind of account: with a teacher,
+                a student and two admins open side by side, "Signed In as
+                Admin" did not say which school. */}
+            <span>
+              Signed in as {ROLE_LABEL[role]}
+              {place ? <> &middot; {place}</> : null}
+            </span>
           </div>
         </footer>
       </div>
+
+      {/* Above everything, including the mobile drawer's layer: whichever
+          Sign out was pressed (rail, drawer or profile menu), this is where
+          the answer appears if it did not work. */}
+      {signOutError ? (
+        <div className="fixed inset-x-4 bottom-4 z-[70] mx-auto max-w-xl">
+          <AlertBanner
+            tone="error"
+            message={signOutError}
+            className="shadow-panel"
+            action={
+              <button
+                type="button"
+                onClick={() => setSignOutError(null)}
+                aria-label="Dismiss"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-coral-700 transition hover:bg-coral-100"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            }
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

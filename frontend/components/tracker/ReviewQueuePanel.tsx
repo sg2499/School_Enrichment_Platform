@@ -5,7 +5,7 @@ import { CheckCircle2, PenLine } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { LoadError } from "@/components/ui/AlertBanner";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { Initials, scopeParams } from "@/components/tracker/TrackerBits";
@@ -28,11 +28,15 @@ export function ReviewQueuePanel({
   q: string;
   onChange: (updates: Record<string, string | number | null>) => void;
 }) {
-  const { data, error, loading } = useApiQuery<Paginated<ReviewQueueRow>>("/learning/tracker/review-queue", {
+  const { data, problem, loading, reload } = useApiQuery<Paginated<ReviewQueueRow>>(
+    "/learning/tracker/review-queue",
+    {
     ...scopeParams(scopeKey),
-    page,
-    pageSize: 20,
-  });
+      page,
+      pageSize: 20,
+    },
+    { action: "load your marking queue" },
+  );
 
   return (
     <div className="space-y-4">
@@ -41,7 +45,7 @@ export function ReviewQueuePanel({
         here, oldest submission first. Scores stay provisional until every answer in the attempt is marked.
       </p>
 
-      {error ? <AlertBanner tone="error" message={`Couldn't load the marking queue (${error}).`} /> : null}
+      {problem ? <LoadError problem={problem} onRetry={reload} /> : null}
 
       {!data && loading ? (
         <TableSkeleton label="Loading the marking queue" />

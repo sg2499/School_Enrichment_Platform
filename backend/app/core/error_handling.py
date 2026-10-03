@@ -11,9 +11,10 @@ and the frontend's one error reader understood only the first and the last:
                                                                (slowapi's)
   an unhandled exception    {"error": {"code", "message", "details"}}
 
-That reader (lib/api.ts, apiErrorMessage) looks for `detail.message` or
-`error.message`. The second shape gave it a bare "Not Found"; the third and
-fourth gave it nothing, so it fell back to the HTTP library's own text and
+That reader (lib/api.ts's apiErrorMessage; replaced the same week by
+frontend/lib/errors.ts) looked for `detail.message` or `error.message`. The
+second shape gave it a bare "Not Found"; the third and fourth gave it
+nothing, so it fell back to the HTTP library's own text and
 the person saw "Request failed with status code 422" -- Shailesh, 3 Oct
 2026: an error "should never be a raw error but one that the user should
 see ... just like it is shown in every top notch world class platform".

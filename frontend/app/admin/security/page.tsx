@@ -44,8 +44,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/Field";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { api, apiErrorMessage } from "@/lib/api";
+import { SessionGate } from "@/components/SessionGate";
+import { api, describeApiError, errorMessage } from "@/lib/api";
 import { clearSession, updateStoredUser } from "@/lib/auth";
+import { wasRefused } from "@/lib/errors";
+import { rememberSignedOut } from "@/lib/sessionNotice";
 import { cn } from "@/lib/utils";
 
 type SetupStage = "idle" | "scan" | "codes";
@@ -292,7 +295,8 @@ function SecuritySettingsPageInner() {
   // their random initial password yet).
   const passwordChangeRequired = searchParams.get("passwordChange") === "required";
 
-  const { user, status } = useProtectedPage("ADMIN", { allowWithoutTwoFactor: true, allowWithoutPasswordChange: true });
+  const session = useProtectedPage("ADMIN", { allowWithoutTwoFactor: true, allowWithoutPasswordChange: true });
+  const { user, status } = session;
   const roleForShell = user?.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
 
   // Mirrors user.twoFactorEnabled locally so the UI updates the instant
@@ -341,7 +345,7 @@ function SecuritySettingsPageInner() {
       setEnableCode("");
       setSetupStage("scan");
     } catch (err) {
-      setSetupError(apiErrorMessage(err));
+      setSetupError(errorMessage(err, "start two-factor setup"));
     } finally {
       setStartingSetup(false);
     }
@@ -356,7 +360,7 @@ function SecuritySettingsPageInner() {
       setBackupCodes(data.backupCodes);
       setSetupStage("codes");
     } catch (err) {
-      setSetupError(apiErrorMessage(err));
+      setSetupError(errorMessage(err, "turn on two-factor authentication"));
     } finally {
       setEnabling(false);
     }
@@ -390,7 +394,7 @@ function SecuritySettingsPageInner() {
       setRegenCodes(data.backupCodes);
       setRegenPassword("");
     } catch (err) {
-      setRegenError(apiErrorMessage(err));
+      setRegenError(errorMessage(err, "create new backup codes"));
     } finally {
       setRegenerating(false);
     }
@@ -416,7 +420,7 @@ function SecuritySettingsPageInner() {
       // Older tokens issued before this feature shipped carry no "sid"
       // claim -- the endpoint still works, but if it ever errors this just
       // hides the list rather than blocking the rest of the page.
-      setSessionsError(apiErrorMessage(err));
+      setSessionsError(errorMessage(err, "load your signed-in devices"));
     } finally {
       setSessionsLoading(false);
     }
@@ -434,25 +438,53 @@ function SecuritySettingsPageInner() {
       const revokedCurrentDevice = sessions.find((s) => s.id === sessionId)?.isCurrent;
       if (revokedCurrentDevice) {
         clearSession();
+        rememberSignedOut({ message: "You've signed out on this device. Sign in again to continue." });
         router.push("/login");
         return;
       }
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
-      setSessionsError(apiErrorMessage(err));
+      setSessionsError(errorMessage(err, "end that session"));
     } finally {
       setRevokingSessionId(null);
     }
   }
 
+  // If the request does not reach the server, nothing has been signed out
+  // -- and "Sign Out of All Devices" is what someone presses when they
+  // think an account is in the wrong hands. Until 3 Oct 2026 a failure here
+  // still sent them to the sign-in page as though it had worked. Now they
+  // stay and are told so -- "every device is still signed in" when the
+  // server refused, "treat every device as still signed in" when no answer
+  // came back and the outcome is not known.
+  //
+  // If the answer is that THIS session had already ended, nothing was
+  // signed out either (the request was never accepted). lib/api.ts is by
+  // then taking the tab to the sign-in page with the server's reason, and
+  // brings them back here afterwards to press it again; this must not
+  // replace that reason with a claim that every device was signed out.
   async function handleSignOutEverywhere() {
     setSigningOutEverywhere(true);
+    setSessionsError(null);
     try {
       await api.post("/auth/logout-all-sessions");
-    } finally {
-      clearSession();
-      router.push("/login");
+    } catch (err) {
+      const problem = describeApiError(err, "sign out your devices");
+      if (problem.kind === "session") return;
+      setSessionsError(
+        `${problem.message} ${
+          wasRefused(problem)
+            ? "Every device is still signed in."
+            : "Until this works, treat every device as still signed in."
+        }`,
+      );
+      setSigningOutEverywhere(false);
+      setConfirmSignOutAll(false);
+      return;
     }
+    clearSession();
+    rememberSignedOut({ message: "You've signed out on every device. Sign in again to continue." });
+    router.push("/login");
   }
 
   // --- Download my data ---
@@ -474,7 +506,7 @@ function SecuritySettingsPageInner() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
-      setExportError(apiErrorMessage(err));
+      setExportError(errorMessage(err, "prepare your data download"));
     } finally {
       setExporting(false);
     }
@@ -507,17 +539,18 @@ function SecuritySettingsPageInner() {
       // confusing 401 somewhere else.
       window.setTimeout(() => {
         clearSession();
+        rememberSignedOut({ message: "Your password has been changed. Sign in with your new password." });
         router.push("/login");
       }, 1800);
     } catch (err) {
-      setPasswordError(apiErrorMessage(err));
+      setPasswordError(errorMessage(err, "change your password"));
     } finally {
       setChangingPassword(false);
     }
   }
 
   if (status !== "ready" || !user) {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   // Current device first: "is this me?" is the first thing anyone checks

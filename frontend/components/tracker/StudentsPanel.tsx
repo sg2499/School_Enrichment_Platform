@@ -7,7 +7,7 @@ import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { LoadError } from "@/components/ui/AlertBanner";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
@@ -35,12 +35,16 @@ export function StudentsPanel({
   onChange: (updates: Record<string, string | number | null>) => void;
 }) {
   const router = useRouter();
-  const { data, error, loading } = useApiQuery<Paginated<TrackerStudentRow>>("/learning/tracker/students", {
+  const { data, problem, loading, reload } = useApiQuery<Paginated<TrackerStudentRow>>(
+    "/learning/tracker/students",
+    {
     ...scopeParams(scopeKey),
     q,
-    page,
-    pageSize: 25,
-  });
+      page,
+      pageSize: 25,
+    },
+    { action: "load your students" },
+  );
 
   // Carry the section into the student's page, so 5A's tracker opens 5A's
   // history for that student (the page can widen it back out).
@@ -51,7 +55,7 @@ export function StudentsPanel({
     <div className="space-y-4">
       <SearchInput value={q} onSearch={(value) => onChange({ q: value, page: null })} label="Search students by name or code" />
 
-      {error ? <AlertBanner tone="error" message={`Couldn't load students (${error}).`} /> : null}
+      {problem ? <LoadError problem={problem} onRetry={reload} /> : null}
 
       {!data && loading ? (
         <TableSkeleton label="Loading students" />
