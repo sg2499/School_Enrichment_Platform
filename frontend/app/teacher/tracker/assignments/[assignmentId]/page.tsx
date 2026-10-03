@@ -26,7 +26,17 @@
  *    it.
  *  - The header's metadata was one middle-dot sentence. It is passed to
  *    PageHeader as `facts` and drawn as a labelled strip.
- * It is also where the achievement spark is wired in: see the To Mark tile.
+ * It is also where the achievement spark is wired in: see the To Mark cell.
+ *
+ * Masthead pass (2 Oct 2026, later the same day). Phase A's fixes above
+ * still left the top of this page as text on the canvas, and Shailesh, live:
+ * "the hero sections are still floating text". The back link, the title,
+ * the facts and the six progress tiles are now one masthead (PageHeader
+ * surface="masthead"; that file has the reasoning and the contrast figures),
+ * the same panel the Practice Tracker list opens on, so opening an
+ * assignment from the list stays on one surface instead of dropping back to
+ * a bare header. The page takes the shell's `working` ambience, as the list
+ * does.
  */
 
 import { Suspense, useState } from "react";
@@ -40,7 +50,7 @@ import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { useMarkingMilestone } from "@/lib/hooks/useMarkingMilestone";
 import { api, apiErrorMessage } from "@/lib/api";
 import { AchievementSpark } from "@/components/brand/AchievementSpark";
-import { PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
+import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -57,9 +67,7 @@ import {
   PercentText,
   ReadOnlyBadge,
   ScoreBadge,
-  StatTile,
   TargetStatusBadge,
-  TeacherAmbience,
 } from "@/components/tracker/TrackerBits";
 import { formatDay, plural, scopeLabel, studentClassLabel } from "@/lib/tracker";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -155,96 +163,108 @@ function AssignmentWorkspace() {
     : [];
 
   return (
-    <RoleShell role="TEACHER" user={user}>
-      <TeacherAmbience />
+    // The working level of the workspace wash, through the shell (which also
+    // moves its own date line and footer onto chips) -- the same as the
+    // Practice Tracker list this view opens from.
+    <RoleShell role="TEACHER" user={user} ambience="working">
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7.
-          `relative` so the page paints above the ambience. */}
-      <div className="relative space-y-8">
-        {/* The back link and the header are one block. The link used to be
-            a sibling of the header in the space-y-8 stack, a full 2rem
-            section gap above the title it leads back from -- the distance
-            that made it look like it belonged to nothing. */}
-        <div className="space-y-5">
-          <InlineLink href="/teacher/tracker" direction="back">
-            Practice Tracker
-          </InlineLink>
-
-          {header.error ? (
+          Practice); dashboards use space-y-10. This family alone was 7. */}
+      <div className="space-y-8">
+        {header.error ? (
+          // Nothing to put in a masthead: the way back and the reason.
+          <div className="space-y-5">
+            <InlineLink href="/teacher/tracker" direction="back">
+              Practice Tracker
+            </InlineLink>
             <AlertBanner tone="error" message={`Couldn't open this assignment (${header.error}).`} />
-          ) : null}
-
-          {a ? (
-            <PageHeader
-              eyebrow={scopeLabel(a)}
-              title={a.title ?? "Learning Activity"}
-              facts={facts}
-              meta={
+          </div>
+        ) : (
+          // The assignment's masthead: the way back, what it is, its state
+          // and details, and its six progress figures, as one object. It was
+          // four -- a back link, a header and a facts band on the canvas,
+          // then a row of white tiles -- which is the "loose header above
+          // the content" the list page had before its own masthead. While
+          // the assignment loads the same panel is drawn with its shapes:
+          // bars for the eyebrow and title, and each figure's own
+          // placeholder (a `null` value).
+          <PageHeader
+            surface="masthead"
+            back={
+              <InlineLink href="/teacher/tracker" direction="back" size="sm" tone="inverse">
+                Practice Tracker
+              </InlineLink>
+            }
+            eyebrow={a ? scopeLabel(a) : undefined}
+            title={
+              a ? (
+                (a.title ?? "Learning Activity")
+              ) : (
                 <>
-                  <AssignmentStatusBadge status={a.status} />
-                  {a.activityType ? <Badge tone="brand">{ACTIVITY_TYPE_LABEL[a.activityType]}</Badge> : null}
-                  {!a.canAct ? <ReadOnlyBadge /> : null}
+                  <MastheadSkeleton className="h-9 w-96 max-w-full" />
+                  <span className="sr-only">Loading assignment</span>
                 </>
-              }
-            />
-          ) : !header.error ? (
-            // The header's own shape while it loads: eyebrow, title, and
-            // the facts band.
-            <div aria-hidden className="space-y-3">
-              <span className="block h-4 w-48 animate-pulse rounded-full bg-ink-100" />
-              <span className="block h-9 w-96 max-w-full animate-pulse rounded-full bg-ink-100" />
-              <span className="block h-11 w-[34rem] max-w-full animate-pulse rounded-2xl bg-ink-100" />
-            </div>
-          ) : null}
-        </div>
-
-        {a ? (
-          <>
-            {!a.canAct ? (
-              <AlertBanner
-                tone="info"
-                message="This section has been handed over to another teacher. You can still see everything that happened while you taught it, but marking and extra attempts are now theirs to give."
-              />
-            ) : null}
-
-            <div className="grid grid-cols-2 gap-3 animate-fade-up sm:grid-cols-3 xl:grid-cols-6">
-              <StatTile label="Students" value={a.progress.targeted} />
-              <StatTile label="Completed" value={a.progress.completed} tone={a.progress.completed > 0 ? "good" : "default"} />
-              <StatTile label="In Progress" value={a.progress.inProgress} />
-              <StatTile label="Not Started" value={a.progress.notStarted} />
-              {/* Where the achievement spark lands. When the teacher's own
-                  marking has just taken this count to zero, the tile turns
-                  to its "good" tone, says so in words, and the saffron
-                  spark plays once in its corner (about a second) and stays
-                  as a still mark for this visit. A page that merely loads
-                  with nothing to mark gets none of it -- same quiet "0" as
-                  before. */}
-              <StatTile
-                label="To Mark"
-                value={a.progress.needsReview}
-                tone={a.progress.needsReview > 0 ? "attention" : justFinishedMarking ? "good" : "default"}
-                hint={
-                  a.progress.needsReview > 0
+              )
+            }
+            facts={facts}
+            meta={
+              a ? (
+                <>
+                  <AssignmentStatusBadge status={a.status} onDark />
+                  {a.activityType ? <Badge tone="inverse">{ACTIVITY_TYPE_LABEL[a.activityType]}</Badge> : null}
+                  {!a.canAct ? <ReadOnlyBadge onDark /> : null}
+                </>
+              ) : undefined
+            }
+            stats={[
+              { label: "Students", value: a ? a.progress.targeted : null },
+              {
+                label: "Completed",
+                value: a ? a.progress.completed : null,
+                tone: a && a.progress.completed > 0 ? "good" : "default",
+              },
+              { label: "In Progress", value: a ? a.progress.inProgress : null },
+              { label: "Not Started", value: a ? a.progress.notStarted : null },
+              {
+                // Where the achievement spark lands. When the teacher's own
+                // marking has just taken this count to zero, the cell turns
+                // to its "good" tone, says so in words, and the saffron
+                // spark plays once in its corner (about a second) and stays
+                // as a still mark for this visit. A page that merely loads
+                // with nothing to mark gets none of it -- the same quiet
+                // "0" as before.
+                label: "To Mark",
+                value: a ? a.progress.needsReview : null,
+                tone: a && a.progress.needsReview > 0 ? "attention" : justFinishedMarking ? "good" : "default",
+                hint: a
+                  ? a.progress.needsReview > 0
                     ? "Students with written answers"
                     : justFinishedMarking
                       ? "Every written answer is marked"
                       : undefined
-                }
-                adornment={justFinishedMarking ? <AchievementSpark /> : undefined}
-              />
-              <StatTile
-                label="Average"
-                value={<PercentText percent={a.progress.averagePercent} animated />}
-                hint="Latest final scores"
-              />
-            </div>
-            {/* The same moment for someone who can't see the spark. */}
-            {justFinishedMarking ? (
-              <span className="sr-only" role="status">
-                All written answers on this assignment are now marked.
-              </span>
-            ) : null}
-          </>
+                  : undefined,
+                adornment: justFinishedMarking ? <AchievementSpark /> : undefined,
+              },
+              {
+                label: "Average",
+                value: a ? <PercentText percent={a.progress.averagePercent} animated onDark /> : null,
+                hint: a ? "Latest final scores" : undefined,
+              },
+            ]}
+          />
+        )}
+
+        {/* The same moment for someone who can't see the spark. */}
+        {justFinishedMarking ? (
+          <span className="sr-only" role="status">
+            All written answers on this assignment are now marked.
+          </span>
+        ) : null}
+
+        {a && !a.canAct ? (
+          <AlertBanner
+            tone="info"
+            message="This section has been handed over to another teacher. You can still see everything that happened while you taught it, but marking and extra attempts are now theirs to give."
+          />
         ) : null}
 
         {!header.error ? (

@@ -60,7 +60,11 @@ export function StudentsPanel({
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center">
             <Users className="h-5 w-5 text-content-faint" aria-hidden />
             <p className="text-[0.875rem] font-semibold text-content">No students match that</p>
-            <Button type="button" variant="ghost" size="sm" onClick={() => onChange({ q: null, page: null })}>
+            {/* `tinted`, not `ghost` (2 Oct 2026): this is the only action in
+                the box, and Button.tsx's rule is that an action on its own
+                needs chrome of its own -- ghost left it as a grey word
+                under the message. */}
+            <Button type="button" variant="tinted" size="sm" onClick={() => onChange({ q: null, page: null })}>
               Clear Search
             </Button>
           </div>

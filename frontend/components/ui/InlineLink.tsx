@@ -34,8 +34,8 @@ const BASE =
 
 // The chrome is a translucent ink tint rather than a named surface, on
 // purpose. This link has to sit on three different grounds -- the paper
-// canvas (a detail page's back link, with the teacher ambience behind it),
-// a white card (a panel footer) and a brand-tinted card -- and a fixed fill
+// canvas (a failed detail view's back link, with the workspace wash behind
+// it), a white card (a panel footer) and a brand-tinted card -- and a fixed fill
 // disappears on one of them: surface-brand IS the brand card's colour. An
 // alpha tint always lands one step darker than whatever is underneath.
 //
@@ -45,13 +45,28 @@ const BASE =
 // 10.9:1 and 10.5:1.
 //
 // The price of a translucent fill is that the backdrop shows through it, so
-// the canvas figure was re-measured on the darkest pixel the teacher
-// ambience ever puts behind a page (TrackerBits.tsx's TeacherAmbience, at
-// its stronger dashboard level, over RoleShell's canvas-glow): brand-700
-// on the pill is 6.5:1 there, 8.5:1 on hover -- comfortably past AA.
+// the canvas figure was re-measured on the darkest pixel the workspace wash
+// ever puts behind a page (components/brand/Ambience.tsx, over RoleShell's
+// canvas-glow). That wash is far stronger than Phase A's was, and the pill
+// still holds: brand-700 is 5.7:1 at the working level and 5.4:1 at the
+// dashboard's, 7.1:1 or better on hover. On a Teacher page it is only ever
+// on the canvas in one case now -- a detail view that failed to load, where
+// there is no masthead to put the way back in.
 const CHROME =
   "border-brand-500/15 bg-brand-500/10 text-content-brand " +
   "hover:border-brand-500/30 hover:bg-brand-500/[0.16] hover:text-brand-900 active:bg-brand-500/20";
+
+// On indigo chrome (PageHeader's masthead) the tint is turned round: a
+// brand-950 well rather than a lighter wash, for the reason MASTHEAD_WELL
+// gives -- a translucent *light* fill lifts the panel's lightest pixel
+// further and costs the label contrast, a dark one always adds to it. The
+// label is content-inverse; on the well over the masthead's lightest
+// measured pixel that is the stat cells' own figure (PageHeader.tsx has
+// it), and hover deepens the well rather than lightening it, so the hover
+// state can only gain contrast. Focus is the masthead's saffron ring.
+const CHROME_INVERSE =
+  "border-white/15 bg-brand-950/40 text-content-inverse " +
+  "hover:border-white/30 hover:bg-brand-950/60 active:bg-brand-950/70";
 
 // The arrow's side gets the tighter padding (an icon carries its own
 // optical margin), and the arrow nudges the way the link travels.
@@ -75,11 +90,13 @@ export interface InlineLinkProps extends Omit<React.ComponentProps<typeof Link>,
   /** `back` leads with a left arrow; `forward` trails a right one. */
   direction?: InlineLinkDirection;
   size?: InlineLinkSize;
+  /** `inverse` for a link inside indigo chrome (a masthead's back link). */
+  tone?: "default" | "inverse";
   className?: string;
   children: React.ReactNode;
 }
 
-export function InlineLink({ direction = "forward", size = "md", className, children, ...props }: InlineLinkProps) {
+export function InlineLink({ direction = "forward", size = "md", tone = "default", className, children, ...props }: InlineLinkProps) {
   const d = DIRECTIONS[direction];
   const s = SIZES[size];
   const Arrow = direction === "back" ? ArrowLeft : ArrowRight;
@@ -87,7 +104,7 @@ export function InlineLink({ direction = "forward", size = "md", className, chil
     <Arrow aria-hidden className={cn("shrink-0 transition-transform duration-200 ease-spring", s.icon, d.nudge)} />
   );
   return (
-    <Link className={cn(BASE, CHROME, s.box, d.pad[size], className)} {...props}>
+    <Link className={cn(BASE, tone === "inverse" ? CHROME_INVERSE : CHROME, s.box, d.pad[size], className)} {...props}>
       {direction === "back" ? arrow : null}
       {/* Truncates rather than wraps: a back link is often a record's own
           name ("Fish Tale extra practice -- word problems with large

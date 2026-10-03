@@ -22,12 +22,24 @@
  * the handover rule: a past section's history stays readable (marked
  * "Past" / "Read Only"), anything set after the handover isn't shown.
  *
- * UI revamp, Phase A (2 Oct 2026): the four summary tiles count up
- * (StatTile does it for any plain number) and the page sits on the quiet
- * teacher ambience. Nothing else here needed rebuilding -- this page never
- * had a bare-text action -- but its three panels live in
- * components/tracker/ and were outside this pass: their "Clear Search"
- * buttons are still `ghost` where the new rule says `tinted`.
+ * UI revamp, Phase A (2 Oct 2026): the four summary figures count up and
+ * the page sits on the workspace ambience. Its three panels live in
+ * components/tracker/; their "Clear Search" buttons were still `ghost`
+ * after that pass and are `tinted` now, per Button.tsx's rule.
+ *
+ * Masthead pass, same day. Phase A left this page's header as it was -- a
+ * title and one grey sentence on the bare canvas, above a row of white
+ * tiles -- on the reasoning that a single sentence needs no container.
+ * Shailesh, live: "The hero sections are still floating text." The header
+ * is now a masthead (PageHeader surface="masthead"), and the four tiles
+ * have moved into it as its stat strip rather than being repeated under
+ * it: what a teacher reads under "Practice Tracker" is the state of their
+ * practice -- how much is live, how much is waiting for them -- with the
+ * sentence that explains the page as the caption to those figures. Same
+ * four figures from the same single request; nothing new is fetched. The
+ * wash behind the page is the shell's now, at its working level (RoleShell's
+ * `ambience` prop; components/brand/Ambience.tsx has the measurements).
+ * The three panels are untouched apart from that one button.
  */
 
 import { Suspense } from "react";
@@ -36,13 +48,13 @@ import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { ButtonLink } from "@/components/ui/Button";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { SubTabs, type SubTab } from "@/components/ui/SubTabs";
-import { SectionPicker, StatTile, TeacherAmbience } from "@/components/tracker/TrackerBits";
+import { SectionPicker } from "@/components/tracker/TrackerBits";
 import { AssignmentsPanel } from "@/components/tracker/AssignmentsPanel";
 import { StudentsPanel } from "@/components/tracker/StudentsPanel";
 import { ReviewQueuePanel } from "@/components/tracker/ReviewQueuePanel";
@@ -107,18 +119,53 @@ function TrackerWorkspace() {
     onChange: (updates: Record<string, string | number | null>) => url.set(updates),
   };
 
+  // The masthead's figures. `null` while the overview loads (a placeholder
+  // bar); "—" if it failed, with the banner below saying why -- never a
+  // zero, which would read as a real count. The tiles these replace printed
+  // "–" for both cases, and "Nothing waiting" under Waiting For Marks even
+  // before the count had arrived; a hint now appears only once the number
+  // it describes is known.
+  const pending = !overview.data && !overview.error;
+  const figure = (value: number | null | undefined) => (pending ? null : (value ?? "—"));
+  const stats: PageHeaderStat[] = [
+    {
+      label: "Active Assignments",
+      value: figure(counts?.activeAssignments),
+      hint: counts ? `${counts.assignments} in total` : undefined,
+    },
+    {
+      label: "Waiting For Marks",
+      value: figure(counts?.needsReview),
+      hint: counts ? (counts.needsReview > 0 ? "Open Needs Review to mark them" : "Nothing waiting") : undefined,
+      tone: counts && counts.needsReview > 0 ? "attention" : "default",
+    },
+    {
+      label: "Students On Roster",
+      value: figure(counts?.studentsOnRoster),
+      hint: "Across your current sections",
+    },
+    {
+      label: "Your Sections",
+      value: pending ? null : overview.data ? currentSections : "—",
+      hint: sections.length > currentSections ? `${sections.length - currentSections} past, read only` : "Assigned by your admin",
+    },
+  ];
+
   return (
-    <RoleShell role="TEACHER" user={user}>
-      <TeacherAmbience />
+    <RoleShell role="TEACHER" user={user} ambience="working">
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7.
-          `relative` so the page paints above the ambience. */}
-      <div className="relative space-y-8">
+          Practice); dashboards use space-y-10. This family alone was 7. */}
+      <div className="space-y-8">
         <PageHeader
+          surface="masthead"
           eyebrow="Teaching Workspace"
           title="Practice Tracker"
           description="How every section is getting on with the practice you've set, and the written answers waiting for your marks."
+          stats={stats}
           actions={
+            // Still `accent`: the saffron button is the single most inviting
+            // action on this view, and on indigo it is the student hero's
+            // pairing (brand-950 on the saffron gradient, 4.9 to 11.2:1).
             <ButtonLink href="/teacher/assign" variant="accent" leadingIcon={<Send className="h-4 w-4" />}>
               Assign Practice
             </ButtonLink>
@@ -128,22 +175,6 @@ function TrackerWorkspace() {
         {overview.error ? (
           <AlertBanner tone="error" message={`Couldn't load your tracker summary (${overview.error}).`} />
         ) : null}
-
-        <div className="grid grid-cols-2 gap-3 animate-fade-up lg:grid-cols-4">
-          <StatTile label="Active Assignments" value={counts ? counts.activeAssignments : "–"} hint={counts ? `${counts.assignments} in total` : undefined} />
-          <StatTile
-            label="Waiting For Marks"
-            value={counts ? counts.needsReview : "–"}
-            hint={counts && counts.needsReview > 0 ? "Open Needs Review to mark them" : "Nothing waiting"}
-            tone={counts && counts.needsReview > 0 ? "attention" : "default"}
-          />
-          <StatTile label="Students On Roster" value={counts?.studentsOnRoster ?? "–"} hint="Across your current sections" />
-          <StatTile
-            label="Your Sections"
-            value={overview.data ? currentSections : "–"}
-            hint={sections.length > currentSections ? `${sections.length - currentSections} past, read only` : "Assigned by your admin"}
-          />
-        </div>
 
         <Card className="animate-fade-up delay-70">
           <div className="flex flex-col gap-3 border-b border-line bg-surface-muted/60 px-5 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">

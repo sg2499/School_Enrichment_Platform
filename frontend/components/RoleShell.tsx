@@ -33,6 +33,7 @@ import { api } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn } from "@/lib/utils";
+import { Ambience, type AmbienceLevel } from "@/components/brand/Ambience";
 import { Lockup, LogoMark } from "@/components/brand/Logo";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -470,13 +471,49 @@ function SidebarContent({
 // the same as any other "remember my layout preference" setting.
 const SIDEBAR_COLLAPSED_KEY = "se_sidebar_collapsed";
 
+/**
+ * The frosted chip the breadcrumb already sits on (border-line, surface at
+ * 70%, shadow-xs, backdrop-blur), as a constant so the two other pieces of
+ * shell text that used to sit on the bare canvas can share it when a page
+ * has an ambience behind it: the date line and the footer.
+ *
+ * Why they need it. Both are content-subtle at 12px, the quietest text in
+ * the shell. On the bare canvas, against the darkest pixel the workspace
+ * wash puts behind a page, content-subtle measures 3.8:1 at the dashboard
+ * level and 4.0:1 at the working one -- under AA, and the reason Phase A's
+ * wash had to stay at a quarter strength. On this chip (surface at 70%
+ * over that same darkest pixel, taking no credit for the blur) it is 5.5:1
+ * and 5.6:1; content-muted, the breadcrumb's parent crumb, 7.5:1; the
+ * calendar glyph, content-faint and decorative, 4.0:1.
+ * components/brand/Ambience.tsx has the sweep those figures come from.
+ */
+const SURFACED = "border border-line bg-surface/70 shadow-xs backdrop-blur";
+
 export function RoleShell({
   role,
   user,
+  ambience,
   children,
 }: {
   role: UserRole;
   user: CurrentUser | null;
+  /**
+   * Opts this page into the workspace colour wash, at one of its two
+   * levels (components/brand/Ambience.tsx has what each is and the contrast
+   * measurements behind them). Off by default: a page that doesn't pass it
+   * renders exactly as it did before the prop existed -- today that is
+   * every Admin and Student page, and the three tracker detail views.
+   *
+   * It is a prop on the shell, rather than something a page drops into its
+   * own content, because turning the wash up is only safe once nothing
+   * quiet is left sitting on the bare canvas -- and two of the things that
+   * were are the shell's own: the date beside the breadcrumb and the
+   * footer line, both content-subtle. With `ambience` set they move onto
+   * the same frosted chip the breadcrumb already uses (SURFACED, above).
+   * One prop does both, so a page cannot have the stronger wash without
+   * the surfaces that make it safe.
+   */
+  ambience?: AmbienceLevel;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -682,6 +719,26 @@ export function RoleShell({
             cards. It now dissolves into the canvas instead. */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-canvas-glow mask-fade-b" />
 
+        {/* The workspace wash, when a page asks for one. Pinned to the
+            viewport (Ambience is `fixed`) but starting at the rail's right
+            edge rather than the screen's, so its top-left blob sits on the
+            content column's corner instead of almost entirely underneath
+            the rail -- and it follows the rail when that collapses, on the
+            same 300ms spring as the column's own padding (which the global
+            reduced-motion override makes instant). No z-index: it comes
+            before the context bar, <main> and the footer in the DOM and all
+            three are positioned with a z-index of their own, so it paints
+            beneath them. */}
+        {ambience ? (
+          <Ambience
+            level={ambience}
+            className={cn(
+              "transition-[left] duration-300 ease-spring",
+              railCollapsed ? "lg:left-sidebar-collapsed" : "lg:left-sidebar",
+            )}
+          />
+        ) : null}
+
         {/* Desktop context bar. z-20, deliberately HIGHER than <main>'s z-10
             below (19 Aug 2026, Shailesh: the profile dropdown "underlaps"
             and page text bleeds through it, and its Upload Photo button did
@@ -721,8 +778,14 @@ export function RoleShell({
               </ol>
             </nav>
             {today ? (
-              // content-subtle on the paper canvas: 6.0:1.
-              <span className="hidden shrink-0 items-center gap-1.5 text-xs font-medium text-content-subtle animate-fade-in xl:flex">
+              // content-subtle on the paper canvas: 6.0:1. With an ambience
+              // behind the page it sits on a chip instead (SURFACED).
+              <span
+                className={cn(
+                  "hidden shrink-0 items-center gap-1.5 text-xs font-medium text-content-subtle animate-fade-in xl:flex",
+                  ambience && cn(SURFACED, "rounded-full py-1.5 pl-3 pr-3.5"),
+                )}
+              >
                 <CalendarDays className="h-3.5 w-3.5 text-content-faint" aria-hidden />
                 {today}
               </span>
@@ -772,7 +835,14 @@ export function RoleShell({
         >
           {/* content-subtle, not content-faint: faint is 4.6:1 on white but
               4.4:1 on this paper canvas, just under AA at 12px. */}
-          <div className="flex flex-col gap-2 border-t border-line pt-5 text-xs text-content-subtle sm:flex-row sm:items-center sm:justify-between">
+          <div
+            className={cn(
+              "flex flex-col gap-2 text-xs text-content-subtle sm:flex-row sm:items-center sm:justify-between",
+              // With an ambience, the rule above the footer becomes the
+              // chip's own edge.
+              ambience ? cn(SURFACED, "rounded-2xl px-4 py-3") : "border-t border-line pt-5",
+            )}
+          >
             <span className="flex items-center gap-2">
               {/* aria-hidden wrapper: the mark is labelled "School
                   Enrichment" and the same words follow as text. */}

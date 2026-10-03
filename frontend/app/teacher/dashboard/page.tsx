@@ -35,6 +35,29 @@
  *    text link. It is the one thing here that asks the teacher to act.
  *  - The five headline figures count up (useCountUp, via <CountUp>).
  *  - The page sits on the teacher ambience at its dashboard level.
+ *
+ * Masthead pass, same day. Shailesh, looking at Phase A live: "I do not see
+ * much of a difference. The hero sections are still floating text." On this
+ * page that was the welcome -- a title, a grey sentence and three badges on
+ * the bare canvas -- sitting directly above the one thing that had been
+ * given a surface (the next-step card). Nothing the page claims or fetches
+ * changed; three things about how it presents did:
+ *  - The welcome is a masthead (PageHeader surface="masthead"; that file
+ *    has the reasoning and the contrast measurements), and it carries what
+ *    a landing page's header should: the teacher's headline figures, and
+ *    their next step with its button. The next step used to be a second
+ *    indigo card under the header; two dark panels stacked would have
+ *    competed, so it is the masthead's closing strip instead. One hero,
+ *    not a header plus a hero.
+ *  - The figures are the ones the Your Sections and Recent Practice cards
+ *    each used to open with (Sections, Classes, Assignments, Active), plus
+ *    the "4 of 6 Ready" that was a badge under the welcome. They have moved
+ *    up rather than been copied: "Assignments set" was on the page twice
+ *    already, and a third time would have been noise. Every one of those
+ *    numbers is still on the page, once.
+ *  - The page's wash is the shell's now (RoleShell's `ambience` prop), at
+ *    its dashboard level. components/brand/Ambience.tsx has why it could
+ *    get stronger and the measurements behind the number.
  */
 
 import { useEffect, useState } from "react";
@@ -56,7 +79,7 @@ import {
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { MASTHEAD_WELL, PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -66,8 +89,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
-import { AuroraBackdropInverse, RosterIllustration } from "@/components/brand/Graphics";
-import { TeacherAmbience } from "@/components/tracker/TrackerBits";
+import { PathIllustration, RosterIllustration } from "@/components/brand/Graphics";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -220,21 +242,6 @@ function plural(n: number, one: string, many = `${one}s`) {
  *  (globals.css). */
 function SkeletonLine({ className }: { className?: string }) {
   return <span aria-hidden className={cn("block animate-pulse rounded-full bg-ink-100", className)} />;
-}
-
-/** A headline figure. A number counts up from zero when it appears (and
- *  stays still under prefers-reduced-motion -- useCountUp); the "—" shown
- *  while its source is unavailable is printed as it is. */
-function Stat({ value, label }: { value: number | string; label: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="font-display text-display-sm tabular text-content">
-        {typeof value === "number" ? <CountUp value={value} /> : value}
-      </p>
-      {/* content-subtle on white: 6.4:1. */}
-      <p className="mt-0.5 text-xs font-medium text-content-subtle">{label}</p>
-    </div>
-  );
 }
 
 /** coral-700 on white: 7.3:1; the icon carries the state as well. */
@@ -583,38 +590,30 @@ function deriveNextStep({ sections, maps, practice, assignments }: Signals): Nex
   };
 }
 
-function NextStepCard({ step }: { step: NextStep | null }) {
+function NextStepStrip({ step }: { step: NextStep | null }) {
   return (
-    // The dashboard's hero (2 Oct 2026): an inverse card carrying the
-    // aurora, the same construction as the student dashboard's hero (Card
-    // tone="inverse" + AuroraBackdropInverse) so the two landing pages open
-    // the same way. It was a pale brand-tinted card whose action was a text
-    // link -- the one card on the page that asks something of the teacher,
-    // and the quietest thing on it.
+    // The masthead's closing strip (2 Oct 2026, masthead pass). In Phase A
+    // this was the page's hero in its own right: an inverse card carrying
+    // its own aurora, under a header that was text on the canvas. Now that
+    // the header is itself the lit panel, a second one directly beneath it
+    // would be two heroes competing, so the next step moved inside -- the
+    // one place on the dashboard that asks something of the teacher is the
+    // last thing in the first thing they see.
     //
-    // This is where the dashboard's "fuller" atmosphere lives, rather than
-    // in a stronger page-level wash: the page backdrop is capped by text
-    // contrast on the bare canvas (TeacherAmbience has the measurements),
-    // whereas inside a card the edges are designed and the text colours are
-    // the inverse ramp built for exactly this surface. Restrained the way
-    // the student hero is: no parallax, no vignette, no grain -- those are
-    // the sign-in page's, for a full-height panel seen once.
-    //
-    // The aurora runs at 70%, and that number is a contrast measurement,
-    // not a taste: at full strength its saffron and indigo washes overlap
-    // inside a card this small (on a phone the saffron blob alone is wider
-    // than the card) and lift the brightest point to about #6A6880, where
-    // the body text, content-inverse-muted, measured 4.0:1 and the
-    // saffron-200 label 4.0:1 -- both under AA. At 70% the worst rendered
-    // pixel anywhere text can sit, across widths from 320 to 1920px and
-    // through the whole drift cycle, gives: title content-inverse 7.4:1,
-    // body content-inverse-muted 5.3:1, label saffron-200 5.6:1.
-    <Card tone="inverse" className="animate-fade-up">
-      <AuroraBackdropInverse className="opacity-70" />
-      {/* A saffron edge marks this as the one card that asks something of
-          the teacher -- the same accent rule the page eyebrows use. */}
-      <span aria-hidden className="absolute inset-y-0 left-0 z-10 w-1 bg-accent-gradient" />
-      <CardBody className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5 sm:p-8">
+    // It sits in a well (MASTHEAD_WELL: brand-950 at 40%), the same cell
+    // the masthead's figures use, and for the same measured reason: a well
+    // darkens the aurora behind it, so text inside always has more contrast
+    // than text on the open panel. PageHeader.tsx has the numbers; this
+    // strip's title is content-inverse, its body content-inverse-muted and
+    // its label saffron-200, all three among the pairs measured there.
+    // (The Phase A card needed its own 70% aurora and its own
+    // measurements; both are gone with it.)
+    <div className={cn("relative overflow-hidden rounded-2xl ring-1 ring-inset", MASTHEAD_WELL.default.cell)}>
+      {/* A saffron edge marks this as the one thing here that asks
+          something of the teacher -- the same accent rule the page eyebrows
+          use. */}
+      <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-accent-gradient" />
+      <div className="flex flex-col gap-4 py-4 pl-6 pr-4 sm:flex-row sm:items-center sm:gap-5 sm:py-5 sm:pl-7 sm:pr-5">
         <CardIcon tone="inverse" className="text-saffron-200">
           <Compass className="h-5 w-5" aria-hidden />
         </CardIcon>
@@ -643,7 +642,9 @@ function NextStepCard({ step }: { step: NextStep | null }) {
             page that is, by construction, this: no other filled button
             exists on the dashboard. Its label, brand-950 on the saffron
             gradient, runs from 11.2:1 at the lightest stop to 4.9:1 at the
-            darkest -- the same pairing as the student hero's action. */}
+            darkest -- the same pairing as the student hero's action. Its
+            focus ring is the masthead's (shadow-focus-inverse; PageHeader
+            applies it to everything inside the panel). */}
         {step?.action ? (
           <div className="shrink-0 sm:pl-2">
             <ButtonLink href={step.action.href} variant="accent" trailingIcon={<ArrowRight className="h-4 w-4" />}>
@@ -651,14 +652,14 @@ function NextStepCard({ step }: { step: NextStep | null }) {
             </ButtonLink>
           </div>
         ) : null}
-      </CardBody>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 // --- your sections -----------------------------------------------------------
 
-function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections" | "maps" | "assignments">) {
+function SectionsPanel({ sections, maps }: Pick<Signals, "sections" | "maps">) {
   if (sections.state === "loading") {
     return (
       <div className="space-y-5" aria-busy="true">
@@ -666,14 +667,6 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
           Loading your sections
         </span>
         <SectionsHeading />
-        <div className="grid grid-cols-3 gap-4 border-y border-line py-4">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="space-y-2">
-              <SkeletonLine className="h-7 w-10" />
-              <SkeletonLine className="h-3 w-20" />
-            </div>
-          ))}
-        </div>
         {[0, 1].map((i) => (
           <div key={i} className="flex items-center gap-3">
             <SkeletonLine className="h-12 w-12 rounded-2xl" />
@@ -713,20 +706,12 @@ function SectionsPanel({ sections, maps, assignments }: Pick<Signals, "sections"
 
   const today = todayIso();
   const mapRows = maps.state === "ok" ? maps.data : null;
-  const classCount = new Set(sections.data.map((s) => s.classLevelCode)).size;
 
+  // The Sections / Classes / Assignments Set strip that used to open this
+  // card is the masthead's now (see the note at the top of this file).
   return (
     <PanelStack>
       <SectionsHeading />
-
-      <div className="grid grid-cols-3 gap-4 border-y border-line py-4">
-        <Stat value={sections.data.length} label={sections.data.length === 1 ? "Section" : "Sections"} />
-        <Stat value={classCount} label={classCount === 1 ? "Class" : "Classes"} />
-        <Stat
-          value={assignments.state === "ok" ? assignments.data.length : "—"}
-          label={assignments.state === "ok" && assignments.data.length === 1 ? "Assignment set" : "Assignments set"}
-        />
-      </div>
 
       <ul className="space-y-2.5">
         {sections.data.map((section, index) => {
@@ -867,26 +852,50 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
   }
 
   const rows = assignments.data;
-  const active = rows.filter((a) => a.status === "ACTIVE").length;
 
   return (
     <PanelStack gap="gap-5">
       {heading}
       {rows.length === 0 ? (
-        <p className="text-[0.875rem] leading-relaxed text-content-muted">
-          Nothing assigned yet. Your first assignment will show up here with how many students it reached.
-        </p>
+        // A designed empty state, centred in whatever height the card has.
+        // This card is the stretch card of its column (SplitLayout), so when
+        // nothing is assigned it is at its tallest -- and it used to hold
+        // one line of grey text at the top of several hundred pixels of
+        // white. Same sentence, same promise (it only says what will really
+        // appear); the path illustration is the student pages' own empty
+        // state, the practice a student has not been given yet. Not the
+        // EmptyState component: that is a page-level block with a display
+        // heading, and this is one panel inside a card that already has a
+        // title. content-muted on white: 8.6:1.
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-2 text-center">
+          <PathIllustration className="h-32" />
+          <div className="max-w-sm space-y-1.5">
+            <p className="text-sm font-semibold text-content">Nothing assigned yet</p>
+            <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">
+              Your first assignment will show up here with how many students it reached.
+            </p>
+          </div>
+        </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 border-y border-line py-4">
-            <Stat value={rows.length} label={rows.length === 1 ? "Assignment" : "Assignments"} />
-            <Stat value={active} label="Active now" />
-          </div>
-          <ul className="space-y-3">
-            {rows.slice(0, 3).map((assignment) => {
+          {/* The Assignments / Active Now strip that used to sit here is
+              the masthead's now, and two things follow from that. The rows
+              are the same bordered row Your Sections uses (they were bare
+              lines of text under the strip's rule, and without the strip
+              they were bare lines under a heading). And there are four
+              rather than three: this is the card that stretches to level
+              the two columns (SplitLayout), and with the strip gone three
+              rows left a 230px hole above the footer at 1440px with a
+              typical three sections; the newest four close it to within a
+              row's height. Same list, same order, one more of it. */}
+          <ul className="space-y-2.5">
+            {rows.slice(0, 4).map((assignment) => {
               const status = ASSIGNMENT_STATUS[assignment.status];
               return (
-                <li key={assignment.id} className="flex items-start justify-between gap-3">
+                <li
+                  key={assignment.id}
+                  className="flex items-start justify-between gap-3 rounded-2xl border border-line bg-surface-muted/70 px-3.5 py-3"
+                >
                   <span className="min-w-0">
                     {/* Two lines, then clamp: activity titles run long ("Fish
                         Tale extra practice — word problems with large
@@ -897,8 +906,10 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
                     </span>
                     {/* Since 1 Oct 2026 the assignment row records its
                         section too (Assignment.section), so "5A" rather
-                        than just "Class 5" where it's known. */}
-                    <span className="block truncate text-xs text-content-subtle">
+                        than just "Class 5" where it's known.
+                        content-subtle on the muted row: 6.1:1, as in Your
+                        Sections. */}
+                    <span className="mt-0.5 block truncate text-xs text-content-subtle">
                       {[
                         assignment.className ? `Class ${assignment.className}${assignment.section ?? ""}` : null,
                         plural(assignment.targetCount, "student"),
@@ -1015,51 +1026,103 @@ export default function TeacherDashboardPage() {
   const readyCount = checkable.filter((c) => c.state === "ready").length;
   const liveModules = MODULES.filter((m) => m.status === "live").length;
 
+  // The masthead's figures -- the ones the Your Sections and Recent
+  // Practice cards used to open with, from the same two responses, and the
+  // checklist's own count. Each follows its own source: a placeholder bar
+  // while it loads (`null`), and "—" with the reason if it failed, never a
+  // zero that would read as a real count.
+  const { sections, assignments } = signals;
+  const sectionRows = sections.state === "ok" ? sections.data : null;
+  const assignmentRows = assignments.state === "ok" ? assignments.data : null;
+  const classCount = sectionRows ? new Set(sectionRows.map((s) => s.classLevelCode)).size : 0;
+  const allReady = !stillChecking && readyCount === checkable.length;
+  const failed = "Couldn't load";
+  const stats: PageHeaderStat[] = [
+    {
+      label: "Your Sections",
+      value: sections.state === "loading" ? null : (sectionRows?.length ?? "—"),
+      hint:
+        sections.state === "error"
+          ? failed
+          : sectionRows && sectionRows.length > 0
+            ? `Across ${plural(classCount, "class", "classes")}`
+            : sectionRows
+              ? "None assigned yet"
+              : undefined,
+    },
+    {
+      label: "Assignments Set",
+      value: assignments.state === "loading" ? null : (assignmentRows?.length ?? "—"),
+      hint: assignments.state === "error" ? failed : assignmentRows ? "Set by you" : undefined,
+    },
+    {
+      label: "Active Now",
+      value: assignments.state === "loading" ? null : assignmentRows ? assignmentRows.filter((a) => a.status === "ACTIVE").length : "—",
+      hint: assignments.state === "error" ? failed : assignmentRows ? "Not closed or cancelled" : undefined,
+    },
+    {
+      // Derived from the checklist, so the header can never disagree with
+      // it (the old "Setup in Progress" pulse was hardcoded). This was the
+      // "4 of 6 Ready" / "Ready to Teach" badge under the welcome; as a
+      // cell it has room for both numbers at a size that can be read, and
+      // its tint says the same as its words (WCAG 1.4.1): jade once every
+      // live check is ready, saffron while some are not.
+      label: "Ready To Teach",
+      value: stillChecking ? null : (
+        <>
+          <CountUp value={readyCount} />
+          <span className="text-content-inverse-muted"> of {checkable.length}</span>
+        </>
+      ),
+      hint: stillChecking ? "Checking your setup" : allReady ? "Every live check is ready" : "The checklist below has the rest",
+      tone: stillChecking ? "default" : allReady ? "good" : "attention",
+    },
+  ];
+
   return (
-    <RoleShell role="TEACHER" user={user}>
-      {/* The dashboard level: a step stronger than the working screens'
-          and the only one that drifts. TeacherAmbience (TrackerBits.tsx)
-          has the measurements behind both numbers. */}
-      <TeacherAmbience level="dashboard" />
-      {/* `relative` so the page paints above the ambience. */}
-      <div className="relative space-y-10">
+    // The dashboard level of the workspace wash: the stronger of the two
+    // and the only one that drifts. components/brand/Ambience.tsx has the
+    // measurements behind both.
+    <RoleShell role="TEACHER" user={user} ambience="dashboard">
+      <div className="space-y-10">
         <PageHeader
+          surface="masthead"
+          size="lg"
+          // The one masthead that drifts; PageHeader.tsx has why.
+          drift
           // Not "Teaching Workspace": RoleShell's breadcrumb already says
           // exactly that one line above (ROLE_TAGLINE.TEACHER).
           eyebrow="Your Teaching at a Glance"
           title={
             <>
-              Welcome, <span className="text-gradient-brand">{user?.fullName ?? "Teacher"}</span>
+              {/* text-gradient-warm (white to saffron), the sign-in
+                  headline's own accent; text-gradient-brand, which this
+                  used on the canvas, is indigo on indigo here.
+                  PageHeader.tsx has its contrast at the gradient's darkest
+                  stop. */}
+              Welcome, <span className="text-gradient-warm">{user?.fullName ?? "Teacher"}</span>
             </>
           }
           // Was "Right now the workspace is waiting on the school's
           // curriculum import" -- true for no one in particular, forever.
           description="Your sections, your school's calendar and the practice you've set, checked live every time you open this page."
+          stats={stats}
           meta={
-            <>
-              {teacher?.designation ? <Badge tone="brand">{teacher.designation}</Badge> : null}
-              {teacher?.subjectSpecialization ? <Badge tone="neutral">{teacher.subjectSpecialization}</Badge> : null}
-              {/* Derived from the checklist, so the header can never
-                  disagree with it (the old "Setup in Progress" pulse was
-                  hardcoded). */}
-              {stillChecking ? (
-                <Badge tone="neutral" dot pulse>
-                  Checking Your Setup
-                </Badge>
-              ) : readyCount === checkable.length ? (
-                <Badge tone="success" dot>
-                  Ready to Teach
-                </Badge>
-              ) : (
-                <Badge tone="accent" dot pulse>
-                  {readyCount} of {checkable.length} Ready
-                </Badge>
-              )}
-            </>
+            teacher?.designation || teacher?.subjectSpecialization ? (
+              <>
+                {/* `inverse`, Badge's tone for indigo chrome: the light
+                    brand / neutral chips these were would sit on the
+                    masthead as two white stickers. The live status badge
+                    that used to follow them is the "Ready To Teach" cell
+                    above. */}
+                {teacher.designation ? <Badge tone="inverse">{teacher.designation}</Badge> : null}
+                {teacher.subjectSpecialization ? <Badge tone="inverse">{teacher.subjectSpecialization}</Badge> : null}
+              </>
+            ) : undefined
           }
-        />
-
-        <NextStepCard step={deriveNextStep(signals)} />
+        >
+          <NextStepStrip step={deriveNextStep(signals)} />
+        </PageHeader>
 
         {/* Two columns that always finish level (SplitLayout's own comment
             has the full rule). This used to be `items-start`, which let
@@ -1073,7 +1136,7 @@ export default function TeacherDashboardPage() {
         <SplitLayout columns="lg:grid-cols-[1.1fr_0.9fr]">
           <SplitColumn fill="last">
             <StretchCard className="animate-fade-up delay-70" bodyClassName="sm:p-8">
-              <SectionsPanel sections={signals.sections} maps={signals.maps} assignments={signals.assignments} />
+              <SectionsPanel sections={signals.sections} maps={signals.maps} />
             </StretchCard>
 
             <StretchCard className="animate-fade-up delay-210">

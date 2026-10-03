@@ -212,6 +212,16 @@ const config: Config = {
         accent: "0 12px 28px -14px rgba(208,107,6,0.7)",
         focus: "0 0 0 4px rgba(99,85,188,0.24)",
         "focus-accent": "0 0 0 4px rgba(249,171,43,0.32)",
+        // Focus on indigo chrome (2 Oct 2026, with PageHeader's masthead).
+        // The two rings above are translucent tints made to sit on paper,
+        // and over brand-gradient they all but vanish; PageHeader.tsx has
+        // the measured figures, both far under the 3:1 WCAG 1.4.11 asks of
+        // a focus indicator. This one is solid -- a brand-950 gap, then a
+        // saffron-200 ring -- so it does not depend on what is behind it,
+        // and the dark gap keeps the ring distinct from a saffron button it
+        // surrounds. The masthead applies it to every link and button
+        // placed inside it; nothing else uses it yet.
+        "focus-inverse": "0 0 0 2px #171338, 0 0 0 4px #FDDC92",
         // Input focus: a ring *and* a cast shadow, so a focused field reads
         // as physically lifted off the card rather than just re-bordered.
         "focus-field": "0 0 0 4px rgba(99,85,188,0.18), 0 14px 28px -16px rgba(60,52,137,0.85)",
