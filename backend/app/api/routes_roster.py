@@ -19,12 +19,24 @@ their password, and since neither 2FA setup nor /change-password was gated
 on actually replacing it, whoever logged in first could permanently take
 the account over. _generate_initial_password() below now returns a random,
 unguessable password instead, and every new account is created with
-must_change_password=True (enforced in dependencies.py's get_current_user(),
-currently gated to ADMIN/SUPER_ADMIN only -- see that flag's own comment on
-the User model for why TEACHER/STUDENT aren't gated yet). Still
-deliberately NOT checked against strong_password_issue() -- that check is
-about a *person* picking a memorable-but-weak password, which doesn't apply
-to a random, never-reused, must-be-replaced-immediately value.
+must_change_password=True, which dependencies.py's get_current_user()
+enforces for every role (teachers and students since 3 Oct 2026): the
+account can do nothing until its owner has replaced the issued password.
+A generated password is deliberately NOT checked against
+strong_password_issue() -- that check is about a *person* picking a
+memorable-but-weak password, which doesn't apply to a random value.
+
+A password chosen by the school -- 3 Oct 2026 (Shailesh's decision: "admin
+issues first password, optionally a default in the bulk-upload sheet"). A
+bulk sheet may carry an optional `password` column. A row that fills it in
+gets that password instead of a generated one; a row that leaves it blank
+gets a generated one as before. Because a person DID choose it, it IS
+checked against strong_password_issue(), and the account is flagged
+must_change_password like any other, so it lasts only until first sign-in.
+What that does not undo, and the upload screen says so: one password typed
+down a whole column is known to everyone it was handed to, so until each
+person signs in, anyone holding it and a classmate's code can get in first.
+Leaving the column blank is the safer choice and stays the default.
 """
 import csv
 import io
@@ -38,7 +50,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import api_error
 from app.core.rate_limit import limiter
-from app.core.security import hash_password
+from app.core.security import hash_password, strong_password_issue
 from app.database import get_db
 from app.dependencies import require_roles
 from app.models import School, SchoolAdmin, Student, Teacher, User
@@ -161,7 +173,11 @@ def _create_person(
     designation: str | None = None,
     subject_specialization: str | None = None,
     qualification: str | None = None,
+    chosen_password: str | None = None,
 ) -> dict:
+    """`chosen_password` is a first password the school picked itself (the
+    bulk sheet's optional `password` column). None -- the single-entry form,
+    and any sheet row that leaves the column blank -- means generate one."""
     full_name = (full_name or "").strip()
     if not full_name:
         raise ValueError("Full name is required.")
@@ -174,26 +190,49 @@ def _create_person(
         # Never echo the address or say it exists -- see EMAIL_NOT_ACCEPTED_MESSAGE.
         raise _EmailNotAccepted(EMAIL_NOT_ACCEPTED_MESSAGE)
 
-    initial_password = _generate_initial_password(full_name)
+    # Worked out before anything is written (it only reads), so a chosen
+    # password can be checked against it and a refused row creates nothing.
+    code = None
+    if role == "TEACHER":
+        code = _next_code(db, Teacher, Teacher.teacher_code, "TCH", school.name)
+    elif role == "STUDENT":
+        code = _next_code(db, Student, Student.student_code, "STU", school.name)
+
+    if chosen_password is not None:
+        # Somebody picked this one, so it is held to the same rules as a
+        # password a person picks for themselves...
+        password_issue = strong_password_issue(chosen_password)
+        if password_issue:
+            raise ValueError(f"The password in this row can't be used. {password_issue}")
+        # ...and to one more that only applies when someone else picks it:
+        # it must not be the thing printed next to it. A sheet that fills
+        # the password column with each person's own code or name has given
+        # every account a password anyone can read off the roster.
+        guessable = {value.casefold() for value in (code, cleaned_email, full_name, full_name.replace(" ", "")) if value}
+        if chosen_password.casefold() in guessable:
+            raise ValueError(
+                "The password in this row can't be used. It is the same as this person's sign-in code, name or email."
+            )
+        initial_password = chosen_password
+    else:
+        initial_password = _generate_initial_password(full_name)
     new_user = User(
         full_name=full_name,
         email=cleaned_email,
         password_hash=hash_password(initial_password),
         role=role,
         is_active=True,
-        # A1 fix: set for every new account regardless of role -- see the
-        # User model's must_change_password comment for why enforcement is
-        # currently scoped to ADMIN/SUPER_ADMIN only.
+        # A1 fix: set for every new account, whichever role and whoever
+        # chose the password. Its owner replaces it at first sign-in, and
+        # can do nothing else until they have (dependencies.py).
         must_change_password=True,
     )
     db.add(new_user)
     db.flush()  # populate new_user.id
 
-    code = None
     if role == "ADMIN":
         db.add(SchoolAdmin(user_id=new_user.id, school_id=school.id))
     elif role == "TEACHER":
-        code = _next_code(db, Teacher, Teacher.teacher_code, "TCH", school.name)
         db.add(
             Teacher(
                 user_id=new_user.id,
@@ -205,7 +244,6 @@ def _create_person(
             )
         )
     elif role == "STUDENT":
-        code = _next_code(db, Student, Student.student_code, "STU", school.name)
         db.add(
             Student(
                 user_id=new_user.id,
@@ -520,10 +558,9 @@ def reset_person_password(
         nothing can show it again. If it is lost before it is handed over,
         reset again.
       * Sets must_change_password, so the temporary password is replaced by
-        one only its owner knows. Enforced server-side for ADMIN today
-        (dependencies.py, MUST_CHANGE_PASSWORD_ROLES); for TEACHER/STUDENT
-        the flag is recorded now and enforced once their change-password
-        screen ships, exactly as for a newly created account.
+        one only its owner knows. Enforced server-side for every role
+        (dependencies.py, MUST_CHANGE_PASSWORD_ROLES): until they choose
+        their own, the account can do nothing else.
       * Signs the person out everywhere. password_changed_at rejects every
         token issued before this second (dependencies.py compares in whole
         seconds), and revoking their session rows catches one issued within
@@ -603,10 +640,59 @@ def reset_person_password(
     }
 
 
-_BULK_COLUMNS = ["fullName", "email", "className", "section", "designation", "subjectSpecialization", "qualification"]
+_BULK_COLUMNS = [
+    "fullName",
+    "email",
+    "className",
+    "section",
+    "designation",
+    "subjectSpecialization",
+    "qualification",
+    # Optional. A first password the school has chosen for this person;
+    # blank means "generate one". See the module docstring.
+    "password",
+]
 
 
-def _parse_bulk_rows(filename: str, raw: bytes) -> list[dict]:
+def _cell_text(value) -> str | None:
+    """A sheet cell as trimmed text, or None when it is empty. A spreadsheet
+    hands back numbers for cells that look like numbers (a password of
+    20261234 arrives as an int, and as 20261234.0 from some exports), so the
+    value is put back the way it was typed rather than str()'d blindly."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    text = str(value).strip()
+    return text or None
+
+
+def _header_key(header) -> str:
+    """A column heading reduced to its letters and digits, lower-cased:
+    "Full Name", "fullName", " FULLNAME " and "full_name" are all
+    "fullname". Digits are kept, so "Email 2" is "email2" -- a different
+    column, not a second spelling of "email"."""
+    return re.sub(r"[^a-z0-9]", "", str(header or "").lower())
+
+
+_BULK_COLUMN_FOR_HEADER = {_header_key(column): column for column in _BULK_COLUMNS}
+
+
+def _parse_bulk_rows(filename: str, raw: bytes) -> tuple[list[dict], list[str], list[str]]:
+    """The sheet's rows, keyed by the column names in _BULK_COLUMNS; the
+    headings that were not used (in sheet order, as typed); and the columns
+    that were found.
+
+    Headings are matched by their letters alone (3 Oct 2026). They used to
+    be matched exactly, so a heading typed "Password", or "password" after a
+    comma and a space, was a column the import silently never read -- and
+    with the password column that meant a school handing out the passwords
+    in its sheet to a roster that had been given random ones instead. The
+    headings that were not used are returned so the screen can say which,
+    rather than leaving that to be discovered at first sign-in.
+    """
     lower = filename.lower()
     if lower.endswith(".xlsx"):
         from openpyxl import load_workbook
@@ -614,16 +700,37 @@ def _parse_bulk_rows(filename: str, raw: bytes) -> list[dict]:
         wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
         ws = wb.active
         rows_iter = ws.iter_rows(values_only=True)
-        header = [str(h).strip() if h else "" for h in next(rows_iter, [])]
-        rows = []
+        header = [str(h).strip() if h is not None else "" for h in next(rows_iter, [])]
+        raw_rows = []
         for raw_row in rows_iter:
             if raw_row is None or all(v is None for v in raw_row):
                 continue
-            rows.append({header[i]: raw_row[i] for i in range(min(len(header), len(raw_row)))})
-        return rows
+            raw_rows.append({header[i]: raw_row[i] for i in range(min(len(header), len(raw_row)))})
+    else:
+        text = raw.decode("utf-8-sig")
+        reader = csv.DictReader(io.StringIO(text))
+        header = [str(h).strip() if h is not None else "" for h in (reader.fieldnames or [])]
+        raw_rows = [{str(key).strip(): value for key, value in row.items() if key is not None} for row in reader]
 
-    text = raw.decode("utf-8-sig")
-    return list(csv.DictReader(io.StringIO(text)))
+    # Each column this import reads is taken from the FIRST heading that
+    # names it. A later heading that names the same column ("Password" and
+    # then "Pass Word") is not used and is reported as such -- it must never
+    # quietly replace the first, least of all with a blank.
+    heading_for_column: dict[str, str] = {}
+    unused: list[str] = []
+    for heading in header:
+        if not heading:
+            continue
+        column = _BULK_COLUMN_FOR_HEADER.get(_header_key(heading))
+        if column is None or column in heading_for_column:
+            unused.append(heading)
+        else:
+            heading_for_column[column] = heading
+    rows = [
+        {column: raw_row.get(heading) for column, heading in heading_for_column.items()}
+        for raw_row in raw_rows
+    ]
+    return rows, unused, sorted(heading_for_column)
 
 
 @router.post("/people/bulk")
@@ -636,8 +743,9 @@ def bulk_create_people(
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
-    """CSV or .xlsx with a header row from _BULK_COLUMNS (fullName and
-    email required by name; the rest are role-dependent and optional).
+    """CSV or .xlsx with a header row from _BULK_COLUMNS (only fullName is
+    required; the rest are role-dependent and optional, including a first
+    `password` the school has chosen for that row).
     One admin action, many accounts -- both this and the single-entry
     endpoint above exist from day one (Shailesh, 19 Aug 2026: "both options
     should be there, you never know which one would be required when")."""
@@ -650,12 +758,23 @@ def bulk_create_people(
     school = _resolve_school(db, user, schoolId)
     raw = file.file.read()
     try:
-        rows = _parse_bulk_rows(file.filename, raw)
+        rows, unrecognised_columns, columns_found = _parse_bulk_rows(file.filename, raw)
     except Exception:
         api_error(422, "VALIDATION_ERROR", "We couldn't read that file. Check that it's a .csv or .xlsx file with a header row.")
 
     if not rows:
         api_error(422, "VALIDATION_ERROR", "That file has no rows to import.")
+    if "fullName" not in columns_found:
+        # Said once, about the file, instead of "Full name is required" on
+        # every one of its rows: the names are there, under a heading this
+        # import does not read ("Name"), or the file is separated by
+        # semicolons, or it has no heading row at all.
+        api_error(
+            422,
+            "VALIDATION_ERROR",
+            "We couldn't find a fullName column in that file. Its first row must be the column headings, "
+            "and one of them must be fullName. Download the template to see them all.",
+        )
     if len(rows) > MAX_BULK_IMPORT_ROWS:
         api_error(
             422,
@@ -667,6 +786,7 @@ def bulk_create_people(
     results = []
     created_count = 0
     email_rejected_count = 0
+    chosen_password_count = 0
     # Email (normalised the way _create_person normalises it) -> the first
     # row of THIS file that used it. A repeat within the upload is reported
     # as exactly that: it tells the admin nothing about the rest of the
@@ -687,8 +807,7 @@ def bulk_create_people(
                 }
             )
             continue
-        if email_key:
-            first_row_for_email[email_key] = idx
+        chosen_password = _cell_text(row.get("password"))
         try:
             person = _create_person(
                 db,
@@ -704,9 +823,18 @@ def bulk_create_people(
                     str(row.get("subjectSpecialization")).strip() if row.get("subjectSpecialization") else None
                 ),
                 qualification=(str(row.get("qualification")).strip() if row.get("qualification") else None),
+                chosen_password=chosen_password,
             )
             db.flush()
             created_count += 1
+            # Only a row that made an account holds its email against the
+            # rows after it. A row refused for another reason (its password,
+            # say) used nothing, and the next row with that address is not a
+            # duplicate of anything.
+            if email_key:
+                first_row_for_email[email_key] = idx
+            if chosen_password is not None:
+                chosen_password_count += 1
             # initialPassword/email are returned here the same way the
             # single-entry endpoint returns them -- without them a
             # bulk-created account has no deliverable password (the A1 fix
@@ -720,6 +848,10 @@ def bulk_create_people(
                     "code": person["code"],
                     "email": person["email"],
                     "initialPassword": person["initialPassword"],
+                    # Where the password came from, so the screen can say
+                    # "from your sheet" rather than present a password the
+                    # admin typed as though the system had made it up.
+                    "passwordSource": "sheet" if chosen_password is not None else "generated",
                 }
             )
         except ValueError as exc:
@@ -741,7 +873,17 @@ def bulk_create_people(
             "attempted": len(rows),
             # Count only, never the addresses -- see EMAIL_NOT_ACCEPTED_MESSAGE.
             "emailRejected": email_rejected_count,
+            # How many accounts started on a password the school chose.
+            # A count, never the passwords.
+            "chosenPasswords": chosen_password_count,
         },
     )
     db.commit()
-    return {"created": created_count, "attempted": len(rows), "results": results}
+    return {
+        "created": created_count,
+        "attempted": len(rows),
+        "results": results,
+        # Headings in the file that are not one of the columns this import
+        # reads, so the screen can say they were not used.
+        "unrecognisedColumns": unrecognised_columns,
+    }

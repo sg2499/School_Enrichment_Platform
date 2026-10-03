@@ -13,22 +13,147 @@ import {
   KeyRound,
   Layers,
   Lock,
+  type LucideIcon,
   PenLine,
+  Presentation,
   ShieldCheck,
+  Sparkles,
   UserRound,
   Users,
 } from "lucide-react";
-import { api, errorMessage } from "@/lib/api";
+import { api, describeApiError, errorMessage } from "@/lib/api";
 import { defaultRouteForRole, getRememberedSchoolName, setSession } from "@/lib/auth";
+import { PRODUCT_CREDIT, PRODUCT_NAME } from "@/lib/brand";
+import { wasRefused } from "@/lib/errors";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { clearSignedOutNotice, readSignedOutNotice, returnPathFor } from "@/lib/sessionNotice";
-import type { LoginResponse, LoginResult } from "@/types/auth";
+import {
+  DEFAULT_SIGN_IN_ROLE,
+  SIGN_IN_ROLES,
+  type SignInRole,
+  rememberSignInRole,
+  rememberedSignInRole,
+  signInRoleFromIdentifier,
+} from "@/lib/signInRole";
+import type { LoginResponse, LoginResult, UserRole } from "@/types/auth";
 import { isTwoFactorChallenge } from "@/types/auth";
 import { cn, greetingForHour } from "@/lib/utils";
+import { ChoosePassword, type ChoosePasswordRole } from "@/components/ChoosePassword";
 import { Button } from "@/components/ui/Button";
+import { CodeInput, type CodeInputHandle } from "@/components/ui/CodeInput";
 import { TextField } from "@/components/ui/Field";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Lockup } from "@/components/brand/Logo";
 import { AuroraBackdrop, AuroraBackdropInverse, OrbitRings } from "@/components/brand/Graphics";
+
+/**
+ * How the form speaks to each of the three kinds of people who use it
+ * (3 Oct 2026, UI revamp Phase B, slice 3).
+ *
+ * Until this date the page had one voice for everyone: a field labelled
+ * "Email, Phone, or Code", and "Your school coordinator can reset it for
+ * you" -- a person who does not exist in the product. Every line here is
+ * written for the person choosing that way in, and says only what is true
+ * for them:
+ *
+ *   - What they sign in with. Students and teachers are issued a code, and
+ *     can use an email instead if the school entered one; admins always
+ *     use an email.
+ *   - Which password. Their own. The one the school issued is good for one
+ *     sign-in (they replace it straight after), so "the password your
+ *     school gave you" would be wrong on every visit but the first; the
+ *     first-timer's line is the "New here?" one.
+ *   - Who gives them a new password. A student tells their teacher, and the
+ *     school admin issues it (People > Reset Password). A teacher goes to
+ *     the school admin. A school admin goes to the platform administrator.
+ *   - How long a session lasts. A student's ends within 10 hours whatever
+ *     happens (backend/app/services/session_service.py), so they are told
+ *     so. A teacher's has no such ceiling and an admin's is 12 hours;
+ *     neither line makes a claim about it.
+ *   - Two-factor. Asked for at every admin sign-in once it is set up -- and
+ *     a brand-new admin has not set it up yet, so the line does not say
+ *     "always".
+ *
+ * Picking a way in changes wording only. Whoever the credentials belong to
+ * is who gets signed in (lib/signInRole.ts).
+ */
+const WAYS_IN: Record<
+  SignInRole,
+  {
+    tab: string;
+    icon: LucideIcon;
+    intro: string;
+    label: string;
+    placeholder: string;
+    missingIdentifier: string;
+    safe: string;
+    forgotten: string;
+    newHere: string;
+  }
+> = {
+  STUDENT: {
+    tab: "Student",
+    icon: GraduationCap,
+    intro: "Sign in with your student code and your password.",
+    label: "Student Code or Email",
+    placeholder: "STU-ABCD-0042",
+    missingIdentifier: "Enter your student code. It starts with STU-.",
+    safe: "On a shared computer? Sign out when you finish. A session left open ends on its own within 10 hours.",
+    forgotten: "Forgotten your password? Tell your teacher. Your school admin will give you a new one.",
+    // One line at the card's width, on purpose: with the school's name
+    // under it, a second line pushed the column past a 640px-tall screen.
+    newHere: "New here? Ask your class teacher for your student code and first password.",
+  },
+  TEACHER: {
+    tab: "Teacher",
+    icon: Presentation,
+    intro: "Sign in with your teacher code or email, and your password.",
+    label: "Teacher Code or Email",
+    placeholder: "TCH-ABCD-0007 or you@school.edu",
+    missingIdentifier: "Enter your teacher code or your email address.",
+    safe: "Signing out ends your session on our servers, so a shared staff-room computer stays safe.",
+    forgotten: "Forgotten your password? Your school admin can give you a temporary one.",
+    newHere: "New here? Your school admin gives you your teacher code and first password.",
+  },
+  ADMIN: {
+    tab: "Admin",
+    icon: Building2,
+    intro: "Sign in with your admin email and your password.",
+    label: "Admin Email",
+    placeholder: "you@school.edu",
+    missingIdentifier: "Enter your admin email address.",
+    safe: "Admin accounts are protected by two-factor. Once it is set up, every sign-in asks for a code from your authenticator app.",
+    forgotten: "Forgotten your password? Your platform administrator can give you a temporary one.",
+    newHere: `New here? Admin accounts are created when your school joins ${PRODUCT_NAME}.`,
+  },
+};
+
+/** What the button says while the next page loads, once the server has
+ *  said whose workspace it is. Same names the workspaces use for themselves
+ *  (lib/hooks/useProtectedPage.ts). */
+const OPENING: Record<UserRole, string> = {
+  STUDENT: "Opening your learning space",
+  TEACHER: "Opening your teaching workspace",
+  ADMIN: "Opening your control centre",
+  SUPER_ADMIN: "Opening your control centre",
+};
+
+/** Said above the choose-a-password step. "Temporary", not "first": the
+ *  same step follows an admin's reset of a forgotten password. */
+const CHOOSE_INTRO: Record<ChoosePasswordRole, string> = {
+  STUDENT: "The password your school gave you is temporary. Now choose your own — one that only you know.",
+  TEACHER: "The password your school admin gave you is temporary. Now choose your own — one that only you know.",
+};
+
+/** An authenticator app's code. */
+const CODE_LENGTH = 6;
+
+/** "Aarav" from "Aarav Shah", for the one place the page addresses someone
+ *  by name. Falls back to something that still reads as a sentence. */
+function firstName(fullName: string | null | undefined): string {
+  const first = (fullName ?? "").trim().split(/\s+/)[0];
+  return first || "you";
+}
 
 /**
  * The five-day chapter loop, drawn the same way the student dashboard names
@@ -261,8 +386,19 @@ export default function LoginPage() {
   const brandRef = usePointerAmbience<HTMLElement>();
   const formRef = usePointerAmbience<HTMLElement>();
   const cardRef = useRef<HTMLDivElement>(null);
+  const identifierRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
-  const twoFactorRef = useRef<HTMLInputElement>(null);
+  const codeRef = useRef<CodeInputHandle>(null);
+  const backupRef = useRef<HTMLInputElement>(null);
+
+  // Which of the three ways in the page is speaking to. A hint for wording
+  // only -- the server decides who someone is (lib/signInRole.ts).
+  const [signInRole, setSignInRole] = useState<SignInRole>(DEFAULT_SIGN_IN_ROLE);
+  // The role last read off the identifier itself. The page follows a typed
+  // code once, at the moment it becomes recognisable; after that the choice
+  // is the person's again, so picking a different one by hand is not undone
+  // on the next keystroke.
+  const inferredRole = useRef<SignInRole | null>(null);
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -275,35 +411,69 @@ export default function LoginPage() {
   // single-use and expires in 5 minutes, so there's nothing worth persisting.
   const [challengeToken, setChallengeToken] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState("");
+  // The authenticator's six digits are the normal case and get the six
+  // boxes. A backup code is a different shape (letters, a dash, longer), so
+  // it gets an ordinary field, asked for only when someone says they need it.
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [backupCode, setBackupCode] = useState("");
   const [verifying, setVerifying] = useState(false);
+  // A ref as well as the state: the sixth digit submits by itself, and a
+  // fast typist's Enter can arrive before the re-render that would disable
+  // the button. One code is sent once.
+  const verifyInFlight = useRef(false);
+  const refocusCode = useRef(false);
+  useEffect(() => {
+    if (verifying || !refocusCode.current) return;
+    refocusCode.current = false;
+    (useBackupCode ? backupRef.current : codeRef.current)?.focus();
+  }, [verifying, useBackupCode]);
+
+  // The third step, for a teacher or student whose password is still the
+  // one they were issued: signed in, but the server lets them do nothing
+  // until they have chosen their own (components/ChoosePassword.tsx). Held
+  // here rather than passed to completeSignIn() -- they are not in yet.
+  const [choosing, setChoosing] = useState<LoginResponse["user"] | null>(null);
+  const [leaving, setLeaving] = useState(false);
 
   // True from a successful sign-in until the next page takes over. Without
   // it the button snapped back to an idle "Sign In" for the second or so
   // router.push() takes to load the workspace -- which looks like the
   // sign-in failed, and invites a second click.
   const [redirecting, setRedirecting] = useState(false);
+  // Whose workspace is opening, once the server has said who signed in, so
+  // the wait reads "Opening your learning space" rather than "your workspace".
+  const [openingRole, setOpeningRole] = useState<UserRole | null>(null);
 
-  // Whether the form has swapped between the credentials and two-factor
-  // steps at least once. The incoming step only animates on a real swap;
-  // on first load the card's own stage-in entrance already covers it.
+  // Whether the form has swapped between steps at least once. The incoming
+  // step only animates on a real swap; on first load the card's own
+  // stage-in entrance already covers it.
   const [stepSwapped, setStepSwapped] = useState(false);
 
+  const step: "credentials" | "twoFactor" | "choosePassword" = choosing ? "choosePassword" : challengeToken ? "twoFactor" : "credentials";
+  const way = WAYS_IN[signInRole];
+
   // After a step swap, put the caret where the next keystroke belongs: the
-  // code field when the 2FA challenge arrives, the (just-cleared) password
-  // when going back. The code field's `autoFocus` alone never actually
-  // worked -- measured against the unmodified page, focus was left on
-  // <body> after the swap, so a keyboard user had to Tab to find the field
-  // their authenticator code goes in. An effect runs after the new form
-  // has committed, so the target always exists by then.
+  // code boxes when the 2FA challenge arrives, the (just-cleared) password
+  // when going back. `autoFocus` alone never actually worked here --
+  // measured against the unmodified page, focus was left on <body> after
+  // the swap, so a keyboard user had to Tab to find the field their
+  // authenticator code goes in. An effect runs after the new form has
+  // committed, so the target always exists by then. (The choose-a-password
+  // step focuses its own first field.)
   useEffect(() => {
     if (!stepSwapped) return;
-    (challengeToken ? twoFactorRef : passwordRef).current?.focus();
-  }, [challengeToken, stepSwapped]);
+    if (step === "twoFactor") (useBackupCode ? backupRef.current : codeRef.current)?.focus();
+    else if (step === "credentials") (identifier ? passwordRef : identifierRef).current?.focus();
+    // `identifier` is read, not watched: this runs on a step change, not on
+    // every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, stepSwapped, useBackupCode]);
 
   // Only known after mount (localStorage isn't available during SSR, and
   // reading it here rather than in useState's initializer keeps the first
   // server-rendered paint identical to the first client paint, so there's no
-  // hydration flash from "Issued by your school" to the real name).
+  // hydration flash from one wording to another). All of this commits while
+  // the form is still at opacity 0 -- see useTimeOfDayGreeting.
   const [knownSchool, setKnownSchool] = useState<string | null>(null);
   // Why this page is showing, when the person did not come here by choice:
   // their session ended, they changed their password, they opened a page
@@ -312,6 +482,8 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     setKnownSchool(getRememberedSchoolName());
+    const remembered = rememberedSignInRole();
+    if (remembered) setSignInRole(remembered);
     const pending = readSignedOutNotice();
     if (!pending) return;
     setNotice(pending.message);
@@ -322,6 +494,13 @@ export default function LoginPage() {
     if (!pending.returnTo) clearSignedOutNotice();
   }, []);
 
+  function handleIdentifierChange(value: string) {
+    setIdentifier(value);
+    const inferred = signInRoleFromIdentifier(value);
+    if (inferred && inferred !== inferredRole.current) setSignInRole(inferred);
+    inferredRole.current = inferred;
+  }
+
   function completeSignIn(user: LoginResponse["user"]) {
     // If a session ending is what brought them here, take the same person
     // back to the page they were on -- never anyone else, and never outside
@@ -329,23 +508,59 @@ export default function LoginPage() {
     const returnTo = returnPathFor(readSignedOutNotice(), user);
     clearSignedOutNotice();
     setSession(user);
+    rememberSignInRole(user.role);
+    setOpeningRole(user.role);
     setRedirecting(true);
+    // Nothing on this page needs it again, and the page stays mounted for
+    // the second or so the workspace takes to load. (Left alone on the
+    // choose-a-password step, whose form would otherwise redraw itself with
+    // an extra box for that second.)
+    if (!choosing) setPassword("");
     const normalizedRole = user.role === "SUPER_ADMIN" ? "ADMIN" : user.role;
     router.push(returnTo ?? defaultRouteForRole(normalizedRole));
   }
 
+  /** The server has accepted the credentials. Most people are in; a teacher
+   *  or student still on an issued password has one more thing to do. */
+  function afterSignIn(user: LoginResponse["user"]) {
+    if (user.mustChangePassword && (user.role === "TEACHER" || user.role === "STUDENT")) {
+      setSignInRole(user.role);
+      setError(null);
+      setNotice(null);
+      setStepSwapped(true);
+      setChoosing(user);
+      return;
+    }
+    completeSignIn(user);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (submitting || redirecting) return;
     setError(null);
+    if (!identifier.trim()) {
+      setError(way.missingIdentifier);
+      identifierRef.current?.focus();
+      return;
+    }
+    if (!password) {
+      setError("Enter your password.");
+      passwordRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     try {
       const { data } = await api.post<LoginResult>("/auth/login", { identifier, password });
       if (isTwoFactorChallenge(data)) {
+        // Only admins have a second factor, whatever was selected above.
+        setSignInRole("ADMIN");
         setStepSwapped(true);
         setChallengeToken(data.challengeToken);
+        // The password has done its job; the second step does not use it.
+        setPassword("");
         return;
       }
-      completeSignIn(data.user);
+      afterSignIn(data.user);
     } catch (err) {
       setError(errorMessage(err, "sign you in"));
       shake(cardRef.current);
@@ -354,32 +569,138 @@ export default function LoginPage() {
     }
   }
 
-  async function handleVerifyTwoFactor(event: React.FormEvent) {
-    event.preventDefault();
-    if (!challengeToken) return;
+  async function verifyTwoFactor(code: string) {
+    if (!challengeToken || verifyInFlight.current || redirecting) return;
+    verifyInFlight.current = true;
     setError(null);
     setVerifying(true);
     try {
-      const { data } = await api.post<LoginResponse>("/auth/2fa/verify-login", {
-        challengeToken,
-        code: twoFactorCode,
-      });
-      completeSignIn(data.user);
+      const { data } = await api.post<LoginResponse>("/auth/2fa/verify-login", { challengeToken, code });
+      afterSignIn(data.user);
     } catch (err) {
-      setError(errorMessage(err, "verify your code"));
+      const described = describeApiError(err, "verify your code");
+      if (described.kind === "session") {
+        // The five minutes this step is good for have passed. Another code
+        // cannot rescue it: back to the start, with the server's reason.
+        backToCredentials();
+        setError(described.message);
+      } else {
+        // The server's sentence for a wrong code names the authenticator
+        // app, which is not what someone typing a backup code was using.
+        setError(
+          useBackupCode && described.code === "INVALID_CODE"
+            ? "That backup code didn't match. Each one works only once. Check it and try again."
+            : described.message,
+        );
+        // A refused code is cleared so the next attempt starts from empty
+        // boxes, with the caret already in the first one. The caret is put
+        // back by the effect below, once the field is enabled again: it is
+        // disabled while a code is being checked, and a disabled field
+        // cannot take focus.
+        setTwoFactorCode("");
+        refocusCode.current = true;
+      }
       shake(cardRef.current);
     } finally {
+      verifyInFlight.current = false;
       setVerifying(false);
     }
+  }
+
+  function handleVerifyTwoFactor(event: React.FormEvent) {
+    event.preventDefault();
+    if (useBackupCode) {
+      const code = backupCode.trim();
+      if (!code) {
+        setError("Enter one of your backup codes.");
+        backupRef.current?.focus();
+        return;
+      }
+      void verifyTwoFactor(code);
+      return;
+    }
+    if (twoFactorCode.length < CODE_LENGTH) {
+      setError(`Enter all ${CODE_LENGTH} digits of the code in your authenticator app.`);
+      codeRef.current?.focus();
+      return;
+    }
+    void verifyTwoFactor(twoFactorCode);
+  }
+
+  function toggleBackupCode() {
+    setStepSwapped(true);
+    setUseBackupCode((value) => !value);
+    setTwoFactorCode("");
+    setBackupCode("");
+    setError(null);
   }
 
   function backToCredentials() {
     setStepSwapped(true);
     setChallengeToken(null);
     setTwoFactorCode("");
+    setBackupCode("");
+    setUseBackupCode(false);
     setError(null);
     setPassword("");
   }
+
+  /** Leaving the choose-a-password step without choosing. They are signed
+   *  in at this point, so this signs them out again rather than leaving a
+   *  session behind on what may be a shared computer -- and says so if the
+   *  server did not do it, the same way the workspace's own Sign Out does. */
+  async function leaveChoosing() {
+    const role = choosing?.role;
+    if (!role || leaving) return;
+    setLeaving(true);
+    let failure: string | null = null;
+    try {
+      await api.post("/auth/logout", null, { headers: { "X-Auth-Role": role } });
+    } catch (err) {
+      const problem = describeApiError(err, "sign you out");
+      // A session the server says is already over is as signed out as it gets.
+      if (problem.kind !== "session") {
+        failure = `${problem.message} ${
+          wasRefused(problem) ? "You're still signed in on this device." : "Until signing out works, treat this device as still signed in."
+        }`;
+      }
+    }
+    setLeaving(false);
+    if (failure) {
+      setError(failure);
+      return;
+    }
+    // The next person at this computer starts from an empty form: the code
+    // in the first box was the one who just left.
+    setIdentifier("");
+    inferredRole.current = null;
+    setStepSwapped(true);
+    setChoosing(null);
+    setPassword("");
+    setError(null);
+  }
+
+  /** Their password is saved, but this browser was not kept signed in. */
+  function chosenButSignedOut(message: string) {
+    setStepSwapped(true);
+    setChoosing(null);
+    setPassword("");
+    setError(null);
+    setNotice(message);
+  }
+
+  /** The session behind the choose-a-password step ended before anything
+   *  was saved (the step was left open too long). Back to the start, with
+   *  the server's reason; their code stays so they only retype a password. */
+  function choosingTimedOut(message: string) {
+    setStepSwapped(true);
+    setChoosing(null);
+    setPassword("");
+    setError(null);
+    setNotice(message);
+  }
+
+  const opening = openingRole ? OPENING[openingRole] : "Opening your workspace";
 
   return (
     <main
@@ -440,18 +761,15 @@ export default function LoginPage() {
 
         <div className="stage-in stage-d0 relative z-10 flex shrink-0 items-start justify-between gap-4">
           <Lockup tone="light" showTagline size="lg" />
-          {/* Says the one thing that is not obvious from a sign-in form:
-              there is no self-serve signup, the school issues the account.
-              Once someone has actually signed in on this browser before,
-              this greets them by their real school instead of speaking in
-              generalities. */}
-          {/* Shown from 1360px rather than `xl` (1280): at exactly 1280 this
-              chip and the large lockup don't both fit on one row, and the
-              wordmark used to wrap to "School / Enrichment". 1360 still
-              includes the 1366x768 laptops most schools actually own. */}
-          <span className="glass-panel mt-1.5 hidden shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-[0.6875rem] font-bold uppercase tracking-eyebrow text-saffron-200 min-[1360px]:inline-flex">
-            <GraduationCap className="h-3.5 w-3.5" aria-hidden />
-            {knownSchool ? `Issued by ${knownSchool}` : "Issued by Your School"}
+          {/* Who makes it (3 Oct 2026). This chip used to read "Issued by
+              <school>" -- true, but it is the form's business, and it now
+              sits under the form. Up here, beside the product's name, is
+              where the product says whose it is. Shown from `xl`: the name
+              is one short word now, so the two fit on one row well before
+              the 1360px the old two-word wordmark needed. */}
+          <span className="glass-panel mt-1.5 hidden shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-[0.6875rem] font-bold uppercase tracking-eyebrow text-saffron-200 xl:inline-flex">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden />
+            {PRODUCT_CREDIT}
           </span>
         </div>
 
@@ -603,9 +921,18 @@ export default function LoginPage() {
       <section
         ref={formRef}
         // Same clamp() approach as the brand panel: py-12/p-8 were fixed
-        // sizes that never shrank at `lg`, which is what clipped the
-        // "Secure School Sign-In" chip at the top on a short viewport.
-        className="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 py-12 sm:px-8 lg:min-h-0 lg:justify-center lg:px-12 lg:py-[clamp(0.75rem,4vh,4rem)] xl:px-16"
+        // sizes that never shrank at `lg`, which is what clipped the top of
+        // the column on a short viewport.
+        //
+        // At `lg` the column is centred by `my-auto` on its wrapper rather
+        // than by justify-center here, and this panel may scroll on its own
+        // (3 Oct 2026). The sign-in and two-factor steps are sized to fit
+        // one screen; the choose-a-password step, with an error showing on
+        // the shortest laptops, can be a little taller than one. Centring
+        // with justify-center would push that overflow off the top, where
+        // no scrollbar can reach it; auto margins collapse to zero instead,
+        // so the column starts at the top and the rest scrolls into view.
+        className="relative flex min-h-screen flex-col justify-center overflow-hidden px-5 py-12 sm:px-8 lg:min-h-0 lg:justify-start lg:overflow-y-auto lg:overflow-x-hidden lg:px-12 lg:py-[clamp(0.75rem,4vh,4rem)] xl:px-16"
       >
         <AuroraBackdrop parallax className="lg:opacity-70" />
 
@@ -617,11 +944,7 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div className="relative z-10 mx-auto w-full max-w-[27.5rem]">
-          {/* (A second, standalone 48px LogoMark used to sit here below
-              `lg`, directly under the compact lockup above -- two copies of
-              the mark stacked on a phone screen. The lockup alone is the
-              brand moment now.) */}
+        <div className="relative z-10 mx-auto w-full max-w-[27.5rem] lg:my-auto">
           {/* With a notice showing, the gap under this block gives back the
               height the notice's chip adds (its padding and border), so the
               column is exactly as tall as it is without one. Measured: at
@@ -629,35 +952,36 @@ export default function LoginPage() {
           <div
             className={cn(
               "stage-in stage-d1 mb-5",
-              notice && !challengeToken ? "lg:mb-[clamp(0.5rem,2vh,2.25rem)]" : "lg:mb-[clamp(0.75rem,3.5vh,3rem)]",
+              notice && step === "credentials" ? "lg:mb-[clamp(0.5rem,2vh,2.25rem)]" : "lg:mb-[clamp(0.75rem,3vh,2.5rem)]",
             )}
           >
-
-            {/* Kept in the flow rather than pinned to a corner, so it can
-                never collide with the card on a short laptop screen. The
-                live dot is the one bit of motion on this side of the page. */}
-            <div className="mb-3 hidden lg:block lg:mb-[clamp(0.5rem,2vh,1.5rem)]">
-              <span className="inline-flex items-center gap-2.5 rounded-full border border-line bg-surface/85 px-3.5 py-1.5 text-[0.8125rem] font-semibold text-content-muted shadow-xs backdrop-blur">
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span
-                    aria-hidden
-                    className="absolute inline-flex h-full w-full rounded-full bg-jade-400 animate-pulse-ring"
-                  />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-jade-500" />
+            {/* Where you are, on the one step that is numbered. The first
+                screen has no chip: who is signing in is asked inside the
+                card now, and that says more than "Secure School Sign-In"
+                did. The choose-a-password step has none either -- its
+                heading says what it is, and it is the tallest of the three,
+                so it keeps the room. Kept in the flow rather than pinned to
+                a corner, so it can never collide with the card on a short
+                laptop screen. */}
+            {step !== "twoFactor" ? null : (
+              <div className="mb-3 hidden animate-fade-in lg:block lg:mb-[clamp(0.5rem,2vh,1.5rem)]">
+                <span className="inline-flex items-center gap-2.5 rounded-full border border-line bg-surface/85 px-3.5 py-1.5 text-[0.8125rem] font-semibold text-content-muted shadow-xs backdrop-blur">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span aria-hidden className="absolute inline-flex h-full w-full rounded-full bg-jade-400 animate-pulse-ring" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-jade-500" />
+                  </span>
+                  Step 2 of 2 &middot; Two-Factor Check
                 </span>
-                {/* Tracks the step, so the second screen says where you are
-                    in the process rather than repeating itself. */}
-                {challengeToken ? "Step 2 of 2 \u00b7 Two-Factor Check" : "Secure School Sign-In"}
-              </span>
-            </div>
+              </div>
+            )}
 
             {/* text-display-md below `lg`: the heading previously had no
                 size of its own on phones and fell back to the browser's
                 default h2, which rendered smaller than the lockup above it. */}
             <h2 className="font-display text-display-md text-content text-balance lg:text-[clamp(1.375rem,4.3vh,2.5rem)] lg:leading-[1.1]">
-              {challengeToken ? "Verify It's You" : greeting}
+              {step === "twoFactor" ? "Verify It’s You" : step === "choosePassword" ? "Choose Your Own Password" : greeting}
             </h2>
-            {notice && !challengeToken ? (
+            {notice && step === "credentials" ? (
               // Takes the place of the standing instruction rather than
               // sitting above it: this column is sized to fit one screen at
               // `lg`, and the reason they are here is the more useful two
@@ -670,10 +994,20 @@ export default function LoginPage() {
                 <span>{notice}</span>
               </p>
             ) : (
-              <p className="mt-3 max-w-[24rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:text-[clamp(0.8125rem,2.2vh,1.1875rem)] lg:leading-[1.45]">
-                {challengeToken
-                  ? "Enter the 6-digit code from your authenticator app, or one of your backup codes."
-                  : "Sign in with the email, phone number or student code your school issued you."}
+              // Keyed by what it says, so a change of wording (another way
+              // in chosen, another step reached) fades in rather than
+              // swapping under the reader's eye.
+              <p
+                key={`${step}-${signInRole}-${useBackupCode}`}
+                className="mt-3 max-w-[25rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty animate-fade-in lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:text-[clamp(0.8125rem,2.2vh,1.1875rem)] lg:leading-[1.45]"
+              >
+                {step === "twoFactor"
+                  ? useBackupCode
+                    ? "Enter one of the backup codes you saved when you set up two-factor. Each one works once."
+                    : "Enter the 6-digit code showing in your authenticator app."
+                  : step === "choosePassword"
+                    ? CHOOSE_INTRO[choosing?.role === "TEACHER" ? "TEACHER" : "STUDENT"]
+                    : way.intro}
               </p>
             )}
           </div>
@@ -685,7 +1019,7 @@ export default function LoginPage() {
           <div className="stage-in stage-d2">
             <div
               ref={cardRef}
-              className="relative rounded-4xl border border-line bg-surface/95 p-6 shadow-panel backdrop-blur-xl sm:p-8 lg:p-[clamp(1rem,4vh,2.75rem)]"
+              className="relative rounded-4xl border border-line bg-surface/95 p-6 shadow-panel backdrop-blur-xl sm:p-8 lg:p-[clamp(1rem,3.6vh,2.5rem)]"
             >
               {/* Warm light catching the card's top edge -- a hairline of
                   saffron that fades out before the corners, so the card reads
@@ -694,36 +1028,89 @@ export default function LoginPage() {
                 aria-hidden
                 className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-saffron-300/80 to-transparent"
               />
-              {challengeToken ? (
+              {step === "choosePassword" && choosing ? (
+                <div className={cn(stepSwapped && "animate-fade-up")}>
+                  <ChoosePassword
+                    role={choosing.role === "TEACHER" ? "TEACHER" : "STUDENT"}
+                    currentPassword={password}
+                    username={identifier}
+                    onDone={completeSignIn}
+                    onSignedOut={chosenButSignedOut}
+                    onSessionEnded={choosingTimedOut}
+                    finishing={redirecting}
+                    className="lg:space-y-[clamp(0.625rem,2.2vh,1.5rem)]"
+                  />
+                  {/* Only a failed sign-out lands here: the form above shows
+                      its own errors. */}
+                  {error ? (
+                    <div role="alert" className="mt-4 flex items-start gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in">
+                      <AlertCircle className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-coral-600" aria-hidden />
+                      <p className="text-[0.875rem] font-medium leading-[1.55] text-coral-800">{error}</p>
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => void leaveChoosing()}
+                    disabled={redirecting || leaving}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-subtle transition hover:text-content-brand disabled:pointer-events-none disabled:opacity-60"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                    Not {firstName(choosing.fullName)}? Sign out
+                  </button>
+                </div>
+              ) : step === "twoFactor" ? (
                 <form
+                  // Keyed so switching between the code boxes and the
+                  // backup-code field replays the entrance and resets focus.
+                  key={useBackupCode ? "backup" : "code"}
                   onSubmit={handleVerifyTwoFactor}
                   className={cn("space-y-5 lg:space-y-[clamp(0.625rem,2.6vh,1.75rem)]", stepSwapped && "animate-fade-up")}
                   noValidate
                 >
-                  <TextField
-                    ref={twoFactorRef}
-                    id="twoFactorCode"
-                    name="twoFactorCode"
-                    label="Authentication Code"
-                    autoComplete="one-time-code"
-                    inputMode="text"
-                    autoCapitalize="none"
-                    spellCheck={false}
-                    placeholder="123456 or a backup code"
-                    required
-                    autoFocus
-                    value={twoFactorCode}
-                    onChange={(event) => setTwoFactorCode(event.target.value)}
-                    icon={<ShieldCheck className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
-                    // Codes are read off a phone and typed digit by digit, so
-                    // they get tabular figures and air between characters --
-                    // "482 913" is far easier to check at a glance than
-                    // "482913". The placeholder keeps normal spacing.
-                    className="font-semibold tabular-nums tracking-[0.18em] placeholder:font-normal placeholder:tracking-normal"
-                  />
+                  {useBackupCode ? (
+                    <TextField
+                      ref={backupRef}
+                      id="backupCode"
+                      name="backupCode"
+                      label="Backup Code"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      placeholder="xxxxxxxx-xxxx"
+                      required
+                      value={backupCode}
+                      onChange={(event) => {
+                        setBackupCode(event.target.value);
+                        if (error) setError(null);
+                      }}
+                      aria-invalid={error ? true : undefined}
+                      aria-describedby={error ? "twoFactorError" : undefined}
+                      icon={<KeyRound className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
+                      className="font-semibold tracking-[0.08em] placeholder:font-normal placeholder:tracking-normal"
+                    />
+                  ) : (
+                    <CodeInput
+                      ref={codeRef}
+                      id="twoFactorCode"
+                      name="twoFactorCode"
+                      label="Authentication Code"
+                      length={CODE_LENGTH}
+                      value={twoFactorCode}
+                      onChange={(value) => {
+                        setTwoFactorCode(value);
+                        if (error) setError(null);
+                      }}
+                      // The sixth digit is the whole of "I'm done".
+                      onComplete={(code) => void verifyTwoFactor(code)}
+                      disabled={verifying || redirecting}
+                      invalid={Boolean(error)}
+                      aria-describedby={error ? "twoFactorError" : undefined}
+                    />
+                  )}
 
                   {error ? (
                     <div
+                      id="twoFactorError"
                       role="alert"
                       className="flex items-start gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in"
                     >
@@ -737,38 +1124,65 @@ export default function LoginPage() {
                     size="lg"
                     fullWidth
                     loading={verifying || redirecting}
-                    loadingLabel={redirecting ? "Opening your workspace" : "Verifying"}
+                    loadingLabel={redirecting ? opening : "Checking your code"}
                     trailingIcon={<ArrowRight className="h-4 w-4" />}
                   >
                     Verify &amp; Sign In
                   </Button>
 
-                  <button
-                    type="button"
-                    onClick={backToCredentials}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-subtle transition hover:text-content-brand"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-                    Back to sign in
-                  </button>
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <button
+                      type="button"
+                      onClick={backToCredentials}
+                      className="inline-flex items-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-subtle transition hover:text-content-brand"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                      Back to sign in
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleBackupCode}
+                      className="inline-flex items-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-brand transition hover:text-brand-900"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" aria-hidden />
+                      {useBackupCode ? "Use your authenticator app" : "Use a backup code instead"}
+                    </button>
+                  </div>
                 </form>
               ) : (
                 <form
                   onSubmit={handleSubmit}
-                  className={cn("space-y-5 lg:space-y-[clamp(0.625rem,2.6vh,1.75rem)]", stepSwapped && "animate-fade-up")}
+                  className={cn("space-y-5 lg:space-y-[clamp(0.625rem,2.2vh,1.625rem)]", stepSwapped && "animate-fade-up")}
                   noValidate
                 >
+                  {/* Asked first, because everything under it depends on
+                      the answer: what the first field is called, what goes
+                      in it, and who to turn to when it doesn't work. */}
+                  <SegmentedControl
+                    label="Who is signing in"
+                    value={signInRole}
+                    onChange={(role) => {
+                      setSignInRole(role);
+                      if (error) setError(null);
+                    }}
+                    segments={SIGN_IN_ROLES.map((role) => {
+                      const Icon = WAYS_IN[role].icon;
+                      return { key: role, label: WAYS_IN[role].tab, icon: <Icon className="h-4 w-4" /> };
+                    })}
+                  />
+
                   <TextField
+                    ref={identifierRef}
                     id="identifier"
                     name="identifier"
-                    label="Email, Phone, or Code"
+                    label={way.label}
                     autoComplete="username"
                     autoCapitalize="none"
                     spellCheck={false}
-                    placeholder="you@school.edu or STU-1042"
+                    placeholder={way.placeholder}
                     required
                     value={identifier}
-                    onChange={(event) => setIdentifier(event.target.value)}
+                    onChange={(event) => handleIdentifierChange(event.target.value)}
                     icon={<UserRound className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
                   />
 
@@ -801,7 +1215,7 @@ export default function LoginPage() {
                     size="lg"
                     fullWidth
                     loading={submitting || redirecting}
-                    loadingLabel={redirecting ? "Opening your workspace" : "Signing you in"}
+                    loadingLabel={redirecting ? opening : "Signing you in"}
                     trailingIcon={<ArrowRight className="h-4 w-4" />}
                   >
                     Sign In
@@ -809,27 +1223,49 @@ export default function LoginPage() {
                 </form>
               )}
 
-              <div className="mt-6 space-y-3 border-t border-line pt-5 lg:mt-[clamp(0.75rem,2.8vh,2.25rem)] lg:space-y-[clamp(0.375rem,1.2vh,1rem)] lg:pt-[clamp(0.625rem,2.2vh,1.75rem)]">
-                <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">
-                  <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />
-                  <span>Your session is verified on our servers, so a shared school device stays safe.</span>
-                </p>
-                <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">
-                  <KeyRound className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-brand-600" aria-hidden />
-                  <span>Forgotten your password? Your school coordinator can reset it for you.</span>
-                </p>
-              </div>
+              {step === "credentials" ? (
+                // Two lines, both about the person chosen above: what keeps
+                // their session safe, and who gives them a new password.
+                // Keyed so they change together with the choice.
+                <div
+                  key={signInRole}
+                  className="mt-6 space-y-3 border-t border-line pt-5 animate-fade-in lg:mt-[clamp(0.75rem,2.4vh,2rem)] lg:space-y-[clamp(0.375rem,1.2vh,1rem)] lg:pt-[clamp(0.625rem,2vh,1.5rem)]"
+                >
+                  <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">
+                    <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />
+                    <span>{way.safe}</span>
+                  </p>
+                  <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)] lg:leading-[1.4]">
+                    <KeyRound className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-brand-600" aria-hidden />
+                    <span>{way.forgotten}</span>
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
 
-          <div className="stage-in stage-d3 mt-7 space-y-2.5 text-center lg:mt-[clamp(0.75rem,2.8vh,2.5rem)] lg:space-y-2">
-            <p className="text-[0.875rem] leading-[1.55] text-content-muted lg:text-[clamp(0.75rem,1.7vh,0.9375rem)]">
-              New here? Accounts are created by your school &mdash; ask your class teacher or coordinator.
-            </p>
-            <p className="text-[0.8125rem] leading-[1.5] text-content-subtle lg:text-[clamp(0.6875rem,1.5vh,0.875rem)]">
-              Students &middot; Teachers &middot; School Admins &mdash; one sign-in, the right workspace.
-            </p>
-          </div>
+          {step === "credentials" ? (
+            <div className="stage-in stage-d3 mt-7 text-center lg:mt-[clamp(0.5rem,1.8vh,2.25rem)]">
+              {/* The keyed element is inside the one that owns the page's
+                  entrance, so a change of wording fades without replaying
+                  the entrance. */}
+              <div key={signInRole} className="space-y-2.5 animate-fade-in lg:space-y-[clamp(0.125rem,0.8vh,0.5rem)]">
+              <p className="text-[0.875rem] leading-[1.55] text-content-muted text-pretty lg:text-[clamp(0.75rem,1.7vh,0.9375rem)]">
+                {way.newHere}
+              </p>
+              {/* Which school this browser's last sign-in belonged to. It
+                  used to head the brand panel as a chip; it is a fact about
+                  the account, so it sits with the form. Nothing is claimed
+                  on a browser that has never signed in. */}
+              {knownSchool ? (
+                <p className="inline-flex max-w-full items-center justify-center gap-2 text-[0.8125rem] font-semibold leading-[1.5] text-content-subtle lg:text-[clamp(0.6875rem,1.5vh,0.875rem)]">
+                  <GraduationCap className="h-3.5 w-3.5 shrink-0 text-content-faint" aria-hidden />
+                  <span className="truncate">Accounts here are issued by {knownSchool}</span>
+                </p>
+              ) : null}
+              </div>
+            </div>
+          ) : null}
 
           {/* Below `lg` the brand panel is gone, so the product still has to
               say what it is somewhere. This is that, compressed. */}
@@ -849,6 +1285,12 @@ export default function LoginPage() {
               );
             })}
           </ul>
+
+          {/* The maker's credit for phones and tablets, where the brand
+              panel that carries it on a laptop is not shown. */}
+          <p className="stage-in stage-d4 mt-6 text-center text-[0.75rem] font-bold uppercase tracking-eyebrow text-content-faint lg:hidden">
+            {PRODUCT_CREDIT}
+          </p>
         </div>
       </section>
     </main>

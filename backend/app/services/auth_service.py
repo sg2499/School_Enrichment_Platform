@@ -88,10 +88,10 @@ def reset_lockout(user: User) -> None:
 
 
 def _school_name(db: Session, school_id: str | None) -> str | None:
-    """Human-readable school name for display only (e.g. the login page's
-    "Issued by <school>" pill, remembered client-side per browser once a
-    person has actually signed in once -- see frontend lib/auth.ts's
-    rememberSchoolName()). Never used for authorization; schoolId remains
+    """Human-readable school name for display only (e.g. the sign-in page's
+    "Accounts here are issued by <school>" line, remembered client-side per
+    browser once a person has actually signed in -- see frontend
+    lib/auth.ts's rememberSchoolName()). Never used for authorization; schoolId remains
     the real tenant anchor everywhere else."""
     if not school_id:
         return None
@@ -252,7 +252,15 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
             "Please try again in a few minutes.",
         )
 
-    if not verify_password(password, user.password_hash):
+    # The hash this sign-in is proven against, kept as its own value. Every
+    # commit below expires `user`, and its next attribute read reloads the
+    # row -- so reading user.password_hash again at the bottom would bind the
+    # new session to whatever password the account has BY THEN. If the
+    # owner replaced the password while this request was busy hashing, that
+    # would be a session under the new password for someone who only ever
+    # knew the old one. The token is issued under the hash that was checked.
+    verified_hash = user.password_hash
+    if not verify_password(password, verified_hash):
         locked = record_failed_attempt(db, user, request, "auth.login.failed")
         if locked:
             api_error(
@@ -290,14 +298,14 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         db.commit()
         return {
             "twoFactorRequired": True,
-            "challengeToken": create_two_factor_challenge_token(user.id),
+            "challengeToken": create_two_factor_challenge_token(user.id, password_hash=verified_hash),
             "tokenType": "Bearer",
         }
 
     session_id = start_session(db, user, request=request)
     log_audit_event(db, "auth.login.success", user_id=user.id, request=request)
     db.commit()
-    token = create_access_token(user.id, user.role, session_id=session_id)
+    token = create_access_token(user.id, user.role, session_id=session_id, password_hash=verified_hash)
     return {
         "accessToken": token,
         "tokenType": "Bearer",

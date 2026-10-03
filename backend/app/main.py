@@ -1,4 +1,4 @@
-"""School Enrichment backend entrypoint.
+"""Krama backend entrypoint.
 
 Retained from MathPath's app/main.py (Phase 0 audit, "Retain as-is"
 bucket): CORS setup, the security-headers middleware, the global exception
@@ -30,6 +30,7 @@ from app.api.routes_platform import router as platform_router
 from app.api.routes_practice_tracker import router as practice_tracker_router
 from app.api.routes_roster import router as roster_router
 from app.api.routes_teacher_assignments import router as teacher_assignments_router
+from app.core.brand import PRODUCT_NAME
 from app.core.config import FRONTEND_URL, IS_PRODUCTION, SENTRY_DSN
 from app.core.error_handling import (
     REQUEST_ID_HEADER,
@@ -51,6 +52,12 @@ _SENTRY_DENYLIST_FIELDS = [
     "password", "currentpassword", "newpassword", "challengetoken", "code",
     "secret", "totp_secret", "totp_pending_secret", "totp_backup_codes_json",
     "authorization", "x-platform-key", "csrf",
+    # The names passwords travel under inside the roster code (3 Oct 2026):
+    # captured stack frames carry local variables, and a crash in the middle
+    # of a bulk import would otherwise report the passwords it was holding
+    # -- including ones a school typed into its sheet and will upload again.
+    "chosen_password", "initial_password", "initialpassword", "temporary_password",
+    "temporarypassword", "password_hash", "newpassword", "currentpassword",
 ]
 
 
@@ -82,6 +89,15 @@ if SENTRY_DSN:
         send_default_pii=False,
         before_send=_sentry_before_send,
         event_scrubber=EventScrubber(denylist=DEFAULT_DENYLIST + _SENTRY_DENYLIST_FIELDS, recursive=True),
+        # Stack frames are reported without their local variables (3 Oct
+        # 2026). The scrubber above works by NAME, and names are not where
+        # the passwords were: a crash in a bulk import reported `raw` -- the
+        # whole uploaded sheet as bytes, every password in it -- and a crash
+        # in change-password reported the request model's repr, both
+        # passwords inside. No list of names covers a repr or a byte string.
+        # The stack trace, the request path and the reference are what a
+        # crash is debugged from; the variables were never worth this.
+        include_local_variables=False,
         # Lowered from 1.0 (100% of requests traced/profiled) -- that default
         # was never a deliberate choice for this app's volume, and a lower
         # sample rate is standard practice once a project is not just being
@@ -91,7 +107,7 @@ if SENTRY_DSN:
         profiles_sample_rate=0.1,
     )
 
-app = FastAPI(title="School Enrichment Backend", version="0.1.0")
+app = FastAPI(title=f"{PRODUCT_NAME} API", version="0.1.0")
 
 app.state.limiter = limiter
 # Every failure -- api_error(), an unknown route, a malformed request, a rate

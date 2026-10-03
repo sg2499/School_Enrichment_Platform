@@ -11,11 +11,12 @@ promotes -- it deliberately doesn't touch an existing non-SUPER_ADMIN
 account's password. This is the equivalent for "I own this account, I just
 forgot the password."
 
-Sets both password_hash and password_changed_at (mirroring exactly what
-POST /api/auth/change-password does) so any existing login sessions for
-this account are treated as stale by get_current_user()'s
-IsStaleAfterPasswordChange check the next time they're used, the same as a
-normal in-app password change would.
+Sets both password_hash and password_changed_at, so any existing login
+sessions for this account stop working the next time they are used, as
+they do after a password change in the app: a session token is bound to
+the password it was issued under (core/security.py, password_fingerprint),
+and get_current_user()'s IsStaleAfterPasswordChange check covers tokens
+older than that binding.
 
 Usage (from backend/, with DATABASE_URL set to the target database):
     python scripts/reset_test_account_password.py --email you@example.com

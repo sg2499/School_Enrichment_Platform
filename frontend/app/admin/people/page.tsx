@@ -61,6 +61,7 @@ import { Card, CardBody, CardIcon, CardTitle, CardDescription } from "@/componen
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { SessionGate } from "@/components/SessionGate";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { RosterIllustration } from "@/components/brand/Graphics";
@@ -90,11 +91,46 @@ interface CreatedPerson extends Person {
   initialPassword: string;
 }
 
+/** What POST /roster/people/{id}/reset-password answers with. The password
+ *  is in this response and nowhere else (routes_roster.py stores a hash). */
+interface PasswordReset {
+  id: string;
+  fullName: string;
+  role: PersonRole;
+  signInWith: string | null;
+  temporaryPassword: string;
+}
+
+/** Credentials on screen for their one and only showing: a new account's,
+ *  or the temporary password from a reset. */
+type Handover =
+  | { kind: "created"; person: CreatedPerson }
+  | { kind: "reset"; reset: PasswordReset };
+
+function handoverName(handover: Handover): string {
+  return handover.kind === "reset" ? handover.reset.fullName : handover.person.fullName;
+}
+
+/**
+ * What the person does with a password someone else issued, in the order
+ * it really happens for them (backend/app/dependencies.py checks the
+ * password before two-factor; an enrolled admin gives their code at
+ * sign-in, before either).
+ */
+function whatHappensNext(role: PersonRole, kind: Handover["kind"]): string {
+  if (role !== "ADMIN") return "It is temporary: they choose their own password when they sign in.";
+  return kind === "created"
+    ? "It is temporary: at their first sign-in they choose their own password, then set up two-factor."
+    : "It is temporary: after their two-factor code, they choose their own password.";
+}
+
 const ROLE_LABEL: Record<PersonRole, string> = { ADMIN: "Admins", TEACHER: "Teachers", STUDENT: "Students" };
 const ROLE_LABEL_SINGULAR: Record<PersonRole, string> = { ADMIN: "Admin", TEACHER: "Teacher", STUDENT: "Student" };
 const STATUS_FILTER_LABEL: Record<StatusFilter, string> = { all: "All", active: "Active", inactive: "Inactive" };
 const PAGE_SIZE = 25;
-const BULK_TEMPLATE_HEADER = "fullName,email,className,section,designation,subjectSpecialization,qualification";
+// `password` is last and optional: a first password the school chooses for
+// that row. Blank means the system generates one (routes_roster.py).
+const BULK_TEMPLATE_HEADER = "fullName,email,className,section,designation,subjectSpecialization,qualification,password";
 
 /** Shared look for the small segmented toggles on this page (role tabs sit
  *  one level up and have their own, heavier treatment). Pressed state is
@@ -237,8 +273,15 @@ function RosterWorkspace({
   const [loading, setLoading] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [lastCreated, setLastCreated] = useState<CreatedPerson | null>(null);
+  // One hand-over on screen at a time: showing a second set of credentials
+  // under the first is how the wrong password gets read out to someone.
+  const [handover, setHandover] = useState<Handover | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  // Resetting a password is asked about before it is done: it signs the
+  // person out everywhere and kills the password they have, on one click.
+  const [resetTarget, setResetTarget] = useState<Person | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const loadPeople = useCallback(async () => {
     setLoading(true);
@@ -289,19 +332,114 @@ function RosterWorkspace({
     }
   }
 
+  async function handleResetPassword() {
+    if (!resetTarget || resetting) return;
+    setResetting(true);
+    setResetError(null);
+    try {
+      const { data } = await api.post<PasswordReset>(`/roster/people/${resetTarget.id}/reset-password`);
+      setHandover({ kind: "reset", reset: data });
+      setResetTarget(null);
+    } catch (err) {
+      setResetError(errorMessage(err, `reset ${resetTarget.fullName}'s password`));
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  function closeResetDialog() {
+    if (resetting) return;
+    setResetTarget(null);
+    setResetError(null);
+  }
+
   return (
     <div className="space-y-5">
-      {lastCreated ? (
-        <NewAccountCallout
-          person={lastCreated}
-          onDismiss={() => setLastCreated(null)}
-          onViewRoster={() => {
-            setActiveRole(lastCreated.role);
-            setMode("roster");
-            setLastCreated(null);
-          }}
+      {handover ? (
+        <HandoverCallout
+          handover={handover}
+          onDismiss={() => setHandover(null)}
+          onViewRoster={
+            handover.kind === "created"
+              ? () => {
+                  setActiveRole(handover.person.role);
+                  setMode("roster");
+                  setHandover(null);
+                }
+              : undefined
+          }
         />
       ) : null}
+
+      <Modal
+        open={Boolean(resetTarget)}
+        onClose={closeResetDialog}
+        size="sm"
+        eyebrow="Reset Password"
+        title={resetTarget ? resetTarget.fullName : ""}
+        footer={
+          // Pushed to the trailing edge, the committed action last: where a
+          // confirmation's buttons are looked for.
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <Button type="button" variant="ghost" onClick={closeResetDialog} disabled={resetting}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleResetPassword}
+              loading={resetting}
+              loadingLabel="Resetting"
+              leadingIcon={<KeyRound className="h-4 w-4" />}
+            >
+              Reset Password
+            </Button>
+          </div>
+        }
+      >
+        {resetTarget ? (
+          <div className="space-y-4">
+            <p className="text-[0.9375rem] leading-relaxed text-content text-pretty">
+              This gives {resetTarget.fullName} a new temporary password, shown to you once at the top of this page.
+            </p>
+            <ul className="space-y-2 text-[0.875rem] leading-relaxed text-content-muted">
+              <li className="flex items-start gap-2.5">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-jade-600" aria-hidden />
+                Their current password stops working straight away.
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-jade-600" aria-hidden />
+                They are signed out on every device.
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-jade-600" aria-hidden />
+                {resetTarget.role === "ADMIN"
+                  ? "They choose their own password the next time they sign in. Their two-factor setup is not changed."
+                  : "They choose their own password the next time they sign in."}
+              </li>
+            </ul>
+            {/* The page shows one set of credentials at a time, and they are
+                shown once. Without this, resetting a second person silently
+                took the first one's password off the screen -- leaving them
+                signed out with a password nobody had written down.
+                saffron-900 on saffron-50: 9.3:1. */}
+            {handover ? (
+              <p className="flex items-start gap-2.5 rounded-2xl border border-saffron-200 bg-saffron-50 p-3 text-[0.8125rem] font-medium leading-relaxed text-saffron-900">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>
+                  {handoverName(handover)}&rsquo;s password is still showing on this page, and this will replace it.
+                  Copy it or note it down first.
+                </span>
+              </p>
+            ) : null}
+            {resetError ? (
+              <p role="alert" className="flex items-start gap-2 text-[0.8125rem] font-medium text-coral-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                {resetError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </Modal>
 
       <Card className="animate-fade-up delay-70">
         {/* Primary dimension: which role. Each role has its own columns, its
@@ -388,6 +526,10 @@ function RosterWorkspace({
               loading={loading && !hasLoaded}
               togglingId={togglingId}
               onToggleStatus={handleStatusToggle}
+              onResetPassword={(person) => {
+                setResetError(null);
+                setResetTarget(person);
+              }}
               onAddFirst={() => setMode("add")}
             />
           ) : (
@@ -396,7 +538,7 @@ function RosterWorkspace({
               isPlatformAdmin={isPlatformAdmin}
               schoolId={schoolId}
               onCreated={(person) => {
-                setLastCreated(person);
+                setHandover({ kind: "created", person });
                 loadPeople();
               }}
               onImported={loadPeople}
@@ -440,6 +582,7 @@ function RosterTable({
   loading,
   togglingId,
   onToggleStatus,
+  onResetPassword,
   onAddFirst,
 }: {
   role: PersonRole;
@@ -447,6 +590,7 @@ function RosterTable({
   loading: boolean;
   togglingId: string | null;
   onToggleStatus: (person: Person) => void;
+  onResetPassword: (person: Person) => void;
   onAddFirst: () => void;
 }) {
   const [search, setSearch] = useState("");
@@ -591,7 +735,7 @@ function RosterTable({
       ) : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-line">
-            <table className="w-full min-w-[40rem] border-collapse text-left text-[0.8125rem]">
+            <table className="w-full min-w-[48rem] border-collapse text-left text-[0.8125rem]">
               <caption className="sr-only">
                 {ROLE_LABEL[role]}, page {pageSafe} of {totalPages}
               </caption>
@@ -649,20 +793,43 @@ function RosterTable({
                         {person.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        type="button"
-                        variant={person.isActive ? "ghost" : "secondary"}
-                        size="sm"
-                        aria-label={`${person.isActive ? "Deactivate" : "Reactivate"} ${person.fullName}`}
-                        leadingIcon={person.isActive ? <UserX className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
-                        loading={togglingId === person.id}
-                        loadingLabel={person.isActive ? "Deactivating" : "Reactivating"}
-                        disabled={Boolean(togglingId) && togglingId !== person.id}
-                        onClick={() => onToggleStatus(person)}
-                      >
-                        {person.isActive ? "Deactivate" : "Reactivate"}
-                      </Button>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center justify-end gap-2">
+                        {/* The answer to "I've forgotten my password"
+                            (3 Oct 2026): the sign-in page sends people to
+                            their school admin, and this is what the admin
+                            presses. Only for an account that can sign in --
+                            an inactive one is reactivated first, and the
+                            server says the same if asked. `tinted`, as the
+                            row's standing action; Deactivate beside it stays
+                            the quiet one. */}
+                        {person.isActive ? (
+                          <Button
+                            type="button"
+                            variant="tinted"
+                            size="sm"
+                            aria-label={`Reset ${person.fullName}'s password`}
+                            leadingIcon={<KeyRound className="h-3.5 w-3.5" />}
+                            disabled={Boolean(togglingId)}
+                            onClick={() => onResetPassword(person)}
+                          >
+                            Reset Password
+                          </Button>
+                        ) : null}
+                        <Button
+                          type="button"
+                          variant={person.isActive ? "ghost" : "secondary"}
+                          size="sm"
+                          aria-label={`${person.isActive ? "Deactivate" : "Reactivate"} ${person.fullName}`}
+                          leadingIcon={person.isActive ? <UserX className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+                          loading={togglingId === person.id}
+                          loadingLabel={person.isActive ? "Deactivating" : "Reactivating"}
+                          disabled={Boolean(togglingId) && togglingId !== person.id}
+                          onClick={() => onToggleStatus(person)}
+                        >
+                          {person.isActive ? "Deactivate" : "Reactivate"}
+                        </Button>
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -718,34 +885,46 @@ function RosterTable({
 }
 
 /**
- * The one moment a new account's password is ever visible: it is random
- * (routes_roster.py, A1 fix), stored only as a hash, and no roster endpoint
- * can show it again -- so the callout says so, and moves itself into view.
- * It renders above the card while the form that produced it sits further
- * down; on a phone it would otherwise appear entirely off-screen.
+ * The one moment a password is ever visible: a new account's, or the
+ * temporary one from a reset. It is random, stored only as a hash
+ * (routes_roster.py, A1 fix), and no endpoint can show it again -- so the
+ * callout says so, and moves itself into view. It renders above the card
+ * while the form or the row that produced it sits further down; on a phone
+ * it would otherwise appear entirely off-screen.
+ *
+ * Says what happens next for each kind (3 Oct 2026): until then it told the
+ * admin "they can change it from their profile menu", which was optional
+ * advice. It is now a rule the server enforces -- the password is temporary,
+ * and its owner chooses their own at first sign-in.
  */
-function NewAccountCallout({
-  person,
+function HandoverCallout({
+  handover,
   onDismiss,
   onViewRoster,
 }: {
-  person: CreatedPerson;
+  handover: Handover;
   onDismiss: () => void;
-  onViewRoster: () => void;
+  onViewRoster?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const loginId = person.email || person.code || "";
+  const isReset = handover.kind === "reset";
+  const fullName = isReset ? handover.reset.fullName : handover.person.fullName;
+  const role = isReset ? handover.reset.role : handover.person.role;
+  const loginId = isReset ? handover.reset.signInWith || "" : handover.person.email || handover.person.code || "";
+  const password = isReset ? handover.reset.temporaryPassword : handover.person.initialPassword;
+  const personId = isReset ? handover.reset.id : handover.person.id;
 
   useEffect(() => {
     // "nearest" scrolls only as far as needed, and not at all if it's
     // already on screen.
     ref.current?.scrollIntoView({ block: "nearest" });
-  }, [person.id]);
+    setCopied(false);
+  }, [personId, password]);
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(`Login: ${loginId}\nPassword: ${person.initialPassword}`);
+      await navigator.clipboard.writeText(`Login: ${loginId}\nPassword: ${password}`);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -753,25 +932,33 @@ function NewAccountCallout({
     }
   }
 
+  const next = whatHappensNext(role, handover.kind);
+  const heading = isReset ? `Temporary password for ${fullName}` : `${ROLE_LABEL_SINGULAR[role]} account created for ${fullName}`;
+
   return (
+    // Not role="status" on the whole callout: that would have a screen
+    // reader read out the password, aloud, the moment it appeared -- and
+    // again each time a second reset replaced it. The hidden line below
+    // announces that credentials are showing, and for whom; the password
+    // itself is read only when the person moves to it.
     <div
       ref={ref}
-      role="status"
       className="scroll-mt-24 space-y-4 rounded-3xl border border-jade-200 bg-jade-50 p-5 shadow-card animate-scale-in sm:p-6"
     >
+      <p role="status" className="sr-only">
+        {heading}. Sign-in details are shown below, this once.
+      </p>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-jade-500 text-white shadow-xs">
-            <Check className="h-4 w-4" aria-hidden />
+            {isReset ? <KeyRound className="h-4 w-4" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
           </span>
           <div>
             {/* jade-900 on jade-50: 11.1:1; jade-800, 8.9:1. */}
-            <p className="text-[0.9375rem] font-bold text-jade-900">
-              {ROLE_LABEL_SINGULAR[person.role]} account created for {person.fullName}
-            </p>
-            <p className="mt-1 text-[0.8125rem] leading-relaxed text-jade-800">
-              Share these sign-in details securely. The password is shown only this once &mdash; they can change it
-              from their profile menu after signing in.
+            <p className="text-[0.9375rem] font-bold text-jade-900">{heading}</p>
+            <p className="mt-1 text-[0.8125rem] leading-relaxed text-jade-800 text-pretty">
+              {isReset ? "Their old password no longer works and they have been signed out everywhere. " : ""}
+              Share these sign-in details securely. The password is shown only this once. {next}
             </p>
           </div>
         </div>
@@ -794,7 +981,7 @@ function NewAccountCallout({
         </div>
         <div className="flex min-w-0 items-baseline gap-2">
           <dt className="shrink-0 font-sans text-[0.6875rem] font-bold uppercase tracking-eyebrow text-jade-700">Password</dt>
-          <dd className="min-w-0 select-all break-all font-semibold">{person.initialPassword}</dd>
+          <dd className="min-w-0 select-all break-all font-semibold">{password}</dd>
         </div>
       </dl>
       <div className="flex flex-wrap gap-3">
@@ -807,9 +994,11 @@ function NewAccountCallout({
         >
           {copied ? "Copied" : "Copy Credentials"}
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onViewRoster}>
-          View in Roster
-        </Button>
+        {onViewRoster ? (
+          <Button type="button" variant="ghost" size="sm" onClick={onViewRoster}>
+            View in Roster
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -989,9 +1178,11 @@ interface BulkRowResult {
   status: "created" | "skipped";
   code?: string;
   // Present on "created" rows only. email is null when the row had none --
-  // the code is then the login, same fallback NewAccountCallout uses.
+  // the code is then the login, same fallback HandoverCallout uses.
   email?: string | null;
   initialPassword?: string;
+  // "sheet" when the row's own `password` column supplied it.
+  passwordSource?: "sheet" | "generated";
   error?: string;
 }
 
@@ -999,6 +1190,8 @@ interface BulkImportResult {
   created: number;
   attempted: number;
   results: BulkRowResult[];
+  // Headings in the file that are not columns the import reads.
+  unrecognisedColumns?: string[];
 }
 
 // Same grid on the header and on every row, so the Login/Password columns
@@ -1008,9 +1201,24 @@ const BULK_RESULT_GRID = "sm:grid sm:grid-cols-[0.875rem_3rem_minmax(0,1fr)_14re
 /** One CSV cell: quoted when it holds a delimiter/quote/newline, and a
  * leading = + - @ (or tab/CR) neutralised with a ' so a spreadsheet opens a
  * name like "=HYPERLINK(...)" as text, not as a formula. */
-function csvCell(value: string): string {
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+function csvCell(value: string, { exact = false }: { exact?: boolean } = {}): string {
+  // `exact` is for the password column: a password must come out of the
+  // file as the characters it is, so it is quoted but never altered. (The
+  // guard exists for names typed by other people; a password that begins
+  // with "@" was chosen by the admin opening the file.)
+  const safe = !exact && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+}
+
+/** How many of the passwords just shown came from the admin's own sheet,
+ *  said only when some did, and without claiming "the rest" when there is
+ *  no rest. */
+function sheetNote(fromSheet: number, created: number): string {
+  if (fromSheet === 0) return "";
+  if (fromSheet === created) {
+    return created === 1 ? " This one is the password from your sheet." : " All of these are the passwords from your sheet.";
+  }
+  return ` ${fromSheet} of these ${fromSheet === 1 ? "is" : "are"} from your sheet; the rest were generated.`;
 }
 
 function csvTimestamp(date: Date): string {
@@ -1040,7 +1248,7 @@ function BulkImportForm({
 
   function handleDownloadTemplate() {
     const exampleRow =
-      role === "STUDENT" ? "Ananya Rao,,5,A,,," : "Ravi Kumar,ravi.kumar@example.com,,,TGT,Mathematics,B.Ed";
+      role === "STUDENT" ? "Ananya Rao,,5,A,,,," : "Ravi Kumar,ravi.kumar@example.com,,,TGT,Mathematics,B.Ed,";
     const csv = `${BULK_TEMPLATE_HEADER}\n${exampleRow}\n`;
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -1054,6 +1262,7 @@ function BulkImportForm({
   }
 
   const createdRows = result ? result.results.filter((r) => r.status === "created") : [];
+  const fromSheet = createdRows.filter((r) => r.passwordSource === "sheet").length;
 
   /** The only copy of these passwords outside this screen -- built in the
    * browser from the import response, never sent anywhere. The leading BOM
@@ -1063,7 +1272,7 @@ function BulkImportForm({
     const lines = [
       "fullName,login,initialPassword",
       ...createdRows.map((r) =>
-        [r.fullName, r.email || r.code || "", r.initialPassword ?? ""].map(csvCell).join(","),
+        [csvCell(r.fullName), csvCell(r.email || r.code || ""), csvCell(r.initialPassword ?? "", { exact: true })].join(","),
       ),
     ];
     const blob = new Blob([`﻿${lines.join("\r\n")}\r\n`], { type: "text/csv;charset=utf-8" });
@@ -1132,6 +1341,28 @@ function BulkImportForm({
         </div>
       </div>
 
+      {/* The optional first password (3 Oct 2026). Says what a blank cell
+          does, what a filled one must satisfy, and the one thing a shared
+          password costs -- so the choice is made knowingly. Full width and
+          under the buttons: beside them it was squeezed into a column a
+          few words wide. content-muted on surface: 8.6:1. */}
+      <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-4">
+        <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
+        <div className="min-w-0 space-y-1.5 text-[0.8125rem] leading-relaxed text-content-muted text-pretty">
+          <p>
+            The <strong className="text-content">password</strong> column is optional. Leave it blank and each person
+            gets their own random password. Fill it in to choose their first password yourself: at least 8 characters,
+            with a letter and a number, not a common word (Welcome123 and School2026 are refused), and not the
+            person&rsquo;s own name or code. Either way it is temporary, and they choose their own when they first
+            sign in.
+          </p>
+          <p>
+            If you give many people the same password, anyone who knows it can open an account before its owner does.
+            Have everyone sign in soon after you hand it out.
+          </p>
+        </div>
+      </div>
+
       <form onSubmit={handleUpload} className="space-y-4">
         {/* The native input stays in the DOM, keyboard-reachable and
             labelled; the dashed well around it is the visible target. */}
@@ -1192,18 +1423,20 @@ function BulkImportForm({
               </Badge>
             ) : null}
           </div>
-          {/* Same posture as NewAccountCallout: these random passwords exist
-              nowhere else (routes_roster.py stores only the hash, and no
-              endpoint can reveal or reset one), and this list lives only in
-              this component's state. jade-900 on jade-50: 11.1:1. */}
+          {/* Same posture as HandoverCallout: these passwords are stored
+              only as hashes (routes_roster.py) and no endpoint can reveal
+              one again; this list lives only in this component's state. A
+              lost one is replaced from the roster (Reset Password).
+              jade-900 on jade-50: 11.1:1. */}
           {createdRows.length > 0 ? (
             <div className="flex items-start gap-2.5 rounded-xl border border-jade-200 bg-jade-50 p-3">
               <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-jade-700" aria-hidden />
               <p className="text-[0.75rem] leading-relaxed text-jade-900">
                 Each password is shown only this once &mdash; it can&rsquo;t be retrieved again after you leave this
                 screen or import another file. Use <strong>Download Credentials (.csv)</strong> or copy them now. That
-                file holds live one-time passwords: share it securely and delete it once every account has been
-                handed off.
+                file holds live passwords: share it securely and delete it once every account has been handed off.
+                {sheetNote(fromSheet, createdRows.length)} Everyone chooses their own password the first time they
+                sign in.
               </p>
             </div>
           ) : null}
@@ -1261,6 +1494,21 @@ function BulkImportForm({
               ))}
             </ul>
           </div>
+          {/* A heading the import did not recognise is a column it did not
+              read. Said plainly, because the costly case is a misspelt
+              password column: every account would have a generated password
+              while the school hands out the ones in its sheet. saffron-900
+              on saffron-50: 9.3:1. */}
+          {result.unrecognisedColumns && result.unrecognisedColumns.length > 0 ? (
+            <p className="flex items-start gap-2.5 rounded-xl border border-saffron-200 bg-saffron-50 p-3 text-[0.75rem] leading-relaxed text-saffron-900">
+              <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span>
+                {result.unrecognisedColumns.length === 1 ? "This column was not used" : "These columns were not used"}:{" "}
+                <strong className="break-words">{result.unrecognisedColumns.join(", ")}</strong>. The import reads
+                fullName, email, className, section, designation, subjectSpecialization, qualification and password.
+              </span>
+            </p>
+          ) : null}
           {skipped > 0 ? (
             <p className="flex items-start gap-2 text-[0.75rem] leading-relaxed text-content-subtle">
               <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />

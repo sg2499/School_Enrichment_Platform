@@ -185,7 +185,7 @@ describe("a response that is not our envelope", () => {
       assert.equal(described.kind, "unavailable");
       assert.equal(
         described.message,
-        "We couldn't load your classes because School Enrichment is starting up or briefly unavailable. Please try again in a minute.",
+        "We couldn't load your classes because Krama is starting up or briefly unavailable. Please try again in a minute.",
       );
       assert.equal(described.retryable, true);
     }
@@ -283,7 +283,7 @@ describe("no response", () => {
     assert.equal(described.kind, "network");
     assert.equal(
       described.message,
-      "We couldn't load your sections because School Enrichment couldn't be reached. Check your internet connection and try again.",
+      "We couldn't load your sections because Krama couldn't be reached. Check your internet connection and try again.",
     );
     assertWrittenForAPerson(described);
   });

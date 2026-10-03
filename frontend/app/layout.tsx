@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { PRODUCT_NAME } from "@/lib/pageTitle";
+import { PRODUCT_NAME } from "@/lib/brand";
 
 // B9 fix (30 Sep 2026 security/DPDP review): previously loaded from a
 // fonts.googleapis.com/fonts.gstatic.com <link> in <head> below -- every
@@ -31,7 +31,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  // One format for every tab: "Page · Role · School Enrichment"
+  // One format for every tab: "Page · Role · Krama"
   // (lib/pageTitle.ts). The template covers the few routes that set a plain
   // title here on the server; signed-in pages title themselves in the
   // browser, where the role is known.

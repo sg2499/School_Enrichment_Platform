@@ -31,19 +31,20 @@
  *   `action`  what was being attempted, as the words that complete "We
  *             couldn't ...": "load your sections", "save this mark". Every
  *             call site passes one, so an outage on the Assign page reads
- *             "We couldn't load your sections because School Enrichment
+ *             "We couldn't load your sections because Krama
  *             couldn't be reached", not "Something went wrong".
  *   `role`    who is reading. A student is sent to their teacher, a
  *             teacher to their school admin; a Super Admin, who has nobody
  *             above them, is told what the reference is for instead.
  *
- * This module is deliberately free of imports that exist at runtime (the
- * one import below is a type). It recognises an axios error by shape
+ * This module's only runtime import is the product's name (lib/brand.ts,
+ * itself import-free); the other import is a type. It recognises an axios error by shape
  * rather than by `axios.isAxiosError`, so it can be unit-tested in plain
  * Node with no bundler: see tests/unit/errors.test.mjs and
  * scripts/run-unit-tests.mjs.
  */
 import type { UserRole } from "@/types/auth";
+import { PRODUCT_NAME } from "./brand";
 
 export type ErrorKind =
   /** The browser says it has no connection at all. */
@@ -411,10 +412,10 @@ export function describeError(error: unknown, options: DescribeOptions = {}): De
     return build(
       facts,
       "network",
-      "We can't reach School Enrichment",
+      `We can't reach ${PRODUCT_NAME}`,
       action
-        ? `We couldn't ${action} because School Enrichment couldn't be reached. Check your internet connection and try again.`
-        : "We couldn't reach School Enrichment. Check your internet connection and try again.",
+        ? `We couldn't ${action} because ${PRODUCT_NAME} couldn't be reached. Check your internet connection and try again.`
+        : `We couldn't reach ${PRODUCT_NAME}. Check your internet connection and try again.`,
       true,
     );
   }
@@ -444,10 +445,10 @@ export function describeError(error: unknown, options: DescribeOptions = {}): De
       return build(
         facts,
         "unavailable",
-        "School Enrichment is briefly unavailable",
+        `${PRODUCT_NAME} is briefly unavailable`,
         action
-          ? `We couldn't ${action} because School Enrichment is starting up or briefly unavailable. Please try again in a minute.`
-          : "School Enrichment is starting up or briefly unavailable. Please try again in a minute.",
+          ? `We couldn't ${action} because ${PRODUCT_NAME} is starting up or briefly unavailable. Please try again in a minute.`
+          : `${PRODUCT_NAME} is starting up or briefly unavailable. Please try again in a minute.`,
         true,
       );
     }

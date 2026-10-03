@@ -1,8 +1,9 @@
 import { useId } from "react";
+import { PRODUCT_NAME, PRODUCT_SCOPE } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 /**
- * School Enrichment mark: three ascending rules (a page of work turning into
+ * The Krama mark: three ascending rules (a page of work turning into
  * steps of progress) with a saffron spark at the summit. Pure inline SVG --
  * no asset hosting, scales cleanly from a 16px favicon to a hero lockup.
  */
@@ -28,7 +29,7 @@ export function LogoMark({
   const instanceId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const gradientId = `se-mark-${variant}-${instanceId}`;
   return (
-    <svg viewBox="0 0 44 44" role="img" aria-label="School Enrichment" className={cn("h-11 w-11", className)}>
+    <svg viewBox="0 0 44 44" role="img" aria-label={PRODUCT_NAME} className={cn("h-11 w-11", className)}>
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
           {variant === "brand" ? (
@@ -80,15 +81,21 @@ export function Wordmark({
     <span className={cn("flex min-w-0 flex-col leading-none", className)}>
       <span
         className={cn(
-          // nowrap: the two words are one name. At narrow-but-not-mobile
-          // widths (the login brand panel at 1280px) flexbox would otherwise
-          // happily break it into "School / Enrichment" on two lines.
-          "whitespace-nowrap font-display font-semibold tracking-[-0.015em]",
-          size === "lg" ? "text-[1.5rem] sm:text-[1.75rem]" : "text-[1.0625rem]",
+          // One short word carrying the whole brand, so it is set larger and
+          // tighter than the two-word working title it replaced: at the old
+          // size "Krama" read as a caption beside the 40px mark.
+          "whitespace-nowrap font-display font-semibold leading-none tracking-[-0.022em]",
+          size === "lg" ? "text-[1.875rem] sm:text-[2.125rem]" : "text-[1.3125rem]",
           tone === "dark" ? "text-content" : "text-content-inverse",
         )}
       >
-        School <span className={tone === "dark" ? "text-content-brand" : "text-saffron-300"}>Enrichment</span>
+        {PRODUCT_NAME}
+        {/* The saffron spark from the mark, set as the full stop of the
+            name: the same "this is where it lands" punctuation the mark
+            carries at its summit. Decorative -- the name is read without it. */}
+        <span aria-hidden className={tone === "dark" ? "text-saffron-500" : "text-saffron-300"}>
+          .
+        </span>
       </span>
       {showTagline ? (
         <span
@@ -98,7 +105,7 @@ export function Wordmark({
             tone === "dark" ? "text-content-faint" : "text-content-inverse-muted",
           )}
         >
-          CBSE &middot; ICSE &middot; Class 5&ndash;10
+          {PRODUCT_SCOPE}
         </span>
       ) : null}
     </span>

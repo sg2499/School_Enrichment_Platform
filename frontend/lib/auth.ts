@@ -163,7 +163,7 @@ function schoolNameFromUser(user: CurrentUser): string | null {
 }
 
 /** Remembers which school this browser last signed in as -- purely a
- * display convenience (the login page's "Issued by <school>" pill) for a
+ * display convenience (the sign-in page's "Accounts here are issued by <school>" line) for a
  * returning visitor on their own device. Never used for authorization: the
  * login page still asks for real credentials regardless of what this says,
  * and a person on a shared/public device simply sees the generic pill until
@@ -262,3 +262,21 @@ export function defaultRouteForRole(role: UserRole): string {
   if (role === "TEACHER") return "/teacher/dashboard";
   return "/admin/dashboard";
 }
+
+/** Where an admin sets up two-factor and replaces an issued password. */
+export const SECURITY_SETUP_PATH = "/admin/security";
+
+// A1 fix (30 Sep 2026 security/DPDP review): where someone still on a
+// password another person issued is sent to replace it, by role. Mirrors
+// the backend's MUST_CHANGE_PASSWORD_ROLES (dependencies.py) -- every role,
+// since 3 Oct 2026. Admins do it on the security page, which then walks
+// them into two-factor setup; teachers and students have a screen of their
+// own (components/SetPasswordScreen.tsx). The server enforces the rule
+// whatever this does: this is what makes it a screen instead of a wall of
+// refused requests.
+export const PASSWORD_CHANGE_PATH: Record<UserRole, string> = {
+  ADMIN: `${SECURITY_SETUP_PATH}?passwordChange=required`,
+  SUPER_ADMIN: `${SECURITY_SETUP_PATH}?passwordChange=required`,
+  TEACHER: "/teacher/set-password",
+  STUDENT: "/student/set-password",
+};
