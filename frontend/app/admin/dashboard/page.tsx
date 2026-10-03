@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -20,17 +19,20 @@ import {
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { MastheadNextStep, type NextStep } from "@/components/ui/MastheadNextStep";
+import { PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { LoadError } from "@/components/ui/AlertBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SessionGate } from "@/components/SessionGate";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
-import { api, errorMessage } from "@/lib/api";
-import { cn } from "@/lib/utils";
-import type { ChapterStatus, ChapterSummary, SchoolCurriculumMapEntry } from "@/types/curriculum";
+import { useApiQuery } from "@/lib/hooks/useApiQuery";
+import { PRODUCT_NAME } from "@/lib/brand";
+import { classLabel, cn } from "@/lib/utils";
+import type { ChapterStatus, ChapterSummary, SchoolCurriculumMapEntry, SchoolOption } from "@/types/curriculum";
 
 /*
  * Build status shown to schools.
@@ -60,6 +62,9 @@ type StageState = "done" | "partial" | "active" | "planned";
 type Stage = {
   title: string;
   body: string;
+  /** The same claim as a Super Admin reads it, where `body` speaks to one
+   *  school ("your leadership team"). Most stages read the same for both. */
+  platformBody?: string;
   state: StageState;
   /** Only for "partial": what is usable today vs. still to come, so the
    *  split is stated, not left to the reader to guess from one badge. */
@@ -70,7 +75,7 @@ type Stage = {
 const STAGES: Stage[] = [
   {
     title: "Platform and Secure Sign-In",
-    body: "Role-based access for admins, teachers and students, with server-verified sessions and mandatory two-factor for admins.",
+    body: "Separate sign-ins for admins, teachers and students, with two-factor required for every admin.",
     state: "done",
   },
   {
@@ -93,7 +98,7 @@ const STAGES: Stage[] = [
   },
   {
     title: "Daily Learning Loop",
-    body: "Practice that teachers assign, students attempt, and the platform marks the moment it's submitted.",
+    body: `Practice that teachers assign, students attempt, and ${PRODUCT_NAME} marks the moment it is submitted.`,
     // Was "planned". Changed to "partial" 30 Sep 2026 -- evidence:
     //  LIVE end to end: teacher POST /learning/assignments
     //  (app/teacher/assign since 1 Oct 2026) -> student POST /learning/attempts, PUT
@@ -143,6 +148,7 @@ const STAGES: Stage[] = [
   {
     title: "Papers, Mocks and Reports",
     body: "Board-format papers and the analytics your leadership team will ask for.",
+    platformBody: "Board-format papers and the analytics a school's leadership team will ask for.",
     // Left "planned" after checking, 30 Sep 2026: no paper/mock/report
     // model, route or page exists in backend/app or frontend/app. README
     // records Phases 5-8 as "not started".
@@ -181,7 +187,7 @@ const STAGE_STYLE: Record<StageState, { badge: string; tone: BadgeTone; icon: Re
     rail: "bg-jade-50 text-jade-600 ring-jade-100",
   },
   active: {
-    badge: "In Build",
+    badge: "In Progress",
     tone: "warning",
     icon: <CircleDashed className="h-4 w-4" aria-hidden />,
     rail: "bg-saffron-400 text-brand-950 ring-saffron-100",
@@ -198,7 +204,7 @@ type ModuleStatus = "live" | "build" | "soon" | "planned";
 
 const MODULE_STATUS: Record<ModuleStatus, { label: string; tone: BadgeTone }> = {
   live: { label: "Live", tone: "success" },
-  build: { label: "In Build", tone: "warning" },
+  build: { label: "In Progress", tone: "warning" },
   soon: { label: "Soon", tone: "neutral" },
   planned: { label: "Planned", tone: "neutral" },
 };
@@ -207,6 +213,9 @@ type Module = {
   icon: React.ReactNode;
   title: string;
   description: string;
+  /** What the same module is to a Super Admin, who does it for every
+   *  school rather than for "your school". */
+  platformDescription?: string;
   tone: "brand" | "accent" | "jade" | "coral";
   status: ModuleStatus;
   /** Only live modules link anywhere -- the same rule RoleShell's rail
@@ -220,7 +229,11 @@ const MODULES: Module[] = [
   {
     icon: <Library className="h-5 w-5" aria-hidden />,
     title: "Curriculum Studio",
-    description: "Review and publish chapters, then map them into your school's calendar, class by class.",
+    // A school admin cannot review or publish (routes_curriculum_admin.py:
+    // the status ladders are SUPER_ADMIN only), so their card no longer
+    // says they can.
+    description: "Map published chapters into your school's calendar, class by class, and reschedule them when dates slip.",
+    platformDescription: "Review and publish chapters, then map them into any school's calendar, class by class.",
     tone: "brand",
     // Was "In Build". Live since Phase 2 -- same evidence as the Curriculum
     // stage above; /admin/curriculum is a real route in RoleShell's NAV.
@@ -234,7 +247,8 @@ const MODULES: Module[] = [
     // which section". Teacher-to-section assignment exists only as an API
     // (routes_teacher_assignments.py) that no frontend file calls yet, so
     // that part belongs to Classes & Sections below, not here.
-    description: "Create staff and student accounts, import rosters in bulk, and deactivate anyone who leaves.",
+    description: "Create teacher and student accounts, import rosters in bulk, reset a forgotten password, and deactivate anyone who leaves.",
+    platformDescription: "Create admin, teacher and student accounts for any school, reset a forgotten password, and deactivate anyone who leaves.",
     tone: "jade",
     // Was "Soon". Live since 19 Aug 2026: /admin/people is a real route in
     // RoleShell's NAV, backed by routes_roster.py (create, list, bulk
@@ -245,7 +259,11 @@ const MODULES: Module[] = [
   {
     icon: <Database className="h-5 w-5" aria-hidden />,
     title: "Question Bank",
-    description: "Import from spreadsheets, review quality, and map every question to a chapter.",
+    // A school admin neither imports nor reviews questions (both are the
+    // Super Admin's, inside Curriculum Studio), so their card says what the
+    // bank is to them rather than what they cannot do in it.
+    description: "The reviewed questions behind every published chapter.",
+    platformDescription: "Import from spreadsheets, review quality, and map every question to a chapter.",
     tone: "accent",
     // Left "In Build" after checking, 30 Sep 2026: question review and the
     // automated quality checks are live, but only inside Curriculum
@@ -332,16 +350,6 @@ function TextLink({ href, children }: { href: string; children: React.ReactNode 
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="font-display text-display-sm tabular text-content">{value}</p>
-      {/* content-subtle on white: 6.4:1. */}
-      <p className="mt-0.5 text-xs font-medium text-content-subtle">{label}</p>
-    </div>
-  );
-}
-
 /**
  * The right-hand "what's actually live for us" panel.
  *
@@ -357,42 +365,33 @@ function Stat({ value, label }: { value: number; label: string }) {
  *    single school, so this shows the platform-wide chapter pipeline
  *    instead.
  */
-function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
-  const [chapters, setChapters] = useState<ChapterSummary[] | null>(null);
-  const [mappings, setMappings] = useState<SchoolCurriculumMapEntry[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const requests: [Promise<ChapterSummary[]>, Promise<SchoolCurriculumMapEntry[] | null>] = [
-      api.get<{ chapters: ChapterSummary[] }>("/curriculum-admin/chapters").then(({ data }) => data.chapters),
-      isPlatformAdmin
-        ? Promise.resolve(null)
-        : api
-            .get<{ schoolCurriculumMaps: SchoolCurriculumMapEntry[] }>("/curriculum-admin/school-curriculum-maps")
-            .then(({ data }) => data.schoolCurriculumMaps),
-    ];
-    Promise.all(requests)
-      .then(([chapterRows, mapRows]) => {
-        if (cancelled) return;
-        setChapters(chapterRows);
-        setMappings(mapRows);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(errorMessage(err, "load the curriculum status"));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isPlatformAdmin]);
-
-  const loading = !error && chapters === null;
+function CurriculumPanel({
+  isPlatformAdmin,
+  chapters,
+  mappings,
+  failed,
+}: {
+  isPlatformAdmin: boolean;
+  /** null while loading. The page loads these once and gives the same rows
+   *  to the masthead's figures, so the two can never disagree. */
+  chapters: ChapterSummary[] | null;
+  mappings: SchoolCurriculumMapEntry[] | null;
+  /** Which of the two reads failed. They fail separately, and this card
+   *  must not say "your calendar couldn't be loaded" under a masthead that
+   *  has just counted it. */
+  failed: { chapters: boolean; mappings: boolean };
+}) {
+  // What this card cannot be drawn without: the chapter list for a Super
+  // Admin, the calendar for a school admin. A school admin's card can still
+  // list their calendar when only the published list is missing.
+  const error = isPlatformAdmin ? failed.chapters : failed.mappings;
+  const loading = !error && (isPlatformAdmin ? chapters === null : mappings === null || (chapters === null && !failed.chapters));
 
   if (loading) {
     return (
       <div className="space-y-5" aria-busy="true">
         <span className="sr-only" role="status">
-          Loading your curriculum
+          {isPlatformAdmin ? "Loading the chapter list" : "Loading your curriculum"}
         </span>
         <div className="flex items-center gap-3">
           <SkeletonLine className="h-11 w-11 rounded-2xl" />
@@ -415,12 +414,17 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   }
 
   if (error) {
+    // Said once, in the banner under the masthead, with the way to try
+    // again. Here it is only why this card is empty: repeating the server's
+    // sentence a second time on one page helps nobody (and two alerts for
+    // one failure is two interruptions for a screen reader).
     return (
       <PanelStack gap="gap-4">
         <PanelHeading isPlatformAdmin={isPlatformAdmin} />
-        {/* coral-700 on white: 7.3:1. */}
-        <p role="alert" className="text-[0.8125rem] font-medium leading-relaxed text-coral-700">
-          {error} Everything is still available in Curriculum Studio.
+        {/* content-muted on white: 8.6:1. */}
+        <p className="text-[0.8125rem] leading-relaxed text-content-muted">
+          {isPlatformAdmin ? "The chapter list couldn’t be loaded just now." : "Your calendar couldn’t be loaded just now."}{" "}
+          The note under the panel above has the details.
         </p>
         <PanelFooter>
           <TextLink href="/admin/curriculum">Open Curriculum Studio</TextLink>
@@ -430,6 +434,9 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   }
 
   const chapterRows = chapters ?? [];
+  // The published list, when it is the one read that failed: the calendar
+  // below is still true, but nothing can be said about what is left to map.
+  const publishedKnown = chapters !== null;
 
   if (isPlatformAdmin) {
     return <PlatformPipeline chapters={chapterRows} />;
@@ -447,17 +454,21 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         <EmptyState
           illustration={<BlueprintIllustration />}
           status={
-            available > 0
-              ? { label: `${available} ${available === 1 ? "Chapter" : "Chapters"} Ready to Map`, tone: "brand" }
-              : { label: "No Chapters Published Yet", tone: "neutral" }
+            !publishedKnown
+              ? { label: "Nothing Mapped Yet", tone: "neutral" }
+              : available > 0
+                ? { label: `${available} ${available === 1 ? "Chapter" : "Chapters"} Ready to Map`, tone: "brand" }
+                : { label: "No Chapters Published Yet", tone: "neutral" }
           }
           title="Nothing is in your school's calendar yet"
           description={
-            available > 0
-              ? "Published chapters are ready for you. Map one into a class and its teachers can start assigning practice from it straight away."
+            !publishedKnown
+              ? "The list of published chapters couldn’t be loaded just now, so this can’t say what is ready to map. Curriculum Studio has the full list."
+              : available > 0
+              ? "Published chapters are ready for you. Map one into a class to add it to that class's calendar. Its teachers can assign practice from it once that practice is published."
               : "Chapters move through draft, review and publish before any school can use them. As soon as one is published, you can map it here."
           }
-          actions={available > 0 ? <TextLink href="/admin/curriculum">Map a Chapter</TextLink> : undefined}
+          actions={available > 0 || !publishedKnown ? <TextLink href="/admin/curriculum">{publishedKnown ? "Map a Chapter" : "Open Curriculum Studio"}</TextLink> : undefined}
         />
       </div>
     );
@@ -465,6 +476,9 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
 
   const today = todayIso();
   const classCount = new Set(mapRows.map((m) => m.className).filter(Boolean)).size;
+  const mappedIds = new Set(mapRows.map((m) => m.chapterId));
+  // The same count the masthead's "Ready To Map" shows, made the same way.
+  const readyToMap = chapterRows.filter((chapter) => !mappedIds.has(chapter.id)).length;
   // What's running now first, then what's next, then anything undated;
   // finished chapters drop off -- this is a "what's live" glance, not the
   // full map (that's one click away).
@@ -477,11 +491,20 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
     <PanelStack>
       <PanelHeading isPlatformAdmin={false} />
 
-      <div className="grid grid-cols-3 gap-4 border-y border-line py-4">
-        <Stat value={mapRows.length} label="In your calendar" />
-        <Stat value={available} label="Published to map" />
-        <Stat value={classCount} label={classCount === 1 ? "Class covered" : "Classes covered"} />
-      </div>
+      {/* The three figures that used to open this card (in your calendar,
+          published to map, classes covered) are in the masthead now, where
+          they count up. A row of figures already on the page moves up into
+          the masthead rather than being repeated under it (PageHeader.tsx).
+          What stays is the one line the masthead has no room for. */}
+      <p className="border-y border-line py-3.5 text-[0.8125rem] leading-relaxed text-content-muted">
+        {mapRows.length} {mapRows.length === 1 ? "chapter" : "chapters"} across {classCount}{" "}
+        {classCount === 1 ? "class" : "classes"}.{" "}
+        {!publishedKnown
+          ? ""
+          : readyToMap > 0
+          ? `${readyToMap} more published and ready to map.`
+          : "Every published chapter is already in your calendar."}
+      </p>
 
       {upcoming.length > 0 ? (
         <div className="space-y-2.5">
@@ -506,8 +529,8 @@ function CurriculumPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                     </span>
                     {/* content-subtle on the muted row: 6.2:1. */}
                     <span className="block truncate text-xs text-content-subtle">
-                      {mapping.className ? `Class ${mapping.className}` : "All classes"}
-                      {start || end ? ` · ${start ?? "—"} – ${end ?? "—"}` : " · Dates not set"}
+                      {classLabel(mapping.className) ?? "All classes"}
+                      {start || end ? ` · ${start ?? "No start date"} – ${end ?? "No end date"}` : " · Dates not set"}
                     </span>
                   </span>
                   {running ? (
@@ -541,7 +564,7 @@ function PanelHeading({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         <CardTitle>{isPlatformAdmin ? "Platform Curriculum" : "Your Curriculum"}</CardTitle>
         <p className="mt-0.5 text-xs text-content-subtle">
           {isPlatformAdmin
-            ? "Every chapter on the platform, by where it sits in review"
+            ? `Every chapter in ${PRODUCT_NAME}, by where it sits in review`
             : "What your teachers can assign practice from"}
         </p>
       </div>
@@ -627,16 +650,193 @@ function PlatformPipeline({ chapters }: { chapters: ChapterSummary[] }) {
   );
 }
 
+/** The slice of a roster row the dashboard's figures need (GET
+ *  /roster/people; the People page has the full shape). */
+type RosterPerson = {
+  role: "ADMIN" | "TEACHER" | "STUDENT";
+  isActive: boolean;
+  className?: string | null;
+  schoolId?: string | null;
+};
+
+/** The schools nobody can run yet: no admin account that can still sign in.
+ *  Until a school has one, nobody can create its teachers or students or
+ *  map its calendar, so it is the first thing a Super Admin is told. */
+function schoolsWithoutAdmin(schools: SchoolOption[], admins: RosterPerson[]): SchoolOption[] {
+  const covered = new Set(admins.filter((admin) => admin.isActive && admin.schoolId).map((admin) => admin.schoolId));
+  return schools.filter((school) => !covered.has(school.id));
+}
+
+/** "3 inactive", or the reassuring opposite. */
+function inactiveHint(inactive: number): string {
+  return inactive > 0 ? `${inactive} inactive` : "All active";
+}
+
+/**
+ * The single most useful thing for a school admin to do next, walked in the
+ * order a school is actually set up: people first (nobody can be assigned
+ * anything until accounts exist), then the calendar (teachers can only
+ * assign practice from chapters mapped into it). A source that failed to
+ * load is skipped rather than guessed at. null while anything is loading.
+ */
+function schoolNextStep(input: {
+  loading: boolean;
+  people: RosterPerson[] | null;
+  chapters: ChapterSummary[] | null;
+  mappings: SchoolCurriculumMapEntry[] | null;
+}): NextStep | null {
+  if (input.loading) return null;
+  const { people, chapters, mappings } = input;
+  // Accounts that can sign in. A school whose only teacher has been
+  // deactivated has no teacher to assign anything.
+  const has = (role: RosterPerson["role"]) => Boolean(people?.some((person) => person.role === role && person.isActive));
+  if (people && !has("TEACHER")) {
+    return {
+      title: "Add your teachers",
+      body: "Each teacher gets a teacher code and a temporary password from you, and chooses their own password the first time they sign in.",
+      action: { href: "/admin/people", label: "Open People" },
+    };
+  }
+  if (people && !has("STUDENT")) {
+    return {
+      title: "Add your students",
+      body: "Add them one at a time, or upload a whole class list in one file. Each student gets a student code and a temporary password.",
+      action: { href: "/admin/people", label: "Open People" },
+    };
+  }
+  // Both lists are needed to say which of the two it is: "nothing is
+  // published" must never be said because the published list failed to load.
+  if (mappings && mappings.length === 0 && chapters) {
+    return chapters.length > 0
+      ? {
+          title: "Map your first chapter",
+          body: "Published chapters are ready for you. Map one into a class to add it to that class's calendar. Its teachers can assign practice from it once that practice is published.",
+          action: { href: "/admin/curriculum", label: "Open Curriculum Studio" },
+        }
+      : {
+          title: "Waiting on published chapters",
+          body: `Chapters are reviewed and published by the ${PRODUCT_NAME} team before any school can use them. As soon as one is published you can map it into your calendar. Nothing is needed from you.`,
+        };
+  }
+  if (people && mappings && chapters) {
+    return {
+      title: "Keep your calendar current",
+      body: "Your accounts and chapters are in place. When dates slip, reschedule a chapter in two clicks; when a class is ready, map its next one.",
+      action: { href: "/admin/curriculum", label: "Open Curriculum Studio" },
+    };
+  }
+  return COULD_NOT_CHECK;
+}
+
+/** Shown when a read failed: no step is suggested from half the facts. */
+const COULD_NOT_CHECK: NextStep = {
+  title: "Some figures couldn't be loaded",
+  body: "A figure shown as a dash couldn't be loaded just now. The note under this panel says which.",
+};
+
+/**
+ * The same question for a Super Admin, whose work is the platform's. In
+ * order: a school that nobody can run (it has no admin, so it can do
+ * nothing at all), then the review queue (nothing reaches any school until
+ * it is published), then the first publish. A school without an admin comes
+ * before the queue because a queue can stay non-empty for weeks while
+ * chapters are worked through, and would hide a school that is stuck.
+ */
+function platformNextStep(input: {
+  loading: boolean;
+  schools: SchoolOption[] | null;
+  admins: RosterPerson[] | null;
+  chapters: ChapterSummary[] | null;
+}): NextStep | null {
+  if (input.loading) return null;
+  const { schools, admins, chapters } = input;
+  if (schools && schools.length === 0) {
+    return {
+      title: `No schools on ${PRODUCT_NAME} yet`,
+      body: "A new school is set up outside these screens. Once one exists, create its first admin in People.",
+    };
+  }
+  if (schools && admins) {
+    const waiting = schoolsWithoutAdmin(schools, admins);
+    if (waiting.length > 0) {
+      return {
+        // "No active admin", not "no admin yet": the school may have had
+        // one who was deactivated, and then the answer is to reactivate.
+        title: waiting.length === 1 ? `${waiting[0].name} has no active admin` : `${waiting.length} schools have no active admin`,
+        body: "A school's admin creates its teachers and students and maps its calendar, so nothing can happen there without one. Create one, or reactivate the one it had, in People. Only a Super Admin can.",
+        action: { href: "/admin/people", label: "Open People" },
+      };
+    }
+  }
+  const inReview = chapters ? chapters.filter((chapter) => chapter.status === "REVIEW").length : 0;
+  if (inReview > 0) {
+    return {
+      title: inReview === 1 ? "1 chapter is waiting for review" : `${inReview} chapters are waiting for review`,
+      body: "Nothing reaches any school until it is published. Check the questions, then publish, in Curriculum Studio.",
+      action: { href: "/admin/curriculum", label: "Review Chapters" },
+    };
+  }
+  if (chapters && !chapters.some((chapter) => chapter.status === "PUBLISHED")) {
+    return {
+      title: "Publish the first chapter",
+      body: "Imported chapters arrive as drafts. Move one through review and publish it, and every school can map it into its calendar.",
+      action: { href: "/admin/curriculum", label: "Open Curriculum Studio" },
+    };
+  }
+  if (schools && admins && chapters) {
+    return {
+      title: "Nothing is waiting on you",
+      body: "Every school has an admin and the review queue is empty. Map published chapters into a school's calendar, or create accounts for a school, whenever one is ready.",
+      action: { href: "/admin/curriculum", label: "Open Curriculum Studio" },
+    };
+  }
+  return COULD_NOT_CHECK;
+}
+
 export default function AdminDashboardPage() {
   const session = useProtectedPage("ADMIN");
   const { user, status } = session;
+  const ready = status === "ready" && Boolean(user);
+  const isPlatformAdmin = user?.role === "SUPER_ADMIN";
+
+  // Loaded once, here, and handed to both the masthead's figures and the
+  // cards beneath it (3 Oct 2026). The curriculum card used to fetch its
+  // own copy; two reads of the same thing can disagree, and a masthead that
+  // says "4 in your calendar" over a card that lists three is worse than
+  // either being wrong alone. Nothing new on the backend: every path here
+  // was already called by People or Curriculum Studio.
+  const chaptersQuery = useApiQuery<{ chapters: ChapterSummary[] }>(
+    ready ? "/curriculum-admin/chapters" : null,
+    {},
+    { action: isPlatformAdmin ? "load the chapter list" : "load your published chapters" },
+  );
+  // A school's own calendar. A Super Admin has no single school, so no
+  // calendar to read: theirs is the platform-wide pipeline instead.
+  const mapsQuery = useApiQuery<{ schoolCurriculumMaps: SchoolCurriculumMapEntry[] }>(
+    ready && !isPlatformAdmin ? "/curriculum-admin/school-curriculum-maps" : null,
+    {},
+    { action: "load your school's calendar" },
+  );
+  // For a school admin: their school's teachers and students. For a Super
+  // Admin with no school chosen, the same path answers with every school's
+  // admins (routes_roster.py, list_people) -- which is the figure a
+  // platform owner wants here.
+  const peopleQuery = useApiQuery<{ people: RosterPerson[] }>(
+    ready ? "/roster/people" : null,
+    { includeInactive: "true" },
+    { action: isPlatformAdmin ? "load the school admins" : "load your school's accounts" },
+  );
+  const schoolsQuery = useApiQuery<{ schools: SchoolOption[] }>(
+    ready && isPlatformAdmin ? "/curriculum-admin/schools" : null,
+    {},
+    { action: "load the list of schools" },
+  );
 
   if (status !== "ready") {
     return <SessionGate session={session} />;
   }
 
-  const schoolId = user?.admin?.schoolId ?? null;
-  const isPlatformAdmin = user?.role === "SUPER_ADMIN";
+  const schoolName = user?.admin?.schoolName ?? null;
   // The page itself is shared by both admin variants (useProtectedPage's
   // "ADMIN" argument above just means "either kind of admin may load this
   // page" -- see its own docstring), so the actual role shown in the
@@ -652,35 +852,208 @@ export default function AdminDashboardPage() {
   const currentStage = STAGES.find((s) => s.state === "partial" || s.state === "active");
   const liveModules = MODULES.filter((m) => m.status === "live").length;
 
+  // A read that has failed is treated as not known, even when an older
+  // answer is still held from before (useApiQuery keeps the last one): a
+  // number that may no longer be true is not shown as though it were.
+  const chapters = chaptersQuery.problem ? null : (chaptersQuery.data?.chapters ?? null);
+  const mappings = mapsQuery.problem ? null : (mapsQuery.data?.schoolCurriculumMaps ?? null);
+  const people = peopleQuery.problem ? null : (peopleQuery.data?.people ?? null);
+  const schools = schoolsQuery.problem ? null : (schoolsQuery.data?.schools ?? null);
+
+  // The masthead's figures. `null` while a source loads (a placeholder
+  // bar); "—" if it failed, with the banner below saying why -- never a
+  // zero, which would read as a real count. Same rule as the Practice
+  // Tracker's masthead. A hint appears only once the number it describes
+  // is known.
+  const figure = (query: { data: unknown; problem: unknown }, value: number | undefined) =>
+    query.problem ? "—" : query.data ? (value ?? 0) : null;
+
+  let stats: PageHeaderStat[];
+  if (isPlatformAdmin) {
+    const admins = people ?? [];
+    const activeAdmins = admins.filter((person) => person.isActive).length;
+    // Needs both lists; 0 until both are in, so nothing is flagged early.
+    const unstaffed = schools && people ? schoolsWithoutAdmin(schools, admins).length : 0;
+    const published = chapters?.filter((chapter) => chapter.status === "PUBLISHED").length;
+    const inReview = chapters?.filter((chapter) => chapter.status === "REVIEW").length;
+    const drafts = chapters?.filter((chapter) => chapter.status === "DRAFT").length ?? 0;
+    stats = [
+      {
+        label: "Schools",
+        value: figure(schoolsQuery, schools?.length),
+        hint: schools ? (schools.length === 0 ? "None set up yet" : `Active on ${PRODUCT_NAME}`) : undefined,
+      },
+      {
+        label: "School Admins",
+        value: figure(peopleQuery, activeAdmins),
+        hint: people
+          ? admins.length === 0
+            ? "None created yet"
+            : unstaffed > 0
+              ? `${unstaffed} ${unstaffed === 1 ? "school has" : "schools have"} none`
+              : inactiveHint(admins.length - activeAdmins)
+          : undefined,
+        // A school with no admin is a school that cannot start.
+        tone: unstaffed > 0 ? "attention" : "default",
+      },
+      {
+        label: "Chapters Published",
+        value: figure(chaptersQuery, published),
+        hint: chapters ? `${chapters.length} ${chapters.length === 1 ? "chapter" : "chapters"} in all` : undefined,
+        tone: published ? "good" : "default",
+      },
+      {
+        label: "Waiting In Review",
+        value: figure(chaptersQuery, inReview),
+        hint: chapters
+          ? inReview
+            ? "Open Curriculum Studio to review"
+            : drafts > 0
+              ? `Nothing waiting · ${drafts} in draft`
+              : "Nothing waiting"
+          : undefined,
+        tone: inReview ? "attention" : "default",
+      },
+    ];
+  } else {
+    const roster = people ?? [];
+    const teachers = roster.filter((person) => person.role === "TEACHER");
+    const students = roster.filter((person) => person.role === "STUDENT");
+    const activeTeachers = teachers.filter((person) => person.isActive).length;
+    const activeStudents = students.filter((person) => person.isActive);
+    const classes = new Set(activeStudents.map((person) => person.className).filter(Boolean)).size;
+    const today = todayIso();
+    const running = (mappings ?? []).filter(
+      (m) => Boolean(m.plannedStartDate) && m.plannedStartDate! <= today && (!m.plannedEndDate || m.plannedEndDate >= today),
+    ).length;
+    // Counted chapter by chapter, not as "published minus mapped": a
+    // chapter mapped earlier and since withdrawn is in the calendar but no
+    // longer in the published list, and a subtraction would under-count.
+    const mappedIds = new Set((mappings ?? []).map((m) => m.chapterId));
+    const readyToMap = chapters && mappings ? chapters.filter((chapter) => !mappedIds.has(chapter.id)).length : undefined;
+    stats = [
+      {
+        label: "Teachers",
+        value: figure(peopleQuery, activeTeachers),
+        hint: people ? (teachers.length === 0 ? "None yet: add them in People" : inactiveHint(teachers.length - activeTeachers)) : undefined,
+      },
+      {
+        label: "Students",
+        value: figure(peopleQuery, activeStudents.length),
+        hint: people
+          ? students.length === 0
+            ? "None yet: add them in People"
+            : classes > 0
+              ? `Across ${classes} ${classes === 1 ? "class" : "classes"}`
+              : inactiveHint(students.length - activeStudents.length)
+          : undefined,
+      },
+      {
+        label: "In Your Calendar",
+        value: figure(mapsQuery, mappings?.length),
+        hint: mappings
+          ? mappings.length === 0
+            ? "Nothing mapped yet"
+            : running > 0
+              ? `${running} running now`
+              : "None running today"
+          : undefined,
+        tone: running > 0 ? "good" : "default",
+      },
+      {
+        label: "Ready To Map",
+        // Needs both sources: published chapters, less the ones already in
+        // the calendar. If either failed, there is no honest number.
+        value: chaptersQuery.problem || mapsQuery.problem ? "—" : readyToMap !== undefined ? readyToMap : null,
+        hint: readyToMap !== undefined ? (readyToMap > 0 ? "Published, not in your calendar" : "Nothing waiting") : undefined,
+        // Only when the calendar is empty is this something waiting on the
+        // admin; with a calendar under way, chapters for later in the year
+        // (or for classes the school does not run) are not a to-do.
+        tone: readyToMap && mappings && mappings.length === 0 ? "attention" : "default",
+      },
+    ];
+  }
+
+  const pending = [chaptersQuery, peopleQuery, isPlatformAdmin ? schoolsQuery : mapsQuery].some(
+    (query) => !query.data && !query.problem,
+  );
+  const nextStep = isPlatformAdmin
+    ? platformNextStep({ loading: pending, schools, admins: people, chapters })
+    : schoolNextStep({ loading: pending, people, chapters, mappings });
+
+  // What failed, for the banner under the masthead -- and which figures it
+  // took with it, because the server's sentence for a failure ("Something
+  // went wrong on our side...") does not say what it was loading. One
+  // banner for every read on the page, so "Try Again" is in one place.
+  const sources = [
+    { query: schoolsQuery, figures: "Schools" },
+    { query: peopleQuery, figures: isPlatformAdmin ? "School Admins" : "Teachers and Students" },
+    { query: chaptersQuery, figures: isPlatformAdmin ? "Chapters" : "Published chapters" },
+    { query: mapsQuery, figures: "Your calendar" },
+  ].filter((source) => source.query.problem);
+  // One sentence is shown. If any of the failures can be retried, it is
+  // that one's, so that "Try Again" is offered whenever trying again can help.
+  const figureProblem = (sources.find((source) => source.query.problem?.retryable) ?? sources[0])?.query.problem ?? null;
+  const missingFigures = sources.map((source) => source.figures);
+  const missingTitle =
+    missingFigures.length > 1
+      ? `${missingFigures.slice(0, -1).join(", ")} and ${missingFigures[missingFigures.length - 1]} couldn’t be loaded`
+      : `${missingFigures[0]} couldn’t be loaded`;
+  const retryFigures = () => sources.forEach((source) => source.query.reload());
+
   return (
-    <RoleShell role={roleForShell} user={user}>
+    // The dashboard level of the workspace wash, as on the Teacher
+    // dashboard: the stronger of the two, and the only one that drifts.
+    // components/brand/Ambience.tsx has the measurements behind both.
+    <RoleShell role={roleForShell} user={user} ambience="dashboard">
       <div className="space-y-10">
         <PageHeader
+          surface="masthead"
+          size="lg"
+          // The one admin masthead that drifts; PageHeader.tsx has why.
+          drift
           // Not "School Control Centre": RoleShell's breadcrumb already
           // starts with exactly that, one line above -- and for a super
           // admin it says "Platform Control Centre", so repeating the
           // school wording here contradicted it.
-          eyebrow={isPlatformAdmin ? "The Platform at a Glance" : "Your School at a Glance"}
+          eyebrow={isPlatformAdmin ? "The Platform at a Glance" : schoolName ? `${schoolName} at a Glance` : "Your School at a Glance"}
           title={
             <>
-              Welcome, <span className="text-gradient-brand">{user?.fullName ?? "Admin"}</span>
+              {/* text-gradient-warm, as on the Teacher dashboard: the brand
+                  gradient this used on the canvas is indigo on indigo here. */}
+              Welcome, <span className="text-gradient-warm">{user?.fullName ?? (isPlatformAdmin ? "Super Admin" : "Admin")}</span>
             </>
           }
-          description="Set up the school, shape the curriculum, and control what teachers and students see. Modules open here as each one goes live."
+          // Was one sentence for both roles: "Set up the school, shape the
+          // curriculum, and control what teachers and students see." A
+          // school admin does not shape the curriculum, and a Super Admin
+          // has no one school to set up.
+          description={
+            isPlatformAdmin
+              ? `Every school on ${PRODUCT_NAME} and the curriculum they all draw from, counted live each time you open this page.`
+              : "Your school's accounts and its calendar, counted live each time you open this page."
+          }
+          stats={stats}
           meta={
             <>
-              <Badge tone="success" dot>
+              <Badge tone="success" dot onDark>
                 {liveCount} of {STAGES.length} Stages Live
               </Badge>
               {currentStage ? (
-                <Badge tone="brand" dot pulse>
-                  Now Building: {currentStage.title}
+                <Badge tone="inverse" dot pulse>
+                  In Progress: {currentStage.title}
                 </Badge>
               ) : null}
-              {isPlatformAdmin ? <Badge tone="neutral">Platform Admin</Badge> : null}
             </>
           }
-        />
+        >
+          <MastheadNextStep
+            step={nextStep}
+            checkingLabel={isPlatformAdmin ? "Checking every school" : "Checking your school's setup"}
+          />
+        </PageHeader>
+
+        {figureProblem ? <LoadError title={missingTitle} problem={figureProblem} onRetry={retryFigures} /> : null}
 
         {/* SplitLayout: both columns finish level. The grid already
             stretched here, but the right column was a plain space-y-4
@@ -697,7 +1070,9 @@ export default function AdminDashboardPage() {
                 </CardIcon>
                 <div>
                   <CardTitle>Rollout</CardTitle>
-                  <p className="mt-0.5 text-xs text-content-subtle">What your school can use today, and what&rsquo;s next</p>
+                  <p className="mt-0.5 text-xs text-content-subtle">
+                    {isPlatformAdmin ? "What every school can use today, and what’s next" : "What your school can use today, and what’s next"}
+                  </p>
                 </div>
               </div>
 
@@ -743,7 +1118,7 @@ export default function AdminDashboardPage() {
                           </Badge>
                         </span>
                         <span className="mt-1 block text-[0.8125rem] leading-relaxed text-content-muted">
-                          {stage.body}
+                          {isPlatformAdmin ? (stage.platformBody ?? stage.body) : stage.body}
                         </span>
                         {stage.shipped || stage.pending ? (
                           <span className="mt-3 grid gap-3 rounded-2xl border border-line bg-surface-muted/70 p-3.5 sm:grid-cols-2">
@@ -787,7 +1162,7 @@ export default function AdminDashboardPage() {
                   reason to re-check them rather than just add to them. */}
               <PanelFooter>
                 <p className="text-xs text-content-subtle">
-                  Status checked against the live build on {ROLLOUT_VERIFIED_ON}.
+                  Status last verified on {ROLLOUT_VERIFIED_ON}.
                 </p>
               </PanelFooter>
             </PanelStack>
@@ -795,7 +1170,12 @@ export default function AdminDashboardPage() {
 
           <SplitColumn fill="first">
             <StretchCard className="animate-fade-up delay-70" bodyClassName="sm:p-8">
-              <CurriculumPanel isPlatformAdmin={isPlatformAdmin} />
+              <CurriculumPanel
+                isPlatformAdmin={isPlatformAdmin}
+                chapters={chapters}
+                mappings={mappings}
+                failed={{ chapters: Boolean(chaptersQuery.problem), mappings: Boolean(mapsQuery.problem) }}
+              />
             </StretchCard>
 
             <Card tone="brand" className="animate-fade-up delay-140">
@@ -808,17 +1188,18 @@ export default function AdminDashboardPage() {
                 </div>
                 <dl className="-mt-1">
                   <DetailRow label="Administrator" value={user?.fullName ?? "—"} />
-                  <DetailRow label="Access Level" value={isPlatformAdmin ? "Platform Admin" : "School Admin"} />
-                  <DetailRow
-                    label="School ID"
-                    value={
-                      schoolId ? (
-                        <span className="font-mono text-[0.75rem]">{schoolId}</span>
-                      ) : (
-                        "Platform-Wide Access"
-                      )
-                    }
-                  />
+                  {/* "Super Admin", the name the rail, the tab and the
+                      footer use (lib/pageTitle.ts ROLE_LABEL). This row
+                      said "Platform Admin", a third name for one role. */}
+                  <DetailRow label="Access Level" value={isPlatformAdmin ? "Super Admin" : "School Admin"} />
+                  {isPlatformAdmin ? (
+                    <DetailRow label="Reach" value={`Every school on ${PRODUCT_NAME}`} />
+                  ) : (
+                    // The school's internal ID used to be printed under this
+                    // row. Nobody is ever asked for it, and a 36-character
+                    // identifier on a dashboard reads as an error.
+                    <DetailRow label="School" value={schoolName ?? "—"} />
+                  )}
                 </dl>
               </CardBody>
             </Card>
@@ -829,10 +1210,10 @@ export default function AdminDashboardPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <h2 id="modules-heading" className="font-display text-display-sm text-content">
-                Modules
+                What&rsquo;s in {PRODUCT_NAME}
               </h2>
               <p className="mt-1 text-sm text-content-muted">
-                Live modules open from here; the rest arrive here the moment they ship &mdash; nothing to install.
+                Open what is live from here. The rest appears when it is released; there is nothing to install.
               </p>
             </div>
             <Badge tone="neutral">
@@ -845,7 +1226,7 @@ export default function AdminDashboardPage() {
                 <ModuleCard
                   icon={module.icon}
                   title={module.title}
-                  description={module.description}
+                  description={isPlatformAdmin ? (module.platformDescription ?? module.description) : module.description}
                   tone={module.tone}
                   status={MODULE_STATUS[module.status]}
                 />

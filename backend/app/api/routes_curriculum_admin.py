@@ -940,6 +940,44 @@ def list_schools(db: Session = Depends(get_db)):
 # --- SchoolCurriculumMap ---------------------------------------------------
 
 
+def _class_code_for_map(db: Session, board_course: BoardCourse | None, class_name: str | None) -> str | None:
+    """The class a calendar entry is for, stored the one way everything else
+    reads it: as the class level's CODE ("5"), never its display name
+    ("Class 5").
+
+    A student's class is stored as the code (routes_roster.py), an
+    assignment finds its students by the code (learning_service.py), and the
+    teacher's Assign screen matches a chapter to the teacher's sections by
+    the code. Until 3 Oct 2026 the map form sent the display name, so a
+    chapter mapped from the screen could be stored as "Class 5": it read
+    "Class Class 5" wherever a screen put "Class" in front, matched none of
+    the teacher's sections, and could be mapped a second time beside an
+    entry stored as "5". The form now sends the code; this makes the server
+    say the same whatever a caller sends, and migration a4d7e2c9b130 brought
+    the rows already stored into line.
+
+    The course's own class level is tried first, then the rest in their
+    display order (so the answer is the same on every call). A name that is
+    no class level's code or name is kept as typed: a school may label a
+    class in its own way.
+    """
+    name = (class_name or "").strip()
+    if not name:
+        return None
+    wanted = name.casefold()
+    own = db.get(ClassLevel, board_course.class_level_id) if board_course else None
+    levels = [own] if own else []
+    levels += [
+        level
+        for level in db.query(ClassLevel).order_by(ClassLevel.display_order, ClassLevel.code).all()
+        if not own or level.id != own.id
+    ]
+    for level in levels:
+        if wanted in {(level.code or "").casefold(), (level.display_name or "").casefold()}:
+            return level.code
+    return name
+
+
 @router.post("/school-curriculum-maps")
 def create_school_curriculum_map(
     payload: SchoolCurriculumMapRequest,
@@ -968,12 +1006,13 @@ def create_school_curriculum_map(
 
     _validate_teacher_in_school(db, payload.teacherId, school_id)
 
+    class_name = _class_code_for_map(db, board_course, payload.className)
     existing = (
         db.query(SchoolCurriculumMap)
         .filter(
             SchoolCurriculumMap.school_id == school_id,
             SchoolCurriculumMap.chapter_id == chapter.id,
-            SchoolCurriculumMap.class_name == payload.className,
+            SchoolCurriculumMap.class_name == class_name,
         )
         .first()
     )
@@ -984,7 +1023,7 @@ def create_school_curriculum_map(
         school_id=school_id,
         board_course_id=board_course.id,
         chapter_id=chapter.id,
-        class_name=payload.className,
+        class_name=class_name,
         teacher_id=payload.teacherId,
         planned_start_date=payload.plannedStartDate,
         planned_end_date=payload.plannedEndDate,
@@ -1018,7 +1057,8 @@ def list_school_curriculum_maps(
     school_id = _resolve_school_id_for_read(db, user, schoolId)
     query = db.query(SchoolCurriculumMap).filter(SchoolCurriculumMap.school_id == school_id)
     if className:
-        query = query.filter(SchoolCurriculumMap.class_name == className)
+        # Asked for by code or by name, answered by code: what is stored.
+        query = query.filter(SchoolCurriculumMap.class_name == _class_code_for_map(db, None, className))
     if boardCourseId:
         query = query.filter(SchoolCurriculumMap.board_course_id == boardCourseId)
     mappings = query.order_by(SchoolCurriculumMap.sequence).all()

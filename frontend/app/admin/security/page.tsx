@@ -17,7 +17,7 @@
  *  - Two-factor setup shows where you are in it (a three-step marker).
  *  - "Sign Out of All Devices" asks once before ending every session.
  */
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
@@ -42,15 +42,19 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { CodeInput, type CodeInputHandle } from "@/components/ui/CodeInput";
 import { TextField } from "@/components/ui/Field";
+import { PasswordRulesList } from "@/components/ui/PasswordRulesList";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SessionGate } from "@/components/SessionGate";
 import { api, describeApiError, errorMessage } from "@/lib/api";
 import { clearSession, updateStoredUser } from "@/lib/auth";
 import { PRODUCT_NAME, PRODUCT_SLUG } from "@/lib/brand";
 import { wasRefused } from "@/lib/errors";
+import { passwordChecks, passwordProblem } from "@/lib/passwordRules";
 import { rememberSignedOut } from "@/lib/sessionNotice";
 import { cn } from "@/lib/utils";
+import type { CurrentUser } from "@/types/auth";
 
 type SetupStage = "idle" | "scan" | "codes";
 
@@ -65,10 +69,10 @@ interface SessionSummary {
 
 /** Rough, best-effort device label from the raw User-Agent string -- good
  * enough for "which of my devices is this", not meant to be a precise
- * client-hints-grade parse. Falls back to "Unknown device" for anything
+ * client-hints-grade parse. Falls back to "Unrecognised device" for anything
  * that doesn't match (scripts, unusual clients). */
 function deviceLabel(userAgent: string | null): string {
-  if (!userAgent) return "Unknown device";
+  if (!userAgent) return "Unrecognised device";
   const ua = userAgent.toLowerCase();
   const isMobile = /iphone|android|mobile/.test(ua);
   let browser = "Browser";
@@ -92,14 +96,14 @@ function deviceLabel(userAgent: string | null): string {
  *  (1 Oct 2026). Zone detection is deliberately the same as lib/tracker.ts's
  *  formatDateTime -- keep the two in step: a "Z" or an offset is used as
  *  sent, a bare timestamp is the backend's UTC. Anything still unparseable
- *  degrades to "Unknown", never NaN. */
-function relativeTime(iso: string | null): string {
-  if (!iso) return "Unknown";
+ *  comes back as null ("Last active not recorded" on screen), never NaN. */
+function relativeTime(iso: string | null): string | null {
+  if (!iso) return null;
   const hasZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(iso);
   const then = new Date(hasZone ? iso : `${iso.replace(" ", "T")}Z`).getTime();
-  if (Number.isNaN(then)) return "Unknown";
+  if (Number.isNaN(then)) return null;
   const diffSeconds = Math.max(0, Math.floor((Date.now() - then) / 1000));
-  if (diffSeconds < 60) return "Just now";
+  if (diffSeconds < 60) return "just now";
   const diffMinutes = Math.floor(diffSeconds / 60);
   if (diffMinutes < 60) return `${diffMinutes} min ago`;
   const diffHours = Math.floor(diffMinutes / 60);
@@ -111,9 +115,9 @@ function relativeTime(iso: string | null): string {
 /** Inline error line used by every form on this page. role="alert" so a
  *  failed 2FA code or wrong password is announced, not just painted.
  *  coral-700 on white: 7.3:1. */
-function FormError({ children }: { children: React.ReactNode }) {
+function FormError({ children, id }: { children: React.ReactNode; id?: string }) {
   return (
-    <p role="alert" className="flex items-start gap-2 text-[0.8125rem] font-medium text-coral-700 animate-fade-in">
+    <p id={id} role="alert" className="flex items-start gap-2 text-[0.8125rem] font-medium text-coral-700 animate-fade-in">
       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
       {children}
     </p>
@@ -140,7 +144,7 @@ function BackupCodesPanel({ codes, onDone }: { codes: string[]; onDone: () => vo
 
   function handleDownload() {
     const blob = new Blob(
-      [`${PRODUCT_NAME} -- two-factor backup codes\nEach code works once. Keep this somewhere safe.\n\n${codes.join("\n")}\n`],
+      [`${PRODUCT_NAME}: two-factor backup codes\nEach code works once. Keep this somewhere safe.\n\n${codes.join("\n")}\n`],
       { type: "text/plain" },
     );
     const url = URL.createObjectURL(blob);
@@ -188,44 +192,8 @@ function BackupCodesPanel({ codes, onDone }: { codes: string[]; onDone: () => vo
       </div>
 
       <Button type="button" fullWidth onClick={onDone}>
-        I&apos;ve saved my backup codes
+        I&apos;ve Saved My Backup Codes
       </Button>
-    </div>
-  );
-}
-
-type PostureState = "ok" | "action" | "waiting";
-
-/** One cell of the posture summary. The state is carried by the icon *and*
- *  the value text, never by the disc colour alone (WCAG 1.4.1).
- *  Icon discs: white on jade-500 3.4:1, saffron-900 on saffron-100 8.4:1,
- *  ink-600 on ink-100 6.3:1 -- all past 3:1 for a graphic. */
-function PostureItem({ label, value, state }: { label: string; value: string; state: PostureState }) {
-  return (
-    <div className="flex min-w-0 items-center gap-3 px-5 py-4 sm:px-6">
-      <span
-        aria-hidden
-        className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-          state === "ok" && "bg-jade-500 text-white",
-          state === "action" && "bg-saffron-100 text-saffron-900 ring-1 ring-inset ring-saffron-300",
-          state === "waiting" && "bg-ink-100 text-ink-600",
-        )}
-      >
-        {state === "ok" ? (
-          <Check className="h-4 w-4" />
-        ) : state === "action" ? (
-          <AlertTriangle className="h-4 w-4" />
-        ) : (
-          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-        )}
-      </span>
-      <div className="min-w-0">
-        <p className="text-eyebrow font-bold uppercase text-content-subtle">{label}</p>
-        <p className={cn("truncate text-sm font-semibold", state === "action" ? "text-saffron-900" : "text-content")}>
-          {value}
-        </p>
-      </div>
     </div>
   );
 }
@@ -322,7 +290,9 @@ function SecuritySettingsPageInner() {
   useEffect(() => {
     if (user) {
       setMustChangePassword(Boolean(user.mustChangePassword));
-      setPasswordFirst(Boolean(user.mustChangePassword));
+      // Only ever switched on: if the account is re-read after the change
+      // (mustChangePassword now false), the card must not jump.
+      setPasswordFirst((first) => first || Boolean(user.mustChangePassword));
     }
   }, [user]);
 
@@ -352,17 +322,49 @@ function SecuritySettingsPageInner() {
     }
   }
 
-  async function confirmSetup(event: React.FormEvent) {
-    event.preventDefault();
+  // The six digits submit themselves (CodeInput's onComplete) and the
+  // button submits them too. A ref as well as the state, because a fast
+  // typist's Enter can arrive before the re-render that disables the button.
+  const enablingRef = useRef(false);
+  const enableCodeRef = useRef<CodeInputHandle>(null);
+  // The boxes are disabled while a code is being checked, and a disabled
+  // input cannot take focus -- so the cursor is put back by an effect that
+  // runs once `enabling` has gone false, not from the request's own catch
+  // (which can run a frame too early). Same arrangement as the sign-in page.
+  const refocusEnableCode = useRef(false);
+  useEffect(() => {
+    if (enabling || !refocusEnableCode.current) return;
+    refocusEnableCode.current = false;
+    enableCodeRef.current?.focus();
+  }, [enabling]);
+  // Arriving at the scan step: the cursor goes to the boxes, where the old
+  // text field had autoFocus.
+  useEffect(() => {
+    if (setupStage === "scan") enableCodeRef.current?.focus();
+  }, [setupStage]);
+
+  async function enableTwoFactor(code: string) {
+    if (enablingRef.current) return;
+    if (code.length < 6) {
+      setSetupError("Enter all six digits of the code your app is showing.");
+      enableCodeRef.current?.focus();
+      return;
+    }
+    enablingRef.current = true;
     setSetupError(null);
     setEnabling(true);
     try {
-      const { data } = await api.post<{ backupCodes: string[] }>("/auth/2fa/enable", { code: enableCode });
+      const { data } = await api.post<{ backupCodes: string[] }>("/auth/2fa/enable", { code });
       setBackupCodes(data.backupCodes);
       setSetupStage("codes");
     } catch (err) {
       setSetupError(errorMessage(err, "turn on two-factor authentication"));
+      // A refused code is finished with: the boxes empty for the next one
+      // the app shows, and the cursor is already in them.
+      setEnableCode("");
+      refocusEnableCode.current = true;
     } finally {
+      enablingRef.current = false;
       setEnabling(false);
     }
   }
@@ -373,7 +375,10 @@ function SecuritySettingsPageInner() {
     setQrCodeDataUrl(null);
     setManualSecret(null);
     setBackupCodes([]);
-    if (user) updateStoredUser({ ...user, twoFactorEnabled: true });
+    // `user` is the account as it was when the page loaded. If the password
+    // was replaced on this page a moment ago, that copy still says it must
+    // be changed, so the flag is taken from what the page knows now.
+    if (user) updateStoredUser({ ...user, mustChangePassword, twoFactorEnabled: true });
     if (setupRequired) router.replace("/admin/security");
   }
 
@@ -427,10 +432,14 @@ function SecuritySettingsPageInner() {
     }
   }
 
+  // Not while the password is still the issued one: the server answers
+  // nothing but the password change until then (dependencies.py), so the
+  // list would only fail -- and it must be read again the moment the gate
+  // lifts, which is why both flags are watched.
   useEffect(() => {
-    if (twoFactorEnabled) loadSessions();
+    if (twoFactorEnabled && !mustChangePassword) loadSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [twoFactorEnabled]);
+  }, [twoFactorEnabled, mustChangePassword]);
 
   async function handleRevokeSession(sessionId: string) {
     setRevokingSessionId(sessionId);
@@ -445,7 +454,7 @@ function SecuritySettingsPageInner() {
       }
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
-      setSessionsError(errorMessage(err, "end that session"));
+      setSessionsError(errorMessage(err, "sign that device out"));
     } finally {
       setRevokingSessionId(null);
     }
@@ -519,35 +528,125 @@ function SecuritySettingsPageInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  // "signing-out": changed, and this browser is about to be signed out with
+  // every other (a password someone chose to change). "kept": changed, and
+  // this browser stays signed in (the first change of an issued password).
+  const [passwordSaved, setPasswordSaved] = useState<"signing-out" | "kept" | null>(null);
+  // The rules are shown neutrally until a save has been tried; after that,
+  // the ones still unmet are marked as what is holding things up.
+  const [passwordAttempted, setPasswordAttempted] = useState(false);
+  const passwordSavedRef = useRef<HTMLDivElement>(null);
+  // When the form is replaced by the "saved" note, the button that had the
+  // focus no longer exists. The note takes it, so a keyboard user is not
+  // dropped at the top of the page and the next Tab goes on to the next
+  // step below.
+  useEffect(() => {
+    if (passwordSaved === "kept") passwordSavedRef.current?.focus();
+  }, [passwordSaved]);
+  const currentPasswordRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
   async function handleChangePassword(event: React.FormEvent) {
     event.preventDefault();
+    if (changingPassword || passwordSaved) return;
     setPasswordError(null);
-    if (newPassword !== confirmPassword) {
-      setPasswordError("New password and confirmation do not match.");
+    setPasswordAttempted(true);
+
+    // Checked here first, in the order the boxes are in, so nobody presses
+    // the button to learn their password was a character short. The server
+    // checks all of it again (core/security.py, strong_password_issue).
+    if (!currentPassword) {
+      setPasswordError(
+        mustChangePassword
+          ? "Enter the temporary password you signed in with, so we know it's you."
+          : "Enter your current password, so we know it's you.",
+      );
+      currentPasswordRef.current?.focus();
       return;
     }
+    const problem = passwordProblem(newPassword, {
+      current: currentPassword,
+      replacing: mustChangePassword ? "given" : "current",
+    });
+    if (problem) {
+      setPasswordError(problem);
+      newPasswordRef.current?.focus();
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError(
+        confirmPassword
+          ? "The two passwords don't match. Type your new password again in the last box."
+          : "Type your new password once more in the last box.",
+      );
+      confirmPasswordRef.current?.focus();
+      return;
+    }
+
+    // Replacing an issued password is the first thing a new admin does, and
+    // two-factor setup is the second. Until 3 Oct 2026 the first signed them
+    // out, so the sequence was: sign in, choose a password, get signed out,
+    // sign in again, set up two-factor. `keepSignedIn` (the same request a
+    // teacher's and a student's first change makes) keeps this one browser
+    // signed in under the new password and ends every other session. A
+    // password someone CHOOSES to change still signs out everywhere: that
+    // is what a person who fears it is known needs to see happen.
+    const firstChange = mustChangePassword;
     setChangingPassword(true);
+    let saved: { updated: boolean; staySignedIn?: boolean; user?: CurrentUser } | null = null;
     try {
-      await api.post("/auth/change-password", { currentPassword, newPassword });
-      setPasswordSuccess(true);
-      setMustChangePassword(false);
-      // A password change invalidates the token that issued the request
-      // (see backend/app/dependencies.py's password_changed_at check) --
-      // the current session is already effectively over, so this signs the
-      // user out cleanly instead of letting the next click surface a
-      // confusing 401 somewhere else.
-      window.setTimeout(() => {
-        clearSession();
-        rememberSignedOut({ message: "Your password has been changed. Sign in with your new password." });
-        router.push("/login");
-      }, 1800);
+      const { data } = await api.post<{ updated: boolean; staySignedIn?: boolean; user?: CurrentUser }>(
+        "/auth/change-password",
+        { currentPassword, newPassword, keepSignedIn: firstChange },
+      );
+      saved = data;
     } catch (err) {
-      setPasswordError(errorMessage(err, "change your password"));
+      const refused = describeApiError(err, "change your password");
+      // lib/api.ts is already taking the tab to sign-in with the reason.
+      if (refused.kind === "session") return;
+      if (refused.code === "INVALID_PASSWORD") {
+        setPasswordError(
+          firstChange
+            ? "The temporary password isn't right. It is the one you signed in with just now."
+            : "Your current password isn't right. Check it and try again.",
+        );
+        currentPasswordRef.current?.focus();
+      } else {
+        setPasswordError(refused.message);
+      }
+      return;
     } finally {
       setChangingPassword(false);
     }
+
+    // From here on the password IS saved, whatever happens next.
+    setMustChangePassword(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordAttempted(false);
+
+    if (saved.staySignedIn && saved.user) {
+      setPasswordSaved("kept");
+      updateStoredUser(saved.user);
+      // The address said ?passwordChange=required; it no longer is. If
+      // two-factor is still to be set up, say that instead, so a reload
+      // lands on the right banner.
+      router.replace(saved.user.twoFactorEnabled ? "/admin/security" : "/admin/security?setup=required");
+      return;
+    }
+
+    // Signed out everywhere, this browser included: the token that made the
+    // request stopped working when the password changed
+    // (backend/app/dependencies.py). Said first, then done, so the next
+    // click is not a refused request somewhere else.
+    setPasswordSaved("signing-out");
+    window.setTimeout(() => {
+      clearSession();
+      rememberSignedOut({ message: "Your password has been changed. Sign in with your new password." });
+      router.push("/login");
+    }, 1800);
   }
 
   if (status !== "ready" || !user) {
@@ -564,100 +663,205 @@ function SecuritySettingsPageInner() {
   // brand-new admin sent here specifically to change their default
   // password (mustChangePassword) couldn't see this form at all -- it
   // wouldn't render until AFTER they'd already changed it.
-  const showPasswordCard = twoFactorEnabled || mustChangePassword || passwordSuccess;
+  const showPasswordCard = twoFactorEnabled || mustChangePassword || passwordSaved !== null;
+  const isSuperAdmin = roleForShell === "SUPER_ADMIN";
+  const passwordRuleChecks = passwordChecks(newPassword, {
+    current: currentPassword || null,
+    replacing: mustChangePassword ? "given" : "current",
+  });
+  // Said as soon as it is certain: once as many characters are in the last
+  // box as the new password holds, a difference is a mistake, not typing.
+  const passwordMismatch =
+    confirmPassword.length > 0 &&
+    confirmPassword !== newPassword &&
+    (passwordAttempted || confirmPassword.length >= newPassword.length);
   const passwordCard = showPasswordCard ? (
     <Card className={cn("animate-fade-up", passwordFirst ? "" : "delay-140")}>
       <CardBody className="space-y-5">
         <div className="flex items-center gap-3">
-          <CardIcon tone={mustChangePassword ? "accent" : "coral"}>
+          <CardIcon tone={mustChangePassword ? "accent" : passwordSaved === "kept" ? "jade" : "coral"}>
             <KeyRound className="h-5 w-5" aria-hidden />
           </CardIcon>
           <div>
-            <CardTitle>{mustChangePassword ? "Set Your Own Password" : "Change Password"}</CardTitle>
+            <CardTitle>
+              {mustChangePassword ? "Choose Your Own Password" : passwordSaved === "kept" ? "Password" : "Change Password"}
+            </CardTitle>
             <CardDescription className="mt-0.5">
               {mustChangePassword
-                ? "Replace the one-time password this account was created with."
-                : "You'll be signed out everywhere and asked to sign in again with the new one."}
+                ? "Replace the temporary password this account was issued with. You stay signed in here."
+                : passwordSaved === "kept"
+                  ? "Your own, and known only to you."
+                  : "Changing it signs you out on every device, this one included."}
             </CardDescription>
           </div>
         </div>
-        <form onSubmit={handleChangePassword} className="max-w-md space-y-4">
-          <TextField
-            id="currentPassword"
-            name="currentPassword"
-            label={mustChangePassword ? "One-Time Password" : "Current Password"}
-            type="password"
-            autoComplete="current-password"
-            revealable
-            required
-            value={currentPassword}
-            onChange={(event) => setCurrentPassword(event.target.value)}
-          />
-          <TextField
-            id="newPassword"
-            name="newPassword"
-            label="New Password"
-            type="password"
-            autoComplete="new-password"
-            revealable
-            required
-            hint="8+ characters, a letter and a number"
-            aria-describedby="newPasswordRules"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-          />
-          {/* The full rule, including the part that won't fit in a hint
-              slot. Wired to the field above via aria-describedby. */}
-          <p id="newPasswordRules" className="-mt-2 text-[0.75rem] text-content-subtle">
-            Common passwords are rejected, even if they meet the length rule.
-          </p>
-          <TextField
-            id="confirmPassword"
-            name="confirmPassword"
-            label="Confirm New Password"
-            type="password"
-            autoComplete="new-password"
-            revealable
-            required
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-          />
 
-          {passwordError ? <FormError>{passwordError}</FormError> : null}
-          {passwordSuccess ? (
-            // jade-700 on white: 7.3:1.
-            <p role="status" className="flex items-start gap-2 text-[0.8125rem] font-medium text-jade-700">
-              <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              Password updated. Signing you out so you can log back in with it&hellip;
+        {passwordSaved === "kept" ? (
+          // The first change is done and this browser is still signed in.
+          // Nothing more to fill in here: the next step is the card below.
+          // jade-800 on jade-50: 7.4:1.
+          <div
+            ref={passwordSavedRef}
+            tabIndex={-1}
+            role="status"
+            className="flex items-start gap-3 rounded-2xl border border-jade-200 bg-jade-50 p-4 outline-none animate-scale-in focus-visible:shadow-focus"
+          >
+            <Check className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-700" aria-hidden />
+            <p className="text-[0.875rem] font-medium leading-[1.55] text-jade-800">
+              {twoFactorEnabled
+                ? `Your new password is saved, and every other device signed in to this account has been signed out. You can carry on with ${PRODUCT_NAME}.`
+                : "Your new password is saved. One step left: set up two-factor authentication, just below."}
             </p>
-          ) : null}
+          </div>
+        ) : (
+          <form onSubmit={handleChangePassword} className="max-w-md space-y-4" noValidate>
+            {/* For password managers only, so the new password is saved
+                against this account and not with no name attached.
+                Off-screen rather than type="hidden": managers ignore
+                hidden inputs. */}
+            {user.email ? (
+              <input type="text" name="username" autoComplete="username" value={user.email} readOnly tabIndex={-1} aria-hidden className="sr-only" />
+            ) : null}
+            <TextField
+              ref={currentPasswordRef}
+              id="currentPassword"
+              name="currentPassword"
+              label={mustChangePassword ? "Temporary Password" : "Current Password"}
+              hint={mustChangePassword ? "The one you signed in with" : undefined}
+              type="password"
+              autoComplete="current-password"
+              revealable
+              required
+              value={currentPassword}
+              onChange={(event) => {
+                setCurrentPassword(event.target.value);
+                setPasswordError(null);
+              }}
+            />
+            <div className="space-y-3">
+              <TextField
+                ref={newPasswordRef}
+                id="newPassword"
+                name="newPassword"
+                label="New Password"
+                type="password"
+                autoComplete="new-password"
+                revealable
+                required
+                aria-describedby="newPasswordRules"
+                value={newPassword}
+                onChange={(event) => {
+                  setNewPassword(event.target.value);
+                  // What the alert said was about what was typed before.
+                  setPasswordError(null);
+                }}
+              />
+              {/* Every rule the server will hold the password to, ticked off
+                  as it is typed (lib/passwordRules.ts). This used to be a
+                  hint reading "8+ characters, a letter and a number" and a
+                  line about common passwords -- three of the rules, and the
+                  rest left for the server to refuse after the button. */}
+              <PasswordRulesList id="newPasswordRules" checks={passwordRuleChecks} attempted={passwordAttempted} />
+            </div>
+            <TextField
+              ref={confirmPasswordRef}
+              id="confirmPassword"
+              name="confirmPassword"
+              label="Type It Once More"
+              type="password"
+              autoComplete="new-password"
+              revealable
+              required
+              value={confirmPassword}
+              onChange={(event) => {
+                setConfirmPassword(event.target.value);
+                setPasswordError(null);
+              }}
+              error={passwordMismatch ? "These two don't match yet." : null}
+              hint={confirmPassword.length > 0 && confirmPassword === newPassword ? "They match" : undefined}
+            />
 
-          <Button type="submit" loading={changingPassword} loadingLabel="Updating" disabled={passwordSuccess}>
-            Update Password
-          </Button>
-        </form>
+            {passwordError ? <FormError>{passwordError}</FormError> : null}
+            {passwordSaved === "signing-out" ? (
+              // jade-700 on white: 7.3:1.
+              <p role="status" className="flex items-start gap-2 text-[0.8125rem] font-medium text-jade-700">
+                <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                Password changed. Signing you out so you can sign back in with it&hellip;
+              </p>
+            ) : null}
+
+            <Button
+              type="submit"
+              loading={changingPassword}
+              loadingLabel={mustChangePassword ? "Saving your password" : "Changing your password"}
+              disabled={passwordSaved !== null}
+            >
+              {mustChangePassword ? "Save Password & Continue" : "Change Password"}
+            </Button>
+          </form>
+        )}
       </CardBody>
     </Card>
   ) : null;
 
   return (
-    <RoleShell role={roleForShell} user={user}>
+    // The working level of the workspace wash: still, and a step down from
+    // the dashboard's. This page is forms and a device list.
+    <RoleShell role={roleForShell} user={user} ambience="working">
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Account Security"
+          surface="masthead"
+          eyebrow="Your Account"
           title="Security Settings"
-          description="Two-factor authentication, active sessions, and your password — all in one place."
-          meta={
-            twoFactorEnabled ? (
-              <Badge tone="success" dot icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-                Two-Factor Enabled
-              </Badge>
-            ) : (
-              <Badge tone="warning" dot pulse icon={<ShieldAlert className="h-3.5 w-3.5" />}>
-                Two-Factor Required
-              </Badge>
-            )
+          // Said to the person it is true of: a school admin's account
+          // opens one school, a Super Admin's opens all of them.
+          description={
+            isSuperAdmin
+              ? `This account reaches every school on ${PRODUCT_NAME}. Its password, its second sign-in step and the devices signed in as you are all here.`
+              : "This account can see your whole school. Its password, its second sign-in step and the devices signed in as you are all here."
           }
+          // The posture summary (3 Oct 2026). It was a card of three cells
+          // under a header that was text on the canvas; it is the page's
+          // own headline -- for a brand-new admin, the checklist of what is
+          // left, in order -- so it moved up into the masthead with the
+          // header, the way the Practice Tracker's tile row did. Each state
+          // is said in words in the cell (value and hint); the tint only
+          // repeats it (WCAG 1.4.1).
+          stats={[
+            {
+              label: "Password",
+              value: mustChangePassword ? "Temporary" : "Your Own",
+              hint: mustChangePassword ? "Choose your own below to continue" : "No change needed",
+              tone: mustChangePassword ? "attention" : "good",
+            },
+            {
+              label: "Two-Factor",
+              value: twoFactorEnabled ? "On" : "Off",
+              hint: twoFactorEnabled
+                ? "Authenticator app"
+                : mustChangePassword
+                  ? "Set up once your password is your own"
+                  : "Required: set it up below",
+              tone: twoFactorEnabled ? "good" : mustChangePassword ? "default" : "attention",
+            },
+            {
+              label: "Signed-In Devices",
+              // A count once there is one; a word while there cannot be.
+              // "—" is kept for a count that failed to load.
+              value: !twoFactorEnabled || mustChangePassword ? "Later" : sessionsLoaded ? sessions.length : sessionsError ? "—" : null,
+              hint: mustChangePassword
+                ? "Listed once your password is your own"
+                : !twoFactorEnabled
+                  ? "Listed once two-factor is on"
+                  : sessionsLoaded
+                  ? sessions.length === 1
+                    ? "Only this one"
+                    : "Including this one"
+                  : sessionsError
+                    ? "Couldn't be checked just now"
+                    : undefined,
+            },
+          ]}
         />
 
         {passwordChangeRequired && mustChangePassword ? (
@@ -666,8 +870,8 @@ function SecuritySettingsPageInner() {
             <div>
               <p className="text-sm font-bold text-saffron-900">Change your password to continue</p>
               <p className="mt-1 text-[0.8125rem] leading-relaxed text-saffron-800">
-                This account was created with a temporary, one-time password. For security, you need to set your own
-                password before you can use the rest of the platform.
+                The password you signed in with is temporary: it was issued to you when this account was created or
+                reset. Choose your own below before using the rest of {PRODUCT_NAME}.
               </p>
             </div>
           </div>
@@ -679,45 +883,14 @@ function SecuritySettingsPageInner() {
             <div>
               <p className="text-sm font-bold text-saffron-900">Set up two-factor authentication to continue</p>
               <p className="mt-1 text-[0.8125rem] leading-relaxed text-saffron-800">
-                Admin and super admin accounts control whole-school or platform-wide data, so this platform requires a
-                second sign-in factor before anything else is accessible. It takes about a minute with any
-                authenticator app (Google Authenticator, Authy, 1Password, etc.).
+                {isSuperAdmin
+                  ? `A Super Admin account reaches every school, so ${PRODUCT_NAME} asks for a second sign-in step before it opens anything else.`
+                  : `A school admin account opens your whole school's records, so ${PRODUCT_NAME} asks for a second sign-in step before it opens anything else.`}{" "}
+                It takes about a minute with any authenticator app, such as Google Authenticator, Authy or 1Password.
               </p>
             </div>
           </div>
         ) : null}
-
-        {/* Posture at a glance. A readable summary before any detail, and
-            for a brand-new admin it doubles as the checklist of what's
-            left: the "action" cells are exactly the cards below that need
-            them, in order. */}
-        <Card className="animate-fade-up">
-          <div className="grid divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-            <PostureItem
-              label="Password"
-              value={mustChangePassword ? "Change required" : "No change required"}
-              state={mustChangePassword ? "action" : "ok"}
-            />
-            <PostureItem
-              label="Two-Factor"
-              value={twoFactorEnabled ? "On, authenticator app" : "Required, not set up"}
-              state={twoFactorEnabled ? "ok" : mustChangePassword ? "waiting" : "action"}
-            />
-            <PostureItem
-              label="Signed-In Devices"
-              value={
-                !twoFactorEnabled
-                  ? "After two-factor"
-                  : sessionsLoaded
-                    ? `${sessions.length} active`
-                    : sessionsError
-                      ? "Unavailable"
-                      : "Checking…"
-              }
-              state={!twoFactorEnabled || sessionsError || !sessionsLoaded ? "waiting" : "ok"}
-            />
-          </div>
-        </Card>
 
         {passwordFirst ? passwordCard : null}
 
@@ -733,7 +906,9 @@ function SecuritySettingsPageInner() {
                 <CardDescription className="mt-0.5">
                   {twoFactorEnabled
                     ? "Your account is protected by an authenticator app."
-                    : "Required for admin and super admin accounts."}
+                    : isSuperAdmin
+                      ? "Required for every Super Admin account."
+                      : "Required for every school admin account."}
                 </CardDescription>
               </div>
             </div>
@@ -743,13 +918,19 @@ function SecuritySettingsPageInner() {
                 <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface-muted p-4">
                   <KeyRound className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-content-subtle" aria-hidden />
                   <p className="text-[0.8125rem] leading-relaxed text-content-muted">
-                    Two-factor authentication is mandatory for this role and can&rsquo;t be turned off from here. If
-                    you&rsquo;ve lost your authenticator app and your backup codes, contact your platform
-                    administrator.
+                    {/* Who can help is different for each. A school admin
+                        has someone to turn to. A Super Admin does not: there
+                        is no screen that resets theirs (core/config.py, "its
+                        2FA is reset at the DB level"), and saying "contact
+                        your platform administrator" to the platform
+                        administrator sent them looking for themselves. */}
+                    {isSuperAdmin
+                      ? "Two-factor authentication is required for every Super Admin account and can’t be turned off. If you lose both your authenticator app and your backup codes, this account can only be recovered on the server itself, so keep your backup codes somewhere safe."
+                      : "Two-factor authentication is required for every school admin account and can’t be turned off. If you’ve lost both your authenticator app and your backup codes, contact your platform administrator."}
                   </p>
                 </div>
 
-                {!regenOpen && !regenCodes ? (
+                {!regenOpen && !regenCodes && !mustChangePassword ? (
                   <Button
                     type="button"
                     variant="secondary"
@@ -821,8 +1002,8 @@ function SecuritySettingsPageInner() {
                       2
                     </span>
                     <p className="text-[0.875rem] leading-relaxed text-content-muted">
-                      {passwordFirst ? "Set your own password above first" : "Change your password below first"}{" "}
-                      &mdash; two-factor setup unlocks right after.
+                      {passwordFirst ? "Choose your own password above first." : "Change your password below first."}{" "}
+                      Two-factor setup opens as soon as it is saved.
                     </p>
                   </div>
                 ) : null}
@@ -833,7 +1014,7 @@ function SecuritySettingsPageInner() {
                   <>
                     <p className="text-[0.875rem] leading-relaxed text-content-muted">
                       Scan a QR code with an authenticator app, confirm one code, and you&rsquo;re done. You&rsquo;ll
-                      also get ten one-time backup codes in case you ever lose your device.
+                      also get ten backup codes, each good for one sign-in, in case you ever lose your phone.
                     </p>
                     {setupError ? <FormError>{setupError}</FormError> : null}
                     <Button
@@ -849,7 +1030,14 @@ function SecuritySettingsPageInner() {
                 ) : null}
 
                 {setupStage === "scan" ? (
-                  <form onSubmit={confirmSetup} className="space-y-5 animate-fade-in">
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void enableTwoFactor(enableCode);
+                    }}
+                    className="space-y-5 animate-fade-in"
+                    noValidate
+                  >
                     <div className="flex flex-col items-start gap-5 sm:flex-row">
                       {qrCodeDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element -- server-generated data URL, not an optimizable remote asset.
@@ -870,25 +1058,27 @@ function SecuritySettingsPageInner() {
                       </div>
                     </div>
 
-                    <TextField
+                    {/* Six boxes, as at sign-in (3 Oct 2026): the same code,
+                        read off the same app, was typed into an ordinary
+                        text field here and into six boxes a day later. */}
+                    <CodeInput
+                      ref={enableCodeRef}
                       id="enableCode"
                       name="enableCode"
-                      label="Enter the 6-digit code from your app"
-                      autoComplete="one-time-code"
-                      // Numeric keypad on phones and tablets -- which is
-                      // where most admins will have their authenticator app
-                      // open, often on the same device.
-                      inputMode="numeric"
-                      placeholder="123456"
-                      required
-                      autoFocus
+                      label="The 6-Digit Code Your App Shows"
                       value={enableCode}
-                      onChange={(event) => setEnableCode(event.target.value)}
-                      icon={<ShieldCheck className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
-                      containerClassName="max-w-sm"
+                      onChange={(value) => {
+                        setEnableCode(value);
+                        if (setupError) setSetupError(null);
+                      }}
+                      onComplete={(code) => void enableTwoFactor(code)}
+                      disabled={enabling}
+                      invalid={Boolean(setupError)}
+                      aria-describedby={setupError ? "enableCodeError" : undefined}
+                      className="max-w-sm"
                     />
 
-                    {setupError ? <FormError>{setupError}</FormError> : null}
+                    {setupError ? <FormError id="enableCodeError">{setupError}</FormError> : null}
 
                     <div className="flex flex-wrap gap-3">
                       <Button type="submit" loading={enabling} loadingLabel="Confirming">
@@ -907,8 +1097,9 @@ function SecuritySettingsPageInner() {
           </CardBody>
         </Card>
 
-        {/* --- Sessions & devices --- */}
-        {twoFactorEnabled ? (
+        {/* --- Signed-in devices --- (not while the password gate is up:
+            the server would refuse the list, and every button on it) */}
+        {twoFactorEnabled && !mustChangePassword ? (
           <Card className="animate-fade-up delay-70">
             <CardBody className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -917,9 +1108,9 @@ function SecuritySettingsPageInner() {
                     <MonitorSmartphone className="h-5 w-5" aria-hidden />
                   </CardIcon>
                   <div>
-                    <CardTitle>Sessions &amp; Devices</CardTitle>
+                    <CardTitle>Signed-In Devices</CardTitle>
                     <CardDescription className="mt-0.5">
-                      Where you&rsquo;re currently signed in, and a way to end any one of them.
+                      Where you&rsquo;re signed in now, and a way to sign any one of them out.
                     </CardDescription>
                   </div>
                 </div>
@@ -927,7 +1118,7 @@ function SecuritySettingsPageInner() {
                   type="button"
                   onClick={loadSessions}
                   disabled={sessionsLoading}
-                  aria-label="Refresh sessions"
+                  aria-label="Refresh device list"
                   title="Refresh"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full text-content-subtle transition hover:bg-surface-muted hover:text-content disabled:cursor-progress"
                 >
@@ -940,7 +1131,7 @@ function SecuritySettingsPageInner() {
               {sessionsLoading && !sessionsLoaded ? (
                 <div aria-busy="true" className="space-y-2">
                   <span className="sr-only" role="status">
-                    Loading active sessions
+                    Loading your signed-in devices
                   </span>
                   {[0, 1].map((i) => (
                     <div key={i} aria-hidden className="flex items-center gap-3 rounded-2xl border border-line p-3.5">
@@ -983,7 +1174,8 @@ function SecuritySettingsPageInner() {
                           </div>
                           {/* content-subtle on the muted row: 6.0:1. */}
                           <p className="mt-0.5 truncate text-[0.75rem] text-content-subtle">
-                            {session.ipAddress || "Unknown IP"} &middot; Active {relativeTime(session.lastSeenAt)}
+                            {session.ipAddress || "IP address not recorded"} &middot;{" "}
+                            {relativeTime(session.lastSeenAt) ? `Active ${relativeTime(session.lastSeenAt)}` : "Last active not recorded"}
                           </p>
                         </div>
                       </div>
@@ -994,20 +1186,20 @@ function SecuritySettingsPageInner() {
                         aria-label={
                           session.isCurrent
                             ? "Sign out this device"
-                            : `End session on ${deviceLabel(session.userAgent)}`
+                            : `Sign out ${deviceLabel(session.userAgent)}`
                         }
                         leadingIcon={<X className="h-3.5 w-3.5" />}
                         loading={revokingSessionId === session.id}
-                        loadingLabel="Ending"
+                        loadingLabel="Signing out"
                         onClick={() => handleRevokeSession(session.id)}
                       >
-                        {session.isCurrent ? "Sign Out" : "End Session"}
+                        Sign Out
                       </Button>
                     </li>
                   ))}
                 </ul>
               ) : sessionsLoaded ? (
-                <p className="text-[0.8125rem] text-content-subtle">No active sessions found.</p>
+                <p className="text-[0.8125rem] text-content-subtle">No signed-in devices are listed for this account.</p>
               ) : null}
 
               <div className="space-y-3 border-t border-line pt-5">
@@ -1018,9 +1210,8 @@ function SecuritySettingsPageInner() {
                         the card edge on desktop, a line longer than it needed
                         to be -- the problem PageHeader.tsx's description had. */}
                     <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">
-                      If you signed in on a shared or public computer and forgot to sign out, or you suspect someone
-                      else has access to your account, end every active session at once instead &mdash; including this
-                      one. You&rsquo;ll need to log in again afterwards.
+                      Signed in on a shared computer and forgot to sign out, or think someone else has access? Sign
+                      out of every device at once, this one included. You&rsquo;ll sign in again afterwards.
                     </p>
                     <Button
                       type="button"
@@ -1037,7 +1228,7 @@ function SecuritySettingsPageInner() {
                   <div role="group" aria-label="Confirm signing out of all devices" className="space-y-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in">
                     <p className="text-[0.8125rem] leading-relaxed text-coral-800">
                       <strong className="font-semibold">
-                        End {otherSessionCount > 0 ? `all ${sessions.length} sessions` : "every session"}, including
+                        Sign out of {otherSessionCount > 0 ? `all ${sessions.length} devices` : "every device"}, including
                         this one?
                       </strong>{" "}
                       You&rsquo;ll be taken to the sign-in page straight away, and so will anyone else signed in to this
@@ -1066,7 +1257,7 @@ function SecuritySettingsPageInner() {
         ) : null}
 
         {/* --- Your data --- */}
-        {twoFactorEnabled ? (
+        {twoFactorEnabled && !mustChangePassword ? (
           <Card className="animate-fade-up delay-105">
             <CardBody className="space-y-5">
               <div className="flex items-center gap-3">
@@ -1076,15 +1267,15 @@ function SecuritySettingsPageInner() {
                 <div>
                   <CardTitle>Your Data</CardTitle>
                   <CardDescription className="mt-0.5">
-                    Download a copy of everything this platform holds about your account.
+                    Download a copy of your account details and recent activity.
                   </CardDescription>
                 </div>
               </div>
               {/* Uncapped, as the sign-out-everywhere note above: it fits on
                   one line at desktop widths instead of breaking at 68ch. */}
               <p className="text-[0.875rem] leading-relaxed text-content-muted text-pretty">
-                This includes your account and profile details, your recent login sessions, and your
-                recent account activity, as a JSON file you can keep for your own records.
+                It includes your account and profile details, your recent sign-ins, and your recent account
+                activity, as one file you can keep for your own records.
               </p>
               {exportError ? <FormError>{exportError}</FormError> : null}
               <Button

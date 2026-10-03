@@ -39,7 +39,7 @@ describe("pageTitle", () => {
   });
 
   test("stray whitespace and line breaks in a name are collapsed", () => {
-    assert.equal(pageTitle("  Chapter 4:\n  Fractions  ", "ADMIN"), "Chapter 4: Fractions · Admin · Krama");
+    assert.equal(pageTitle("  Chapter 4:\n  Fractions  ", "ADMIN"), "Chapter 4: Fractions · School Admin · Krama");
   });
 
   test("every role has a label and the product name is stable", () => {

@@ -1,13 +1,14 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { AlertCircle, ArrowRight, Check, KeyRound, Lock, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowRight, KeyRound, Lock, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { describeError } from "@/lib/errors";
 import { passwordChecks, passwordProblem } from "@/lib/passwordRules";
 import type { CurrentUser } from "@/types/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { PasswordRulesList } from "@/components/ui/PasswordRulesList";
 import { TextField } from "@/components/ui/Field";
 
 /** The two roles that choose a password here. Admins replace theirs on the
@@ -235,40 +236,7 @@ export function ChoosePassword({
           }}
           icon={<Lock className="h-[1.05rem] w-[1.05rem]" aria-hidden />}
         />
-        {/* Two columns from the width of a phone up: five rules stacked
-            would push the button off a short laptop screen. The last one
-            is a full sentence and takes a row to itself. */}
-        <ul id={rulesId} aria-label="Your new password must be" className="grid gap-x-4 gap-y-1.5 min-[420px]:grid-cols-2">
-          {checks.map((check) => (
-            <li
-              key={check.id}
-              className={cn(
-                "flex items-start gap-2 text-[0.8125rem] font-medium leading-snug transition-colors duration-200",
-                // jade-800 on white 7.6:1; coral-700 7.3:1; content-muted 8.6:1.
-                check.met ? "text-jade-800" : attempted ? "text-coral-700" : "text-content-muted",
-                check.id === "different" ? "min-[420px]:col-span-2" : null,
-              )}
-            >
-              <span
-                aria-hidden
-                className={cn(
-                  "mt-px inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition duration-200 ease-spring",
-                  check.met
-                    ? "scale-100 border-jade-600 bg-jade-600 text-white"
-                    : attempted
-                      ? "border-coral-500 bg-surface"
-                      : "border-line-strong bg-surface",
-                )}
-              >
-                {check.met ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
-              </span>
-              <span>
-                {check.label}
-                <span className="sr-only">{check.met ? " (done)" : " (not yet)"}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <PasswordRulesList id={rulesId} checks={checks} attempted={attempted} />
       </div>
 
       <TextField

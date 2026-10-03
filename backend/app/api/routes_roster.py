@@ -46,7 +46,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.core.errors import api_error
 from app.core.rate_limit import limiter
@@ -211,7 +211,7 @@ def _create_person(
         guessable = {value.casefold() for value in (code, cleaned_email, full_name, full_name.replace(" ", "")) if value}
         if chosen_password.casefold() in guessable:
             raise ValueError(
-                "The password in this row can't be used. It is the same as this person's sign-in code, name or email."
+                "The password in this row can't be used. It is the same as this person's code, name or email."
             )
         initial_password = chosen_password
     else:
@@ -369,7 +369,15 @@ def list_people(
         return any(v and search_term.strip("%") in v.lower() for v in values)
 
     if role_filter in (None, "ADMIN"):
-        q = db.query(SchoolAdmin).join(User, SchoolAdmin.user_id == User.id)
+        # The account row is read in the same query (contains_eager), and
+        # the school with it. Each used to be fetched on its own, one more
+        # query per person -- about 1,500 for a school of 1,500, on a list
+        # the dashboard now reads too (3 Oct 2026).
+        q = (
+            db.query(SchoolAdmin)
+            .join(User, SchoolAdmin.user_id == User.id)
+            .options(contains_eager(SchoolAdmin.user), joinedload(SchoolAdmin.school))
+        )
         if school is not None:
             q = q.filter(SchoolAdmin.school_id == school.id)
         if not includeInactive:
@@ -391,7 +399,12 @@ def list_people(
                 )
 
     if school is not None and role_filter in (None, "TEACHER"):
-        q = db.query(Teacher).join(User, Teacher.user_id == User.id).filter(Teacher.school_id == school.id)
+        q = (
+            db.query(Teacher)
+            .join(User, Teacher.user_id == User.id)
+            .options(contains_eager(Teacher.user))
+            .filter(Teacher.school_id == school.id)
+        )
         if not includeInactive:
             q = q.filter(Teacher.is_active.is_(True))
         for teacher in q.all():
@@ -411,7 +424,12 @@ def list_people(
                 )
 
     if school is not None and role_filter in (None, "STUDENT"):
-        q = db.query(Student).join(User, Student.user_id == User.id).filter(Student.school_id == school.id)
+        q = (
+            db.query(Student)
+            .join(User, Student.user_id == User.id)
+            .options(contains_eager(Student.user))
+            .filter(Student.school_id == school.id)
+        )
         if not includeInactive:
             q = q.filter(Student.is_active.is_(True))
         for student in q.all():
@@ -772,8 +790,8 @@ def bulk_create_people(
         api_error(
             422,
             "VALIDATION_ERROR",
-            "We couldn't find a fullName column in that file. Its first row must be the column headings, "
-            "and one of them must be fullName. Download the template to see them all.",
+            "We couldn't find a Full Name column in that file. Its first row must be the column headings, "
+            "and one of them must be Full Name. Download the template to see them all.",
         )
     if len(rows) > MAX_BULK_IMPORT_ROWS:
         api_error(

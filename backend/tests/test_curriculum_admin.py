@@ -650,6 +650,46 @@ def test_admin_can_map_published_chapter_into_own_school(client, db_session):
     assert db_session.query(SchoolCurriculumMap).filter(SchoolCurriculumMap.id == mapping_id).first() is None
 
 
+def test_a_calendar_entry_stores_its_class_as_the_code_whatever_is_sent(client, db_session):
+    """The class is the class level's code ("5"), which is what a student's
+    class, an assignment and the teacher's Assign screen all use. The map
+    form used to send the display name ("Class 5"); stored like that, the
+    entry read "Class Class 5", matched none of a teacher's sections, and
+    sat beside a second entry for the same chapter and class stored as "5"."""
+    chapter, board_course = _make_chapter(db_session, "mapcls", status="PUBLISHED")
+    _make_school_admin(db_session, "admin-mapcls@example.com", "Map Class Code School")
+    csrf = _login(client, "admin-mapcls@example.com")
+    level = db_session.get(ClassLevel, board_course.class_level_id)
+    assert level.display_name and level.display_name != level.code
+
+    by_name = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": f"  {level.display_name.upper()} "},
+        headers=csrf,
+    )
+    assert by_name.status_code == 200, by_name.text
+    assert by_name.json()["className"] == level.code
+
+    # The same class by its code is the same entry, not a second one.
+    by_code = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": level.code},
+        headers=csrf,
+    )
+    assert by_code.status_code == 409 and by_code.json()["detail"]["code"] == "ALREADY_MAPPED"
+    for asked in (level.code, level.display_name):
+        listed = client.get("/api/curriculum-admin/school-curriculum-maps", params={"className": asked})
+        assert [m["className"] for m in listed.json()["schoolCurriculumMaps"]] == [level.code], asked
+
+    # A label that is no class level's name is the school's own, kept as typed.
+    own_label = client.post(
+        "/api/curriculum-admin/school-curriculum-maps",
+        json={"boardCourseId": board_course.id, "chapterId": chapter.id, "className": "5 Bridge"},
+        headers=csrf,
+    )
+    assert own_label.status_code == 200 and own_label.json()["className"] == "5 Bridge"
+
+
 def test_teacher_can_read_but_not_write_own_school_curriculum_map(client, db_session):
     """20 Aug 2026, Phase 3 frontend: a teacher needs a read-only way to see
     which chapters are mapped into their own school's calendar, to pick

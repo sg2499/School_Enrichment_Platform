@@ -46,6 +46,11 @@ from app.models import School, SchoolAdmin, User
 PASSWORD = "Passw0rd1"
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 PREVIOUS_HEAD = "e3b8d1f4a2c6"
+# This file's own migration, by name. The tests used to say "head" and "-1",
+# which was the same thing only while this was the newest migration; a later
+# one (a4d7e2c9b130) made "-1" undo THAT instead and left these values
+# encrypted.
+THIS_MIGRATION = "f7c2a9d4e1b8"
 FERNET_PREFIX = "gAAAAA"
 
 
@@ -307,7 +312,7 @@ def test_user_enrolled_before_encryption_can_still_sign_in_after_migration(migra
     seeded = _seed_pre_migration_users(engine)
     assert _raw(engine, seeded["enrolled"]["id"]) == (seeded["enrolled"]["secret"], None)
 
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, THIS_MIGRATION)
 
     for values in seeded.values():
         raw_secret, raw_pending = _raw(engine, values["id"])
@@ -374,23 +379,23 @@ def test_migration_is_idempotent_handles_mixed_rows_and_round_trips(migrated_db)
             {"t": already_token, "id": seeded["enrolled"]["id"]},
         )
 
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, THIS_MIGRATION)
     after_first = {label: _raw(engine, v["id"]) for label, v in seeded.items()}
     assert after_first["enrolled"][1] == already_token
 
     # Re-run the same migration over already-encrypted data.
     command.stamp(alembic_cfg, PREVIOUS_HEAD)
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, THIS_MIGRATION)
     assert {label: _raw(engine, v["id"]) for label, v in seeded.items()} == after_first
 
     # downgrade -1 restores exactly the plaintext the old code expects...
-    command.downgrade(alembic_cfg, "-1")
+    command.downgrade(alembic_cfg, PREVIOUS_HEAD)
     for label, values in seeded.items():
         expected_pending = already if label == "enrolled" else values["pending"]
         assert _raw(engine, values["id"]) == (values["secret"], expected_pending)
 
     # ...and upgrading again re-encrypts it, still decrypting correctly.
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, THIS_MIGRATION)
     for label, values in seeded.items():
         raw_secret, _ = _raw(engine, values["id"])
         if values["secret"] is not None:
@@ -402,7 +407,7 @@ def test_migration_with_the_wrong_key_stops_without_changing_anything(migrated_d
     alembic_cfg, engine = migrated_db
     command.upgrade(alembic_cfg, PREVIOUS_HEAD)
     seeded = _seed_pre_migration_users(engine)
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, THIS_MIGRATION)
     before = {label: _raw(engine, v["id"]) for label, v in seeded.items()}
 
     # Add one more plaintext row so a partial run WOULD be visible, then
@@ -418,7 +423,7 @@ def test_migration_with_the_wrong_key_stops_without_changing_anything(migrated_d
     right_keys = list(config.TOTP_ENCRYPTION_KEYS)
     monkeypatch.setattr(config, "TOTP_ENCRYPTION_KEYS", [Fernet.generate_key().decode()])
     with pytest.raises(RuntimeError) as excinfo:
-        command.upgrade(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, THIS_MIGRATION)
     assert "no rows were changed" in str(excinfo.value)
     for values in seeded.values():
         for original in (values["secret"], values["pending"]):
@@ -429,5 +434,5 @@ def test_migration_with_the_wrong_key_stops_without_changing_anything(migrated_d
 
     # With the right key back, the same run completes.
     monkeypatch.setattr(config, "TOTP_ENCRYPTION_KEYS", right_keys)
-    command.upgrade(alembic_cfg, "head")
+    command.upgrade(alembic_cfg, THIS_MIGRATION)
     assert _raw(engine, seeded["mid_setup"]["id"])[1].startswith(FERNET_PREFIX)

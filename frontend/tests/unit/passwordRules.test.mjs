@@ -97,6 +97,24 @@ describe("passwordChecks", () => {
     assert.equal(passwordIsAcceptable(issued, { current: issued }), false);
   });
 
+  test("the rule names the password being replaced: one that was given, or one's own", () => {
+    const current = "Mango-Tree-42";
+    const rule = (options) => passwordChecks(current, options).find((check) => check.id === "different");
+    // A school-issued password, the default: what teachers and students
+    // (and a brand-new admin) are replacing.
+    assert.equal(rule({ current }).label, "Different from the password you were given");
+    assert.equal(rule({ current, replacing: "given" }).label, "Different from the password you were given");
+    // A password the person chose themselves and is now changing.
+    assert.equal(rule({ current, replacing: "current" }).label, "Different from your current password");
+    assert.equal(
+      passwordProblem(current, { current, replacing: "current" }),
+      "That password won't work yet: it has to be different from your current password.",
+    );
+    // The wording never changes the verdict.
+    assert.equal(rule({ current, replacing: "current" }).met, false);
+    assert.equal(passwordIsAcceptable("Peacock-Rain-7", { current, replacing: "current" }), true);
+  });
+
   test("the rules are shown in a fixed order, as instructions", () => {
     assert.deepEqual(
       passwordChecks("", { current: "x" }).map((check) => check.label),

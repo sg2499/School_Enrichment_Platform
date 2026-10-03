@@ -353,7 +353,8 @@ export const MASTHEAD_WELL = {
 } as const;
 
 // The strip's column count follows how many figures a page has, so a row is
-// never left with one orphan cell: three sit on one line from `sm`, four go
+// never left with one orphan cell: three sit on one line from `sm` (and
+// under it the third takes a full row of its own, see the <dl>), four go
 // 2 x 2 and then one line from `lg`, and six (an assignment's progress) go
 // 2 x 3, then 3 x 2 from `sm`, then one line from `xl` -- the same steps the
 // tile row they replace took.
@@ -508,7 +509,17 @@ function MastheadHeader({
         </div>
 
         {statList.length > 0 ? (
-          <dl className={cn("grid grid-cols-2 gap-2.5 sm:gap-3", statColumns(statList.length))}>
+          <dl
+            className={cn(
+              "grid grid-cols-2 gap-2.5 sm:gap-3",
+              // On a phone the strip is two columns whatever the count, so
+              // an odd number of figures left the last one alone at half
+              // width with a hole beside it. It takes the full row instead,
+              // and goes back to one column where the count sets the grid.
+              "[&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1",
+              statColumns(statList.length),
+            )}
+          >
             {statList.map((stat) => (
               <MastheadStat key={stat.label} stat={stat} />
             ))}
