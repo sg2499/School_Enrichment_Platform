@@ -684,7 +684,7 @@ def test_super_admin_resets_an_admin_without_touching_their_second_factor(client
     )
     assert verified.status_code == 200
     # ...and, once in, can do nothing until the temporary password is
-    # replaced. For admins this gate is enforced server-side today.
+    # replaced.
     blocked = client.get("/api/roster/people", headers=_AS["ADMIN"])
     assert blocked.status_code == 403
     assert blocked.json()["detail"]["code"] == "PASSWORD_CHANGE_REQUIRED"
@@ -716,9 +716,18 @@ def test_only_admins_can_reset_and_only_with_a_csrf_token(client, db_session):
     assert forged.status_code == 403
     assert forged.json()["detail"]["code"] == "CSRF_VALIDATION_FAILED"
 
-    # A teacher, with a perfectly valid session and CSRF token of their own.
+    # A teacher, with a perfectly valid session and CSRF token of their own
+    # -- and their own password: since 3 Oct 2026 an issued one opens
+    # nothing until it is replaced (tests/test_first_password.py), and this
+    # test is about what a settled teacher may do.
     assert _sign_in(client, teacher["code"], teacher["initialPassword"]).status_code == 200
     as_teacher = {"x-csrf-token": client.cookies.get("se_csrf"), **_AS["TEACHER"]}
+    chosen = client.post(
+        "/api/auth/change-password",
+        json={"currentPassword": teacher["initialPassword"], "newPassword": "Chosen-By-Me-7", "keepSignedIn": True},
+        headers=as_teacher,
+    )
+    assert chosen.status_code == 200 and chosen.json()["staySignedIn"] is True
     refused = _reset(client, as_teacher, victim["id"])
     assert refused.status_code == 403
     assert refused.json()["detail"]["code"] == "FORBIDDEN"

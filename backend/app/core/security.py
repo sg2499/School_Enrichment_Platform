@@ -4,6 +4,8 @@ Retained as-is from MathPath's app/core/security.py (Phase 0 audit, "Retain
 as-is" bucket) -- this is generic auth mechanics with no Abacus-specific
 logic anywhere in it.
 """
+import hashlib
+import hmac
 import re
 from datetime import datetime, timedelta, timezone
 
@@ -20,7 +22,14 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    return pwd_context.verify(password, password_hash)
+    # A password bcrypt cannot be given at all (one containing a NUL byte,
+    # or text that is not valid Unicode) is not anyone's password. It used
+    # to raise from inside the hasher and surface as a 500 on sign-in;
+    # it is simply wrong.
+    try:
+        return pwd_context.verify(password, password_hash)
+    except (ValueError, UnicodeError):
+        return False
 
 
 # A7 fix (30 Sep 2026 security/DPDP review): a login attempt against an
@@ -100,18 +109,47 @@ def _is_trivially_patterned(password: str) -> bool:
     return ascending or descending
 
 
+MAX_PASSWORD_BYTES = 72
+
+
 def strong_password_issue(password: str) -> str | None:
     """Return a human-readable validation error, or None if the password is strong enough.
 
-    Deliberately used ONLY at the self-service change-password path, not at
-    account creation or admin-triggered reset. Admin-issued initial/reset
-    passwords intentionally stay simple (e.g. a first-last-name pattern) so
-    onboarding many students/teachers at once stays practical -- the real
-    policy applies the moment someone takes ownership of their own account
-    and picks their own password.
+    Applied wherever a PERSON chooses a password: the self-service
+    change-password path, and a first password a school types into the bulk
+    sheet's optional `password` column (routes_roster.py). Not applied to
+    the passwords the system generates itself -- those are random, and a
+    rule about memorable-but-weak choices has nothing to say about them.
+
+    The browser runs the same rules as the person types
+    (frontend/lib/passwordRules.ts, pinned to this file by its unit tests).
+    A rule added here must be added there.
     """
+    # Sign-in compares exactly what was typed. A password saved with its
+    # edge spaces quietly removed (which is what change-password used to do)
+    # then fails at the next sign-in for the person who typed it, or for the
+    # password manager that saved it. Refused instead, so what was typed is
+    # what is stored.
+    if password != password.strip():
+        return "Password can't start or end with a space."
+    # Nothing a keyboard types into a password box: a pasted tab or line
+    # break, a NUL byte the hasher would choke on, half of a surrogate pair.
+    try:
+        encoded = password.encode("utf-8")
+    except UnicodeError:
+        return "Password contains characters that can't be used. Please type it again."
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in password):
+        return "Password contains characters that can't be used. Please type it again."
     if len(password) < 8:
         return "Password must be at least 8 characters."
+    # bcrypt reads only the first 72 bytes. Anything longer would be
+    # accepted, and then so would any other password with the same first 72.
+    # The limit is in bytes; the sentence says "characters" when that is the
+    # same thing, and says why when it is not (a Devanagari letter is three).
+    if len(encoded) > MAX_PASSWORD_BYTES:
+        if len(password) > MAX_PASSWORD_BYTES:
+            return "Password is too long. Keep it to 72 characters or fewer."
+        return "Password is too long for the letters it uses. Please shorten it a little."
     if not re.search(r"[A-Za-z]", password):
         return "Password must include at least one letter."
     if not re.search(r"[0-9]", password):
@@ -138,7 +176,39 @@ def expire_minutes_for_role(role: str) -> int:
     return ACCESS_TOKEN_EXPIRE_MINUTES_BY_ROLE.get(role, ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
-def create_access_token(subject: str, role: str, session_id: str | None = None) -> str:
+def password_fingerprint(password_hash: str) -> str:
+    """A short, keyed digest of a stored password hash, carried in a token
+    as its "pwd" claim (3 Oct 2026).
+
+    Why it exists. "Changing a password ends every session" used to rest on
+    one comparison: a token's `iat` against `password_changed_at`. Both are
+    clock readings, compared in whole seconds, so anything stamped in the
+    same second as the change survived it -- a token renewed a moment
+    before, or one from a sign-in with the OLD password that was already in
+    flight when the change committed. That mattered little while a change
+    always ended the session that made it. It matters now that the browser
+    making the change can stay signed in: the old tokens of that same
+    session must die and its new one must not.
+
+    A token now also says WHICH password it was issued under. The moment
+    the stored hash changes -- by its owner, or by an admin's reset -- every
+    token issued under the old one stops matching, whatever the clocks say
+    (dependencies.py, get_current_user). The `iat` check stays as the
+    mechanism for tokens minted before this claim existed.
+
+    Keyed with SECRET_KEY so the claim says nothing about the hash to
+    anyone who reads a token; 64 bits is far more than a mismatch check
+    needs.
+    """
+    return hmac.new(SECRET_KEY.encode("utf-8"), password_hash.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+
+
+def create_access_token(
+    subject: str,
+    role: str,
+    session_id: str | None = None,
+    password_hash: str | None = None,
+) -> str:
     """`session_id` (the "sid" claim) is the stable identifier of a single
     login for the life of that login, distinct from `exp`/`iat` which move
     on every sliding-renewal reissue (see dependencies.py's get_current_user).
@@ -151,19 +221,25 @@ def create_access_token(subject: str, role: str, session_id: str | None = None) 
     call sites that don't yet track sessions (e.g. tests exercising the
     token mechanics directly) -- a token with no sid simply isn't subject to
     the per-session revocation/lifetime checks in get_current_user().
+
+    `password_hash` is the account's stored hash at the moment of issue; it
+    becomes the "pwd" claim (see password_fingerprint). Every real issuer
+    passes it. Optional for the same reason session_id is.
     """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=expire_minutes_for_role(role))
     payload = {"sub": subject, "role": role, "exp": expire, "iat": now}
     if session_id:
         payload["sid"] = session_id
+    if password_hash:
+        payload["pwd"] = password_fingerprint(password_hash)
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
 TWO_FACTOR_CHALLENGE_EXPIRE_MINUTES = 5
 
 
-def create_two_factor_challenge_token(subject: str) -> str:
+def create_two_factor_challenge_token(subject: str, password_hash: str | None = None) -> str:
     """A short-lived, single-purpose token for the gap between "password
     verified" and "2FA code verified" during login.
 
@@ -172,11 +248,28 @@ def create_two_factor_challenge_token(subject: str) -> str:
     even if this token leaked in transit it could not be used to call any
     authenticated endpoint. It can only be redeemed at
     POST /api/auth/2fa/verify-login, and only for 5 minutes.
+
+    `password_hash` is the hash the password step was just passed against;
+    it rides along as the same "pwd" claim an access token carries (see
+    password_fingerprint), so the second step can refuse to finish a
+    sign-in whose password has been changed or reset in the meantime.
     """
     now = datetime.now(timezone.utc)
     expire = now + timedelta(minutes=TWO_FACTOR_CHALLENGE_EXPIRE_MINUTES)
     payload = {"sub": subject, "purpose": "2fa_challenge", "exp": expire, "iat": now}
+    if password_hash:
+        payload["pwd"] = password_fingerprint(password_hash)
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def two_factor_challenge_password_claim(token: str) -> str | None:
+    """The "pwd" claim of a valid 2FA challenge token, or None if it has
+    none (one issued before the claim existed) or is not such a token."""
+    payload = decode_token(token)
+    if not payload or payload.get("purpose") != "2fa_challenge":
+        return None
+    claim = payload.get("pwd")
+    return claim if isinstance(claim, str) and claim else None
 
 
 def decode_two_factor_challenge_token(token: str) -> str | None:

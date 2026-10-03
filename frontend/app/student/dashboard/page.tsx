@@ -51,6 +51,7 @@ import { ModuleCard, DetailRow } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { AuroraBackdropInverse, PathIllustration } from "@/components/brand/Graphics";
 import { api, errorMessage } from "@/lib/api";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentAssignmentSummary } from "@/types/learning";
 
@@ -583,7 +584,7 @@ function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
           </h2>
           {/* content-inverse-muted over the aurora's glow: 5.7:1. */}
           <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
-            Your teachers are loading this year&apos;s syllabus into School Enrichment. When they set your first
+            Your teachers are loading this year&apos;s syllabus into {PRODUCT_NAME}. When they set your first
             practice, it will appear right here &mdash; a short set of questions, marked the moment you submit, with the
             right answer for anything you missed.
           </p>

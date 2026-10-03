@@ -5,9 +5,12 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ModalSize = "lg" | "xl" | "full" | "fullscreen";
+export type ModalSize = "sm" | "lg" | "xl" | "full" | "fullscreen";
 
 const SIZES: Record<Exclude<ModalSize, "fullscreen">, string> = {
+  // A question and two buttons ("Reset this password?") -- anything wider
+  // makes a one-line decision look like a form.
+  sm: "max-w-md",
   lg: "max-w-2xl",
   xl: "max-w-4xl",
   // Near-fullscreen -- generous margin, still visibly a floating dialog.

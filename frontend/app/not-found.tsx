@@ -4,6 +4,7 @@ import { ArrowRight, Compass, LogIn } from "lucide-react";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useRoleForPage } from "@/lib/hooks/useRoleForPage";
 import { defaultRouteForRole } from "@/lib/auth";
+import { PRODUCT_NAME } from "@/lib/brand";
 import type { UserRole } from "@/types/auth";
 import { ButtonLink } from "@/components/ui/Button";
 import { StatusScreen } from "@/components/ui/StatusScreen";
@@ -57,7 +58,7 @@ const COPY: Record<UserRole, Copy> = {
 };
 
 const SIGNED_OUT: Copy = {
-  eyebrow: "School Enrichment",
+  eyebrow: PRODUCT_NAME,
   message: "There's nothing at this address. The link may be out of date, or mistyped. If your school gave you an account, sign in to reach your workspace.",
   home: { href: "/login", label: "Go to Sign In" },
 };
