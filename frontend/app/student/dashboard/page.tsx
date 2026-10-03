@@ -46,11 +46,11 @@ import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SessionGate } from "@/components/SessionGate";
 import { ModuleCard, DetailRow } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { AuroraBackdropInverse, PathIllustration } from "@/components/brand/Graphics";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentAssignmentSummary } from "@/types/learning";
 
@@ -883,7 +883,8 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
 }
 
 export default function StudentDashboardPage() {
-  const { user, status } = useProtectedPage("STUDENT");
+  const session = useProtectedPage("STUDENT");
+  const { user, status } = session;
   const [assignments, setAssignments] = useState<StudentAssignmentSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -896,7 +897,9 @@ export default function StudentDashboardPage() {
       const { data } = await api.get<{ assignments: StudentAssignmentSummary[] }>("/learning/assignments");
       setAssignments(data.assignments);
     } catch (err) {
-      setError(apiErrorMessage(err));
+      // No action phrase: the card this lands in is headed "Couldn't load
+      // your practice", so the sentence only has to say why.
+      setError(errorMessage(err));
     }
   }, []);
 
@@ -906,7 +909,7 @@ export default function StudentDashboardPage() {
   }, [status, load]);
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   const firstName = user?.fullName?.trim().split(/\s+/)[0] ?? "there";

@@ -24,7 +24,7 @@
  * achievement spark (recordAttemptFinalised, in saveMarks below).
  */
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, ChevronRight, Clock3, Hourglass, IdCard, Lock, PenLine, Save, Users, XCircle } from "lucide-react";
@@ -32,7 +32,7 @@ import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { recordAttemptFinalised } from "@/lib/hooks/useMarkingMilestone";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, describeApiError, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -41,7 +41,10 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { CountUp } from "@/components/ui/CountUp";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { SessionGate } from "@/components/SessionGate";
+import { SignInAgainBanner } from "@/components/SignInAgainBanner";
+import { useSessionReturn } from "@/lib/hooks/useSessionReturn";
+import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { ReadOnlyBadge, ScoreBadge } from "@/components/tracker/TrackerBits";
 import { formatDateTime, plural, scopeShort, studentClassLabel } from "@/lib/tracker";
 import type { AttemptReview, Paginated, ReviewAnswer, ReviewQueueRow } from "@/types/tracker";
@@ -324,16 +327,28 @@ function AttemptWorkspace() {
   const searchParams = useSearchParams();
   const fromReview = searchParams.get("from") === "review";
   const router = useRouter();
-  const { user, status } = useProtectedPage("TEACHER");
+  const session = useProtectedPage("TEACHER");
+  const { user, status } = session;
   const ready = status === "ready";
 
-  const query = useApiQuery<AttemptReview>(`/learning/tracker/attempts/${attemptId}`, {}, ready);
+  const query = useApiQuery<AttemptReview>(
+    `/learning/tracker/attempts/${attemptId}`,
+    {},
+    { action: "open this attempt", enabled: ready },
+  );
   const review = query.data;
 
   const [drafts, setDrafts] = useState<Drafts>({});
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ tone: "error" | "success"; message: string } | null>(null);
   const [findingNext, setFindingNext] = useState(false);
+  // The server said this session is over while marks were waiting to be
+  // saved. The page stays (lib/api.ts would otherwise send the tab to the
+  // sign-in page and the marks typed here would go with it).
+  const [sessionEnded, setSessionEnded] = useState(false);
+  // They signed in again in another tab and came back: take the banner down.
+  const clearSessionEnded = useCallback(() => setSessionEnded(false), []);
+  useSessionReturn(sessionEnded, user?.id, clearSessionEnded);
 
   // Reset drafts to what's saved whenever a (new) review payload arrives.
   useEffect(() => {
@@ -360,9 +375,13 @@ function AttemptWorkspace() {
     setSaving(true);
     setNotice(null);
     try {
-      const { data } = await api.post<AttemptReview>(`/learning/tracker/attempts/${attemptId}/grades`, {
-        grades: changed.map((questionId) => ({ questionId, score: drafts[questionId] })),
-      });
+      const { data } = await api.post<AttemptReview>(
+        `/learning/tracker/attempts/${attemptId}/grades`,
+        { grades: changed.map((questionId) => ({ questionId, score: drafts[questionId] })) },
+        // If the session has ended, stay here: see SignInAgainBanner.
+        { keepPageOnSessionEnd: true },
+      );
+      setSessionEnded(false);
       const wasPending = review.evaluation.reviewStatus === "PENDING_REVIEW";
       const justFinalised = wasPending && data.evaluation.reviewStatus === "FINALISED";
       query.setData(data);
@@ -381,7 +400,12 @@ function AttemptWorkspace() {
           : `${plural(changed.length, "mark")} saved.`,
       });
     } catch (err) {
-      setNotice({ tone: "error", message: apiErrorMessage(err) });
+      const problem = describeApiError(err, "save your marks");
+      // One or the other, never a banner left over from an earlier failure:
+      // after signing in again, a save that fails for a different reason
+      // must show that reason.
+      setSessionEnded(problem.kind === "session");
+      if (problem.kind !== "session") setNotice({ tone: "error", message: problem.message });
     } finally {
       setSaving(false);
     }
@@ -397,13 +421,13 @@ function AttemptWorkspace() {
       if (next) router.push(`/teacher/tracker/attempts/${next.attemptId}?from=review`);
       else setNotice({ tone: "success", message: "That was the last one — nothing else is waiting for your marks." });
     } catch (err) {
-      setNotice({ tone: "error", message: apiErrorMessage(err) });
+      setNotice({ tone: "error", message: errorMessage(err, "find the next attempt to mark") });
     } finally {
       setFindingNext(false);
     }
   }
 
-  if (!ready) return <LoadingScreen />;
+  if (!ready) return <SessionGate session={session} />;
 
   const manualAnswers = review?.answers.filter((a) => a.needsManualGrade) ?? [];
   const markedCount = manualAnswers.filter((a) => a.manualScore !== null).length;
@@ -440,7 +464,12 @@ function AttemptWorkspace() {
   return (
     // The working level of the workspace wash, through the shell -- see the
     // assignment page.
-    <RoleShell role="TEACHER" user={user} ambience="working">
+    <RoleShell
+      role="TEACHER"
+      user={user}
+      ambience="working"
+      title={[review ? `${review.student.studentName ?? review.student.studentCode}'s attempt` : null, "Practice Tracker"]}
+    >
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
           Practice); dashboards use space-y-10. This family alone was 7. */}
       <div className="space-y-8">
@@ -449,7 +478,7 @@ function AttemptWorkspace() {
             <InlineLink href={backHref} direction="back">
               {backLabel}
             </InlineLink>
-            <AlertBanner tone="error" message={`Couldn't open this attempt (${query.error}).`} />
+            {query.problem ? <LoadError problem={query.problem} onRetry={query.reload} /> : null}
           </div>
         ) : (
           // The attempt's masthead: the way back, whose attempt this is, its
@@ -550,7 +579,14 @@ function AttemptWorkspace() {
                       ) : null}
                     </dl>
 
-                    {notice ? <AlertBanner tone={notice.tone} message={notice.message} /> : null}
+                    {sessionEnded ? (
+                      <SignInAgainBanner>
+                        Your session has ended, so these marks aren&rsquo;t saved yet. Keep this page open: your
+                        marks are still here. Sign in again in a new tab, then come back and save them.
+                      </SignInAgainBanner>
+                    ) : notice ? (
+                      <AlertBanner tone={notice.tone} message={notice.message} />
+                    ) : null}
 
                     {manualAnswers.length === 0 ? (
                       <p className="text-sm text-content-muted">Every answer in this attempt was marked automatically.</p>

@@ -61,10 +61,10 @@ import { Card, CardBody, CardIcon, CardTitle, CardDescription } from "@/componen
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SessionGate } from "@/components/SessionGate";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { RosterIllustration } from "@/components/brand/Graphics";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { cn, initialsFromName } from "@/lib/utils";
 import type { SchoolOption } from "@/types/curriculum";
 
@@ -107,10 +107,11 @@ function segmentClass(pressed: boolean) {
 }
 
 export default function PeoplePage() {
-  const { user, status } = useProtectedPage("ADMIN");
+  const session = useProtectedPage("ADMIN");
+  const { user, status } = session;
 
   if (status !== "ready" || !user) {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   const isPlatformAdmin = user.role === "SUPER_ADMIN";
@@ -148,7 +149,7 @@ function PeoplePanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       .then(({ data }) => setSchools(data.schools))
       // Surfaced now: a failed lookup used to be swallowed, leaving an empty
       // picker with no explanation of why there was nothing to choose.
-      .catch((err) => setSchoolsError(apiErrorMessage(err)))
+      .catch((err) => setSchoolsError(errorMessage(err, "load the list of schools")))
       .finally(() => setLoadingSchools(false));
   }, [isPlatformAdmin]);
 
@@ -249,7 +250,7 @@ function RosterWorkspace({
       setPeople(data.people);
       setHasLoaded(true);
     } catch (err) {
-      setLoadError(apiErrorMessage(err));
+      setLoadError(errorMessage(err, "load this list of people"));
     } finally {
       setLoading(false);
     }
@@ -282,7 +283,7 @@ function RosterWorkspace({
       await api.patch(`/roster/people/${person.id}/status`, { isActive: !person.isActive });
       await loadPeople();
     } catch (err) {
-      setLoadError(apiErrorMessage(err));
+      setLoadError(errorMessage(err, `${person.isActive ? "deactivate" : "reactivate"} ${person.fullName}`));
     } finally {
       setTogglingId(null);
     }
@@ -919,7 +920,7 @@ function SinglePersonForm({
       setDesignation("");
       setSubjectSpecialization("");
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setError(errorMessage(err, `add this ${ROLE_LABEL_SINGULAR[role].toLowerCase()}`));
     } finally {
       setSaving(false);
     }
@@ -1097,7 +1098,7 @@ function BulkImportForm({
       // after an import until someone pressed refresh.
       if (data.created > 0) onImported();
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setError(errorMessage(err, "import this file"));
     } finally {
       setUploading(false);
     }

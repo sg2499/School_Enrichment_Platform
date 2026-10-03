@@ -48,7 +48,7 @@ import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { useMarkingMilestone } from "@/lib/hooks/useMarkingMilestone";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { AchievementSpark } from "@/components/brand/AchievementSpark";
 import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -56,7 +56,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { SessionGate } from "@/components/SessionGate";
+import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -91,7 +92,8 @@ function attemptToOpen(row: AssignmentStudentRow) {
 
 function AssignmentWorkspace() {
   const { assignmentId } = useParams<{ assignmentId: string }>();
-  const { user, status } = useProtectedPage("TEACHER");
+  const session = useProtectedPage("TEACHER");
+  const { user, status } = session;
   const ready = status === "ready";
   const url = useUrlState();
 
@@ -99,11 +101,15 @@ function AssignmentWorkspace() {
   const q = url.get("q") ?? "";
   const page = pageFromParam(url.get("page"));
 
-  const header = useApiQuery<TrackerAssignmentDetail>(`/learning/tracker/assignments/${assignmentId}`, {}, ready);
+  const header = useApiQuery<TrackerAssignmentDetail>(
+    `/learning/tracker/assignments/${assignmentId}`,
+    {},
+    { action: "open this assignment", enabled: ready },
+  );
   const students = useApiQuery<AssignmentStudentsPage>(
     `/learning/tracker/assignments/${assignmentId}/students`,
     { status: filter, q, page, pageSize: 25 },
-    ready,
+    { action: "load this assignment's students", enabled: ready },
   );
 
   // The achievement spark's trigger (2 Oct 2026). True when this page finds
@@ -127,13 +133,13 @@ function AssignmentWorkspace() {
       setNotice({ tone: "success", message: `${row.studentName ?? row.studentCode} can now make one more attempt.` });
       students.reload();
     } catch (err) {
-      setNotice({ tone: "error", message: apiErrorMessage(err) });
+      setNotice({ tone: "error", message: errorMessage(err, "grant another attempt") });
     } finally {
       setGrantingId(null);
     }
   }
 
-  if (!ready) return <LoadingScreen />;
+  if (!ready) return <SessionGate session={session} />;
 
   const a = header.data;
   const counts = students.data?.counts;
@@ -166,7 +172,7 @@ function AssignmentWorkspace() {
     // The working level of the workspace wash, through the shell (which also
     // moves its own date line and footer onto chips) -- the same as the
     // Practice Tracker list this view opens from.
-    <RoleShell role="TEACHER" user={user} ambience="working">
+    <RoleShell role="TEACHER" user={user} ambience="working" title={[header.data?.title, "Practice Tracker"]}>
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
           Practice); dashboards use space-y-10. This family alone was 7. */}
       <div className="space-y-8">
@@ -176,7 +182,7 @@ function AssignmentWorkspace() {
             <InlineLink href="/teacher/tracker" direction="back">
               Practice Tracker
             </InlineLink>
-            <AlertBanner tone="error" message={`Couldn't open this assignment (${header.error}).`} />
+            {header.problem ? <LoadError problem={header.problem} onRetry={header.reload} /> : null}
           </div>
         ) : (
           // The assignment's masthead: the way back, what it is, its state
@@ -285,7 +291,7 @@ function AssignmentWorkspace() {
             </div>
             <div className="space-y-4 p-5 sm:p-6">
               {notice ? <AlertBanner tone={notice.tone} message={notice.message} /> : null}
-              {students.error ? <AlertBanner tone="error" message={`Couldn't load students (${students.error}).`} /> : null}
+              {students.problem ? <LoadError problem={students.problem} onRetry={students.reload} /> : null}
 
               {!students.data && students.loading ? (
                 <TableSkeleton label="Loading students" />

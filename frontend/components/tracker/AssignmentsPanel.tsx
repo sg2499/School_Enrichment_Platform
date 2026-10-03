@@ -7,7 +7,7 @@ import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink, Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { LoadError } from "@/components/ui/AlertBanner";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pagination } from "@/components/ui/Pagination";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -42,13 +42,17 @@ export function AssignmentsPanel({
 }) {
   const router = useRouter();
   const statusFilter: StatusFilter = status === "ACTIVE" || status === "CLOSED" ? status : "";
-  const { data, error, loading } = useApiQuery<Paginated<TrackerAssignmentRow>>("/learning/tracker/assignments", {
+  const { data, problem, loading, reload } = useApiQuery<Paginated<TrackerAssignmentRow>>(
+    "/learning/tracker/assignments",
+    {
     ...scopeParams(scopeKey),
     status: statusFilter,
     q,
-    page,
-    pageSize: 20,
-  });
+      page,
+      pageSize: 20,
+    },
+    { action: "load your assignments" },
+  );
 
   const filtered = Boolean(q || statusFilter);
 
@@ -64,7 +68,7 @@ export function AssignmentsPanel({
         />
       </div>
 
-      {error ? <AlertBanner tone="error" message={`Couldn't load assignments (${error}).`} /> : null}
+      {problem ? <LoadError problem={problem} onRetry={reload} /> : null}
 
       {!data && loading ? (
         <TableSkeleton label="Loading assignments" />

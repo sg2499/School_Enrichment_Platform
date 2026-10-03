@@ -1,7 +1,7 @@
 """Raising an error a person will read.
 
 `message` is user-facing copy: the frontend shows it to the person as
-written (lib/api.ts, apiErrorMessage). Only the server knows that it was the
+written (frontend/lib/errors.ts, describeError). Only the server knows that it was the
 transfer date, or the third attempt, so only the server can say so.
 
 A message here is therefore written to the same standard as a label in the

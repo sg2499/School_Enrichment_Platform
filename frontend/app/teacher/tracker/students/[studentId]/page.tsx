@@ -29,7 +29,7 @@ import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -37,7 +37,8 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { SessionGate } from "@/components/SessionGate";
+import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { Pagination } from "@/components/ui/Pagination";
 import {
   AssignmentStatusBadge,
@@ -168,7 +169,8 @@ function HistoryCard({
 
 function StudentWorkspace() {
   const { studentId } = useParams<{ studentId: string }>();
-  const { user, status } = useProtectedPage("TEACHER");
+  const session = useProtectedPage("TEACHER");
+  const { user, status } = session;
   const ready = status === "ready";
   const url = useUrlState();
   const scope = url.get("scope") ?? "";
@@ -177,10 +179,14 @@ function StudentWorkspace() {
   const history = useApiQuery<StudentHistoryPage>(
     `/learning/tracker/students/${studentId}`,
     { ...scopeParams(scope), page, pageSize: 10 },
-    ready,
+    { action: "open this student's practice history", enabled: ready },
   );
   // Only for naming the section in the "Showing ... only" note.
-  const overview = useApiQuery<TrackerOverview>("/learning/tracker/overview", {}, ready && Boolean(scope));
+  const overview = useApiQuery<TrackerOverview>(
+    "/learning/tracker/overview",
+    {},
+    { action: "load your sections", enabled: ready && Boolean(scope) },
+  );
   const scopeSection = overview.data?.sections.find((s) => s.key === scope) ?? null;
 
   const [grantingId, setGrantingId] = useState<string | null>(null);
@@ -194,13 +200,13 @@ function StudentWorkspace() {
       setNotice({ tone: "success", message: `One more attempt granted on ${item.assignment.title ?? "this practice"}.` });
       history.reload();
     } catch (err) {
-      setNotice({ tone: "error", message: apiErrorMessage(err) });
+      setNotice({ tone: "error", message: errorMessage(err, "grant another attempt") });
     } finally {
       setGrantingId(null);
     }
   }
 
-  if (!ready) return <LoadingScreen />;
+  if (!ready) return <SessionGate session={session} />;
 
   const data = history.data;
   const student = data?.student;
@@ -221,7 +227,12 @@ function StudentWorkspace() {
   return (
     // The working level of the workspace wash, through the shell -- see the
     // assignment page.
-    <RoleShell role="TEACHER" user={user} ambience="working">
+    <RoleShell
+      role="TEACHER"
+      user={user}
+      ambience="working"
+      title={[history.data?.student.studentName ?? history.data?.student.studentCode, "Practice Tracker"]}
+    >
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
           Practice); dashboards use space-y-10. This family alone was 7. */}
       <div className="space-y-8">
@@ -230,7 +241,7 @@ function StudentWorkspace() {
             <InlineLink href={backHref} direction="back">
               Students
             </InlineLink>
-            <AlertBanner tone="error" message={`Couldn't open this student (${history.error}).`} />
+            {history.problem ? <LoadError problem={history.problem} onRetry={history.reload} /> : null}
           </div>
         ) : (
           // The student's masthead: the way back, who they are, and their

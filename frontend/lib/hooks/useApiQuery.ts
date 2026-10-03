@@ -1,9 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, describeApiError } from "@/lib/api";
+import type { DescribedError } from "@/lib/errors";
 
 export type ApiQueryParams = Record<string, string | number | null | undefined>;
+
+export interface ApiQueryOptions {
+  /**
+   * What is being loaded, as the words that complete "We couldn't ...":
+   * "load your tracker summary", "open this attempt". Required, so that no
+   * list in the product can fail with a message that doesn't say what
+   * failed (lib/errors.ts).
+   */
+  action: string;
+  /** Pass false to hold off (e.g. until the session check is done). */
+  enabled?: boolean;
+}
 
 /**
  * GET `path` with `params`, re-fetching whenever either changes. Used by the
@@ -16,11 +29,15 @@ export type ApiQueryParams = Record<string, string | number | null | undefined>;
  * overwrite page 3.
  *
  * null/undefined/"" params are left out of the query string entirely.
- * Pass `enabled: false` to hold off (e.g. until the session check is done).
+ *
+ * On failure `error` is the sentence to show and `problem` is the same
+ * failure in full -- `problem.retryable` says whether offering `reload` as a
+ * "Try Again" would be honest.
  */
-export function useApiQuery<T>(path: string | null, params: ApiQueryParams = {}, enabled = true) {
+export function useApiQuery<T>(path: string | null, params: ApiQueryParams, options: ApiQueryOptions) {
+  const { action, enabled = true } = options;
   const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [problem, setProblem] = useState<DescribedError | null>(null);
   const [loading, setLoading] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const requestId = useRef(0);
@@ -35,21 +52,21 @@ export function useApiQuery<T>(path: string | null, params: ApiQueryParams = {},
     if (!enabled || !path) return;
     const id = ++requestId.current;
     setLoading(true);
-    setError(null);
+    setProblem(null);
     api
       .get<T>(path, { params: JSON.parse(paramsKey) })
       .then(({ data: body }) => {
         if (id === requestId.current) setData(body);
       })
       .catch((err) => {
-        if (id === requestId.current) setError(apiErrorMessage(err));
+        if (id === requestId.current) setProblem(describeApiError(err, action));
       })
       .finally(() => {
         if (id === requestId.current) setLoading(false);
       });
-  }, [path, paramsKey, enabled, reloadToken]);
+  }, [path, paramsKey, enabled, reloadToken, action]);
 
   const reload = useCallback(() => setReloadToken((n) => n + 1), []);
 
-  return { data, error, loading, reload, setData };
+  return { data, error: problem ? problem.message : null, problem, loading, reload, setData };
 }

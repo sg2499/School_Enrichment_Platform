@@ -167,6 +167,46 @@ jobs:
           if-no-files-found: warn
           retention-days: ${{ env.CI_ARTIFACT_RETENTION_DAYS }}
 
+  frontend-unit-tests:
+    name: frontend-unit-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # Node's built-in test runner over the pure modules in frontend/lib
+      # (what a person is shown when something fails, where a signed-out
+      # person is taken back to, what the tab says). No test framework is
+      # installed: frontend/scripts/run-unit-tests.mjs explains how.
+      - name: Run frontend unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../ci-artifacts
+          npm test 2>&1 | tee ../ci-artifacts/frontend-unit-tests.txt
+      - name: Publish unit test summary
+        if: always()
+        shell: bash
+        run: |
+          echo '## Frontend unit tests' >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          tail -n 12 ../ci-artifacts/frontend-unit-tests.txt >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Upload unit test evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-unit-tests-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-artifacts/frontend-unit-tests.txt
+          if-no-files-found: warn
+          retention-days: ${{ env.CI_ARTIFACT_RETENTION_DAYS }}
+
   frontend-build:
     name: frontend-build
     runs-on: ubuntu-latest
@@ -374,6 +414,7 @@ jobs:
       - repository-safety
       - backend-tests
       - frontend-typecheck
+      - frontend-unit-tests
       - frontend-build
       - dependency-scan
       - frontend-e2e-tests
@@ -384,6 +425,7 @@ jobs:
           SAFETY: ${{ needs.repository-safety.result }}
           BACKEND: ${{ needs.backend-tests.result }}
           TYPECHECK: ${{ needs.frontend-typecheck.result }}
+          UNIT: ${{ needs.frontend-unit-tests.result }}
           BUILD: ${{ needs.frontend-build.result }}
           DEPS: ${{ needs.dependency-scan.result }}
           E2E: ${{ needs.frontend-e2e-tests.result }}
@@ -397,11 +439,12 @@ jobs:
             echo "| Repository safety | $SAFETY |"
             echo "| Backend tests | $BACKEND |"
             echo "| Frontend typecheck | $TYPECHECK |"
+            echo "| Frontend unit tests | $UNIT |"
             echo "| Frontend production build | $BUILD |"
             echo "| Dependency scan | $DEPS |"
             echo "| Frontend E2E tests | $E2E |"
           } >> "$GITHUB_STEP_SUMMARY"
-          for result in "$SAFETY" "$BACKEND" "$TYPECHECK" "$BUILD" "$DEPS" "$E2E"; do
+          for result in "$SAFETY" "$BACKEND" "$TYPECHECK" "$UNIT" "$BUILD" "$DEPS" "$E2E"; do
             if [ "$result" != 'success' ]; then
               echo "A required CI job did not succeed: $result" >&2
               exit 1

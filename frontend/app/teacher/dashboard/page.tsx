@@ -86,11 +86,11 @@ import { ButtonLink } from "@/components/ui/Button";
 import { CountUp } from "@/components/ui/CountUp";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SessionGate } from "@/components/SessionGate";
 import { DetailRow, ModuleCard } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { PathIllustration, RosterIllustration } from "@/components/brand/Graphics";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { Assignment, LearningActivity } from "@/types/learning";
@@ -132,8 +132,10 @@ function useTeacherSignals(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    const fail = (set: (value: Loadable<never>) => void) => (err: unknown) => {
-      if (!cancelled) set({ state: "error", message: apiErrorMessage(err) });
+    // `action` completes "We couldn't ..." in the message (lib/errors.ts),
+    // so each signal that fails says which one it was.
+    const fail = (set: (value: Loadable<never>) => void, action: string) => (err: unknown) => {
+      if (!cancelled) set({ state: "error", message: errorMessage(err, action) });
     };
 
     api
@@ -141,7 +143,7 @@ function useTeacherSignals(enabled: boolean) {
       .then(({ data }) => {
         if (!cancelled) setSections({ state: "ok", data: [...data.sections].sort(compareSections) });
       })
-      .catch(fail(setSections));
+      .catch(fail(setSections, "load your sections"));
 
     api
       .get<{ assignments: Assignment[] }>("/learning/assignments")
@@ -150,7 +152,7 @@ function useTeacherSignals(enabled: boolean) {
         const newestFirst = [...data.assignments].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
         setAssignments({ state: "ok", data: newestFirst });
       })
-      .catch(fail(setAssignments));
+      .catch(fail(setAssignments, "load your assignments"));
 
     api
       .get<{ schoolCurriculumMaps: SchoolCurriculumMapEntry[] }>("/curriculum-admin/school-curriculum-maps")
@@ -180,12 +182,12 @@ function useTeacherSignals(enabled: boolean) {
         } catch (err) {
           // All or nothing: a partial count would under-report and read as
           // a real number.
-          fail(setPractice)(err);
+          fail(setPractice, "check which chapters have practice ready")(err);
         }
       })
       .catch((err) => {
-        fail(setMaps)(err);
-        fail(setPractice)(err);
+        fail(setMaps, "load your school's calendar")(err);
+        fail(setPractice, "check which chapters have practice ready")(err);
       });
 
     return () => {
@@ -340,7 +342,7 @@ function buildChecklist({ sections, maps, practice, assignments }: Signals): Che
     sections.state === "loading"
       ? { title: "Sections assigned to you", state: "checking", detail: "" }
       : sections.state === "error"
-        ? { title: "Sections assigned to you", state: "unknown", detail: `Couldn't load your sections (${sections.message}).` }
+        ? { title: "Sections assigned to you", state: "unknown", detail: sections.message }
         : sections.data.length > 0
           ? {
               title: "Sections assigned to you",
@@ -368,7 +370,7 @@ function buildChecklist({ sections, maps, practice, assignments }: Signals): Che
     maps.state === "loading"
       ? { title: "Chapters in your school's calendar", state: "checking", detail: "" }
       : maps.state === "error"
-        ? { title: "Chapters in your school's calendar", state: "unknown", detail: `Couldn't load the calendar (${maps.message}).` }
+        ? { title: "Chapters in your school's calendar", state: "unknown", detail: maps.message }
         : mappedChapterIds.size > 0
           ? {
               title: "Chapters in your school's calendar",
@@ -421,7 +423,7 @@ function buildChecklist({ sections, maps, practice, assignments }: Signals): Che
     practice.state === "loading"
       ? { title: "Practice ready to assign", state: "checking", detail: "" }
       : practice.state === "error"
-        ? { title: "Practice ready to assign", state: "unknown", detail: `Couldn't check practice (${practice.message}).` }
+        ? { title: "Practice ready to assign", state: "unknown", detail: practice.message }
         : practice.data.chapters === 0
           ? { title: "Practice ready to assign", state: "waiting", detail: "No published chapter in the calendar yet." }
           : practice.data.withPractice === practice.data.chapters
@@ -449,7 +451,7 @@ function buildChecklist({ sections, maps, practice, assignments }: Signals): Che
         ? {
             title: "Assigning and auto-marking practice",
             state: "unknown",
-            detail: `Couldn't load your assignments (${assignments.message}).`,
+            detail: assignments.message,
           }
         : assignments.data.length > 0
           ? {
@@ -684,7 +686,7 @@ function SectionsPanel({ sections, maps }: Pick<Signals, "sections" | "maps">) {
     return (
       <div className="space-y-4">
         <SectionsHeading />
-        <InlineError>Couldn&rsquo;t load your sections just now ({sections.message}). Refresh to try again.</InlineError>
+        <InlineError>{sections.message}</InlineError>
       </div>
     );
   }
@@ -843,7 +845,7 @@ function RecentPractice({ assignments }: Pick<Signals, "assignments">) {
     return (
       <PanelStack gap="gap-4">
         {heading}
-        <InlineError>Couldn&rsquo;t load your assignments just now ({assignments.message}).</InlineError>
+        <InlineError>{assignments.message}</InlineError>
         <PanelFooter>
           <InlineLink href="/teacher/tracker">Open Practice Tracker</InlineLink>
         </PanelFooter>
@@ -1012,11 +1014,12 @@ const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280"];
 // --- page --------------------------------------------------------------------
 
 export default function TeacherDashboardPage() {
-  const { user, status } = useProtectedPage("TEACHER");
+  const session = useProtectedPage("TEACHER");
+  const { user, status } = session;
   const signals = useTeacherSignals(status === "ready");
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   const teacher = user?.teacher ?? null;

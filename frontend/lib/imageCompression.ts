@@ -18,6 +18,8 @@
  * consistently across browsers, where an <img>'s default handling of that
  * has historically been inconsistent.
  */
+import { UserFacingError } from "./errors";
+
 export interface CompressImageOptions {
   /** Longest side, in pixels, after resizing. A profile photo is always
    *  displayed small (an avatar), so there's no reason to keep a
@@ -52,7 +54,7 @@ export async function compressImageForUpload(file: File, options: CompressImageO
     // Firefox/Android users), corrupted files, or non-image files wearing
     // an image extension -- surfaced clearly here, before any network
     // call, instead of as a confusing size-limit error from the backend.
-    throw new Error(
+    throw new UserFacingError(
       "That file isn't a supported image. If it's a HEIC photo from an iPhone, try Settings > Camera > " +
         "Formats > Most Compatible, or upload a JPG, PNG, or WEBP instead.",
     );
@@ -68,7 +70,7 @@ export async function compressImageForUpload(file: File, options: CompressImageO
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
-      throw new Error("Your browser can't process images. Please try a different device or browser.");
+      throw new UserFacingError("Your browser can't process images. Please try a different device or browser.");
     }
     ctx.drawImage(bitmap, 0, 0, width, height);
 
@@ -104,7 +106,7 @@ export async function compressImageForUpload(file: File, options: CompressImageO
 function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Could not process that image. Please try a different file."))),
+      (blob) => (blob ? resolve(blob) : reject(new UserFacingError("We couldn't process that image. Please try a different file."))),
       "image/jpeg",
       quality,
     );

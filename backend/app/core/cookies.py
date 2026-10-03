@@ -89,9 +89,28 @@ def touch_csrf_cookie(request: Request, response: Response) -> None:
     active, re-issuing it (same value, fresh Max-Age) on every
     cookie-authenticated request rather than letting it die on a fixed
     schedule while the session cookie keeps sliding forward indefinitely.
+
+    If the session cookie is there and the CSRF cookie is not, a new one is
+    issued (3 Oct 2026). That state is easy to reach: the CSRF cookie is one
+    cookie shared by every role signed in on a browser, and signing out of
+    any one role deletes it (routes_auth.py, /logout) -- so with a teacher
+    and an admin signed in side by side, signing the teacher out left the
+    admin tab unable to change anything, with a message telling them to
+    refresh that a refresh did not cure: this function returned early when
+    the cookie was absent, so nothing but signing in again ever replaced it.
+    Now the next authenticated request of any kind does -- the page load a
+    refresh makes, or the frontend's own automatic recovery (lib/api.ts).
+
+    This gives a forged cross-site request nothing. The cookie is only ever
+    set on a response, which the attacker's page cannot read, and a request
+    that arrives without the matching X-CSRF-Token header is still refused
+    by the check that follows this call in get_current_user(). (A header
+    set on `response` here does not survive that refusal anyway: FastAPI
+    drops it when an exception produces the response.)
     """
     existing = request.cookies.get(CSRF_COOKIE_NAME)
     if not existing:
+        set_csrf_cookie(response)
         return
     response.set_cookie(
         key=CSRF_COOKIE_NAME,
