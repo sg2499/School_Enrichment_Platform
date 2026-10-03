@@ -10,7 +10,16 @@ import secrets as secrets_module
 import pyotp
 import qrcode
 
-ISSUER_NAME = "MathPath"
+from app.core.brand import PRODUCT_NAME
+
+# The name an authenticator app files the account under, shown above the
+# person's login. It read "MathPath" until 3 Oct 2026 -- the name of the
+# product this code was first written for, which a school admin setting up
+# two-factor here has never heard of. It is only read when an account is
+# ENROLLED: entries already in someone's authenticator keep the name they
+# were added under, and their codes keep working (the secret is what
+# matters, not the label).
+ISSUER_NAME = PRODUCT_NAME
 BACKUP_CODE_COUNT = 10
 
 

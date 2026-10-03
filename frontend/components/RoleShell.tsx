@@ -32,6 +32,7 @@ import {
 import { api, describeApiError } from "@/lib/api";
 import { wasRefused } from "@/lib/errors";
 import { clearSession } from "@/lib/auth";
+import { PRODUCT_CREDIT, PRODUCT_NAME } from "@/lib/brand";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { ROLE_LABEL } from "@/lib/pageTitle";
 import type { CurrentUser, UserRole } from "@/types/auth";
@@ -722,7 +723,7 @@ export function RoleShell({
         <span className="flex items-center gap-2.5">
           <LogoMark className="h-9 w-9" />
           <span className="flex flex-col leading-tight">
-            <span className="font-display text-sm font-semibold text-content">School Enrichment</span>
+            <span className="font-display text-base font-semibold leading-none tracking-[-0.015em] text-content">{PRODUCT_NAME}</span>
             <span className="text-[0.625rem] font-bold uppercase tracking-eyebrow text-content-brand">
               {ROLE_LABEL[role]}
             </span>
@@ -917,12 +918,12 @@ export function RoleShell({
             )}
           >
             <span className="flex items-center gap-2">
-              {/* aria-hidden wrapper: the mark is labelled "School
-                  Enrichment" and the same words follow as text. */}
+              {/* aria-hidden wrapper: the mark is labelled with the
+                  product's name and the same word follows as text. */}
               <span aria-hidden className="inline-flex">
                 <LogoMark className="h-4 w-4" />
               </span>
-              School Enrichment &middot; CBSE &amp; ICSE, Class 5&ndash;10
+              {PRODUCT_NAME} &middot; {PRODUCT_CREDIT}
             </span>
             {/* Who and where, not just which kind of account: with a teacher,
                 a student and two admins open side by side, "Signed In as

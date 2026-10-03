@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, describeApiError } from "@/lib/api";
-import { clearSession, setSession } from "@/lib/auth";
+import { clearSession, PASSWORD_CHANGE_PATH, SECURITY_SETUP_PATH, setSession } from "@/lib/auth";
 import { describeError, isOutage, type DescribedError } from "@/lib/errors";
 import { rememberSignedOut } from "@/lib/sessionNotice";
 import type { CurrentUser, UserRole } from "@/types/auth";
@@ -33,14 +33,6 @@ import type { CurrentUser, UserRole } from "@/types/auth";
 // layer on top of that, so a not-yet-enrolled admin lands on the setup
 // screen instead of a wall of 403s.
 const MANDATORY_2FA_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
-// A1 fix (30 Sep 2026 security/DPDP review): mirrors the backend's
-// MUST_CHANGE_PASSWORD_ROLES (dependencies.py), which is ADMIN/SUPER_ADMIN
-// only today. Teachers and students can change their password from the
-// profile menu (components/UserMenu.tsx) but are not yet made to on first
-// sign-in; when the backend's list grows, this one grows with it.
-const MUST_CHANGE_PASSWORD_ROLES: UserRole[] = ["ADMIN", "SUPER_ADMIN"];
-const SECURITY_SETUP_PATH = "/admin/security";
-
 // What the session check is for, in each role's own words. Completes "We
 // couldn't ..." when the check cannot be made (see `problem` below).
 const OPENING: Record<UserRole, string> = {
@@ -71,8 +63,8 @@ export interface UseProtectedPageOptions {
    *  instead of being bounced back to itself forever. */
   allowWithoutTwoFactor?: boolean;
   /** Same idea as allowWithoutTwoFactor, for the forced-password-change
-   *  gate below -- the security page passes this too, since it's also the
-   *  page that hosts the Change Password form itself. */
+   *  gate below. Passed by the pages that host the form itself: the admin
+   *  security page, and the teacher and student set-password screens. */
   allowWithoutPasswordChange?: boolean;
 }
 
@@ -125,10 +117,10 @@ export function useProtectedPage(requiredRole: UserRole, options: UseProtectedPa
           // (dependencies.py's get_current_user): a brand-new admin should
           // replace their default password before being walked into 2FA
           // setup, not the other way around.
-          if (!allowWithoutPasswordChange && MUST_CHANGE_PASSWORD_ROLES.includes(data.role) && data.mustChangePassword) {
+          if (!allowWithoutPasswordChange && data.mustChangePassword && PASSWORD_CHANGE_PATH[data.role]) {
             setSession(data);
             setStatus("redirecting");
-            router.replace(`${SECURITY_SETUP_PATH}?passwordChange=required`);
+            router.replace(PASSWORD_CHANGE_PATH[data.role]);
             return;
           }
           if (!allowWithoutTwoFactor && MANDATORY_2FA_ROLES.includes(data.role) && !data.twoFactorEnabled) {

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
+import { PRODUCT_NAME } from "@/lib/brand";
 
 /*
  * The last net (rewritten 3 Oct 2026, UI revamp Phase B, slice 2).
@@ -15,7 +16,7 @@ import * as Sentry from "@sentry/nextjs";
  * Deliberately built from nothing but inline styles and an inline SVG. If
  * the layout could not render, there is no reason to trust that the
  * stylesheet, the fonts or any shared component will either; this page must
- * still look like School Enrichment when everything it would normally lean
+ * still look like Krama when everything it would normally lean
  * on is the thing that broke. The colours are the brand tokens from
  * tailwind.config.ts, written out: ink #1C1B29 on paper #FAF8F4 (16:1),
  * muted #4B4962 on white (8.6:1), white on brand-700 #3C3489 (10.3:1).
@@ -33,7 +34,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
   return (
     <html lang="en">
       <head>
-        <title>Something Went Wrong · School Enrichment</title>
+        <title>{`Something Went Wrong · ${PRODUCT_NAME}`}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body
@@ -63,7 +64,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
             boxShadow: "0 1px 2px rgba(28,27,41,0.05), 0 30px 60px -30px rgba(28,27,41,0.45)",
           }}
         >
-          <svg viewBox="0 0 44 44" width="56" height="56" role="img" aria-label="School Enrichment">
+          <svg viewBox="0 0 44 44" width="56" height="56" role="img" aria-label={PRODUCT_NAME}>
             <rect width="44" height="44" rx="13" fill="#3C3489" />
             <g fill="#FFFFFF">
               <rect x="10" y="27.5" width="8" height="4" rx="2" opacity="0.72" />
@@ -74,7 +75,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
           </svg>
 
           <h1 style={{ margin: "24px 0 0", fontSize: "1.625rem", lineHeight: 1.2, fontWeight: 650, letterSpacing: "-0.015em", textWrap: "balance" }}>
-            School Enrichment couldn&rsquo;t load
+            {PRODUCT_NAME} couldn&rsquo;t load
           </h1>
           <p style={{ margin: "12px auto 0", maxWidth: "24rem", fontSize: "1rem", lineHeight: 1.6, color: "#4B4962" }}>
             Something stopped the page from opening. Anything you had already saved is safe. Reloading usually

@@ -1,30 +1,31 @@
 /**
  * What the browser tab says (3 Oct 2026, UI revamp Phase B, slice 2).
  *
- * Before this, every page of every role had the same tab title: "School
- * Enrichment". All the pages are client components, so none could export
+ * Before this, every page of every role had the same tab title: the
+ * product's name and nothing else. All the pages are client components, so none could export
  * Next's `metadata`, and nothing else set one. With a teacher, a student
  * and two admins signed in side by side -- which is how this product is
  * tested, and how a school office uses it -- that is four identical tabs.
  *
  * A title is built from what tells tabs apart first:
  *
- *   Practice Tracker · Teacher · School Enrichment
- *   Aarav Shah · Practice Tracker · Teacher · School Enrichment
- *   People · Super Admin · School Enrichment
- *   Sign In · School Enrichment
+ *   Practice Tracker · Teacher · Krama
+ *   Aarav Shah · Practice Tracker · Teacher · Krama
+ *   People · Super Admin · Krama
+ *   Sign In · Krama
  *
  * Page first, because a narrow tab shows only the start. Role second,
  * because Admin and Super Admin share every route and "People" alone would
  * not say which of the two this tab is. Product last.
  *
- * Kept free of runtime imports so it can be unit-tested directly (see
- * scripts/run-unit-tests.mjs). The hook that applies it is
+ * Its only runtime import is the product's name (lib/brand.ts), so it can be
+ * unit-tested directly (see scripts/run-unit-tests.mjs). The hook that applies it is
  * lib/hooks/usePageTitle.ts.
  */
 import type { UserRole } from "@/types/auth";
+import { PRODUCT_NAME } from "./brand";
 
-export const PRODUCT_NAME = "School Enrichment";
+export { PRODUCT_NAME };
 
 /**
  * How each role is named wherever the interface says who is signed in: the

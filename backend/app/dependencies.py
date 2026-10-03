@@ -17,7 +17,12 @@ from app.core.cookies import (
     touch_csrf_cookie,
 )
 from app.core.errors import api_error, who_can_help
-from app.core.security import create_access_token, decode_token, expire_minutes_for_role
+from app.core.security import (
+    create_access_token,
+    decode_token,
+    expire_minutes_for_role,
+    password_fingerprint,
+)
 from app.database import SessionLocal, get_db
 from app.models import Student, Teacher, User
 from app.services.session_service import is_session_valid, touch_session
@@ -57,18 +62,25 @@ TWO_FACTOR_SETUP_EXEMPT_PATHS = {
 }
 
 # A1 fix (30 Sep 2026 security/DPDP review): an admin-issued initial
-# password is guessable-by-design no longer (see routes_roster.py), but that
-# only matters if the recipient is actually forced to replace it before
-# doing anything else -- otherwise a first-to-log-in race (including against
-# a freshly created ADMIN) can still permanently take the account over.
-# Scoped to ADMIN/SUPER_ADMIN only for now: TEACHER/STUDENT have no
-# change-password UI anywhere in the frontend yet (grepped -- only
-# frontend/app/admin/security/page.tsx has one), so gating them here today
-# would lock every one of them out with no way to comply. Every new account
-# still gets a random initial password and must_change_password=True
-# regardless of role -- this is a UI gap, not a data-model gap, and the
-# remaining rollout to TEACHER/STUDENT is flagged as a follow-up.
-MUST_CHANGE_PASSWORD_ROLES = {"ADMIN", "SUPER_ADMIN"}
+# password is unguessable (see routes_roster.py), but it has still passed
+# through other hands -- the admin who read it off the screen, the sheet it
+# was exported to, a teacher who handed it to a student. It only stops being
+# anyone else's once its owner replaces it, so until they do, the account can
+# do nothing but that.
+#
+# Every role, since 3 Oct 2026. From 30 Sep until then this was ADMIN and
+# SUPER_ADMIN only, because teachers and students had nowhere to comply:
+# gating them would have locked every one of them out. They now have the
+# sign-in page's own "Choose your own password" step and the
+# /teacher/set-password and /student/set-password screens behind it
+# (frontend/components/ChoosePassword.tsx), so the gate covers them too.
+#
+# One-time effect of that widening, on the deploy that carried it: a teacher
+# or student who was signed in at that moment and had never replaced their
+# issued password is asked to choose one on their next request. Nobody is
+# signed out and nothing saved is lost, but a request made in that state is
+# refused until they have -- so it shipped outside class hours.
+MUST_CHANGE_PASSWORD_ROLES = {"ADMIN", "SUPER_ADMIN", "TEACHER", "STUDENT"}
 
 # Same allowlist shape as TWO_FACTOR_SETUP_EXEMPT_PATHS, checked first (see
 # below): a user who must change their password still needs to reach the
@@ -161,6 +173,10 @@ def get_current_user(
     if not token:
         token = read_session_token(request)
         used_cookie_auth = token is not None
+    # For the few endpoints that answer a browser differently from a script
+    # (change-password can keep a browser's session alive; it never hands a
+    # script a token).
+    request.state.used_cookie_auth = used_cookie_auth
 
     if not token:
         api_error(401, "UNAUTHORIZED", "Please sign in to continue.")
@@ -210,6 +226,19 @@ def get_current_user(
             "UNAUTHORIZED",
             f"Your account has been deactivated. Please ask {who_can_help(user.role)} if you need it back.",
         )
+
+    # Issued under a password that is no longer this account's (3 Oct 2026).
+    # Exact, and independent of any clock: see password_fingerprint() in
+    # core/security.py for the same-second cases the timestamp comparison
+    # below cannot see. A token minted before the claim existed carries
+    # none, and is judged by that comparison alone, as it always was.
+    #
+    # A plain comparison: the fingerprint is not a secret an attacker can
+    # probe for -- presenting a claim at all takes a token this server
+    # signed -- and compare_digest raises on text it cannot encode.
+    token_password = payload.get("pwd")
+    if token_password and token_password != password_fingerprint(user.password_hash):
+        api_error(401, "UNAUTHORIZED", "Your password was changed, so this session has ended. Please sign in with your new password.")
 
     # NOTE: api_error() raises HTTPException, which is itself an Exception --
     # it must never be called from inside a `try/except Exception` block that
@@ -275,7 +304,9 @@ def get_current_user(
             remaining_seconds = (expires_at - datetime.now(timezone.utc)).total_seconds()
             half_lifetime_seconds = (expire_minutes_for_role(user.role) * 60) / 2
             if 0 < remaining_seconds < half_lifetime_seconds:
-                new_token = create_access_token(user.id, user.role, session_id=session_id)
+                new_token = create_access_token(
+                    user.id, user.role, session_id=session_id, password_hash=user.password_hash
+                )
                 # A10 fix (30 Sep 2026 review): this header used to be set
                 # unconditionally, even for cookie-authenticated requests --
                 # meaning an indefinitely-renewable raw token was handed to

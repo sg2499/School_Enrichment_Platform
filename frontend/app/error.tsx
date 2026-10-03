@@ -6,6 +6,7 @@ import { ArrowRight, LogIn, RotateCw, TriangleAlert } from "lucide-react";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useRoleForPage } from "@/lib/hooks/useRoleForPage";
 import { defaultRouteForRole } from "@/lib/auth";
+import { PRODUCT_NAME } from "@/lib/brand";
 import type { UserRole } from "@/types/auth";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { StatusScreen } from "@/components/ui/StatusScreen";
@@ -64,7 +65,7 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
     <StatusScreen
       icon={<TriangleAlert />}
       tone="problem"
-      eyebrow={role ? EYEBROW[role] : "School Enrichment"}
+      eyebrow={role ? EYEBROW[role] : PRODUCT_NAME}
       title="This page ran into a problem"
       message={
         role

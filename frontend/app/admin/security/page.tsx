@@ -47,6 +47,7 @@ import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SessionGate } from "@/components/SessionGate";
 import { api, describeApiError, errorMessage } from "@/lib/api";
 import { clearSession, updateStoredUser } from "@/lib/auth";
+import { PRODUCT_NAME, PRODUCT_SLUG } from "@/lib/brand";
 import { wasRefused } from "@/lib/errors";
 import { rememberSignedOut } from "@/lib/sessionNotice";
 import { cn } from "@/lib/utils";
@@ -139,13 +140,13 @@ function BackupCodesPanel({ codes, onDone }: { codes: string[]; onDone: () => vo
 
   function handleDownload() {
     const blob = new Blob(
-      [`School Enrichment -- two-factor backup codes\nEach code works once. Keep this somewhere safe.\n\n${codes.join("\n")}\n`],
+      [`${PRODUCT_NAME} -- two-factor backup codes\nEach code works once. Keep this somewhere safe.\n\n${codes.join("\n")}\n`],
       { type: "text/plain" },
     );
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "school-enrichment-backup-codes.txt";
+    link.download = `${PRODUCT_SLUG}-backup-codes.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -500,7 +501,7 @@ function SecuritySettingsPageInner() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `school-enrichment-my-data-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `${PRODUCT_SLUG}-my-data-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

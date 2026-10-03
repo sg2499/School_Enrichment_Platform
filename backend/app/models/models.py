@@ -108,17 +108,14 @@ class User(Base):
     # auth_service.py's login(), at which point locked_until is set.
     failed_login_attempts = Column(Integer, default=0, nullable=False)
     locked_until = Column(DateTime(timezone=True), nullable=True)
-    # A1 fix (30 Sep 2026 security/DPDP review): an admin-issued initial
-    # password is now random, not a guessable firstname-lastname pattern --
-    # this flag is what forces the recipient to actually replace it before
-    # doing anything else. Enforced in dependencies.py's get_current_user()
-    # the same way MANDATORY_2FA_ROLES is, currently gated to ADMIN/
-    # SUPER_ADMIN only (see routes_roster.py's docstring for why: TEACHER/
-    # STUDENT have no change-password UI yet, so blocking them behind this
-    # would lock every one of them out with no way to comply). Set True for
-    # every newly created account regardless of role -- honest bookkeeping
-    # for the day a TEACHER/STUDENT flow exists -- but only ADMIN/SUPER_ADMIN
-    # are actually gated on it today.
+    # A1 fix (30 Sep 2026 security/DPDP review): True while the account's
+    # password is one somebody else issued -- at creation, by a bulk upload,
+    # or by an admin's reset -- and its owner has not yet replaced it.
+    # dependencies.py's get_current_user() refuses everything while it is
+    # set except changing the password, reading one's own profile, and
+    # signing out (MUST_CHANGE_PASSWORD_EXEMPT_PATHS), for every role --
+    # teachers and students since 3 Oct 2026.
+    # Cleared only by the owner changing the password themselves.
     must_change_password = Column(Boolean, default=False, nullable=False)
     # A9 fix: the last TOTP step (30-second window) that was successfully
     # consumed at login, so the exact same code can't be replayed a second

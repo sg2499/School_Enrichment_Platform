@@ -1,5 +1,12 @@
 import axios from "axios";
-import { clearSession, getActiveRoleHeaderValue, getCsrfToken, getStoredUserForRole, roleForCurrentPage } from "./auth";
+import {
+  clearSession,
+  getActiveRoleHeaderValue,
+  getCsrfToken,
+  getStoredUserForRole,
+  PASSWORD_CHANGE_PATH,
+  roleForCurrentPage,
+} from "./auth";
 import { describeError, type DescribedError } from "./errors";
 import { readSignedOutNotice, rememberSignedOut } from "./sessionNotice";
 
@@ -134,9 +141,54 @@ api.interceptors.response.use(
     ) {
       window.location.href = "/admin/security?setup=required";
     }
+    // The same defense in depth for the forced password change, which
+    // covers every role since 3 Oct 2026: a tab that was open when the rule
+    // began to apply to its owner, or a request still in flight, gets this
+    // 403 before useProtectedPage has had a page load to act on. Each role
+    // has a place to go (PASSWORD_CHANGE_PATH). Not from the sign-in page,
+    // which handles this as its own step and belongs to no role; and not
+    // from a page holding unsaved work, which shows the server's sentence
+    // ("Choose a new password to continue.") and keeps what was typed.
+    if (status === 403 && code === "PASSWORD_CHANGE_REQUIRED" && typeof window !== "undefined") {
+      const role = roleForCurrentPage();
+      const target = role ? PASSWORD_CHANGE_PATH[role] : null;
+      if (
+        target &&
+        !error?.config?.keepPageOnSessionEnd &&
+        !window.location.pathname.startsWith(target.split("?")[0]) &&
+        !sentThereMomentsAgo(target)
+      ) {
+        window.location.href = target;
+      }
+    }
     return Promise.reject(error);
   }
 );
+
+/**
+ * True if this tab was sent to `target` within the last few seconds; records
+ * the visit otherwise.
+ *
+ * A guard against going round in circles. The password-change screen sends
+ * someone who has nothing to change back to their workspace; a request there
+ * that is refused for want of a password change sends them to the screen.
+ * The server would have to disagree with itself for both to happen, and it
+ * does not -- but if it ever did, the tab would bounce between the two pages
+ * for ever with nothing on screen long enough to read. With this, the second
+ * refusal stays on the page and is shown as what it is.
+ */
+function sentThereMomentsAgo(target: string): boolean {
+  const key = "school_enrichment_sent_to";
+  const now = Date.now();
+  try {
+    const last = JSON.parse(sessionStorage.getItem(key) || "null") as { target?: string; at?: number } | null;
+    if (last && last.target === target && typeof last.at === "number" && now - last.at < 15000) return true;
+    sessionStorage.setItem(key, JSON.stringify({ target, at: now }));
+  } catch {
+    // No storage: no guard, which is how it behaved before the guard.
+  }
+  return false;
+}
 
 // Set just before a hard navigation to the sign-in page, so that the several
 // requests a page usually has in flight when its session ends produce one

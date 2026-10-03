@@ -108,6 +108,21 @@
     caret-color: var(--content);
   }
 
+  /* The one-time-code input (components/ui/CodeInput.tsx) is a transparent
+     field laid over six drawn boxes. The rule above would paint it opaque
+     white with visible text the moment a phone or a password manager filled
+     the code in -- hiding the boxes exactly when all six have a digit. It
+     stays transparent instead; the browser's own autofill tint is held off
+     by a transition that never gets going, the standard way to do that. */
+  input.code-input:-webkit-autofill,
+  input.code-input:-webkit-autofill:hover,
+  input.code-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: transparent;
+    -webkit-box-shadow: none;
+    caret-color: transparent;
+    transition: background-color 600000s 0s, color 600000s 0s;
+  }
+
   * {
     scrollbar-width: thin;
     scrollbar-color: #cac8d8 transparent;

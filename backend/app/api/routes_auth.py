@@ -28,16 +28,20 @@ from sqlalchemy.orm import Session
 from app.core.cookies import (
     CSRF_COOKIE_NAME,
     clear_session_cookie,
+    read_session_token,
     set_csrf_cookie,
     set_session_cookie,
 )
 from app.core.errors import api_error
-from app.core.rate_limit import limiter
+from app.core.rate_limit import get_real_client_ip, limiter
 from app.core.security import (
     create_access_token,
+    decode_token,
     decode_two_factor_challenge_token,
     hash_password,
+    password_fingerprint,
     strong_password_issue,
+    two_factor_challenge_password_claim,
     verify_password,
 )
 from app.core.totp import (
@@ -49,7 +53,7 @@ from app.core.totp import (
 )
 from app.database import get_db
 from app.dependencies import MANDATORY_2FA_ROLES, get_current_session_id, get_current_user, require_roles
-from app.models import Student, Teacher, User
+from app.models import Student, Teacher, User, UserSession
 from app.services.audit_service import log_audit_event
 from app.services.auth_service import (
     LOCKOUT_DURATION_MINUTES,
@@ -63,6 +67,7 @@ from app.services.auth_service import (
 )
 from app.services.session_service import (
     list_active_sessions,
+    revoke_all_sessions_for_user,
     revoke_session,
     start_session,
 )
@@ -78,6 +83,9 @@ class LoginRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     currentPassword: str
     newPassword: str
+    # Stay signed in on this device afterwards (every other device is still
+    # signed out). See change_password() below.
+    keepSignedIn: bool = False
 
 
 class TwoFactorEnableRequest(BaseModel):
@@ -332,37 +340,154 @@ def upload_profile_photo(
     return {"updated": True, "photoUrl": PublicPhotoUrl, "user": UpdatedUser}
 
 
+def _own_account_key(request: Request) -> str:
+    """Rate-limit key for something a signed-in person does to their OWN
+    account: the account, not the network address.
+
+    The address is the wrong key for change-password. A classroom is thirty
+    students behind one school connection, and since 3 Oct 2026 every one of
+    them goes through this endpoint the first time they sign in: at the old
+    5-a-minute-per-address, the sixth student was refused and left unable to
+    do the one thing the server would let them do. (Login was raised for the
+    same shared-connection reason on 30 Sep.) What the limit is FOR is
+    stopping guesses at one account's current password, and that is a
+    per-account matter.
+
+    The account is read from a token whose signature verifies, so nobody can
+    spend another account's allowance. No valid token: the address, as
+    before -- the request is about to be refused with a 401 anyway.
+    """
+    token = None
+    authorization = request.headers.get("authorization", "")
+    if authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not token:
+        token = read_session_token(request)
+    payload = decode_token(token) if token else None
+    subject = payload.get("sub") if payload else None
+    return f"account:{subject}" if subject else get_real_client_ip(request)
+
+
 @router.post("/change-password")
-@limiter.limit("5/minute")
+# Two limits. Per account: enough for someone to get it wrong a few times,
+# far too few to guess a current password. Per address: a ceiling that a
+# whole class signing in for the first time does not reach.
+@limiter.limit("10/minute", key_func=_own_account_key)
+@limiter.limit("120/minute")
 def change_password(
     request: Request,
+    response: Response,
     payload: ChangePasswordRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    CurrentPassword = (payload.currentPassword or "").strip()
-    NewPassword = (payload.newPassword or "").strip()
+    """Replaces the caller's own password.
 
-    if not CurrentPassword:
+    Every session of the account ends when its password changes: a token
+    says which password it was issued under, and stops matching the moment
+    the stored hash changes (password_fingerprint, core/security.py). That
+    is right when someone changes a password because they fear it is known.
+    It was wrong for the one case nearly every teacher and student meets
+    first -- replacing the password the school issued them -- where it meant:
+    sign in, choose a password, get signed out, sign in again.
+
+    `keepSignedIn` (3 Oct 2026) keeps the one session that made this request
+    and ends all the others: this browser is handed a fresh token for the
+    same session, issued under the new password, and every other session row
+    is revoked. Tokens this session held before the change are as dead as
+    anyone else's. It applies only to a browser session (a cookie carrying a
+    session id). A script holding a bearer token is not handed a new one in
+    a response body, and a token with no session id cannot be told apart
+    from the account's other tokens -- both are simply signed out, as
+    before, and the response says so (`staySignedIn: false`).
+    """
+    # Neither is stripped: sign-in compares exactly what is typed, so this
+    # does too. (A new password with a space at either end is refused by
+    # strong_password_issue() rather than quietly altered.)
+    CurrentPassword = payload.currentPassword or ""
+    NewPassword = payload.newPassword or ""
+
+    if not CurrentPassword.strip():
         api_error(400, "VALIDATION_ERROR", "Enter your current password.")
-    if not NewPassword:
+    if not NewPassword.strip():
         api_error(400, "VALIDATION_ERROR", "Enter a new password.")
     PasswordIssue = strong_password_issue(NewPassword)
     if PasswordIssue:
         api_error(400, "VALIDATION_ERROR", PasswordIssue)
     if not verify_password(CurrentPassword, user.password_hash):
         api_error(400, "INVALID_PASSWORD", "Your current password isn't right. Please try again.")
+    # "Change" has to mean change. Without this, the forced first change
+    # could be satisfied by typing the issued password again -- the flag
+    # would clear and the password everyone else has seen would stay. The
+    # current password has just been proven, so comparing the two strings
+    # says the same thing a third bcrypt run would, without the quarter
+    # second that costs on a single worker.
+    if NewPassword == CurrentPassword:
+        api_error(400, "VALIDATION_ERROR", "Choose a password that's different from your current one.")
 
-    from sqlalchemy.sql import func
-    user.password_hash = hash_password(NewPassword)
-    user.password_changed_at = func.now()
+    # The app's own clock, not the database's (this used to be func.now()),
+    # so it is read from the same clock a token's `iat` is.
+    ChangedAt = datetime.now(timezone.utc)
+    # Held as its own value for the same reason login() holds the hash it
+    # verified: the commit below expires `user`, and the fresh token must be
+    # bound to the password set HERE, not to whatever a reload returns.
+    NewHash = hash_password(NewPassword)
+    user.password_hash = NewHash
+    user.password_changed_at = ChangedAt
     # A1 fix: clears the forced-change gate the moment someone actually
     # takes ownership of the password -- see dependencies.py's
     # MUST_CHANGE_PASSWORD_ROLES check.
     user.must_change_password = False
-    log_audit_event(db, "auth.password_changed", user_id=user.id, request=request)
+
+    SessionId = getattr(request.state, "session_id", None)
+    UsedCookie = bool(getattr(request.state, "used_cookie_auth", False))
+    StaySignedIn = bool(payload.keepSignedIn and SessionId and UsedCookie)
+    if StaySignedIn:
+        # Every other device goes. Their tokens already fail (issued under
+        # the old password); revoking the rows keeps the list of signed-in
+        # devices true.
+        db.query(UserSession).filter(
+            UserSession.user_id == user.id,
+            UserSession.id != SessionId,
+            UserSession.revoked_at.is_(None),
+        ).update({"revoked_at": ChangedAt}, synchronize_session=False)
+    else:
+        revoke_all_sessions_for_user(db, user.id)
+
+    log_audit_event(
+        db,
+        "auth.password_changed",
+        user_id=user.id,
+        request=request,
+        details={"keptThisSession": StaySignedIn},
+    )
     db.commit()
-    return {"updated": True, "message": "Your password has been changed. Please sign in again with the new one."}
+
+    if not StaySignedIn:
+        # The cookie it came in on now carries a dead token; removing it
+        # saves the browser a refused request to find that out.
+        if UsedCookie:
+            clear_session_cookie(response, user.role)
+        return {
+            "updated": True,
+            "staySignedIn": False,
+            "message": "Your password has been changed. Please sign in again with the new one.",
+        }
+
+    # Issued after the commit, so it is never handed out for a change that
+    # did not happen, and under the new password, so it is the one token of
+    # this account that still works.
+    set_session_cookie(
+        response,
+        user.role,
+        create_access_token(user.id, user.role, session_id=SessionId, password_hash=NewHash),
+    )
+    return {
+        "updated": True,
+        "staySignedIn": True,
+        "message": "Your password has been changed.",
+        "user": user_payload(db, user),
+    }
 
 
 @router.post("/logout")
@@ -594,6 +719,19 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
     if not user or not user.is_active or not user.totp_enabled:
         api_error(401, "UNAUTHORIZED", "This verification step has expired. Please sign in again.")
 
+    # The password step was passed against one particular password. If that
+    # password has since been changed or reset, this second step is the tail
+    # of a sign-in that no longer counts: whoever started it has to start
+    # again, with the password the account has now. (A challenge issued
+    # before this claim existed has none, and at five minutes' life there
+    # are none left a few minutes after this ships.) Held as a value: the
+    # commits below expire `user`, and the session is issued under the
+    # password this sign-in actually proved.
+    PasswordHash = user.password_hash
+    ChallengePassword = two_factor_challenge_password_claim(payload.challengeToken)
+    if ChallengePassword and ChallengePassword != password_fingerprint(PasswordHash):
+        api_error(401, "UNAUTHORIZED", "This verification step has expired. Please sign in again.")
+
     # A9 fix (30 Sep 2026 review): this step previously had no per-account
     # failure limit at all beyond a shared 10/minute IP limit -- an attacker
     # who already has the password could brute-force the 2FA step (or the
@@ -618,7 +756,7 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
         session_id = start_session(db, user, request=request)
         log_audit_event(db, event_type, user_id=user.id, request=request)
         db.commit()
-        token = create_access_token(user.id, user.role, session_id=session_id)
+        token = create_access_token(user.id, user.role, session_id=session_id, password_hash=PasswordHash)
         set_session_cookie(response, user.role, token)
         set_csrf_cookie(response)
         return {"tokenType": "Bearer", "user": user_payload(db, user)}

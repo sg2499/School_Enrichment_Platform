@@ -138,11 +138,10 @@ interface UserMenuBodyProps {
  *  Wires up two backend capabilities that already existed but were never
  *  surfaced anywhere in the UI: POST /api/auth/profile-photo (tested, works
  *  for every role) and POST /api/auth/change-password (also role-agnostic).
- *  TEACHER and STUDENT have no Security Settings page at all, so this panel
- *  is the ONLY place they can ever change their password -- deliberately
- *  built in here, not an afterthought, given the account-creation flow
- *  (Task #69) hands out a predictable firstname-lastname starter password
- *  that people need a real way to change once they're in.
+ *  TEACHER and STUDENT have no Security Settings page, so this panel is
+ *  where they change a password they already chose. (Replacing the one the
+ *  school issued is a different moment with its own screen, required at
+ *  first sign-in: components/ChoosePassword.tsx.)
  */
 function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose, onSignOut, signingOut }: UserMenuBodyProps) {
   const [view, setView] = useState<"menu" | "password">("menu");

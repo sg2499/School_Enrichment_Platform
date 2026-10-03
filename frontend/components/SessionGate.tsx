@@ -1,6 +1,7 @@
 "use client";
 
 import { Hourglass, RotateCw, ServerCrash, Timer, TriangleAlert, WifiOff } from "lucide-react";
+import { PRODUCT_NAME } from "@/lib/brand";
 import type { ErrorKind } from "@/lib/errors";
 import type { ProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { Button } from "@/components/ui/Button";
@@ -48,7 +49,7 @@ export function SessionGate({ session }: { session: ProtectedPage }) {
         </Button>
       }
       announce
-      footnote="This hasn't signed you out. Once School Enrichment can be reached again, Try Again carries on from here."
+      footnote={`This hasn't signed you out. Once ${PRODUCT_NAME} can be reached again, Try Again carries on from here.`}
     />
   );
 }
