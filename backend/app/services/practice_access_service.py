@@ -83,16 +83,16 @@ def resolve_viewer(db: Session, user: User) -> Viewer:
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
         if not teacher or not teacher.is_active:
-            api_error(403, "FORBIDDEN", "Teacher profile not found or inactive.")
+            api_error(403, "FORBIDDEN", "Your teacher profile isn't active. Please ask your school admin.")
         return Viewer(user=user, teacher=teacher, school_id=teacher.school_id)
     if user.role == "ADMIN":
         school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
         if not school_admin:
-            api_error(403, "FORBIDDEN", "No school is associated with this admin account.")
+            api_error(403, "FORBIDDEN", "Your admin account isn't linked to a school. Please contact your platform administrator.")
         return Viewer(user=user, teacher=None, school_id=school_admin.school_id)
     if user.role == "SUPER_ADMIN":
         return Viewer(user=user, teacher=None, school_id=None)
-    api_error(403, "FORBIDDEN", "You do not have permission for this action.")
+    api_error(403, "FORBIDDEN", "You don't have permission to do that.")
 
 
 def assignment_scope(assignment: Assignment) -> tuple[str, str, str] | None:
@@ -171,7 +171,7 @@ def bulk_act_checker(db: Session, viewer: Viewer):
 
 def require_readable_assignment(db: Session, viewer: Viewer, assignment: Assignment | None) -> Assignment:
     if assignment is None or not can_read_assignment(db, viewer, assignment):
-        api_error(404, "NOT_FOUND", "Assignment not found.")
+        api_error(404, "NOT_FOUND", "That assignment couldn't be found. It may have been removed.")
     return assignment
 
 
@@ -289,5 +289,5 @@ def require_visible_student(db: Session, viewer: Viewer, student_id: str) -> Stu
         db.query(Student).filter(Student.id == student_id, visible_students_clause(viewer)).first()
     )
     if not student:
-        api_error(404, "NOT_FOUND", "Student not found.")
+        api_error(404, "NOT_FOUND", "That student couldn't be found.")
     return student

@@ -142,7 +142,7 @@ def export_my_data(
 def safe_profile_photo_name(filename: str, prefix: str) -> str:
     suffix = Path(filename or "profile.png").suffix.lower()
     if suffix not in {".jpg", ".jpeg", ".png", ".webp"}:
-        api_error(400, "INVALID_FILE", "Only JPG, PNG, and WEBP images are allowed.")
+        api_error(400, "INVALID_FILE", "Please upload a JPG, PNG or WEBP image.")
     SafePrefix = re.sub(r"[^a-zA-Z0-9_-]", "-", prefix or "profile")[:80]
     Stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S%f")
     return f"{SafePrefix}-{Stamp}{suffix}"
@@ -160,7 +160,7 @@ def save_profile_photo(upload: UploadFile, prefix: str) -> str:
     MimeType = "image/jpeg" if Suffix in {"jpg", "jpeg"} else f"image/{Suffix or 'png'}"
     Content = upload.file.read()
     if not Content:
-        api_error(400, "INVALID_FILE", "Profile photo file is empty.")
+        api_error(400, "INVALID_FILE", "That photo file is empty. Please choose another one.")
     # Raised from 350KB (19 Aug 2026, Shailesh: "we never know what image the
     # user is gonna upload so we need to keep that in mind always" -- a raw
     # phone-camera photo is routinely 3-10MB, and this endpoint was rejecting
@@ -173,7 +173,7 @@ def save_profile_photo(upload: UploadFile, prefix: str) -> str:
     # never trust client-side enforcement alone -- sized well above what any
     # normally-compressed upload should produce, not as the primary gate.
     if len(Content) > 2_000_000:
-        api_error(400, "FILE_TOO_LARGE", "Profile photo must be under 2 MB.")
+        api_error(400, "FILE_TOO_LARGE", "That photo is too large. Please choose one under 2 MB.")
 
     # Content-sniffing, not just extension-checking (2026-08-19 security
     # hardening): safe_profile_photo_name() above only looks at the claimed
@@ -195,15 +195,15 @@ def save_profile_photo(upload: UploadFile, prefix: str) -> str:
         with Image.open(BytesIO(Content)) as recheck:
             ActualFormat = recheck.format
     except (UnidentifiedImageError, OSError, ValueError):
-        api_error(400, "INVALID_FILE", "That file isn't a valid image. Please upload a real JPG, PNG, or WEBP photo.")
+        api_error(400, "INVALID_FILE", "That file isn't a valid image. Please upload a JPG, PNG or WEBP photo.")
 
     ExpectedFormat = _ALLOWED_IMAGE_FORMATS.get(Suffix)
     if ActualFormat != ExpectedFormat:
         api_error(
             400,
             "INVALID_FILE",
-            f"This file's actual contents ({ActualFormat or 'unrecognized'}) don't match its "
-            f".{Suffix} extension. Please upload a genuine JPG, PNG, or WEBP file.",
+            f"This file is named .{Suffix} but it is actually {ActualFormat or 'not a recognised image'}. "
+            "Please upload a JPG, PNG or WEBP photo.",
         )
 
     # A14 fix (30 Sep 2026 review): uploaded photos kept their original
@@ -310,13 +310,13 @@ def upload_profile_photo(
     if user.role == "STUDENT":
         StudentProfile = db.query(Student).filter(Student.user_id == user.id).first()
         if not StudentProfile:
-            api_error(404, "NOT_FOUND", "Student profile not found.")
+            api_error(404, "NOT_FOUND", "Your student profile isn't set up yet. Please ask your teacher or school admin.")
         PhotoUrl = save_profile_photo(file, StudentProfile.student_code)
         StudentProfile.photo_url = PhotoUrl
     elif user.role == "TEACHER":
         TeacherProfile = db.query(Teacher).filter(Teacher.user_id == user.id).first()
         if not TeacherProfile:
-            api_error(404, "NOT_FOUND", "Teacher profile not found.")
+            api_error(404, "NOT_FOUND", "Your teacher profile isn't set up yet. Please ask your school admin.")
         PhotoUrl = save_profile_photo(file, TeacherProfile.teacher_code)
         TeacherProfile.photo_url = PhotoUrl
     else:
@@ -344,14 +344,14 @@ def change_password(
     NewPassword = (payload.newPassword or "").strip()
 
     if not CurrentPassword:
-        api_error(400, "VALIDATION_ERROR", "Current password is required.")
+        api_error(400, "VALIDATION_ERROR", "Enter your current password.")
     if not NewPassword:
-        api_error(400, "VALIDATION_ERROR", "New password is required.")
+        api_error(400, "VALIDATION_ERROR", "Enter a new password.")
     PasswordIssue = strong_password_issue(NewPassword)
     if PasswordIssue:
         api_error(400, "VALIDATION_ERROR", PasswordIssue)
     if not verify_password(CurrentPassword, user.password_hash):
-        api_error(400, "INVALID_PASSWORD", "Current password is incorrect.")
+        api_error(400, "INVALID_PASSWORD", "Your current password isn't right. Please try again.")
 
     from sqlalchemy.sql import func
     user.password_hash = hash_password(NewPassword)
@@ -362,7 +362,7 @@ def change_password(
     user.must_change_password = False
     log_audit_event(db, "auth.password_changed", user_id=user.id, request=request)
     db.commit()
-    return {"updated": True, "message": "Password updated successfully."}
+    return {"updated": True, "message": "Your password has been changed. Please sign in again with the new one."}
 
 
 @router.post("/logout")
@@ -394,7 +394,7 @@ def logout(
 def logout_all_sessions(request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Invalidate every access token already issued to the current user, including this one."""
     force_logout_user(db, user, request=request)
-    return {"updated": True, "message": "You have been signed out of all sessions. Please log in again."}
+    return {"updated": True, "message": "You've been signed out of all devices. Please sign in again."}
 
 
 def _session_summary(session, current_session_id: str | None) -> dict:
@@ -441,7 +441,7 @@ def delete_session(
     one."""
     owned_session_ids = {s.id for s in list_active_sessions(db, user.id)}
     if target_session_id not in owned_session_ids:
-        api_error(404, "NOT_FOUND", "Session not found.")
+        api_error(404, "NOT_FOUND", "That device is no longer signed in.")
     revoke_session(db, target_session_id)
     log_audit_event(
         db, "auth.session.revoked", user_id=user.id, request=request,
@@ -497,7 +497,7 @@ def two_factor_enable(
     db: Session = Depends(get_db),
 ):
     if not user.totp_pending_secret:
-        api_error(400, "NO_PENDING_SETUP", "Start 2FA setup first by calling /2fa/setup.")
+        api_error(400, "NO_PENDING_SETUP", "Your two-factor setup wasn't started or has been reset. Start the setup again to get a new QR code.")
     if not verify_totp_code(user.totp_pending_secret, payload.code):
         api_error(400, "INVALID_CODE", "That code didn't match. Check your authenticator app and try again.")
 
@@ -537,11 +537,11 @@ def two_factor_disable(
         api_error(
             400,
             "TWO_FACTOR_MANDATORY",
-            "Two-factor authentication is mandatory for this account and cannot be disabled. "
-            "If you've lost access to your authenticator, contact your platform administrator.",
+            "Two-factor authentication is required for admin accounts and can't be turned off. "
+            "If you've lost your authenticator and your backup codes, contact your platform administrator.",
         )
     if not verify_password(payload.password or "", user.password_hash):
-        api_error(400, "INVALID_PASSWORD", "Password is incorrect.")
+        api_error(400, "INVALID_PASSWORD", "That password isn't right. Please try again.")
     user.totp_secret = None
     user.totp_pending_secret = None
     user.totp_enabled = False
@@ -569,9 +569,9 @@ def two_factor_regenerate_backup_codes(
     so reissuing them deserves the same confirmation as turning 2FA off.
     """
     if not user.totp_enabled:
-        api_error(400, "NOT_ENABLED", "Two-factor authentication is not enabled on this account.")
+        api_error(400, "NOT_ENABLED", "Two-factor authentication isn't turned on for this account yet.")
     if not verify_password(payload.password or "", user.password_hash):
-        api_error(400, "INVALID_PASSWORD", "Password is incorrect.")
+        api_error(400, "INVALID_PASSWORD", "That password isn't right. Please try again.")
     BackupCodes = generate_backup_codes()
     user.totp_backup_codes_json = json.dumps([hash_password(code) for code in BackupCodes])
     log_audit_event(db, "auth.2fa.backup_codes_regenerated", user_id=user.id, request=request)
@@ -588,11 +588,11 @@ def two_factor_regenerate_backup_codes(
 def two_factor_verify_login(request: Request, response: Response, payload: TwoFactorVerifyLoginRequest, db: Session = Depends(get_db)):
     UserId = decode_two_factor_challenge_token(payload.challengeToken)
     if not UserId:
-        api_error(401, "UNAUTHORIZED", "This verification step has expired. Please log in again.")
+        api_error(401, "UNAUTHORIZED", "This verification step has expired. Please sign in again.")
 
     user = db.get(User, UserId)
     if not user or not user.is_active or not user.totp_enabled:
-        api_error(401, "UNAUTHORIZED", "This verification step has expired. Please log in again.")
+        api_error(401, "UNAUTHORIZED", "This verification step has expired. Please sign in again.")
 
     # A9 fix (30 Sep 2026 review): this step previously had no per-account
     # failure limit at all beyond a shared 10/minute IP limit -- an attacker
@@ -607,8 +607,8 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
         api_error(
             423,
             "ACCOUNT_LOCKED",
-            "Too many failed sign-in attempts. This account is temporarily locked -- please try again in a "
-            "few minutes.",
+            "Too many incorrect sign-in attempts. This account is locked for a short while. "
+            "Please try again in a few minutes.",
         )
 
     Code = (payload.code or "").strip()
@@ -652,7 +652,8 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
         api_error(
             423,
             "ACCOUNT_LOCKED",
-            f"Too many failed sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes.",
+            f"Too many incorrect sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes. "
+            "Please try again after that.",
         )
     api_error(401, "INVALID_CODE", "That code didn't match. Check your authenticator app and try again.")
 

@@ -32,7 +32,7 @@ import re
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -43,6 +43,8 @@ from app.database import get_db
 from app.dependencies import require_roles
 from app.models import School, SchoolAdmin, Student, Teacher, User
 from app.services.audit_service import log_audit_event
+from app.services.auth_service import reset_lockout
+from app.services.session_service import revoke_all_sessions_for_user
 
 router = APIRouter(prefix="/api/roster", tags=["roster"])
 
@@ -121,7 +123,7 @@ def _next_code(db: Session, model, code_column, tag: str, school_name: str) -> s
         if not db.query(model).filter(code_column == candidate).first():
             return candidate
         seq += 1
-    api_error(500, "CODE_GENERATION_FAILED", "Could not generate a unique account code. Try again.")
+    api_error(500, "CODE_GENERATION_FAILED", "We couldn't generate an account code just now. Please try again.")
 
 
 def _resolve_school(db: Session, user: User, requested_school_id: str | None) -> School:
@@ -131,17 +133,17 @@ def _resolve_school(db: Session, user: User, requested_school_id: str | None) ->
     cross-module import so this file stays self-contained."""
     if user.role == "SUPER_ADMIN":
         if not requested_school_id:
-            api_error(422, "VALIDATION_ERROR", "schoolId is required for SUPER_ADMIN.")
+            api_error(422, "VALIDATION_ERROR", "Choose a school first.")
         school = db.get(School, requested_school_id)
         if not school:
-            api_error(404, "NOT_FOUND", "School not found.")
+            api_error(404, "NOT_FOUND", "That school couldn't be found.")
         return school
 
     school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
     if not school_admin:
-        api_error(403, "FORBIDDEN", "No school is associated with this admin account.")
+        api_error(403, "FORBIDDEN", "Your admin account isn't linked to a school. Please contact your platform administrator.")
     if requested_school_id and requested_school_id != school_admin.school_id:
-        api_error(403, "FORBIDDEN", "You can only manage your own school's roster.")
+        api_error(403, "FORBIDDEN", "You can only manage people in your own school.")
     school = db.get(School, school_admin.school_id)
     return school
 
@@ -162,12 +164,12 @@ def _create_person(
 ) -> dict:
     full_name = (full_name or "").strip()
     if not full_name:
-        raise ValueError("fullName is required.")
+        raise ValueError("Full name is required.")
     cleaned_email = email.strip().lower() if email else None
     if cleaned_email and ("@" not in cleaned_email or cleaned_email.startswith("@") or cleaned_email.endswith("@")):
-        raise ValueError("email must be a valid email address.")
+        raise ValueError("Enter a valid email address.")
     if role == "ADMIN" and not cleaned_email:
-        raise ValueError("email is required for an ADMIN account (no fallback login code exists for admins).")
+        raise ValueError("An email address is required for an admin account. Admins sign in with their email.")
     if cleaned_email and db.query(User).filter(User.email == cleaned_email).first():
         # Never echo the address or say it exists -- see EMAIL_NOT_ACCEPTED_MESSAGE.
         raise _EmailNotAccepted(EMAIL_NOT_ACCEPTED_MESSAGE)
@@ -256,7 +258,7 @@ def create_person(
 ):
     role = payload.role.strip().upper()
     if role not in CREATABLE_ROLES:
-        api_error(422, "VALIDATION_ERROR", "role must be one of ADMIN, TEACHER, STUDENT.")
+        api_error(422, "VALIDATION_ERROR", "Choose whether this account is for an admin, a teacher or a student.")
     if role == "ADMIN" and user.role != "SUPER_ADMIN":
         api_error(403, "FORBIDDEN", "Only a Super Admin can create Admin accounts.")
 
@@ -308,7 +310,7 @@ def list_people(
 ):
     role_filter = role.strip().upper() if role else None
     if role_filter and role_filter not in CREATABLE_ROLES:
-        api_error(422, "VALIDATION_ERROR", "role must be one of ADMIN, TEACHER, STUDENT.")
+        api_error(422, "VALIDATION_ERROR", "Choose whether this account is for an admin, a teacher or a student.")
 
     # ADMIN is always pinned to their own school. SUPER_ADMIN without a
     # schoolId sees only the platform-wide ADMIN roster (there's no single
@@ -316,7 +318,7 @@ def list_people(
     # into that school's Admin/Teacher/Student list, same as Curriculum Studio.
     school = None
     if user.role == "SUPER_ADMIN" and not schoolId and role_filter != "ADMIN" and role_filter is not None:
-        api_error(422, "VALIDATION_ERROR", "schoolId is required to list Teacher or Student accounts.")
+        api_error(422, "VALIDATION_ERROR", "Choose a school to see its teachers and students.")
     if not (user.role == "SUPER_ADMIN" and not schoolId):
         school = _resolve_school(db, user, schoolId)
 
@@ -395,6 +397,55 @@ def list_people(
     return {"people": people}
 
 
+def _manageable_account(
+    db: Session,
+    user: User,
+    person_user_id: str,
+    *,
+    own_account_message: str,
+    admin_account_message: str,
+) -> tuple[User, SchoolAdmin | Teacher | Student | None]:
+    """The account `user` is asking to manage, and its role profile -- or an
+    error if it isn't theirs to manage.
+
+    One rule for every action an admin can take on someone else's account
+    (activate/deactivate, reset password), so the two can never drift apart:
+      * never your own account -- each action has a self-service equivalent
+        or none at all, and its message says which;
+      * never a Super Admin's;
+      * an Admin's only by a Super Admin;
+      * a Teacher's or Student's by a Super Admin, or by an Admin of the
+        SAME school. The school comes from the admin's own SchoolAdmin row,
+        looked up server-side (_resolve_school), never from the request.
+
+    This is the block update_person_status carried inline until 3 Oct 2026,
+    moved here unchanged when reset_person_password needed the same answer.
+    """
+    target = db.get(User, person_user_id)
+    if not target:
+        api_error(404, "NOT_FOUND", "That account couldn't be found.")
+    if target.id == user.id:
+        api_error(422, "VALIDATION_ERROR", own_account_message)
+
+    if target.role == "SUPER_ADMIN":
+        api_error(403, "FORBIDDEN", "Super Admin accounts can't be managed from this page.")
+    elif target.role == "ADMIN":
+        if user.role != "SUPER_ADMIN":
+            api_error(403, "FORBIDDEN", admin_account_message)
+        profile = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == target.id).first()
+    elif target.role == "TEACHER":
+        profile = db.query(Teacher).filter(Teacher.user_id == target.id).first()
+        if user.role == "ADMIN" and (not profile or profile.school_id != _resolve_school(db, user, None).id):
+            api_error(403, "FORBIDDEN", "You can only manage people in your own school.")
+    elif target.role == "STUDENT":
+        profile = db.query(Student).filter(Student.user_id == target.id).first()
+        if user.role == "ADMIN" and (not profile or profile.school_id != _resolve_school(db, user, None).id):
+            api_error(403, "FORBIDDEN", "You can only manage people in your own school.")
+    else:
+        api_error(422, "VALIDATION_ERROR", "This type of account can't be managed from this page.")
+    return target, profile
+
+
 class StatusUpdateRequest(BaseModel):
     isActive: bool
 
@@ -407,28 +458,13 @@ def update_person_status(
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
-    target = db.get(User, person_user_id)
-    if not target:
-        api_error(404, "NOT_FOUND", "Account not found.")
-    if target.id == user.id:
-        api_error(422, "VALIDATION_ERROR", "You cannot change your own account's status here.")
-
-    if target.role == "SUPER_ADMIN":
-        api_error(403, "FORBIDDEN", "Super Admin accounts cannot be managed here.")
-    elif target.role == "ADMIN":
-        if user.role != "SUPER_ADMIN":
-            api_error(403, "FORBIDDEN", "Only a Super Admin can change an Admin account's status.")
-        profile = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == target.id).first()
-    elif target.role == "TEACHER":
-        profile = db.query(Teacher).filter(Teacher.user_id == target.id).first()
-        if user.role == "ADMIN" and (not profile or profile.school_id != _resolve_school(db, user, None).id):
-            api_error(403, "FORBIDDEN", "You can only manage your own school's roster.")
-    elif target.role == "STUDENT":
-        profile = db.query(Student).filter(Student.user_id == target.id).first()
-        if user.role == "ADMIN" and (not profile or profile.school_id != _resolve_school(db, user, None).id):
-            api_error(403, "FORBIDDEN", "You can only manage your own school's roster.")
-    else:
-        api_error(422, "VALIDATION_ERROR", "This account type cannot be managed here.")
+    target, profile = _manageable_account(
+        db,
+        user,
+        person_user_id,
+        own_account_message="You can't deactivate or reactivate your own account.",
+        admin_account_message="Only a Super Admin can change an Admin account's status.",
+    )
 
     target.is_active = payload.isActive
     if profile is not None:
@@ -447,6 +483,124 @@ def update_person_status(
     )
     db.commit()
     return {"id": target.id, "isActive": target.is_active}
+
+
+@router.post("/people/{person_user_id}/reset-password")
+@limiter.limit("30/minute")
+def reset_person_password(
+    person_user_id: str,
+    request: Request,
+    response: Response,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """An admin resets someone else's forgotten password (3 Oct 2026).
+
+    The gap this closes. A signed-in person can change their own password
+    (POST /auth/change-password), but someone who has FORGOTTEN it cannot
+    sign in to do that, and until now nothing in the product could help
+    them: the only reset was scripts/reset_test_account_password.py, run by
+    the platform operator against the database. Meanwhile the sign-in page
+    told them "Your school coordinator can reset it for you" -- a promise
+    with nothing behind it.
+
+    The intended flow, in Shailesh's words: teachers and students change
+    their own password day to day, "and fall back to admin in cases of any
+    issues". This is that fallback. Self-service "forgot password" by email
+    is not possible yet -- the platform sends no email (config.py: SMTP was
+    deliberately left out), and a teacher or student account does not need
+    an email address at all.
+
+    What it does:
+      * Sets a new random password, the same kind account creation issues
+        (_generate_initial_password): unguessable, and typeable by hand.
+        The admin does not choose it: for a reset there is nothing to gain
+        from a chosen one, and a random one cannot be guessed or reused.
+      * Returns it ONCE, in this response. It is stored only as a hash;
+        nothing can show it again. If it is lost before it is handed over,
+        reset again.
+      * Sets must_change_password, so the temporary password is replaced by
+        one only its owner knows. Enforced server-side for ADMIN today
+        (dependencies.py, MUST_CHANGE_PASSWORD_ROLES); for TEACHER/STUDENT
+        the flag is recorded now and enforced once their change-password
+        screen ships, exactly as for a newly created account.
+      * Signs the person out everywhere. password_changed_at rejects every
+        token issued before this second (dependencies.py compares in whole
+        seconds), and revoking their session rows catches one issued within
+        it -- and keeps the "signed-in devices" list true. If the reset was
+        needed because someone else knew the old password, that someone is
+        out too.
+      * Clears a sign-in lockout. Forgetting a password and getting locked
+        out for guessing are the same afternoon; the new password should
+        work the moment it is handed over.
+
+    What it deliberately leaves alone: two-factor. A Super Admin resetting
+    an Admin's password does not touch that admin's authenticator or backup
+    codes -- the second factor is not something this action has any reason
+    to weaken. A lost authenticator stays a separate, operator-level
+    recovery.
+
+    Who may call it is _manageable_account's rule, the same one
+    activate/deactivate uses.
+    """
+    target, profile = _manageable_account(
+        db,
+        user,
+        person_user_id,
+        own_account_message="You can't reset your own password here. Use Change Password in your profile menu.",
+        admin_account_message="Only a Super Admin can reset an Admin's password.",
+    )
+    if not target.is_active:
+        # A temporary password for an account that cannot sign in would be
+        # handed over, tried, and fail with a message about something else.
+        api_error(409, "ACCOUNT_INACTIVE", "This account is inactive. Reactivate it before resetting its password.")
+
+    temporary_password = _generate_initial_password(target.full_name)
+    target.password_hash = hash_password(temporary_password)
+    target.must_change_password = True
+    target.password_changed_at = datetime.now(timezone.utc)
+    reset_lockout(target)
+    revoke_all_sessions_for_user(db, target.id)
+
+    # Two rows, neither containing the password. One on the admin's trail
+    # (who did it, to whom); one on the account owner's, because a reset is
+    # a security event on THEIR account and audit rows are what a person
+    # sees in their own data export -- it names the role that did it, not
+    # the individual.
+    log_audit_event(
+        db,
+        "roster.person_password_reset",
+        user_id=user.id,
+        request=request,
+        details={"targetUserId": target.id, "role": target.role},
+    )
+    log_audit_event(
+        db,
+        "auth.password_reset_by_admin",
+        user_id=target.id,
+        details={"byRole": user.role},
+    )
+    db.commit()
+
+    # The identifier the person signs in with, so the admin can hand over
+    # both halves together: a code for students and teachers (who may have
+    # no email), the email for admins (who have no code).
+    sign_in_with = target.email
+    if target.role == "STUDENT" and profile is not None:
+        sign_in_with = profile.student_code
+    elif target.role == "TEACHER" and profile is not None:
+        sign_in_with = profile.teacher_code
+
+    # A response that carries a password must not be written to any cache.
+    response.headers["Cache-Control"] = "no-store"
+    return {
+        "id": target.id,
+        "fullName": target.full_name,
+        "role": target.role,
+        "signInWith": sign_in_with,
+        "temporaryPassword": temporary_password,
+        "mustChangePassword": True,
+    }
 
 
 _BULK_COLUMNS = ["fullName", "email", "className", "section", "designation", "subjectSpecialization", "qualification"]
@@ -489,7 +643,7 @@ def bulk_create_people(
     should be there, you never know which one would be required when")."""
     role = role.strip().upper()
     if role not in BULK_ROLES:
-        api_error(422, "VALIDATION_ERROR", "role must be TEACHER or STUDENT for bulk import.")
+        api_error(422, "VALIDATION_ERROR", "Bulk upload is for teachers or students. Please choose one.")
     if not file.filename or not (file.filename.lower().endswith(".csv") or file.filename.lower().endswith(".xlsx")):
         api_error(422, "VALIDATION_ERROR", "Upload a .csv or .xlsx file.")
 
@@ -498,10 +652,10 @@ def bulk_create_people(
     try:
         rows = _parse_bulk_rows(file.filename, raw)
     except Exception:
-        api_error(422, "VALIDATION_ERROR", "Could not parse the uploaded file. Check it has a header row.")
+        api_error(422, "VALIDATION_ERROR", "We couldn't read that file. Check that it's a .csv or .xlsx file with a header row.")
 
     if not rows:
-        api_error(422, "VALIDATION_ERROR", "The uploaded file has no data rows.")
+        api_error(422, "VALIDATION_ERROR", "That file has no rows to import.")
     if len(rows) > MAX_BULK_IMPORT_ROWS:
         api_error(
             422,

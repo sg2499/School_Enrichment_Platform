@@ -28,3 +28,22 @@ frontend/.env.local
 # on the patch file's own diff-formatted text -- not a real code issue,
 # just a leftover handoff file. Ignored so this can't happen again.)
 *.patch
+
+# Key material and secret backups (3 Oct 2026). A backup of a real
+# encryption key, saved into this folder as top_encryption_key.txt, was
+# committed to this public repo on 1 Oct by ship.ps1's `git add -A`. Keep
+# key backups in a password manager, never in the project folder -- these
+# patterns are a seatbelt, not the plan. scripts/check_no_secrets.py is the
+# real guard (it also reads file contents, and runs in ship.ps1 and in CI);
+# this just stops such a file from being staged in the first place.
+*.pem
+*.key
+*.p12
+*.pfx
+*_key.txt
+*-key.txt
+*_keys.txt
+*-keys.txt
+*encryption_key*
+*secret_key*
+*private_key*

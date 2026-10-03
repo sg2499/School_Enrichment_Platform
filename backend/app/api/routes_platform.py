@@ -63,11 +63,11 @@ def provision_school(request: Request, payload: SchoolProvisionRequest, db: Sess
     admin_email = payload.adminEmail.strip().lower()
 
     if not school_name:
-        api_error(422, "VALIDATION_ERROR", "schoolName is required.")
+        api_error(422, "VALIDATION_ERROR", "School name is required.")
     if not admin_full_name:
-        api_error(422, "VALIDATION_ERROR", "adminFullName is required.")
+        api_error(422, "VALIDATION_ERROR", "The admin's full name is required.")
     if "@" not in admin_email or admin_email.startswith("@") or admin_email.endswith("@"):
-        api_error(422, "VALIDATION_ERROR", "adminEmail must be a valid email address.")
+        api_error(422, "VALIDATION_ERROR", "Enter a valid email address for the admin.")
 
     password_issue = strong_password_issue(payload.adminPassword)
     if password_issue:

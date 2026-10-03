@@ -109,20 +109,45 @@ if (Test-Path "frontend/package.json") {
     } finally { Pop-Location }
 }
 
-# --- Secret scan, mirrors the repository-safety CI job -------------------
-Step "Scanning staged changes for secret-bearing file paths"
-$changed = git diff --name-only HEAD 2>$null
-$changed += git diff --name-only --cached 2>$null
-$suspicious = $changed | Where-Object {
-    $_ -match '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|id_rsa$|credentials\.json$|secrets?\.)' -and
-    $_ -notmatch '(^|/)\.env\.example$'
+# --- Stage, then secret scan (mirrors the repository-safety CI job) --------
+# Order matters, and it used to be the other way round (3 Oct 2026). The
+# scan ran first, on `git diff --name-only`, and `git add -A` ran after it.
+# `git diff` never lists an untracked file, so a brand-new file was not
+# examined at all -- and was then swept into the commit. That is how
+# top_encryption_key.txt, a backup of a real encryption key saved into this
+# folder, reached this public repo on 1 Oct (PR #79), and how a stray
+# *.patch file did on 30 Sep. Staging first means the scan sees exactly what
+# the commit is about to take, new files included.
+#
+# The scan itself is scripts/check_no_secrets.py -- the same script CI
+# runs -- so the two can no longer drift. It checks file names AND file
+# contents (the old check matched names only, against a list that
+# "..._key.txt" was not on), and never prints a value it finds.
+Step "Staging changes"
+git add -A
+if ($LASTEXITCODE -ne 0) { throw "git add failed (see output above)." }
+
+Step "Scanning what is about to be committed for secrets (names and contents)"
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    # Fail closed: without the scan there is nothing between `git add -A`
+    # and a public repository.
+    git reset -q
+    throw "python is not on PATH, so the secret scan cannot run. Activate the virtualenv and re-run. Nothing was committed."
 }
-if ($suspicious) {
-    Warn "These changed paths look secret-bearing:"
-    $suspicious | ForEach-Object { Warn "  $_" }
-    throw "Refusing to push. Remove secrets from the diff first."
+python scripts/check_no_secrets.py --staged
+$scanExit = $LASTEXITCODE
+if ($scanExit -ne 0) {
+    # Unstage (the files themselves are untouched) so a later manual
+    # `git commit` cannot pick the flagged file up either.
+    git reset -q
+    if ($scanExit -eq 1) {
+        throw "Refusing to commit: the secret scan above found something. Nothing was committed or pushed, and the changes have been unstaged."
+    }
+    # Any other exit code means the scan itself did not run to the end --
+    # treated exactly like a finding, because "could not check" is not "clean".
+    throw "The secret scan could not run (exit code $scanExit). Is the virtualenv active? Nothing was committed or pushed, and the changes have been unstaged."
 }
-Ok "No secret-bearing paths in the diff."
+Ok "No secret-bearing names or contents in the commit."
 
 # --- Commit and push -------------------------------------------------------
 # Explicit $LASTEXITCODE checks below on git commit/push and gh pr create/merge
@@ -132,7 +157,6 @@ Ok "No secret-bearing paths in the diff."
 # missing their own checks. Now that "Continue" is deliberate, they need to be
 # explicit like every other native call in this script.
 Step "Committing"
-git add -A
 git commit -m "$Message"
 if ($LASTEXITCODE -ne 0) { throw "git commit failed (see output above) -- nothing to push." }
 Ok "Committed."

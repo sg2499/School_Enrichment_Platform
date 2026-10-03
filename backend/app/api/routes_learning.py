@@ -84,15 +84,15 @@ router = APIRouter(prefix="/api/learning", tags=["learning"])
 def _resolve_school(db: Session, user: User, requested_school_id: str | None) -> School:
     if user.role == "SUPER_ADMIN":
         if not requested_school_id:
-            api_error(422, "VALIDATION_ERROR", "schoolId is required for SUPER_ADMIN.")
+            api_error(422, "VALIDATION_ERROR", "Choose a school first.")
         school = db.get(School, requested_school_id)
         if not school:
-            api_error(404, "NOT_FOUND", "School not found.")
+            api_error(404, "NOT_FOUND", "That school couldn't be found.")
         return school
 
     school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
     if not school_admin:
-        api_error(403, "FORBIDDEN", "No school is associated with this admin account.")
+        api_error(403, "FORBIDDEN", "Your admin account isn't linked to a school. Please contact your platform administrator.")
     if requested_school_id and requested_school_id != school_admin.school_id:
         api_error(403, "FORBIDDEN", "You can only manage your own school.")
     return db.get(School, school_admin.school_id)
@@ -151,7 +151,7 @@ def generate_activities(
 ):
     chapter = db.get(Chapter, payload.chapterId)
     if not chapter:
-        api_error(404, "NOT_FOUND", "Chapter not found.")
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
     created = learning_service.generate_activities_for_chapter(db, chapter, user.id)
     return {"chapterId": chapter.id, "createdCount": len(created), "activities": [_activity_dict(a) for a in created]}
 
@@ -180,9 +180,9 @@ def publish_activity(
 ):
     activity = db.get(LearningActivity, activity_id)
     if not activity:
-        api_error(404, "NOT_FOUND", "Learning activity not found.")
+        api_error(404, "NOT_FOUND", "That activity couldn't be found. It may have been removed.")
     if not db.query(LearningActivityQuestion).filter(LearningActivityQuestion.learning_activity_id == activity.id).first():
-        api_error(422, "VALIDATION_ERROR", "This activity has no questions linked yet.")
+        api_error(422, "VALIDATION_ERROR", "This activity has no questions yet, so it can't be published.")
     activity.status = "PUBLISHED"
     db.commit()
     return _activity_dict(activity)
@@ -244,12 +244,12 @@ def create_assignment(
     db: Session = Depends(get_db),
 ):
     if payload.reason not in ASSIGNMENT_REASONS:
-        api_error(422, "VALIDATION_ERROR", "Invalid reason.")
+        api_error(422, "VALIDATION_ERROR", "Choose a reason for this assignment.")
 
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
         if not teacher or not teacher.is_active:
-            api_error(403, "FORBIDDEN", "Teacher profile not found or inactive.")
+            api_error(403, "FORBIDDEN", "Your teacher profile isn't active. Please ask your school admin.")
         school = db.get(School, teacher.school_id)
         assigned_by = user.id
     else:
@@ -258,7 +258,7 @@ def create_assignment(
 
     activity = db.get(LearningActivity, payload.learningActivityId)
     if not activity:
-        api_error(404, "NOT_FOUND", "Learning activity not found.")
+        api_error(404, "NOT_FOUND", "That activity couldn't be found. It may have been removed.")
 
     if user.role == "TEACHER":
         # 30 Sep 2026: studentIds bypasses class_name/section entirely
@@ -302,7 +302,7 @@ def create_assignment(
         # Student.class_name.
         class_level = db.query(ClassLevel).filter(ClassLevel.code == payload.className).first()
         if not class_level:
-            api_error(422, "VALIDATION_ERROR", "Unknown class.")
+            api_error(422, "VALIDATION_ERROR", "That class isn't set up on the platform.")
         # The subject being assigned comes from the activity's own chapter
         # (Chapter.board_course_id, never nullable -- curriculum.py), not
         # from anything the client sends, so a teacher can't claim a course
@@ -315,7 +315,7 @@ def create_assignment(
             section=section,
             board_course_id=chapter.board_course_id,
         ):
-            api_error(403, "FORBIDDEN", "You are not currently assigned to teach this class, section and course.")
+            api_error(403, "FORBIDDEN", "You're not the current teacher for this class, section and subject.")
 
     assignment = learning_service.create_assignment(
         db,
@@ -390,7 +390,7 @@ def list_assignments(
     if user.role == "STUDENT":
         student_row = db.query(Student).filter(Student.user_id == user.id).first()
         if not student_row:
-            api_error(404, "NOT_FOUND", "Student profile not found.")
+            api_error(404, "NOT_FOUND", "Your student profile isn't set up yet. Please ask your teacher or school admin.")
         targets = db.query(AssignmentTarget).filter(AssignmentTarget.student_id == student_row.id).all()
         results = []
         for target in targets:
@@ -470,7 +470,7 @@ def _check_assignment_scope(db: Session, user: User, assignment: Assignment) -> 
 def _get_scoped_assignment(db: Session, user: User, assignment_id: str) -> Assignment:
     assignment = db.get(Assignment, assignment_id)
     if not assignment:
-        api_error(404, "NOT_FOUND", "Assignment not found.")
+        api_error(404, "NOT_FOUND", "That assignment couldn't be found. It may have been removed.")
     _check_assignment_scope(db, user, assignment)
     return assignment
 
@@ -529,7 +529,7 @@ def grant_extra_attempt(
     assignment = _get_scoped_assignment(db, user, assignment_id)
     target = db.get(AssignmentTarget, target_id)
     if not target or target.assignment_id != assignment.id:
-        api_error(404, "NOT_FOUND", "Assignment target not found.")
+        api_error(404, "NOT_FOUND", "That student isn't part of this assignment.")
     # 1 Oct 2026: granting is a WRITE, so a TEACHER must also be the
     # section's CURRENT teacher (teacher_may_currently_act_on, whose own
     # docstring has always listed "grant an extra attempt" among the writes
@@ -667,12 +667,12 @@ def get_attempt_result(
 ):
     attempt = db.get(Attempt, attempt_id)
     if not attempt:
-        api_error(404, "NOT_FOUND", "Attempt not found.")
+        api_error(404, "NOT_FOUND", "That attempt couldn't be found.")
 
     if user.role == "STUDENT":
         student_row = db.query(Student).filter(Student.user_id == user.id).first()
         if not student_row or attempt.assignment_target.student_id != student_row.id:
-            api_error(404, "NOT_FOUND", "Attempt not found.")
+            api_error(404, "NOT_FOUND", "That attempt couldn't be found.")
     else:
         # TEACHER/ADMIN/SUPER_ADMIN: scoped the same way as the results view
         # (list_assignment_targets) -- a TEACHER can only see attempts on
@@ -686,7 +686,7 @@ def get_attempt_result(
 
     evaluation = learning_service.get_result(db, attempt_id)
     if not evaluation:
-        api_error(422, "NOT_SUBMITTED", "This attempt has not been submitted yet.")
+        api_error(422, "NOT_SUBMITTED", "This attempt hasn't been submitted yet.")
 
     answer_rows = db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()
     breakdown = []
@@ -749,7 +749,7 @@ def _require_student_in_scope(db: Session, user: User, student: Student) -> None
         if not school_admin or school_admin.school_id != student.school_id:
             api_error(403, "FORBIDDEN", "You can only view students in your own school.")
         return
-    api_error(403, "FORBIDDEN", "You do not have permission for this action.")
+    api_error(403, "FORBIDDEN", "You don't have permission to do that.")
 
 
 def _require_teacher_currently_teaches_student(
@@ -786,7 +786,7 @@ def _require_teacher_currently_teaches_student(
     2026 handover policy rules out. Only today's teacher of that section
     sees it."""
     if not teacher or not teacher.is_active:
-        api_error(403, "FORBIDDEN", "Teacher profile not found or inactive.")
+        api_error(403, "FORBIDDEN", "Your teacher profile isn't active. Please ask your school admin.")
     class_level = (
         db.query(ClassLevel).filter(ClassLevel.code == student.class_name).first() if student.class_name else None
     )
@@ -807,7 +807,7 @@ def _require_teacher_currently_teaches_student(
         api_error(
             403,
             "FORBIDDEN",
-            "You are not currently assigned to teach this student's class, section and course.",
+            "You're not the current teacher for this student's class, section and subject.",
         )
 
 
@@ -832,11 +832,11 @@ def get_foundation_repair_recommendation(
 ):
     student = db.get(Student, studentId)
     if not student:
-        api_error(404, "NOT_FOUND", "Student not found.")
+        api_error(404, "NOT_FOUND", "That student couldn't be found.")
     _require_student_in_scope(db, user, student)
     concept_lesson = db.get(ConceptLesson, conceptLessonId)
     if not concept_lesson:
-        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+        api_error(404, "NOT_FOUND", "That concept lesson couldn't be found. It may have been removed.")
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
         _require_teacher_currently_teaches_student(db, teacher, student, concept_lesson)
@@ -859,10 +859,10 @@ def approve_foundation_repair_recommendation(
 ):
     student = db.get(Student, payload.studentId)
     if not student:
-        api_error(404, "NOT_FOUND", "Student not found.")
+        api_error(404, "NOT_FOUND", "That student couldn't be found.")
     concept_lesson = db.get(ConceptLesson, payload.conceptLessonId)
     if not concept_lesson:
-        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+        api_error(404, "NOT_FOUND", "That concept lesson couldn't be found. It may have been removed.")
     if student.school_id != teacher.school_id:
         api_error(403, "FORBIDDEN", "You can only manage students in your own school.")
     # A11 (1 Oct 2026): approving creates a real Assignment -- a WRITE -- so
