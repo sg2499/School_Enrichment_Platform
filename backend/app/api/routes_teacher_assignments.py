@@ -35,12 +35,12 @@ def _resolve_school_id(db: Session, user: User, requested_school_id: str | None)
     never trusted from client input); SUPER_ADMIN must say which school."""
     if user.role == "SUPER_ADMIN":
         if not requested_school_id:
-            api_error(422, "VALIDATION_ERROR", "schoolId is required for SUPER_ADMIN.")
+            api_error(422, "VALIDATION_ERROR", "Choose a school first.")
         return requested_school_id
 
     school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
     if not school_admin:
-        api_error(403, "FORBIDDEN", "No school is associated with this admin account.")
+        api_error(403, "FORBIDDEN", "Your admin account isn't linked to a school. Please contact your platform administrator.")
     if requested_school_id and requested_school_id != school_admin.school_id:
         api_error(403, "FORBIDDEN", "You can only manage teacher assignments for your own school.")
     return school_admin.school_id
@@ -50,7 +50,7 @@ def _parse_date(value: str, field_name: str) -> date:
     try:
         return date.fromisoformat(value)
     except (TypeError, ValueError):
-        api_error(422, "VALIDATION_ERROR", f"{field_name} must be an ISO date (YYYY-MM-DD).")
+        api_error(422, "VALIDATION_ERROR", f"{field_name} must be a date in the form YYYY-MM-DD.")
 
 
 def _assignment_dict(assignment: TeacherSectionAssignment) -> dict:
@@ -92,7 +92,7 @@ def assign_teacher(
     db: Session = Depends(get_db),
 ):
     school_id = _resolve_school_id(db, user, payload.schoolId)
-    start_date = _parse_date(payload.startDate, "startDate")
+    start_date = _parse_date(payload.startDate, "Start date")
 
     assignment = teacher_assignment_service.assign_teacher_to_section(
         db,
@@ -135,13 +135,13 @@ def transfer_teacher(
 ):
     assignment = db.get(TeacherSectionAssignment, assignment_id)
     if not assignment:
-        api_error(404, "NOT_FOUND", "Assignment not found.")
+        api_error(404, "NOT_FOUND", "That teaching assignment couldn't be found.")
     # See _resolve_school_id's docstring -- an ADMIN may only touch their
     # own school's assignments; passing the assignment's own school_id as
     # "requested" makes that check reject a cross-school ADMIN outright.
     _resolve_school_id(db, user, assignment.school_id)
 
-    transfer_date = _parse_date(payload.transferDate, "transferDate")
+    transfer_date = _parse_date(payload.transferDate, "Transfer date")
     old_teacher_id = assignment.teacher_id
     old_assignment, new_assignment = teacher_assignment_service.transfer_teacher(
         db,

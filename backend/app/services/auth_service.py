@@ -11,7 +11,7 @@ from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.errors import api_error
+from app.core.errors import api_error, who_can_help
 from app.core.security import (
     create_access_token,
     create_two_factor_challenge_token,
@@ -240,7 +240,7 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         # status code or message. Running the same dummy bcrypt verify here
         # equalizes the timing of both code paths.
         verify_dummy_password()
-        api_error(401, "INVALID_CREDENTIALS", "Invalid login details.")
+        api_error(401, "INVALID_CREDENTIALS", "Those sign-in details don't match. Please check them and try again.")
 
     if _is_locked(user):
         log_audit_event(db, "auth.login.blocked_locked", user_id=user.id, request=request)
@@ -248,8 +248,8 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         api_error(
             423,
             "ACCOUNT_LOCKED",
-            "Too many failed sign-in attempts. This account is temporarily locked -- please try again in a "
-            "few minutes.",
+            "Too many incorrect sign-in attempts. This account is locked for a short while. "
+            "Please try again in a few minutes.",
         )
 
     if not verify_password(password, user.password_hash):
@@ -258,9 +258,10 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
             api_error(
                 423,
                 "ACCOUNT_LOCKED",
-                f"Too many failed sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes.",
+                f"Too many incorrect sign-in attempts. This account is locked for {LOCKOUT_DURATION_MINUTES} minutes. "
+                "Please try again after that.",
             )
-        api_error(401, "INVALID_CREDENTIALS", "Invalid login details.")
+        api_error(401, "INVALID_CREDENTIALS", "Those sign-in details don't match. Please check them and try again.")
 
     # Correct password -- clear any accumulated lockout state so a
     # legitimate sign-in isn't held against a later, unrelated attempt.
@@ -269,7 +270,14 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         db.commit()
 
     if not user.is_active:
-        api_error(403, "ACCOUNT_INACTIVE", "This account is inactive. Please contact the admin.")
+        # The password was right, so this is the account's owner: say who
+        # can reactivate it for someone in their role, not "the admin" --
+        # which, for an admin, is nobody.
+        api_error(
+            403,
+            "ACCOUNT_INACTIVE",
+            f"This account is inactive. Please ask {who_can_help(user.role)} to reactivate it.",
+        )
 
     if user.totp_enabled:
         # Password was correct, but a second factor is required before a

@@ -16,7 +16,7 @@ from app.core.cookies import (
     set_session_cookie,
     touch_csrf_cookie,
 )
-from app.core.errors import api_error
+from app.core.errors import api_error, who_can_help
 from app.core.security import create_access_token, decode_token, expire_minutes_for_role
 from app.database import SessionLocal, get_db
 from app.models import Student, Teacher, User
@@ -163,11 +163,11 @@ def get_current_user(
         used_cookie_auth = token is not None
 
     if not token:
-        api_error(401, "UNAUTHORIZED", "Missing or invalid authorization header.")
+        api_error(401, "UNAUTHORIZED", "Please sign in to continue.")
 
     payload = decode_token(token)
     if not payload:
-        api_error(401, "UNAUTHORIZED", "Invalid or expired token.")
+        api_error(401, "UNAUTHORIZED", "Your session has expired. Please sign in again.")
 
     # Special-purpose tokens (e.g. the short-lived 2FA login-challenge token
     # issued mid-login, before the second factor is verified) carry a
@@ -175,7 +175,7 @@ def get_current_user(
     # otherwise a leaked challenge token would grant full account access
     # without ever passing the second factor, defeating the point of 2FA.
     if payload.get("purpose"):
-        api_error(401, "UNAUTHORIZED", "Invalid or expired token.")
+        api_error(401, "UNAUTHORIZED", "Your session has expired. Please sign in again.")
 
     # Slide the CSRF cookie's Max-Age forward on every cookie-authenticated
     # request (GET included), not just mutating ones -- otherwise it dies on
@@ -195,11 +195,21 @@ def get_current_user(
         csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
         csrf_header = request.headers.get(CSRF_HEADER_NAME)
         if not csrf_cookie or not csrf_header or not secrets.compare_digest(csrf_cookie, csrf_header):
-            api_error(403, "CSRF_VALIDATION_FAILED", "Request could not be verified. Please refresh and try again.")
+            api_error(403, "CSRF_VALIDATION_FAILED", "We couldn't verify that request. Please refresh the page and try again.")
 
     user = db.get(User, payload.get("sub"))
-    if not user or not user.is_active:
-        api_error(401, "UNAUTHORIZED", "User not found or inactive.")
+    if not user:
+        api_error(401, "UNAUTHORIZED", "Your session is no longer valid. Please sign in again.")
+    if not user.is_active:
+        # The caller holds a validly signed session for this exact account,
+        # so saying it was deactivated tells them nothing they could not
+        # already see by being signed out -- and tells the real owner who
+        # can put it right.
+        api_error(
+            401,
+            "UNAUTHORIZED",
+            f"Your account has been deactivated. Please ask {who_can_help(user.role)} if you need it back.",
+        )
 
     # NOTE: api_error() raises HTTPException, which is itself an Exception --
     # it must never be called from inside a `try/except Exception` block that
@@ -216,7 +226,7 @@ def get_current_user(
         except Exception:
             IsStaleAfterPasswordChange = False
         if IsStaleAfterPasswordChange:
-            api_error(401, "UNAUTHORIZED", "Session expired due to password change.")
+            api_error(401, "UNAUTHORIZED", "Your password was changed, so this session has ended. Please sign in with your new password.")
 
     # Lightweight session-revocation check (2026-07-21 security audit, Phase
     # 2): any token issued before a force-logout timestamp is rejected, the
@@ -230,7 +240,7 @@ def get_current_user(
         except Exception:
             IsRevoked = False
         if IsRevoked:
-            api_error(401, "UNAUTHORIZED", "Session was signed out remotely. Please log in again.")
+            api_error(401, "UNAUTHORIZED", "You've been signed out of all devices. Please sign in again.")
 
     # Per-device session tracking (2026-08-19 security hardening, session
     # hygiene). "sid" is only present on tokens issued after this feature
@@ -242,7 +252,7 @@ def get_current_user(
     session_id = payload.get("sid")
     if session_id:
         if not is_session_valid(db, session_id, user.role):
-            api_error(401, "UNAUTHORIZED", "This session has ended. Please log in again.")
+            api_error(401, "UNAUTHORIZED", "This session has ended. Please sign in again.")
         request.state.session_id = session_id
         if session_id not in active_sessions_cache:
             active_sessions_cache[session_id] = True
@@ -310,7 +320,7 @@ def get_current_user(
         api_error(
             403,
             "PASSWORD_CHANGE_REQUIRED",
-            "You must change your password before you can continue.",
+            "Choose a new password to continue.",
         )
 
     # Mandatory 2FA enforcement (2026-08-19 security hardening). Checked last
@@ -328,7 +338,7 @@ def get_current_user(
         api_error(
             403,
             "TWO_FACTOR_SETUP_REQUIRED",
-            "Two-factor authentication must be set up before you can continue.",
+            "Set up two-factor authentication to continue.",
         )
 
     return user
@@ -345,7 +355,7 @@ def get_current_session_id(request: Request, _: User = Depends(get_current_user)
 def require_roles(*roles: str):
     def dependency(user: User = Depends(get_current_user)) -> User:
         if user.role not in roles:
-            api_error(403, "FORBIDDEN", "You do not have permission for this action.")
+            api_error(403, "FORBIDDEN", "You don't have permission to do that.")
         return user
     return dependency
 
@@ -356,7 +366,7 @@ def get_current_student(
 ) -> Student:
     student = db.query(Student).filter(Student.user_id == user.id).first()
     if not student:
-        api_error(404, "NOT_FOUND", "Student profile not found.")
+        api_error(404, "NOT_FOUND", "Your student profile isn't set up yet. Please ask your teacher or school admin.")
     # Defensive second check, mirroring get_current_teacher() below. student.is_active
     # and the underlying user.is_active are kept in sync by every admin endpoint that
     # currently deactivates a student, so this doesn't fire under normal operation --
@@ -364,7 +374,7 @@ def get_current_student(
     # feature) can never silently desync the two and leave a "deactivated" student with
     # working login access with nobody the wiser.
     if not student.is_active:
-        api_error(403, "ACCOUNT_INACTIVE", "Student account is inactive.")
+        api_error(403, "ACCOUNT_INACTIVE", "Your account is inactive. Please ask your teacher or school admin to reactivate it.")
     return student
 
 
@@ -374,7 +384,7 @@ def get_current_teacher(
 ) -> Teacher:
     teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
     if not teacher:
-        api_error(404, "NOT_FOUND", "Teacher profile not found.")
+        api_error(404, "NOT_FOUND", "Your teacher profile isn't set up yet. Please ask your school admin.")
     if not teacher.is_active:
-        api_error(403, "ACCOUNT_INACTIVE", "Teacher account is inactive.")
+        api_error(403, "ACCOUNT_INACTIVE", "Your account is inactive. Please ask your school admin to reactivate it.")
     return teacher

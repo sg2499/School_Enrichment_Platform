@@ -20,9 +20,6 @@ import logging
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.routes_auth import router as auth_router
@@ -34,6 +31,12 @@ from app.api.routes_practice_tracker import router as practice_tracker_router
 from app.api.routes_roster import router as roster_router
 from app.api.routes_teacher_assignments import router as teacher_assignments_router
 from app.core.config import FRONTEND_URL, IS_PRODUCTION, SENTRY_DSN
+from app.core.error_handling import (
+    REQUEST_ID_HEADER,
+    SECURITY_HEADERS,
+    RequestIdMiddleware,
+    install_error_handling,
+)
 from app.core.rate_limit import limiter
 
 logger = logging.getLogger("school_enrichment")
@@ -91,7 +94,10 @@ if SENTRY_DSN:
 app = FastAPI(title="School Enrichment Backend", version="0.1.0")
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# Every failure -- api_error(), an unknown route, a malformed request, a rate
+# limit, a crash -- leaves in one envelope, with a reference the person can
+# quote. See app/core/error_handling.py for what each used to look like.
+install_error_handling(app)
 # A8 fix (30 Sep 2026 review): rate_limit.py's default_limits ("200/minute")
 # never actually applied to anything -- slowapi only enforces limits on
 # routes that install this middleware; without it, only the handful of
@@ -113,6 +119,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # The reference on every response (see RequestIdMiddleware). The browser
+    # frontend reaches this API same-origin through Vercel's rewrite and can
+    # read any header already; this is for a cross-origin caller, where an
+    # unlisted header is invisible to JS. It identifies one request and
+    # grants nothing.
+    expose_headers=[REQUEST_ID_HEADER],
     # A10 fix (30 Sep 2026 review): X-New-Access-Token used to be exposed
     # here so browser JS could read the sliding-session renewal off the
     # response -- but the browser frontend is entirely cookie-authenticated
@@ -136,26 +148,16 @@ async def add_security_headers(request: Request, call_next):
     sniffing, cross-origin framing) that an absent policy would leave open.
     """
     response = await call_next(request)
-    response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "DENY")
-    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
-    response.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+    for header, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(header, value)
     return response
 
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    from fastapi import HTTPException
-    if isinstance(exc, HTTPException):
-        return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
-    # Log the real exception server-side (Sentry captures it too when
-    # SENTRY_DSN is configured) but never leak str(exc) to the client.
-    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
-    return JSONResponse(
-        status_code=500,
-        content={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Something went wrong. Please try again.", "details": {}}},
-    )
+# Added last so it is the outermost of this app's middleware: a response
+# produced by any layer inside it -- a CORS preflight, a rate limit answered
+# by SlowAPIMiddleware before the route ever runs -- still leaves with its
+# reference. (Starlette runs middleware in reverse order of registration.)
+app.add_middleware(RequestIdMiddleware)
 
 
 app.include_router(health_router)

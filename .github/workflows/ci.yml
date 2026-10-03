@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Validate diff and scan for secret-bearing paths
+      - name: Validate diff and scan for secrets
         shell: bash
         run: |
           set -euo pipefail
@@ -66,17 +66,21 @@ jobs:
             changed="$(git diff --name-only "$BASE...HEAD")"
           fi
           printf '%s\n' "$changed" | tee ci-artifacts/changed-files.txt
-          secret_paths="$(printf '%s\n' "$changed" | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|id_rsa$|credentials\.json$|secrets?\.)' | grep -vE '(^|/)\.env\.example$' || true)"
-          if [ -n "$secret_paths" ]; then
-            printf '%s\n' "$secret_paths" >&2
-            echo 'Secret-bearing file path detected.' >&2
-            exit 1
-          fi
+          # Secret scan (3 Oct 2026): names AND contents, over every tracked
+          # file at this commit rather than only the paths this push
+          # changed. The check this replaces matched changed file NAMES
+          # against a short list, which is how top_encryption_key.txt -- a
+          # real key, in a .txt -- passed it on 1 Oct (PR #79). Scanning the
+          # whole tree also means a secret that predates a rule is caught by
+          # the next push, not never. Same script ship.ps1 runs locally, so
+          # the two checks cannot drift; it never prints a value it finds.
+          # pipefail (set above) carries its exit code through tee.
+          python3 scripts/check_no_secrets.py --all 2>&1 | tee ci-artifacts/secret-scan.txt
           {
             echo '## Repository safety'
             echo
             echo '- Git whitespace validation: passed'
-            echo '- Secret-bearing changed paths: none'
+            echo "- Secret scan (file names and contents): $(tail -n 1 ci-artifacts/secret-scan.txt)"
             echo "- Changed file count: $(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)"
           } | tee ci-artifacts/repository-safety.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload repository safety evidence

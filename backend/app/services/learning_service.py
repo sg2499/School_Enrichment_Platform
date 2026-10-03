@@ -232,9 +232,9 @@ def create_assignment(
     max_attempts: int = 3,
 ) -> Assignment:
     if learning_activity.status != "PUBLISHED":
-        api_error(422, "VALIDATION_ERROR", "Only a published learning activity can be assigned.")
+        api_error(422, "VALIDATION_ERROR", "Only a published activity can be assigned.")
     if not class_name and not student_ids:
-        api_error(422, "VALIDATION_ERROR", "Either classId or studentIds is required.")
+        api_error(422, "VALIDATION_ERROR", "Choose a class to assign to.")
 
     targets_query = db.query(Student).filter(Student.school_id == school.id, Student.is_active.is_(True))
     if student_ids:
@@ -242,7 +242,14 @@ def create_assignment(
         found_ids = {s.id for s in students}
         missing = set(student_ids) - found_ids
         if missing:
-            api_error(404, "NOT_FOUND", f"Student(s) not found in this school: {', '.join(sorted(missing))}.")
+            # The ids used to be listed in the sentence itself. They are
+            # for a program, not a person, so they travel in `details`.
+            api_error(
+                404,
+                "NOT_FOUND",
+                "Some of those students couldn't be found in this school.",
+                {"missingStudentIds": sorted(missing)},
+            )
     else:
         # `section` (30 Sep 2026) narrows a class-wide assignment to one
         # section. Students store class and section as two separate fields
@@ -262,8 +269,8 @@ def create_assignment(
             class_query = class_query.filter(Student.section == section)
         students = class_query.all()
         if not students:
-            where = f"class {class_name!r}, section {section!r}" if section is not None else f"class {class_name!r}"
-            api_error(422, "VALIDATION_ERROR", f"No active students found in {where}.")
+            where = f"Class {class_name}, Section {section}" if section is not None else f"Class {class_name}"
+            api_error(422, "VALIDATION_ERROR", f"There are no active students in {where}.")
 
     # Section scope (1 Oct 2026, Practice Tracker): record which
     # (class_level, section, board_course) this assignment was set for, so
@@ -308,7 +315,7 @@ def create_assignment(
 def _get_owned_target(db: Session, student: Student, assignment_target_id: str) -> AssignmentTarget:
     target = db.get(AssignmentTarget, assignment_target_id)
     if not target or target.student_id != student.id:
-        api_error(404, "NOT_FOUND", "Assignment not found.")
+        api_error(404, "NOT_FOUND", "That practice couldn't be found. It may have been removed by your teacher.")
     return target
 
 
@@ -316,7 +323,7 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
     target = _get_owned_target(db, student, assignment_target_id)
     assignment = target.assignment
     if assignment.status != "ACTIVE":
-        api_error(422, "ASSIGNMENT_CLOSED", "This assignment is no longer active.")
+        api_error(422, "ASSIGNMENT_CLOSED", "This practice has been closed, so it can't be started.")
 
     # Resume an already-open attempt rather than starting a duplicate --
     # this is what makes a page-refresh mid-attempt safe, and half of
@@ -336,7 +343,7 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
     # is this one student's own extra allowance on top of the assignment's
     # shared max_attempts -- see grant_extra_attempt below.
     if attempt_count >= assignment.max_attempts + target.bonus_attempts:
-        api_error(422, "ATTEMPT_LIMIT_REACHED", "No re-attempts remaining for this assignment. Ask your teacher for an additional attempt.")
+        api_error(422, "ATTEMPT_LIMIT_REACHED", "You've used all your attempts for this practice. Ask your teacher if you need another one.")
     if attempt_count > 0:
         latest = (
             db.query(Attempt)
@@ -345,7 +352,7 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
             .first()
         )
         if latest.status not in ("SUBMITTED", "EVALUATED"):
-            api_error(409, "ATTEMPT_IN_PROGRESS", "The previous attempt must be submitted before starting a new one.")
+            api_error(409, "ATTEMPT_IN_PROGRESS", "Submit your current attempt before starting a new one.")
 
     attempt = Attempt(assignment_target_id=target.id, attempt_number=attempt_count + 1, status="IN_PROGRESS")
     db.add(attempt)
@@ -380,7 +387,7 @@ def grant_extra_attempt(db: Session, target: AssignmentTarget) -> AssignmentTarg
 def _get_owned_attempt(db: Session, student: Student, attempt_id: str) -> Attempt:
     attempt = db.get(Attempt, attempt_id)
     if not attempt or attempt.assignment_target.student_id != student.id:
-        api_error(404, "NOT_FOUND", "Attempt not found.")
+        api_error(404, "NOT_FOUND", "That attempt couldn't be found.")
     return attempt
 
 
@@ -396,7 +403,7 @@ def save_answer(db: Session, student: Student, attempt_id: str, question_id: str
 
     activity = attempt.assignment_target.assignment.learning_activity
     if question_id not in _activity_question_ids(db, activity.id):
-        api_error(422, "VALIDATION_ERROR", "This question is not part of the assigned activity.")
+        api_error(422, "VALIDATION_ERROR", "That question isn't part of this practice.")
 
     question = db.get(Question, question_id)
     answer = (
@@ -544,7 +551,7 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
     if existing_evaluation:
         return existing_evaluation
     if attempt.status != "IN_PROGRESS":
-        api_error(409, "ATTEMPT_LOCKED", "This attempt is not in progress.")
+        api_error(409, "ATTEMPT_LOCKED", "This attempt is no longer in progress.")
 
     activity = attempt.assignment_target.assignment.learning_activity
     question_ids = _activity_question_ids(db, activity.id)
@@ -644,15 +651,15 @@ def apply_manual_grades(
     """
     evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
     if not evaluation:
-        api_error(422, "NOT_SUBMITTED", "This attempt has not been submitted yet.")
+        api_error(422, "NOT_SUBMITTED", "This attempt hasn't been submitted yet.")
     if not grades:
-        api_error(422, "VALIDATION_ERROR", "Provide at least one mark.")
+        api_error(422, "VALIDATION_ERROR", "Enter at least one mark.")
 
     answers = {a.question_id: a for a in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()}
     for question_id, score in grades.items():
         answer = answers.get(question_id)
         if answer is None:
-            api_error(422, "VALIDATION_ERROR", "One of these questions is not part of this attempt.")
+            api_error(422, "VALIDATION_ERROR", "One of these questions isn't part of this attempt.")
         if not needs_manual_grade(answer):
             api_error(422, "NOT_MANUALLY_GRADABLE", "This answer was marked automatically and can't be re-marked by hand.")
         if isinstance(score, bool) or not isinstance(score, int):
@@ -695,5 +702,5 @@ def get_result(db: Session, attempt_id: str) -> Evaluation | None:
 def resolve_teacher_school_and_assignable_check(db: Session, teacher: Teacher) -> School:
     school = db.get(School, teacher.school_id)
     if not school:
-        api_error(404, "NOT_FOUND", "School not found.")
+        api_error(404, "NOT_FOUND", "That school couldn't be found.")
     return school
