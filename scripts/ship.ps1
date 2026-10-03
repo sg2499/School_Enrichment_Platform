@@ -102,6 +102,14 @@ if (Test-Path "frontend/package.json") {
         if ($LASTEXITCODE -ne 0) { throw "Frontend typecheck failed. Not pushing." }
         Ok "Typecheck passed."
 
+        # Added 3 Oct 2026 with the error translator (frontend/lib/errors.ts).
+        # Runs on Node's built-in test runner -- no extra packages; see
+        # frontend/scripts/run-unit-tests.mjs.
+        Step "Frontend: unit tests (mirrors the frontend-unit-tests CI job)"
+        npm test
+        if ($LASTEXITCODE -ne 0) { throw "Frontend unit tests failed. Not pushing." }
+        Ok "Unit tests passed."
+
         Step "Frontend: production build (mirrors the frontend-build CI job)"
         npm run build
         if ($LASTEXITCODE -ne 0) { throw "Frontend build failed. Not pushing." }

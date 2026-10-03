@@ -34,11 +34,11 @@ import { Badge, Eyebrow, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { SessionGate } from "@/components/SessionGate";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type {
   BoardCourseOption,
@@ -323,7 +323,7 @@ function useCurriculumFilterLookups() {
         setBoardCourses(boardCoursesRes.data.boardCourses);
       })
       .catch((err) => {
-        if (!cancelled) setError(apiErrorMessage(err));
+        if (!cancelled) setError(errorMessage(err, "load the board, class and subject lists"));
       });
     return () => {
       cancelled = true;
@@ -456,7 +456,7 @@ function ChapterStudio() {
       });
       setChapters(data.chapters);
     } catch (err) {
-      setListError(apiErrorMessage(err));
+      setListError(errorMessage(err, "load the chapters"));
     } finally {
       setLoadingChapters(false);
     }
@@ -469,7 +469,7 @@ function ChapterStudio() {
       const { data } = await api.get<ChapterDetail>(`/curriculum-admin/chapters/${chapterId}`);
       setDetail(data);
     } catch (err) {
-      setDetailError(apiErrorMessage(err));
+      setDetailError(errorMessage(err, "open this chapter"));
     } finally {
       setLoadingDetail(false);
     }
@@ -499,7 +499,7 @@ function ChapterStudio() {
       );
       setQuestionsByLesson((prev) => ({ ...prev, [lessonId]: data.questions }));
     } catch (err) {
-      setQuestionsError(apiErrorMessage(err));
+      setQuestionsError(errorMessage(err, "load this lesson's questions"));
     } finally {
       setLoadingQuestionsFor(null);
     }
@@ -520,7 +520,7 @@ function ChapterStudio() {
       await api.patch(`/curriculum-admin/questions/${questionId}/status`, { status });
       await loadQuestions(lessonId);
     } catch (err) {
-      setQuestionsError(apiErrorMessage(err));
+      setQuestionsError(errorMessage(err, "update this question's status"));
     } finally {
       setQuestionAction(null);
     }
@@ -534,7 +534,7 @@ function ChapterStudio() {
       await api.patch(`/curriculum-admin/chapters/${selectedId}/status`, { status });
       await Promise.all([loadDetail(selectedId), loadChapters()]);
     } catch (err) {
-      setDetailError(apiErrorMessage(err));
+      setDetailError(errorMessage(err, "update this chapter's status"));
     } finally {
       setPendingChapterStatus(null);
     }
@@ -547,7 +547,7 @@ function ChapterStudio() {
       await api.patch(`/curriculum-admin/concept-lessons/${lessonId}/status`, { status });
       if (selectedId) await loadDetail(selectedId);
     } catch (err) {
-      setDetailError(apiErrorMessage(err));
+      setDetailError(errorMessage(err, "update this lesson's status"));
     } finally {
       setLessonAction(null);
     }
@@ -573,7 +573,7 @@ function ChapterStudio() {
       await loadChapters();
       if (selectedId) await loadDetail(selectedId);
     } catch (err) {
-      setListError(apiErrorMessage(err));
+      setListError(errorMessage(err, "send these drafts to review"));
     } finally {
       setBulkReviewBusy(false);
     }
@@ -598,7 +598,7 @@ function ChapterStudio() {
       setExpandedLessonId(null);
       await Promise.all([loadDetail(selectedId), loadChapters()]);
     } catch (err) {
-      setDetailError(apiErrorMessage(err));
+      setDetailError(errorMessage(err, "approve this chapter's questions"));
     } finally {
       setBulkApproveMode(null);
     }
@@ -1276,7 +1276,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       );
       setMappings(data.schoolCurriculumMaps);
     } catch (err) {
-      setLoadError(apiErrorMessage(err));
+      setLoadError(errorMessage(err, "load the mapped chapters"));
     } finally {
       setLoading(false);
     }
@@ -1288,7 +1288,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
     api
       .get<{ schools: SchoolOption[] }>("/curriculum-admin/schools")
       .then(({ data }) => setSchools(data.schools))
-      .catch((err) => setLoadError(apiErrorMessage(err)))
+      .catch((err) => setLoadError(errorMessage(err, "load the list of schools")))
       .finally(() => setLoadingSchools(false));
   }, [isPlatformAdmin]);
 
@@ -1317,7 +1317,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         if (!cancelled) setChapters(data.chapters.filter((c) => c.status === "PUBLISHED"));
       })
       .catch((err) => {
-        if (!cancelled) setLoadError(apiErrorMessage(err));
+        if (!cancelled) setLoadError(errorMessage(err, "load the published chapters"));
       })
       .finally(() => {
         if (!cancelled) setLoadingChapters(false);
@@ -1363,7 +1363,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setPlannedEndDate("");
       await loadMappings();
     } catch (err) {
-      setFormError(apiErrorMessage(err));
+      setFormError(errorMessage(err, "map this chapter"));
     } finally {
       setSaving(false);
     }
@@ -1377,7 +1377,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setConfirmRemoveId(null);
       await loadMappings();
     } catch (err) {
-      setLoadError(apiErrorMessage(err));
+      setLoadError(errorMessage(err, "remove this mapped chapter"));
     } finally {
       setDeletingId(null);
     }
@@ -1406,7 +1406,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setReschedulingId(null);
       await loadMappings();
     } catch (err) {
-      setRescheduleError(apiErrorMessage(err));
+      setRescheduleError(errorMessage(err, "save the new dates"));
     } finally {
       setReschedulingBusy(false);
     }
@@ -1772,10 +1772,11 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
 }
 
 export default function CurriculumStudioPage() {
-  const { user, status } = useProtectedPage("ADMIN");
+  const session = useProtectedPage("ADMIN");
+  const { user, status } = session;
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   const isPlatformAdmin = user?.role === "SUPER_ADMIN";

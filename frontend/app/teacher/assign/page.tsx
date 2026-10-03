@@ -49,13 +49,14 @@ import { MASTHEAD_WELL, PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { AlertBanner } from "@/components/ui/AlertBanner";
+import { SessionGate } from "@/components/SessionGate";
+import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { RosterIllustration } from "@/components/brand/Graphics";
 import { cn } from "@/lib/utils";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, describeApiError, errorMessage } from "@/lib/api";
+import type { DescribedError } from "@/lib/errors";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { Assignment, AssignmentReason, LearningActivity } from "@/types/learning";
 import type { SchoolCurriculumMapEntry } from "@/types/curriculum";
@@ -188,11 +189,12 @@ function ChoiceTrail({ choices }: { choices: Choice[] }) {
 }
 
 export default function AssignPracticePage() {
-  const { user, status } = useProtectedPage("TEACHER");
+  const session = useProtectedPage("TEACHER");
+  const { user, status } = session;
 
   const [mappings, setMappings] = useState<SchoolCurriculumMapEntry[]>([]);
   const [mappingsLoading, setMappingsLoading] = useState(true);
-  const [mappingsError, setMappingsError] = useState<string | null>(null);
+  const [mappingsError, setMappingsError] = useState<DescribedError | null>(null);
 
   const [selectedChapterId, setSelectedChapterId] = useState("");
   const [activities, setActivities] = useState<LearningActivity[]>([]);
@@ -202,7 +204,7 @@ export default function AssignPracticePage() {
 
   const [sections, setSections] = useState<TeacherSection[]>([]);
   const [sectionsLoading, setSectionsLoading] = useState(true);
-  const [sectionsError, setSectionsError] = useState<string | null>(null);
+  const [sectionsError, setSectionsError] = useState<DescribedError | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState("");
   // True only while the current pick is one this page made for the teacher
   // (see handleChapterChange), so a later chapter change can withdraw its
@@ -225,7 +227,7 @@ export default function AssignPracticePage() {
       );
       setMappings(data.schoolCurriculumMaps.filter((m) => m.chapterStatus === "PUBLISHED"));
     } catch (err) {
-      setMappingsError(apiErrorMessage(err));
+      setMappingsError(describeApiError(err, "load your school's chapters"));
     } finally {
       setMappingsLoading(false);
     }
@@ -238,7 +240,7 @@ export default function AssignPracticePage() {
       const { data } = await api.get<{ sections: TeacherSection[] }>("/teacher-assignments/my-sections");
       setSections([...data.sections].sort(compareSections));
     } catch (err) {
-      setSectionsError(apiErrorMessage(err));
+      setSectionsError(describeApiError(err, "load your sections"));
     } finally {
       setSectionsLoading(false);
     }
@@ -266,7 +268,7 @@ export default function AssignPracticePage() {
         setActivities(data.activities.filter((a) => a.status === "PUBLISHED").sort((a, b) => a.sequence - b.sequence));
       })
       .catch((err) => {
-        if (!cancelled) setActivitiesError(apiErrorMessage(err));
+        if (!cancelled) setActivitiesError(errorMessage(err, "load this chapter's activities"));
       })
       .finally(() => {
         if (!cancelled) setActivitiesLoading(false);
@@ -323,7 +325,7 @@ export default function AssignPracticePage() {
       });
       setAssigned({ assignment: data, section: target });
     } catch (err) {
-      setAssignError(apiErrorMessage(err));
+      setAssignError(errorMessage(err, "assign this practice"));
     } finally {
       setAssigning(false);
     }
@@ -350,7 +352,7 @@ export default function AssignPracticePage() {
   const formLoading = mappingsLoading || sectionsLoading;
 
   if (status !== "ready") {
-    return <LoadingScreen />;
+    return <SessionGate session={session} />;
   }
 
   return (
@@ -400,10 +402,8 @@ export default function AssignPracticePage() {
                 </div>
               </div>
 
-              {mappingsError ? <AlertBanner tone="error" message={mappingsError} /> : null}
-              {sectionsError ? (
-                <AlertBanner tone="error" message={`Couldn't load your sections (${sectionsError}). Refresh the page to try again.`} />
-              ) : null}
+              {mappingsError ? <LoadError problem={mappingsError} onRetry={loadMappings} /> : null}
+              {sectionsError ? <LoadError problem={sectionsError} onRetry={loadSections} /> : null}
 
               {sectionsBlocked ? (
                 // Blocked, not broken: sections are assigned by an admin
@@ -612,6 +612,13 @@ export default function AssignPracticePage() {
                       </div>
                     ))}
                   </div>
+                ) : sectionsError ? (
+                  // Not "None yet": that would be a statement about the
+                  // teacher's timetable, and all that is known is that the
+                  // list did not load. content-muted on white: 8.6:1.
+                  <p className="rounded-2xl border border-dashed border-line-strong bg-surface px-3.5 py-3 text-[0.8125rem] leading-relaxed text-content-muted">
+                    Your sections haven&rsquo;t loaded yet.
+                  </p>
                 ) : sections.length === 0 ? (
                   // An empty slot rather than a stray "None yet.": the
                   // dashed outline is the shape of the row that will be

@@ -1,4 +1,5 @@
 import type { CurrentUser, UserRole } from "@/types/auth";
+import { clearSignedOutNotice } from "./sessionNotice";
 
 // Retained from MathPath's lib/auth.ts (Phase 0 audit, "Retain as-is"
 // bucket), storage keys renamed from mathpath_* to school_enrichment_* and
@@ -57,6 +58,17 @@ function roleFromPath(): UserRole | null {
   if (path.startsWith("/teacher")) return "TEACHER";
   if (path.startsWith("/student")) return "STUDENT";
   return null;
+}
+
+/** The role whose workspace this tab is showing, from the URL alone -- null
+ * on the sign-in page and anywhere else outside a role's area. Used for
+ * wording (who an error message tells someone to ask, what a not-found page
+ * offers to take them back to), where "the last role that signed in on this
+ * browser" would be the wrong answer: on /login nobody is signed in yet.
+ * Never used for authorization.
+ */
+export function roleForCurrentPage(): UserRole | null {
+  return roleFromPath();
 }
 
 function normalizeRole(role?: string | null): UserRole | null {
@@ -191,8 +203,17 @@ export function setSession(user: CurrentUser): void {
   window.dispatchEvent(new Event("school-enrichment-auth-changed"));
 }
 
+/** Forgets the signed-in profile for this tab's role.
+ *
+ * Also drops any "why you were signed out" notice (lib/sessionNotice.ts):
+ * every deliberate way out -- Sign out, Sign out everywhere, a password
+ * change -- comes through here, and none of them should leave an old
+ * explanation waiting on the sign-in page. Code that does want the sign-in
+ * page to explain itself records its notice AFTER calling this.
+ */
 export function clearSession(): void {
   if (typeof window === "undefined") return;
+  clearSignedOutNotice();
   const role = activeRole();
   if (role) {
     localStorage.removeItem(userKey(role));

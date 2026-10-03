@@ -9,6 +9,7 @@ import {
   BookMarked,
   Building2,
   GraduationCap,
+  Info,
   KeyRound,
   Layers,
   Lock,
@@ -17,8 +18,10 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { api, apiErrorMessage } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { defaultRouteForRole, getRememberedSchoolName, setSession } from "@/lib/auth";
+import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { clearSignedOutNotice, readSignedOutNotice, returnPathFor } from "@/lib/sessionNotice";
 import type { LoginResponse, LoginResult } from "@/types/auth";
 import { isTwoFactorChallenge } from "@/types/auth";
 import { cn, greetingForHour } from "@/lib/utils";
@@ -252,6 +255,7 @@ function shake(element: HTMLElement | null) {
 
 export default function LoginPage() {
   const router = useRouter();
+  usePageTitle("Sign In");
   const stage = useStageReady();
   const greeting = useTimeOfDayGreeting();
   const brandRef = usePointerAmbience<HTMLElement>();
@@ -301,15 +305,33 @@ export default function LoginPage() {
   // server-rendered paint identical to the first client paint, so there's no
   // hydration flash from "Issued by your school" to the real name).
   const [knownSchool, setKnownSchool] = useState<string | null>(null);
+  // Why this page is showing, when the person did not come here by choice:
+  // their session ended, they changed their password, they opened a page
+  // that belongs to another role (lib/sessionNotice.ts). Read after mount
+  // for the same reason as knownSchool.
+  const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     setKnownSchool(getRememberedSchoolName());
+    const pending = readSignedOutNotice();
+    if (!pending) return;
+    setNotice(pending.message);
+    // A notice with no page to return to has done its whole job once it is
+    // on screen, so it is not left in storage for whoever uses this tab
+    // next ("Your password has been changed" is not theirs to read). One
+    // that does carry a page stays until sign-in, which is what uses it.
+    if (!pending.returnTo) clearSignedOutNotice();
   }, []);
 
   function completeSignIn(user: LoginResponse["user"]) {
+    // If a session ending is what brought them here, take the same person
+    // back to the page they were on -- never anyone else, and never outside
+    // their own role's area (returnPathFor has the rules).
+    const returnTo = returnPathFor(readSignedOutNotice(), user);
+    clearSignedOutNotice();
     setSession(user);
     setRedirecting(true);
     const normalizedRole = user.role === "SUPER_ADMIN" ? "ADMIN" : user.role;
-    router.push(defaultRouteForRole(normalizedRole));
+    router.push(returnTo ?? defaultRouteForRole(normalizedRole));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -325,7 +347,7 @@ export default function LoginPage() {
       }
       completeSignIn(data.user);
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setError(errorMessage(err, "sign you in"));
       shake(cardRef.current);
     } finally {
       setSubmitting(false);
@@ -344,7 +366,7 @@ export default function LoginPage() {
       });
       completeSignIn(data.user);
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setError(errorMessage(err, "verify your code"));
       shake(cardRef.current);
     } finally {
       setVerifying(false);
@@ -600,7 +622,16 @@ export default function LoginPage() {
               `lg`, directly under the compact lockup above -- two copies of
               the mark stacked on a phone screen. The lockup alone is the
               brand moment now.) */}
-          <div className="stage-in stage-d1 mb-5 lg:mb-[clamp(0.75rem,3.5vh,3rem)]">
+          {/* With a notice showing, the gap under this block gives back the
+              height the notice's chip adds (its padding and border), so the
+              column is exactly as tall as it is without one. Measured: at
+              1280x640 the extra 20px pushed the last line off the screen. */}
+          <div
+            className={cn(
+              "stage-in stage-d1 mb-5",
+              notice && !challengeToken ? "lg:mb-[clamp(0.5rem,2vh,2.25rem)]" : "lg:mb-[clamp(0.75rem,3.5vh,3rem)]",
+            )}
+          >
 
             {/* Kept in the flow rather than pinned to a corner, so it can
                 never collide with the card on a short laptop screen. The
@@ -626,11 +657,25 @@ export default function LoginPage() {
             <h2 className="font-display text-display-md text-content text-balance lg:text-[clamp(1.375rem,4.3vh,2.5rem)] lg:leading-[1.1]">
               {challengeToken ? "Verify It's You" : greeting}
             </h2>
-            <p className="mt-3 max-w-[24rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:text-[clamp(0.8125rem,2.2vh,1.1875rem)] lg:leading-[1.45]">
-              {challengeToken
-                ? "Enter the 6-digit code from your authenticator app, or one of your backup codes."
-                : "Sign in with the email, phone number or student code your school issued you."}
-            </p>
+            {notice && !challengeToken ? (
+              // Takes the place of the standing instruction rather than
+              // sitting above it: this column is sized to fit one screen at
+              // `lg`, and the reason they are here is the more useful two
+              // lines. brand-800 on surface-brand: 10.6:1.
+              <p
+                role="status"
+                className="mt-3 flex max-w-[26rem] items-start gap-2.5 rounded-2xl border border-line-brand bg-surface-brand px-3.5 py-2.5 text-[0.9375rem] font-medium leading-[1.5] text-brand-800 text-pretty animate-fade-in lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:py-[clamp(0.25rem,0.9vh,0.625rem)] lg:text-[clamp(0.8125rem,2vh,1rem)] lg:leading-[1.45]"
+              >
+                <Info className="mt-[0.15em] h-[1.05em] w-[1.05em] shrink-0 text-brand-600" aria-hidden />
+                <span>{notice}</span>
+              </p>
+            ) : (
+              <p className="mt-3 max-w-[24rem] text-[1.0625rem] leading-[1.6] text-content-muted text-pretty lg:mt-[clamp(0.375rem,1.4vh,1.25rem)] lg:text-[clamp(0.8125rem,2.2vh,1.1875rem)] lg:leading-[1.45]">
+                {challengeToken
+                  ? "Enter the 6-digit code from your authenticator app, or one of your backup codes."
+                  : "Sign in with the email, phone number or student code your school issued you."}
+              </p>
+            )}
           </div>
 
           {/* Wrapper owns the stage-in entrance; the card inside owns the
