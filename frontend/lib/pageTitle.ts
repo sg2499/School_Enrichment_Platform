@@ -33,7 +33,7 @@ export { PRODUCT_NAME };
  * never be "Admin" in one place and "School Admin" in another.
  */
 export const ROLE_LABEL: Record<UserRole, string> = {
-  ADMIN: "Admin",
+  ADMIN: "School Admin",
   SUPER_ADMIN: "Super Admin",
   TEACHER: "Teacher",
   STUDENT: "Student",

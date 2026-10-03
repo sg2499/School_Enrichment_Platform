@@ -222,6 +222,68 @@ def test_choosing_a_password_keeps_this_browser_signed_in(client, db_session):
     assert OWN_PASSWORD not in audit.event_data_json
 
 
+def test_a_new_admin_goes_from_their_first_password_straight_to_two_factor(client, db_session):
+    """The whole of a school admin's first sign-in, in one session.
+
+    The admin Security page asks to stay signed in when the password being
+    replaced is the issued one (4th slice of the UI revamp, 3 Oct 2026), so
+    that the order is: sign in, choose a password, set up two-factor -- not
+    sign in, choose a password, get signed out, sign in again, set up
+    two-factor. Nothing here is special to admins on the server; this pins
+    that the two gates hand over to each other without a second sign-in.
+    """
+    school = School(name="First Password School admin-flow", board="CBSE", city="Bengaluru")
+    db_session.add(school)
+    db_session.flush()
+    issued = "kX7mP2qR9tWz"
+    admin = User(
+        full_name="Brand New Admin",
+        email="first-admin-flow@example.com",
+        password_hash=hash_password(issued),
+        role="ADMIN",
+        must_change_password=True,
+    )
+    db_session.add(admin)
+    db_session.flush()
+    db_session.add(SchoolAdmin(user_id=admin.id, school_id=school.id))
+    db_session.commit()
+
+    # No two-factor yet, so the password alone signs them in -- as far as
+    # the first gate.
+    signed_in = _sign_in(client, admin.email, issued)
+    assert signed_in.status_code == 200 and signed_in.json()["user"]["mustChangePassword"] is True
+    headers = _own_headers(client, "ADMIN")
+    before = decode_token(client.cookies.get("se_admin_sess"))
+
+    # Two-factor setup is closed until the password is their own.
+    early = client.post("/api/auth/2fa/setup", headers=headers)
+    assert early.status_code == 403 and early.json()["detail"]["code"] == "PASSWORD_CHANGE_REQUIRED"
+
+    changed = _change(client, "ADMIN", issued, OWN_PASSWORD, keepSignedIn=True)
+    assert changed.status_code == 200, changed.text
+    body = changed.json()
+    assert body["staySignedIn"] is True
+    assert body["user"]["mustChangePassword"] is False and body["user"]["twoFactorEnabled"] is False
+
+    # Same session, new token; the second gate is now the one that answers.
+    after = decode_token(client.cookies.get("se_admin_sess"))
+    assert after["sid"] == before["sid"] and after["pwd"] != before["pwd"]
+    headers = _own_headers(client, "ADMIN")
+    gated = client.get("/api/roster/people", headers=headers)
+    assert gated.status_code == 403 and gated.json()["detail"]["code"] == "TWO_FACTOR_SETUP_REQUIRED"
+
+    # And setup opens, without signing in again.
+    setup = client.post("/api/auth/2fa/setup", headers=headers)
+    assert setup.status_code == 200, setup.text
+    enabled = client.post(
+        "/api/auth/2fa/enable",
+        json={"code": pyotp.TOTP(setup.json()["secret"]).now()},
+        headers=headers,
+    )
+    assert enabled.status_code == 200 and len(enabled.json()["backupCodes"]) == 10
+    assert client.get("/api/roster/people", headers=headers).status_code == 200
+
+
 def test_choosing_a_password_signs_every_other_device_out(client, db_session):
     """Whoever else had the issued password -- and may already be signed in
     with it -- is out the moment its owner replaces it. Both sign-ins here
@@ -749,8 +811,8 @@ def test_a_file_with_no_name_column_is_refused_once_not_row_by_row(client, db_se
     admin, _school = _make_school_admin(db_session, "first-bulk-admin8@example.com", "First Bulk School Eight")
     headers = _admin_headers(client, admin.email)
     message = (
-        "We couldn't find a fullName column in that file. Its first row must be the column headings, "
-        "and one of them must be fullName. Download the template to see them all."
+        "We couldn't find a Full Name column in that file. Its first row must be the column headings, "
+        "and one of them must be Full Name. Download the template to see them all."
     )
     for raw in (b"Name,Email\nTara Sen,\n", b"fullName;email\nTara Sen;\n", b"Tara Sen,tara@example.com\nUma Roy,\n"):
         response = _bulk(client, headers, "TEACHER", "teachers.csv", raw)
@@ -776,7 +838,7 @@ def test_a_password_that_is_printed_next_to_the_person_is_refused(client, db_ses
     )
     body = _bulk(client, headers, "STUDENT", "students.csv", csv_text.encode("utf-8")).json()
     rows = {row["fullName"]: row for row in body["results"]}
-    same = "The password in this row can't be used. It is the same as this person's sign-in code, name or email."
+    same = "The password in this row can't be used. It is the same as this person's code, name or email."
     assert rows["Mohan Lal2026"]["error"] == same
     assert rows["Nisha Roy2026"]["error"] == same
     assert rows["Omar Ali"]["error"] == same

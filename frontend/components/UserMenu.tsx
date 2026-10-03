@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { clearSession, updateStoredUser } from "@/lib/auth";
+import { ROLE_LABEL } from "@/lib/pageTitle";
 import { rememberSignedOut } from "@/lib/sessionNotice";
 import { compressImageForUpload } from "@/lib/imageCompression";
 import type { CurrentUser, UserRole } from "@/types/auth";
@@ -20,12 +21,9 @@ import { cn, initialsFromName } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/Field";
 
-const ROLE_LABEL: Record<UserRole, string> = {
-  ADMIN: "Admin",
-  SUPER_ADMIN: "Super Admin",
-  TEACHER: "Teacher",
-  STUDENT: "Student",
-};
+// The role's name comes from lib/pageTitle.ts, the one place it is written.
+// This file kept its own copy, which is how the rail went on saying "Admin"
+// after the footer and the tab had moved to "School Admin" (3 Oct 2026).
 
 /**
  * Renders the actual uploaded photo when one exists, the initials badge
@@ -337,15 +335,23 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
       ) : null}
 
       <div className="space-y-1 border-t border-line pt-3">
-        <button
-          type="button"
-          role="menuitem"
-          onClick={() => setView("password")}
-          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-content transition hover:bg-surface-muted"
-        >
-          <KeyRound className="h-4 w-4 shrink-0 text-content-subtle" aria-hidden />
-          Change Password
-        </button>
+        {/* An admin changes theirs on Security Settings, linked just below:
+            that form shows every rule as it is typed and, for a password
+            that was issued, keeps them signed in for two-factor setup. A
+            second, plainer form here did neither, and signed a new admin
+            out part-way through (3 Oct 2026). Teachers and students have
+            no such page, so this is theirs. */}
+        {hasSecuritySettings ? null : (
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => setView("password")}
+            className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-semibold text-content transition hover:bg-surface-muted"
+          >
+            <KeyRound className="h-4 w-4 shrink-0 text-content-subtle" aria-hidden />
+            Change Password
+          </button>
+        )}
         {hasSecuritySettings ? (
           <Link
             href="/admin/security"

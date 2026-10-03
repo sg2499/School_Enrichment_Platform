@@ -94,6 +94,10 @@ export interface PasswordCheckOptions {
    *  page's own step does: it was typed a moment ago). Adds the rule that
    *  the new one must differ. */
   current?: string | null;
+  /** How the password being replaced is named in that rule. "given" (the
+   *  default) is the one a school issued: "the password you were given".
+   *  "current" is one the person chose themselves and is now changing. */
+  replacing?: "given" | "current";
 }
 
 /**
@@ -141,10 +145,11 @@ export function passwordChecks(password: string, options: PasswordCheckOptions =
   }
   const current = typeof options.current === "string" ? options.current.trim() : "";
   if (current) {
+    const replaced = options.replacing === "current" ? "your current password" : "the password you were given";
     checks.push({
       id: "different",
-      label: "Different from the password you were given",
-      problem: "it has to be different from the password you were given",
+      label: `Different from ${replaced}`,
+      problem: `it has to be different from ${replaced}`,
       met: value.length > 0 && value !== current,
     });
   }

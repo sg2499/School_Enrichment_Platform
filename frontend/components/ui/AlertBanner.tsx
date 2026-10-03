@@ -55,13 +55,31 @@ export function AlertBanner({
 export function LoadError({
   problem,
   onRetry,
+  title,
   className,
 }: {
   problem: DescribedError;
   onRetry?: () => void;
+  /**
+   * What is missing from the page because of it, as a short line above the
+   * sentence: "Teachers and Students couldn't be counted". For a page whose
+   * figures come from several reads, where the server's own sentence
+   * ("Something went wrong on our side...") is true but does not say which
+   * part of the page it is about. A page with one list needs no title: the
+   * banner sits on the list.
+   */
+  title?: string;
   className?: string;
 }) {
   const canRetry = problem.retryable && Boolean(onRetry);
+  const sentence = title ? (
+    <>
+      <strong className="block font-bold">{title}</strong>
+      <ErrorText>{problem.message}</ErrorText>
+    </>
+  ) : (
+    <ErrorText>{problem.message}</ErrorText>
+  );
   return (
     <AlertBanner
       tone="error"
@@ -74,13 +92,13 @@ export function LoadError({
           // row -- side by side while the sentence still has 16rem, the
           // button underneath it when it doesn't.
           <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
-            <span className="min-w-0 flex-1 basis-[16rem]">
-              <ErrorText>{problem.message}</ErrorText>
-            </span>
+            <span className="min-w-0 flex-1 basis-[16rem]">{sentence}</span>
             <Button variant="secondary" size="sm" onClick={onRetry} leadingIcon={<RotateCw className="h-3.5 w-3.5" />}>
               Try Again
             </Button>
           </span>
+        ) : title ? (
+          sentence
         ) : (
           problem.message
         )

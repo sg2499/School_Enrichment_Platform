@@ -179,9 +179,14 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       ],
     },
   ],
+  // The same rows as a school admin's, because they are the same screens;
+  // what differs is whose they are. The first group is "Platform": a Super
+  // Admin's dashboard and People page are about every school, and a rail
+  // that filed them under "School" was the last place a Super Admin's
+  // screen still read as a school admin's with a different badge.
   SUPER_ADMIN: [
     {
-      section: "School",
+      section: "Platform",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
         { label: "People", icon: Users, href: "/admin/people" },
@@ -303,7 +308,7 @@ function NavRow({
   return (
     <span
       aria-disabled="true"
-      title={collapsed ? `${item.label} — arrives in a later phase` : `${item.label} arrives in a later phase`}
+      title={`${item.label}: coming soon`}
       // Quieter than a live row, but only down to the inverse-faint floor
       // (4.6:1; was white/55 at ~3.7:1). The hierarchy now comes from the
       // dimmed icon plate and the Soon pill, not from unreadable text.
@@ -467,8 +472,8 @@ function SidebarContent({
             type="button"
             onClick={onSignOut}
             disabled={signingOut}
-            aria-label="Sign out"
-            title="Sign out"
+            aria-label="Sign Out"
+            title="Sign Out"
             className="inline-flex h-10 w-full items-center justify-center rounded-2xl border border-line-inverse bg-white/10 text-content-inverse backdrop-blur transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-55"
           >
             <LogOut className="h-4 w-4" aria-hidden />
@@ -483,7 +488,7 @@ function SidebarContent({
             loadingLabel="Signing out"
             leadingIcon={<LogOut className="h-4 w-4" />}
           >
-            Sign out
+            Sign Out
           </Button>
         )}
       </div>
