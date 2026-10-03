@@ -34,7 +34,7 @@ import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { recordAttemptFinalised } from "@/lib/hooks/useMarkingMilestone";
 import { api, apiErrorMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
+import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -42,7 +42,7 @@ import { CountUp } from "@/components/ui/CountUp";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { AlertBanner } from "@/components/ui/AlertBanner";
-import { ReadOnlyBadge, ScoreBadge, TeacherAmbience } from "@/components/tracker/TrackerBits";
+import { ReadOnlyBadge, ScoreBadge } from "@/components/tracker/TrackerBits";
 import { formatDateTime, plural, scopeShort, studentClassLabel } from "@/lib/tracker";
 import type { AttemptReview, Paginated, ReviewAnswer, ReviewQueueRow } from "@/types/tracker";
 
@@ -438,49 +438,66 @@ function AttemptWorkspace() {
     : [];
 
   return (
-    <RoleShell role="TEACHER" user={user}>
-      <TeacherAmbience />
+    // The working level of the workspace wash, through the shell -- see the
+    // assignment page.
+    <RoleShell role="TEACHER" user={user} ambience="working">
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7.
-          `relative` so the page paints above the ambience. */}
-      <div className="relative space-y-8">
-        {/* Back link and header as one block -- see the assignment page. */}
-        <div className="space-y-5">
-          <InlineLink href={backHref} direction="back">
-            {backLabel}
-          </InlineLink>
-
-          {query.error ? <AlertBanner tone="error" message={`Couldn't open this attempt (${query.error}).`} /> : null}
-
-          {!review && !query.error ? (
-            <div aria-hidden className="space-y-3">
-              <span className="block h-4 w-40 animate-pulse rounded-full bg-ink-100" />
-              <span className="block h-9 w-80 max-w-full animate-pulse rounded-full bg-ink-100" />
-              <span className="block h-11 w-[30rem] max-w-full animate-pulse rounded-2xl bg-ink-100" />
-            </div>
-          ) : null}
-
-          {review ? (
-            <PageHeader
-              eyebrow={`${scopeShort(review.assignment)} · ${review.assignment.title ?? "Practice"}`}
-              title={
+          Practice); dashboards use space-y-10. This family alone was 7. */}
+      <div className="space-y-8">
+        {query.error ? (
+          <div className="space-y-5">
+            <InlineLink href={backHref} direction="back">
+              {backLabel}
+            </InlineLink>
+            <AlertBanner tone="error" message={`Couldn't open this attempt (${query.error}).`} />
+          </div>
+        ) : (
+          // The attempt's masthead: the way back, whose attempt this is, its
+          // marking state and its details as one object -- the same panel
+          // the assignment it belongs to opens on, so marking an answer
+          // never drops from a lit header to bare text and back. No figures
+          // strip: the score lives in the sticky rail beside the answers,
+          // where it stays in view while the teacher marks. While the
+          // attempt loads the same panel is drawn with its title's shape.
+          <PageHeader
+            surface="masthead"
+            back={
+              <InlineLink href={backHref} direction="back" size="sm" tone="inverse">
+                {backLabel}
+              </InlineLink>
+            }
+            eyebrow={review ? `${scopeShort(review.assignment)} · ${review.assignment.title ?? "Practice"}` : undefined}
+            title={
+              review ? (
                 <>
                   {review.student.studentName ?? review.student.studentCode}
-                  <span className="text-content-subtle"> &middot; Attempt {review.attempt.attemptNumber}</span>
+                  {/* The quieter half of the title. content-inverse-muted
+                      on the open panel: PageHeader.tsx has the figure, and
+                      at display size it only has to clear 3:1. */}
+                  <span className="text-content-inverse-muted"> &middot; Attempt {review.attempt.attemptNumber}</span>
                 </>
-              }
-              facts={facts}
-              meta={
+              ) : (
                 <>
-                  <ScoreBadge evaluation={review.evaluation} />
-                  {review.evaluation.reviewStatus === "FINALISED" ? <Badge tone="brand">Marked By Teacher</Badge> : null}
-                  {review.evaluation.reviewStatus === "AUTO_FINALISED" ? <Badge tone="neutral">Marked Automatically</Badge> : null}
-                  {!review.canGrade ? <ReadOnlyBadge /> : null}
+                  <MastheadSkeleton className="h-9 w-80 max-w-full" />
+                  <span className="sr-only">Loading attempt</span>
                 </>
-              }
-            />
-          ) : null}
-        </div>
+              )
+            }
+            facts={facts}
+            meta={
+              review ? (
+                <>
+                  <ScoreBadge evaluation={review.evaluation} onDark />
+                  {review.evaluation.reviewStatus === "FINALISED" ? <Badge tone="inverse">Marked By Teacher</Badge> : null}
+                  {review.evaluation.reviewStatus === "AUTO_FINALISED" ? (
+                    <Badge tone="inverse">Marked Automatically</Badge>
+                  ) : null}
+                  {!review.canGrade ? <ReadOnlyBadge onDark /> : null}
+                </>
+              ) : undefined
+            }
+          />
+        )}
 
         {review ? (
           <>
