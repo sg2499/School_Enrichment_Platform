@@ -385,7 +385,7 @@ def list_tracker_assignments(
     query = _apply_scope_filters(query, classLevelId, section, boardCourseId)
     if status:
         if status not in _ASSIGNMENT_STATUSES:
-            api_error(422, "VALIDATION_ERROR", "Unknown assignment status filter.")
+            api_error(422, "VALIDATION_ERROR", "That status filter isn't available.")
         query = query.filter(Assignment.status == status)
     if q and q.strip():
         query = query.filter(LearningActivity.title.ilike(like_pattern(q.strip()), escape="\\"))
@@ -458,7 +458,7 @@ def list_assignment_students(
         elif status in _TARGET_STATUS_FILTERS:
             query = query.filter(AssignmentTarget.status == _TARGET_STATUS_FILTERS[status])
         else:
-            api_error(422, "VALIDATION_ERROR", "Unknown student status filter.")
+            api_error(422, "VALIDATION_ERROR", "That status filter isn't available.")
     if q and q.strip():
         pattern = like_pattern(q.strip())
         query = query.filter(
@@ -755,17 +755,17 @@ def list_review_queue(
 def _load_attempt_for_viewer(db: Session, viewer: Viewer, attempt_id: str) -> tuple[Attempt, Assignment]:
     attempt = db.get(Attempt, attempt_id)
     if not attempt:
-        api_error(404, "NOT_FOUND", "Attempt not found.")
+        api_error(404, "NOT_FOUND", "That attempt couldn't be found.")
     assignment = attempt.assignment_target.assignment
     if not practice_access_service.can_read_assignment(db, viewer, assignment):
-        api_error(404, "NOT_FOUND", "Attempt not found.")
+        api_error(404, "NOT_FOUND", "That attempt couldn't be found.")
     return attempt, assignment
 
 
 def _attempt_review_payload(db: Session, viewer: Viewer, attempt: Attempt, assignment: Assignment) -> dict:
     evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
     if not evaluation:
-        api_error(422, "NOT_SUBMITTED", "This attempt has not been submitted yet.")
+        api_error(422, "NOT_SUBMITTED", "This attempt hasn't been submitted yet.")
     target = attempt.assignment_target
     student = target.student
     activity = assignment.learning_activity
@@ -879,7 +879,7 @@ def submit_manual_grades(
     grades: dict[str, int] = {}
     for grade in payload.grades:
         if grade.questionId in grades:
-            api_error(422, "VALIDATION_ERROR", "Each question can only be marked once per request.")
+            api_error(422, "VALIDATION_ERROR", "Each question can only be given one mark at a time.")
         grades[grade.questionId] = grade.score
 
     previous_status = (

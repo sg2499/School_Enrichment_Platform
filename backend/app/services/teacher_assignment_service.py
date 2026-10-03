@@ -74,13 +74,13 @@ def assign_teacher_to_section(
 
     teacher = db.get(Teacher, teacher_id)
     if not teacher or teacher.school_id != school_id:
-        api_error(404, "NOT_FOUND", "Teacher not found in this school.")
+        api_error(404, "NOT_FOUND", "That teacher couldn't be found in this school.")
     if not teacher.is_active:
-        api_error(400, "TEACHER_INACTIVE", "Cannot assign an inactive teacher.")
+        api_error(400, "TEACHER_INACTIVE", "This teacher's account is inactive. Reactivate it before assigning them a class.")
     if not db.get(ClassLevel, class_level_id):
-        api_error(404, "NOT_FOUND", "Class level not found.")
+        api_error(404, "NOT_FOUND", "That class couldn't be found.")
     if not db.get(BoardCourse, board_course_id):
-        api_error(404, "NOT_FOUND", "Board course not found.")
+        api_error(404, "NOT_FOUND", "That subject couldn't be found for this board and class.")
 
     existing = _active_assignment(
         db,
@@ -93,8 +93,8 @@ def assign_teacher_to_section(
         api_error(
             409,
             "SECTION_ALREADY_ASSIGNED",
-            "This section/subject already has an active teacher assignment. Use transfer instead of "
-            "creating a second one.",
+            "This section and subject already have a teacher. Use Transfer to hand the class to "
+            "someone else.",
         )
 
     assignment = TeacherSectionAssignment(
@@ -135,24 +135,24 @@ def transfer_teacher(
     """
     if assignment.end_date is not None:
         api_error(
-            409, "ASSIGNMENT_ALREADY_ENDED", "This assignment has already ended and cannot be transferred again."
+            409, "ASSIGNMENT_ALREADY_ENDED", "This teaching assignment has already ended, so it can't be transferred again."
         )
     if transfer_date < assignment.start_date:
-        api_error(422, "INVALID_TRANSFER_DATE", "Transfer date cannot be before the current assignment started.")
+        api_error(422, "INVALID_TRANSFER_DATE", "The transfer date can't be earlier than the date this teacher started.")
     if transfer_date > datetime.now(timezone.utc).date():
         api_error(
             422,
             "INVALID_TRANSFER_DATE",
-            "Transfer date cannot be in the future; scheduling a transfer ahead of time isn't supported yet.",
+            "The transfer date can't be in the future. Scheduling a transfer ahead of time isn't available yet.",
         )
 
     new_teacher = db.get(Teacher, new_teacher_id)
     if not new_teacher or new_teacher.school_id != assignment.school_id:
-        api_error(404, "NOT_FOUND", "Teacher not found in this school.")
+        api_error(404, "NOT_FOUND", "That teacher couldn't be found in this school.")
     if not new_teacher.is_active:
-        api_error(400, "TEACHER_INACTIVE", "Cannot transfer to an inactive teacher.")
+        api_error(400, "TEACHER_INACTIVE", "This teacher's account is inactive. Reactivate it before transferring a class to them.")
     if new_teacher.id == assignment.teacher_id:
-        api_error(400, "SAME_TEACHER", "This teacher already holds this assignment.")
+        api_error(400, "SAME_TEACHER", "This teacher already teaches this class.")
 
     assignment.end_date = transfer_date
     new_assignment = TeacherSectionAssignment(

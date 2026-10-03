@@ -42,7 +42,7 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.errors import api_error
+from app.core.errors import api_error, status_words
 from app.database import get_db
 from app.dependencies import require_roles
 from app.models import (
@@ -150,14 +150,14 @@ def _resolve_school_id(db: Session, user: User, requested_school_id: str | None)
     no school of their own and must say which one they mean."""
     if user.role == "SUPER_ADMIN":
         if not requested_school_id:
-            api_error(422, "VALIDATION_ERROR", "schoolId is required for SUPER_ADMIN.")
+            api_error(422, "VALIDATION_ERROR", "Choose a school first.")
         return requested_school_id
 
     school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
     if not school_admin:
-        api_error(403, "FORBIDDEN", "No school is associated with this admin account.")
+        api_error(403, "FORBIDDEN", "Your admin account isn't linked to a school. Please contact your platform administrator.")
     if requested_school_id and requested_school_id != school_admin.school_id:
-        api_error(403, "FORBIDDEN", "You can only manage curriculum mapping for your own school.")
+        api_error(403, "FORBIDDEN", "You can only manage the curriculum for your own school.")
     return school_admin.school_id
 
 
@@ -171,7 +171,7 @@ def _resolve_school_id_for_read(db: Session, user: User, requested_school_id: st
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
         if not teacher or not teacher.is_active:
-            api_error(403, "FORBIDDEN", "Teacher profile not found or inactive.")
+            api_error(403, "FORBIDDEN", "Your teacher profile isn't active. Please ask your school admin.")
         if requested_school_id and requested_school_id != teacher.school_id:
             api_error(403, "FORBIDDEN", "You can only view your own school's curriculum.")
         return teacher.school_id
@@ -188,7 +188,7 @@ def _validate_teacher_in_school(db: Session, teacher_id: str | None, school_id: 
         return
     teacher = db.get(Teacher, teacher_id)
     if not teacher or teacher.school_id != school_id:
-        api_error(422, "VALIDATION_ERROR", "teacherId must belong to the same school as this mapping.")
+        api_error(422, "VALIDATION_ERROR", "That teacher belongs to a different school. Please choose a teacher from this school.")
 
 
 def _apply_transition(current_status: str, requested_status: str, transitions: dict[str, set[str]], label: str) -> None:
@@ -197,7 +197,7 @@ def _apply_transition(current_status: str, requested_status: str, transitions: d
         api_error(
             409,
             "INVALID_STATUS_TRANSITION",
-            f"{label} cannot move from {current_status} to {requested_status}.",
+            f"{label} can't move from {status_words(current_status)} to {status_words(requested_status)}.",
             {"from": current_status, "to": requested_status, "allowed": sorted(allowed)},
         )
 
@@ -317,7 +317,7 @@ def get_chapter(
 ):
     chapter = db.get(Chapter, chapter_id)
     if not chapter:
-        api_error(404, "NOT_FOUND", "Chapter not found.")
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
     # Same PUBLISHED-chapter-AND-PUBLISHED-edition boundary as list_chapters
     # above -- 404 rather than 403 so an ADMIN probing chapter ids can't
     # even confirm an unpublished one (or one from an unreleased syllabus
@@ -325,7 +325,7 @@ def get_chapter(
     if user.role == "ADMIN" and (
         chapter.status != "PUBLISHED" or chapter.curriculum_version.status != "PUBLISHED"
     ):
-        api_error(404, "NOT_FOUND", "Chapter not found.")
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
 
     lessons = (
         db.query(ConceptLesson)
@@ -364,7 +364,7 @@ def update_chapter_status(
 ):
     chapter = db.get(Chapter, chapter_id)
     if not chapter:
-        api_error(404, "NOT_FOUND", "Chapter not found.")
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
 
     requested_status = payload.status.strip().upper()
     _apply_transition(chapter.status, requested_status, _CHAPTER_TRANSITIONS, "Chapter")
@@ -372,7 +372,7 @@ def update_chapter_status(
     if requested_status == "PUBLISHED":
         lessons = db.query(ConceptLesson).filter(ConceptLesson.chapter_id == chapter.id).all()
         if not lessons:
-            api_error(409, "CHAPTER_NOT_READY", "Chapter has no concept lessons to publish.")
+            api_error(409, "CHAPTER_NOT_READY", "This chapter has no concept lessons yet, so it can't be published.")
         lessons_missing_questions = [
             lesson.code
             for lesson in lessons
@@ -384,7 +384,7 @@ def update_chapter_status(
             api_error(
                 409,
                 "CHAPTER_NOT_READY",
-                "Every concept lesson needs at least one approved question before the chapter can publish.",
+                "Every concept lesson needs at least one approved question before the chapter can be published.",
                 {"conceptLessonsMissingQuestions": lessons_missing_questions},
             )
 
@@ -463,7 +463,7 @@ def update_concept_lesson_status(
 ):
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
-        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+        api_error(404, "NOT_FOUND", "That concept lesson couldn't be found. It may have been removed.")
 
     requested_status = payload.status.strip().upper()
     _apply_transition(lesson.status, requested_status, _CONCEPT_LESSON_TRANSITIONS, "Concept lesson")
@@ -556,7 +556,7 @@ def list_concept_lesson_questions(concept_lesson_id: str, db: Session = Depends(
     verifier improves."""
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
-        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+        api_error(404, "NOT_FOUND", "That concept lesson couldn't be found. It may have been removed.")
 
     questions = _questions_for_lesson(db, concept_lesson_id)
     unchecked = [q for q in questions if q.quality_status == "UNCHECKED"]
@@ -574,7 +574,7 @@ def recheck_lesson_question_quality(concept_lesson_id: str, db: Session = Depend
     content itself was corrected and re-imported."""
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
-        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+        api_error(404, "NOT_FOUND", "That concept lesson couldn't be found. It may have been removed.")
 
     questions = _questions_for_lesson(db, concept_lesson_id)
     _persist_quality_results(db, questions)
@@ -592,7 +592,7 @@ def update_question_status(
 ):
     question = db.get(Question, question_id)
     if not question:
-        api_error(404, "NOT_FOUND", "Question not found.")
+        api_error(404, "NOT_FOUND", "That question couldn't be found. It may have been removed.")
 
     requested_status = payload.status.strip().upper()
     _apply_transition(question.status, requested_status, _QUESTION_TRANSITIONS, "Question")
@@ -689,7 +689,7 @@ def bulk_approve_lesson_questions(
 ):
     lesson = db.get(ConceptLesson, concept_lesson_id)
     if not lesson:
-        api_error(404, "NOT_FOUND", "Concept lesson not found.")
+        api_error(404, "NOT_FOUND", "That concept lesson couldn't be found. It may have been removed.")
     questions = _questions_for_lesson(db, concept_lesson_id)
     return _bulk_approve_questions(
         db, questions, payload.includeUnverified,
@@ -712,7 +712,7 @@ def bulk_approve_chapter_questions(
     2026): the quality gate does the triage, this does the bulk motion."""
     chapter = db.get(Chapter, chapter_id)
     if not chapter:
-        api_error(404, "NOT_FOUND", "Chapter not found.")
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
     questions = (
         db.query(Question)
         .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
@@ -778,7 +778,7 @@ def create_curriculum_version(
 ):
     board = db.get(Board, payload.boardId)
     if not board:
-        api_error(404, "NOT_FOUND", "Board not found.")
+        api_error(404, "NOT_FOUND", "That board couldn't be found.")
 
     code = payload.code.strip()
     existing = (
@@ -787,7 +787,7 @@ def create_curriculum_version(
         .first()
     )
     if existing:
-        api_error(409, "ALREADY_EXISTS", f"A curriculum version with code {code!r} already exists for this board.")
+        api_error(409, "ALREADY_EXISTS", f"This board already has a curriculum version with the code {code}. Please choose a different code.")
 
     version = CurriculumVersion(
         board_id=board.id,
@@ -820,7 +820,7 @@ def update_curriculum_version_status(
 ):
     version = db.get(CurriculumVersion, version_id)
     if not version:
-        api_error(404, "NOT_FOUND", "Curriculum version not found.")
+        api_error(404, "NOT_FOUND", "That curriculum version couldn't be found.")
 
     requested_status = payload.status.strip().upper()
     _apply_transition(version.status, requested_status, _CURRICULUM_VERSION_TRANSITIONS, "Curriculum version")
@@ -951,20 +951,20 @@ def create_school_curriculum_map(
 
     chapter = db.get(Chapter, payload.chapterId)
     if not chapter:
-        api_error(404, "NOT_FOUND", "Chapter not found.")
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
     if chapter.status != "PUBLISHED":
-        api_error(409, "CHAPTER_NOT_PUBLISHED", "Only a published chapter can be mapped into a school's calendar.")
+        api_error(409, "CHAPTER_NOT_PUBLISHED", "Only a published chapter can be added to a school's calendar.")
     # Same edition-rollout boundary as list_chapters/get_chapter -- a school
     # ADMIN cannot map into a chapter whose whole syllabus edition hasn't
     # been rolled out yet, even if they somehow already had its id. A
     # SUPER_ADMIN can, deliberately, in case pre-provisioning a school ahead
     # of an edition's public rollout is ever a real need.
     if user.role == "ADMIN" and chapter.curriculum_version.status != "PUBLISHED":
-        api_error(409, "CHAPTER_NOT_PUBLISHED", "Only a published chapter can be mapped into a school's calendar.")
+        api_error(409, "CHAPTER_NOT_PUBLISHED", "Only a published chapter can be added to a school's calendar.")
 
     board_course = db.get(BoardCourse, payload.boardCourseId)
     if not board_course:
-        api_error(404, "NOT_FOUND", "Board course not found.")
+        api_error(404, "NOT_FOUND", "That subject couldn't be found for this board and class.")
 
     _validate_teacher_in_school(db, payload.teacherId, school_id)
 
@@ -978,7 +978,7 @@ def create_school_curriculum_map(
         .first()
     )
     if existing:
-        api_error(409, "ALREADY_MAPPED", "This chapter is already mapped for this class at this school.")
+        api_error(409, "ALREADY_MAPPED", "This chapter is already in the calendar for this class.")
 
     mapping = SchoolCurriculumMap(
         school_id=school_id,
@@ -1045,7 +1045,7 @@ def reschedule_school_curriculum_map(
     present in the payload are touched; anything omitted is left as-is."""
     mapping = db.get(SchoolCurriculumMap, map_id)
     if not mapping:
-        api_error(404, "NOT_FOUND", "Mapping not found.")
+        api_error(404, "NOT_FOUND", "That chapter is no longer in this school's calendar. It may have been removed.")
     # Raises 403 if this isn't (or isn't within) the caller's own school --
     # see _resolve_school_id's docstring.
     _resolve_school_id(db, user, mapping.school_id)
@@ -1090,7 +1090,7 @@ def delete_school_curriculum_map(
 ):
     mapping = db.get(SchoolCurriculumMap, map_id)
     if not mapping:
-        api_error(404, "NOT_FOUND", "Mapping not found.")
+        api_error(404, "NOT_FOUND", "That chapter is no longer in this school's calendar. It may have been removed.")
     # Raises 403 if this isn't (or isn't within) the caller's own school --
     # see _resolve_school_id's docstring.
     _resolve_school_id(db, user, mapping.school_id)

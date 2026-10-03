@@ -517,7 +517,7 @@ def test_create_assignment_empty_section_error_names_the_section_searched(db_ses
         assert False, "expected a 422 for a section with no students"
     except HTTPException as exc:
         assert exc.status_code == 422
-        assert exc.detail["message"] == "No active students found in class '5', section 'C'."
+        assert exc.detail["message"] == "There are no active students in Class 5, Section C."
 
     try:
         learning_service.create_assignment(
@@ -526,7 +526,7 @@ def test_create_assignment_empty_section_error_names_the_section_searched(db_ses
         assert False, "expected a 422 for a class with no students"
     except HTTPException as exc:
         assert exc.status_code == 422
-        assert exc.detail["message"] == "No active students found in class '9'."
+        assert exc.detail["message"] == "There are no active students in Class 9."
 
 
 # --- attempt lifecycle ----------------------------------------------------
@@ -1078,7 +1078,7 @@ def test_teacher_can_assign_to_one_section_through_the_api(client, db_session):
         headers=headers,
     )
     assert empty_section_response.status_code == 422
-    assert empty_section_response.json()["detail"]["message"] == "No active students found in class '5', section 'C'."
+    assert empty_section_response.json()["detail"]["message"] == "There are no active students in Class 5, Section C."
 
 
 def test_teacher_cannot_assign_to_a_section_or_course_they_do_not_currently_own(client, db_session):
@@ -1115,7 +1115,7 @@ def test_teacher_cannot_assign_to_a_section_or_course_they_do_not_currently_own(
     def post(**body):
         return client.post("/api/learning/assignments", json={"learningActivityId": activity.id, **body}, headers=headers)
 
-    forbidden = "You are not currently assigned to teach this class, section and course."
+    forbidden = "You're not the current teacher for this class, section and subject."
 
     # Same class, same school, real students -- but not this teacher's section.
     other_section = post(className="5", section="B")
@@ -1142,7 +1142,7 @@ def test_teacher_cannot_assign_to_a_section_or_course_they_do_not_currently_own(
 
     unknown_class = post(className="5A", section="A")  # the old combined form is not a ClassLevel code
     assert unknown_class.status_code == 422
-    assert unknown_class.json()["detail"]["message"] == "Unknown class."
+    assert unknown_class.json()["detail"]["message"] == "That class isn't set up on the platform."
 
     # Nothing above created an Assignment row; the owned section still works.
     assert db_session.query(Assignment).filter(Assignment.assigned_by_user_id == teacher.user_id).count() == 0

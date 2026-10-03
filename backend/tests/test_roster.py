@@ -362,6 +362,20 @@ def _taken_emails(db_session, own_school: School, tag: str) -> dict[str, str]:
     return taken
 
 
+def _without_reference(body: dict) -> dict:
+    """An error body minus its requestId (3 Oct 2026: every error response
+    now carries one -- see app/core/error_handling.py). The reference is
+    random per request, so it is the one part of these responses that is
+    SUPPOSED to differ; it is generated before the route runs and says
+    nothing about the email. Removing it here keeps "identical" meaning what
+    these tests have always meant: nothing that depends on where the
+    address lives."""
+    detail = dict(body["detail"])
+    reference = detail.pop("requestId")
+    assert reference.startswith("SE-") and len(reference) == 12
+    return {**body, "detail": detail}
+
+
 def _audit_rows(db_session, event_type: str, user_id: str):
     from app.models import AuditLog
 
@@ -392,7 +406,7 @@ def test_taken_email_rejection_is_identical_wherever_the_email_lives(client, db_
             "/api/roster/people", json={"role": "TEACHER", "fullName": "New Teacher", "email": email}, headers=headers,
         )
         assert response.status_code == 422, (where, response.text)
-        body = response.json()
+        body = _without_reference(response.json())
         responses[where] = (response.status_code, body)
         assert email.strip().lower() not in response.text.lower()
         assert "exist" not in body["detail"]["message"].lower()
@@ -442,7 +456,7 @@ def test_super_admin_creating_an_admin_gets_the_same_generic_rejection(client, d
         )
         assert response.status_code == 422
         assert email not in response.text
-        bodies.append(response.json())
+        bodies.append(_without_reference(response.json()))
     assert all(b == bodies[0] for b in bodies)
     assert bodies[0]["detail"]["message"] == EMAIL_NOT_ACCEPTED_MESSAGE
 
@@ -483,3 +497,239 @@ def test_bulk_import_never_echoes_a_taken_email_but_flags_in_file_duplicates(cli
     [bulk_audit] = _audit_rows(db_session, "roster.bulk_import", admin.id)
     assert '"emailRejected": 1' in bulk_audit.event_data_json
     assert "@" not in bulk_audit.event_data_json
+
+
+# --- Password reset by an admin (3 Oct 2026) -------------------------------
+#
+# One TestClient holds several signed-in people at once here, the way one
+# browser does: each role has its own session cookie, and X-Auth-Role says
+# which one a request is made as (app/core/cookies.py).
+
+_AS = {role: {"x-auth-role": role} for role in ("ADMIN", "SUPER_ADMIN", "TEACHER", "STUDENT")}
+_PASSWORD_ALPHABET = set("abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789")
+
+
+def _create(client, headers, **person) -> dict:
+    response = client.post("/api/roster/people", json=person, headers=headers)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def _sign_in(client, identifier: str, password: str):
+    return client.post("/api/auth/login", json={"identifier": identifier, "password": password})
+
+
+def _reset(client, headers, person_id: str):
+    return client.post(f"/api/roster/people/{person_id}/reset-password", headers=headers)
+
+
+def test_admin_resets_a_teachers_forgotten_password(client, db_session):
+    admin, _school = _make_school_admin(db_session, "reset-admin1@example.com", "Reset School One")
+    headers = {**_login(client, admin.email), **_AS["ADMIN"]}
+    teacher = _create(client, headers, role="TEACHER", fullName="Forgetful Teacher", email="reset-teacher1@example.com")
+
+    # The teacher is signed in somewhere when the reset happens.
+    assert _sign_in(client, teacher["code"], teacher["initialPassword"]).status_code == 200
+    assert client.get("/api/auth/me", headers=_AS["TEACHER"]).json()["email"] == "reset-teacher1@example.com"
+    # Signing in issues a fresh CSRF token for the browser as a whole (one
+    # cookie, shared by every role's session), which the page reads anew on
+    # each request -- so the admin's next request carries the current one.
+    headers = {"x-csrf-token": client.cookies.get("se_csrf"), **_AS["ADMIN"]}
+
+    response = _reset(client, headers, teacher["id"])
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body == {
+        "id": teacher["id"],
+        "fullName": "Forgetful Teacher",
+        "role": "TEACHER",
+        "signInWith": teacher["code"],
+        "temporaryPassword": body["temporaryPassword"],
+        "mustChangePassword": True,
+    }
+    temporary = body["temporaryPassword"]
+    # Random, the same kind account creation issues -- not chosen, not
+    # derived from the name, and not the password it replaces.
+    assert len(temporary) == 12 and set(temporary) <= _PASSWORD_ALPHABET
+    assert temporary != teacher["initialPassword"]
+    assert response.headers["cache-control"] == "no-store"
+
+    # Stored only as a hash, with the forced-change flag set.
+    stored = db_session.get(User, teacher["id"])
+    db_session.refresh(stored)
+    assert verify_password(temporary, stored.password_hash)
+    assert temporary not in stored.password_hash
+    assert stored.must_change_password is True
+
+    # The session that was open is over. Two mechanisms end it, and both
+    # are checked directly because which one ANSWERS depends on timing:
+    # password_changed_at rejects any token issued in an earlier second
+    # (the normal case -- a session is minutes or days old when a password
+    # is reset), and the revoked session row catches a token issued in the
+    # very same second, which is what this test, running in milliseconds,
+    # produces. (dependencies.py floors the timestamp to whole seconds on
+    # purpose; see _as_aware_utc.)
+    from app.models import UserSession
+
+    assert stored.password_changed_at is not None
+    sessions = db_session.query(UserSession).filter(UserSession.user_id == teacher["id"]).all()
+    assert sessions and all(session.revoked_at is not None for session in sessions)
+    signed_out = client.get("/api/auth/me", headers=_AS["TEACHER"])
+    assert signed_out.status_code == 401
+    assert signed_out.json()["detail"]["message"] in {
+        "Your password was changed, so this session has ended. Please sign in with your new password.",
+        "This session has ended. Please sign in again.",
+    }
+
+    # The old password is dead; the new one works, and the sign-in response
+    # tells the frontend a change is due.
+    assert _sign_in(client, teacher["code"], teacher["initialPassword"]).status_code == 401
+    fresh = _sign_in(client, teacher["code"], temporary)
+    assert fresh.status_code == 200
+    assert fresh.json()["user"]["mustChangePassword"] is True
+
+    # Both trails record it; neither carries the password.
+    acted = _audit_rows(db_session, "roster.person_password_reset", admin.id)
+    received = _audit_rows(db_session, "auth.password_reset_by_admin", teacher["id"])
+    assert len(acted) == 1 and len(received) == 1
+    assert teacher["id"] in acted[0].event_data_json
+    assert "ADMIN" in received[0].event_data_json
+    for row in acted + received:
+        assert temporary not in (row.event_data_json or "")
+
+
+def test_a_student_is_handed_back_their_login_code_with_the_new_password(client, db_session):
+    admin, _school = _make_school_admin(db_session, "reset-admin2@example.com", "Reset School Two")
+    headers = {**_login(client, admin.email), **_AS["ADMIN"]}
+    student = _create(client, headers, role="STUDENT", fullName="Forgetful Student", className="5", section="A")
+
+    body = _reset(client, headers, student["id"]).json()
+    # A student has no email: the code is the only thing they can sign in with.
+    assert body["signInWith"] == student["code"]
+    assert _sign_in(client, student["code"], body["temporaryPassword"]).status_code == 200
+
+
+def test_reset_unlocks_an_account_locked_by_wrong_guesses(client, db_session):
+    admin, _school = _make_school_admin(db_session, "reset-admin3@example.com", "Reset School Three")
+    headers = {**_login(client, admin.email), **_AS["ADMIN"]}
+    teacher = _create(client, headers, role="TEACHER", fullName="Locked Teacher", email="reset-teacher3@example.com")
+
+    for _ in range(5):
+        _sign_in(client, teacher["code"], "not-the-password")
+    assert _sign_in(client, teacher["code"], teacher["initialPassword"]).status_code == 423
+
+    temporary = _reset(client, headers, teacher["id"]).json()["temporaryPassword"]
+    # Forgetting a password and being locked out for guessing are the same
+    # afternoon: the new one works the moment it is handed over.
+    assert _sign_in(client, teacher["code"], temporary).status_code == 200
+    stored = db_session.get(User, teacher["id"])
+    db_session.refresh(stored)
+    assert stored.failed_login_attempts == 0 and stored.locked_until is None
+
+
+def test_an_admin_can_only_reset_people_in_their_own_school(client, db_session):
+    super_admin = _make_super_admin(db_session, "reset-sa4@example.com")
+    other_admin, other_school = _make_school_admin(db_session, "reset-other-admin4@example.com", "Reset Other School")
+    outsider = User(full_name="Other Teacher", email="reset-outsider4@example.com", password_hash=hash_password(PASSWORD), role="TEACHER")
+    db_session.add(outsider)
+    db_session.flush()
+    db_session.add(Teacher(user_id=outsider.id, school_id=other_school.id, teacher_code="TCH-RESET-OUT4"))
+    db_session.commit()
+
+    admin, _school = _make_school_admin(db_session, "reset-admin4@example.com", "Reset School Four")
+    headers = {**_login(client, admin.email), **_AS["ADMIN"]}
+
+    cases = [
+        (outsider.id, 403, "FORBIDDEN", "You can only manage people in your own school."),
+        (other_admin.id, 403, "FORBIDDEN", "Only a Super Admin can reset an Admin's password."),
+        (super_admin.id, 403, "FORBIDDEN", "Super Admin accounts can't be managed from this page."),
+        (admin.id, 422, "VALIDATION_ERROR", "You can't reset your own password here. Use Change Password in your profile menu."),
+        ("no-such-account", 404, "NOT_FOUND", "That account couldn't be found."),
+    ]
+    for person_id, status_code, code, message in cases:
+        response = _reset(client, headers, person_id)
+        assert response.status_code == status_code, (person_id, response.text)
+        assert response.json()["detail"]["code"] == code
+        assert response.json()["detail"]["message"] == message
+        assert "temporaryPassword" not in response.text
+
+    # Nothing moved on any account that was refused.
+    for user in (outsider, other_admin, super_admin, admin):
+        db_session.refresh(user)
+        assert verify_password(PASSWORD, user.password_hash)
+        assert not user.must_change_password
+    assert not _audit_rows(db_session, "roster.person_password_reset", admin.id)
+
+
+def test_super_admin_resets_an_admin_without_touching_their_second_factor(client, db_session):
+    super_admin = _make_super_admin(db_session, "reset-sa5@example.com")
+    admin, _school = _make_school_admin(db_session, "reset-admin5@example.com", "Reset School Five")
+    secret_before = admin.totp_secret
+    headers = {**_login(client, super_admin.email), **_AS["SUPER_ADMIN"]}
+
+    response = _reset(client, headers, admin.id)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["role"] == "ADMIN" and body["signInWith"] == "reset-admin5@example.com"
+
+    db_session.refresh(admin)
+    assert admin.totp_enabled is True and admin.totp_secret == secret_before
+
+    # The admin still needs their authenticator to get in...
+    challenge = _sign_in(client, admin.email, body["temporaryPassword"]).json()
+    assert challenge["twoFactorRequired"] is True
+    verified = client.post(
+        "/api/auth/2fa/verify-login",
+        json={"challengeToken": challenge["challengeToken"], "code": pyotp.TOTP(TEST_TOTP_SECRET).now()},
+    )
+    assert verified.status_code == 200
+    # ...and, once in, can do nothing until the temporary password is
+    # replaced. For admins this gate is enforced server-side today.
+    blocked = client.get("/api/roster/people", headers=_AS["ADMIN"])
+    assert blocked.status_code == 403
+    assert blocked.json()["detail"]["code"] == "PASSWORD_CHANGE_REQUIRED"
+
+
+def test_an_inactive_account_is_reactivated_before_it_is_reset(client, db_session):
+    admin, _school = _make_school_admin(db_session, "reset-admin6@example.com", "Reset School Six")
+    headers = {**_login(client, admin.email), **_AS["ADMIN"]}
+    teacher = _create(client, headers, role="TEACHER", fullName="Left Teacher", email="reset-teacher6@example.com")
+    assert client.patch(f"/api/roster/people/{teacher['id']}/status", json={"isActive": False}, headers=headers).status_code == 200
+
+    response = _reset(client, headers, teacher["id"])
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "ACCOUNT_INACTIVE"
+    assert response.json()["detail"]["message"] == "This account is inactive. Reactivate it before resetting its password."
+    stored = db_session.get(User, teacher["id"])
+    db_session.refresh(stored)
+    assert verify_password(teacher["initialPassword"], stored.password_hash)
+
+
+def test_only_admins_can_reset_and_only_with_a_csrf_token(client, db_session):
+    admin, _school = _make_school_admin(db_session, "reset-admin7@example.com", "Reset School Seven")
+    headers = {**_login(client, admin.email), **_AS["ADMIN"]}
+    teacher = _create(client, headers, role="TEACHER", fullName="Curious Teacher", email="reset-teacher7@example.com")
+    victim = _create(client, headers, role="TEACHER", fullName="Other Teacher", email="reset-victim7@example.com")
+
+    # Signed in as an admin, but the request did not come from our own page.
+    forged = client.post(f"/api/roster/people/{victim['id']}/reset-password", headers=_AS["ADMIN"])
+    assert forged.status_code == 403
+    assert forged.json()["detail"]["code"] == "CSRF_VALIDATION_FAILED"
+
+    # A teacher, with a perfectly valid session and CSRF token of their own.
+    assert _sign_in(client, teacher["code"], teacher["initialPassword"]).status_code == 200
+    as_teacher = {"x-csrf-token": client.cookies.get("se_csrf"), **_AS["TEACHER"]}
+    refused = _reset(client, as_teacher, victim["id"])
+    assert refused.status_code == 403
+    assert refused.json()["detail"]["code"] == "FORBIDDEN"
+
+    stored = db_session.get(User, victim["id"])
+    db_session.refresh(stored)
+    assert verify_password(victim["initialPassword"], stored.password_hash)
+
+
+def test_reset_needs_a_signed_in_caller(client, db_session):
+    _admin, _school = _make_school_admin(db_session, "reset-admin8@example.com", "Reset School Eight")
+    response = client.post("/api/roster/people/anyone/reset-password")
+    assert response.status_code == 401
+    assert response.json()["detail"]["code"] == "UNAUTHORIZED"

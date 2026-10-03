@@ -186,7 +186,7 @@ def approve_recommendation(
     )
 
     if recommendation.recommendation == "NONE" or not recommendation.recommended_activity:
-        api_error(422, "NO_RECOMMENDATION", "There is no Foundation Repair recommendation to approve for this student/concept.")
+        api_error(422, "NO_RECOMMENDATION", "There's no Foundation Repair recommendation to approve for this student and concept.")
 
     return create_assignment(
         db,
