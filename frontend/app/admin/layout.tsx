@@ -6,11 +6,12 @@ import { pageTitle } from "@/lib/pageTitle";
 // (lib/hooks/usePageTitle.ts, through RoleShell). `absolute` so the root
 // layout's "%s · Krama" template is not applied on top.
 //
-// Admin and Super Admin share these routes, and which of the two is signed
-// in is only known in the browser, so this first title says "Admin" for
-// both; RoleShell corrects it to "Super Admin" as soon as the page is up.
+// School Admin and Super Admin share these routes, and which of the two is
+// signed in is only known in the browser. So this first title names neither
+// (it used to say "Admin" for both, which is one of them): just the product,
+// until RoleShell sets the page's own title a moment later.
 export const metadata: Metadata = {
-  title: { absolute: pageTitle(null, "ADMIN") },
+  title: { absolute: pageTitle(null) },
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

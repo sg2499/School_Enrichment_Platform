@@ -105,7 +105,7 @@ def _structural_flags(question: Question) -> list[str]:
             if letter not in _OPTION_LETTERS:
                 flags.append(f"Correct answer {letter!r} is not a valid option letter (A-D).")
             elif letter not in non_empty_options:
-                flags.append(f"Correct answer points at option {letter}, but option {letter} is empty -- the answer key doesn't match any real option.")
+                flags.append(f"Correct answer points at option {letter}, but option {letter} is empty, so the answer key matches no real option.")
 
     if question.marks is not None and question.marks < 1:
         flags.append(f"Marks is {question.marks}, expected at least 1.")
@@ -115,7 +115,7 @@ def _structural_flags(question: Question) -> list[str]:
                          ("explanation", question.explanation), ("hint", question.hint)]:
         term = _contains_blocked_term(text)
         if term:
-            flags.append(f"{label} contains a blocked term ({term!r}) -- needs human review before this can be approved.")
+            flags.append(f"{label} contains a blocked term ({term!r}) and needs a person to review it before it can be approved.")
 
     return flags
 
@@ -469,8 +469,8 @@ def evaluate_question(question: Question) -> QualityResult:
 
     if verifier_outcome is False:
         flags.append(
-            f"Computed answer does not match the stored correct answer ({question.correct_answer!r}) "
-            f"-- checked by the {verifier_name} pattern."
+            f"The calculated answer does not match the stored correct answer ({question.correct_answer!r}). "
+            f"Check used: {(verifier_name or '').replace('_', ' ')}."
         )
 
     if flags:

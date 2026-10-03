@@ -52,7 +52,7 @@ def test_single_select_answer_key_not_matching_any_option_is_flagged():
     )
     result = evaluate_question(q)
     assert result.status == "FLAGGED"
-    assert any("doesn't match any real option" in f for f in result.flags)
+    assert any("matches no real option" in f for f in result.flags)
 
 
 def test_single_select_valid_answer_key_is_not_flagged_for_that_reason():

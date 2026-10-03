@@ -28,7 +28,9 @@ import {
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadError } from "@/components/ui/AlertBanner";
+import { PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
+import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, Eyebrow, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -39,7 +41,7 @@ import { SelectField, TextField } from "@/components/ui/Field";
 import { PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
 import { api, errorMessage } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { classLabel, cn } from "@/lib/utils";
 import type {
   BoardCourseOption,
   BoardOption,
@@ -110,7 +112,7 @@ const QUESTION_NEXT_ACTION: Partial<Record<QuestionStatus, { label: string; next
   APPROVED: { label: "Publish", next: "PUBLISHED" },
 };
 const QUESTION_BACK_ACTION: Partial<Record<QuestionStatus, { label: string; next: QuestionStatus }>> = {
-  SME_REVIEW: { label: "Reject to Draft", next: "DRAFT" },
+  SME_REVIEW: { label: "Send Back to Draft", next: "DRAFT" },
   APPROVED: { label: "Send Back", next: "SME_REVIEW" },
   PUBLISHED: { label: "Send Back for Rework", next: "SME_REVIEW" },
 };
@@ -120,10 +122,20 @@ const QUESTION_BACK_ACTION: Partial<Record<QuestionStatus, { label: string; next
 const STATUS_LABEL: Record<ChapterStatus | QuestionStatus, string> = {
   DRAFT: "Draft",
   REVIEW: "In Review",
-  SME_REVIEW: "SME Review",
+  // Was "SME Review": an abbreviation for a role nobody here holds.
+  SME_REVIEW: "In Review",
   APPROVED: "Approved",
   PUBLISHED: "Published",
   ARCHIVED: "Archived",
+};
+
+/** "No draft chapters", said as a sentence would say it. It was built from
+ *  the status label, which gave "No in review chapters". */
+const EMPTY_STATUS_LINE: Record<ChapterStatus, string> = {
+  DRAFT: "No draft chapters",
+  REVIEW: "No chapters in review",
+  PUBLISHED: "No published chapters",
+  ARCHIVED: "No archived chapters",
 };
 
 /** The option letters a Select-type question's stored answer names
@@ -395,7 +407,7 @@ function ChapterListSkeleton() {
  *    that can publish a wrong answer key.
  *  - Every multi-button row shows progress only on the button pressed.
  */
-function ChapterStudio() {
+function ChapterStudio({ onChanged }: { onChanged: () => void }) {
   const [chapters, setChapters] = useState<ChapterSummary[]>([]);
   const [loadingChapters, setLoadingChapters] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -533,6 +545,7 @@ function ChapterStudio() {
     try {
       await api.patch(`/curriculum-admin/chapters/${selectedId}/status`, { status });
       await Promise.all([loadDetail(selectedId), loadChapters()]);
+      onChanged();
     } catch (err) {
       setDetailError(errorMessage(err, "update this chapter's status"));
     } finally {
@@ -571,6 +584,7 @@ function ChapterStudio() {
       );
       setConfirmBulkReview(false);
       await loadChapters();
+      onChanged();
       if (selectedId) await loadDetail(selectedId);
     } catch (err) {
       setListError(errorMessage(err, "send these drafts to review"));
@@ -597,6 +611,7 @@ function ChapterStudio() {
       setQuestionsByLesson({});
       setExpandedLessonId(null);
       await Promise.all([loadDetail(selectedId), loadChapters()]);
+      onChanged();
     } catch (err) {
       setDetailError(errorMessage(err, "approve this chapter's questions"));
     } finally {
@@ -705,7 +720,7 @@ function ChapterStudio() {
               value={filterClassLevelId}
               onChange={(e) => setFilterClassLevelId(e.target.value)}
               disabled={!filterBoardId}
-              hint={!filterBoardId ? "Pick a board first" : undefined}
+              hint={!filterBoardId ? "Choose a board first" : undefined}
             >
               <option value="">All Classes</option>
               {classLevelOptions.map((cl) => (
@@ -774,12 +789,12 @@ function ChapterStudio() {
               description={
                 anyScopeFilter
                   ? "Try widening the board, class or subject filter above."
-                  : "Import a chapter workbook to see it here — it lands in Draft, ready for review."
+                  : "Chapters are imported outside Curriculum Studio. Each one arrives here as a Draft, ready for review."
               }
             />
           ) : visibleChapters.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-line-strong px-4 py-6 text-center text-sm text-content-subtle">
-              No {STATUS_LABEL[statusFilter as ChapterStatus].toLowerCase()} chapters in this view.
+              {EMPTY_STATUS_LINE[statusFilter as ChapterStatus]} in this view.
             </p>
           ) : (
             // Three across only from 2xl. At xl (a 1440px laptop with the
@@ -806,7 +821,7 @@ function ChapterStudio() {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold text-content">{chapter.title}</span>
                       <span className="block truncate text-xs text-content-subtle">
-                        {chapter.code} &middot; {chapter.conceptLessonCount} lessons &middot; {chapter.questionCount} questions
+                        {chapter.code} &middot; {countOf(chapter.conceptLessonCount, "lesson")} &middot; {countOf(chapter.questionCount, "question")}
                       </span>
                     </span>
                     <Badge tone={CHAPTER_STATUS_TONE[chapter.status]} size="sm">
@@ -837,7 +852,7 @@ function ChapterStudio() {
                 {STATUS_LABEL[selected.status]}
               </Badge>
               <span className="text-xs text-content-subtle tabular">
-                {selected.conceptLessonCount} lessons &middot; {selected.questionCount} questions
+                {countOf(selected.conceptLessonCount, "lesson")} &middot; {countOf(selected.questionCount, "question")}
               </span>
             </div>
           ) : null
@@ -858,14 +873,14 @@ function ChapterStudio() {
                   </h3>
                   {lessons.length > 0 ? (
                     <span className="text-xs font-medium text-content-subtle tabular">
-                      {publishedLessons} of {lessons.length} lessons published
+                      {publishedLessons} of {countOf(lessons.length, "lesson")} published
                     </span>
                   ) : null}
                 </div>
                 {lessons.length > 0 ? (
                   <div
                     role="img"
-                    aria-label={`${publishedLessons} of ${lessons.length} lessons published`}
+                    aria-label={`${publishedLessons} of ${countOf(lessons.length, "lesson")} published`}
                     className="h-1.5 overflow-hidden rounded-full bg-ink-100"
                   >
                     <span
@@ -943,9 +958,8 @@ function ChapterStudio() {
                       Bulk-approve this chapter&apos;s questions
                     </h3>
                     <p className="mt-0.5 text-xs leading-relaxed text-content-subtle">
-                      Runs the free automated checks (structural + computed-answer verification), then approves only
-                      the questions those checks actually confirmed are correct. Anything flagged, or that no check
-                      could verify either way, is left untouched for you to look at individually.
+                      Runs the automated checks and approves only the questions they confirm. Flagged questions,
+                      and those no check can confirm either way, are left for you to review one by one.
                     </p>
                   </div>
                 </div>
@@ -1003,13 +1017,13 @@ function ChapterStudio() {
                   <p role="status" className="text-xs leading-[1.6] text-content-muted">
                     Approved <strong className="text-jade-700">{bulkApproveResult.approvedCount}</strong>.
                     {bulkApproveResult.skippedFlaggedCount > 0
-                      ? ` ${bulkApproveResult.skippedFlaggedCount} flagged — needs your review.`
+                      ? ` ${bulkApproveResult.skippedFlaggedCount} flagged, left for your review.`
                       : ""}
                     {bulkApproveResult.skippedUnverifiedCount > 0
-                      ? ` ${bulkApproveResult.skippedUnverifiedCount} left unverified — not auto-checkable.`
+                      ? ` ${bulkApproveResult.skippedUnverifiedCount} could not be checked automatically.`
                       : ""}
                     {bulkApproveResult.skippedAlreadyDoneCount > 0
-                      ? ` ${bulkApproveResult.skippedAlreadyDoneCount} were already approved/published.`
+                      ? ` ${bulkApproveResult.skippedAlreadyDoneCount} ${bulkApproveResult.skippedAlreadyDoneCount === 1 ? "was" : "were"} already approved or published.`
                       : ""}
                   </p>
                 ) : null}
@@ -1124,7 +1138,7 @@ function ChapterStudio() {
                                 disabled={pending === "DRAFT"}
                                 onClick={() => advanceLesson(lesson.id, "PUBLISHED")}
                               >
-                                Approve
+                                Publish Lesson
                               </Button>
                               <Button
                                 size="sm"
@@ -1133,7 +1147,7 @@ function ChapterStudio() {
                                 disabled={pending === "PUBLISHED"}
                                 onClick={() => advanceLesson(lesson.id, "DRAFT")}
                               >
-                                Back to Draft
+                                Send Back to Draft
                               </Button>
                             </>
                           ) : null}
@@ -1183,6 +1197,12 @@ function ChapterStudio() {
   );
 }
 
+/** "1 lesson", "12 lessons", "0 questions". The lists used to print the
+ *  number and a fixed plural, so a chapter read "1 lessons". */
+function countOf(count: number, noun: string): string {
+  return `${count} ${count === 1 ? noun : `${noun}s`}`;
+}
+
 /** "2026-09-14" -> "14 Sep 2026" for the map's planned dates, which the
  *  API stores as plain ISO days. Parsed as a local date on purpose: new
  *  Date("2026-09-14") is UTC midnight, which renders as the 13th anywhere
@@ -1204,7 +1224,7 @@ function formatPlannedDay(value: string | null): string | null {
  * draft-to-mapped loop for any school without a second login, per Shailesh's
  * 18 Aug 2026 decision to centralize master controls with SUPER_ADMIN.
  */
-function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
+function CurriculumMapPanel({ isPlatformAdmin, onChanged }: { isPlatformAdmin: boolean; onChanged: () => void }) {
   // Board -> Class -> Subject -> Chapter cascading filters replace the old
   // single unfiltered chapter dropdown + free-text Class/Section fields
   // (19 Aug 2026). Section is gone entirely -- "n number of sections for a
@@ -1354,7 +1374,11 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
         schoolId: isPlatformAdmin ? selectedSchoolId : undefined,
         boardCourseId: chapter.boardCourseId,
         chapterId,
-        className: classLevel?.displayName ?? boardCourse?.classLevelDisplayName ?? null,
+        // The class level's CODE ("5"), which is what a student's class, an
+        // assignment and the teacher's Assign screen all match on. This sent
+        // the display name ("Class 5") until 3 Oct 2026; the server now
+        // stores the code whichever it is given (_class_code_for_map).
+        className: classLevel?.code ?? boardCourse?.classLevelCode ?? null,
         plannedStartDate: plannedStartDate || null,
         plannedEndDate: plannedEndDate || null,
       });
@@ -1362,6 +1386,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       setPlannedStartDate("");
       setPlannedEndDate("");
       await loadMappings();
+      onChanged();
     } catch (err) {
       setFormError(errorMessage(err, "map this chapter"));
     } finally {
@@ -1376,6 +1401,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       await api.delete(`/curriculum-admin/school-curriculum-maps/${mapId}`);
       setConfirmRemoveId(null);
       await loadMappings();
+      onChanged();
     } catch (err) {
       setLoadError(errorMessage(err, "remove this mapped chapter"));
     } finally {
@@ -1405,6 +1431,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
       });
       setReschedulingId(null);
       await loadMappings();
+      onChanged();
     } catch (err) {
       setRescheduleError(errorMessage(err, "save the new dates"));
     } finally {
@@ -1456,7 +1483,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
             <div className="flex flex-1 flex-col justify-center">
               <EmptyState
                 status={{ label: "No School Selected", tone: "neutral" }}
-                title="Pick a school above"
+                title="Choose a school above"
                 description="Choose which school you're mapping this chapter into, then filter down to a chapter by board, class and subject."
               />
             </div>
@@ -1545,7 +1572,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
               {formError ? <ErrorBanner message={formError} /> : null}
 
               <Button type="submit" fullWidth loading={saving} leadingIcon={<ArrowRight className="h-4 w-4" />}>
-                Add to Curriculum Map
+                Add to Calendar
               </Button>
             </form>
           )}
@@ -1560,10 +1587,10 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
             </CardIcon>
             <div>
               <CardTitle>
-                {isPlatformAdmin ? (selectedSchool ? `${selectedSchool.name}’s Curriculum Map` : "Curriculum Map") : "Your School’s Curriculum Map"}
+                {isPlatformAdmin ? (selectedSchool ? `${selectedSchool.name}’s Calendar` : "School Calendar") : "Your School’s Calendar"}
               </CardTitle>
               <p className="mt-0.5 text-xs text-content-subtle">
-                {schoolContextReady ? `${mappings.length} chapter${mappings.length === 1 ? "" : "s"} mapped` : "Pick a school to see its map"}
+                {schoolContextReady ? `${countOf(mappings.length, "chapter")} in the calendar` : "Choose a school to see its calendar"}
               </p>
             </div>
           </div>
@@ -1591,7 +1618,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
           ) : loading ? (
             <div aria-busy="true" className="space-y-2">
               <span className="sr-only" role="status">
-                Loading curriculum map
+                Loading the calendar
               </span>
               {[0, 1, 2].map((i) => (
                 <div key={i} aria-hidden className="flex items-center gap-3 rounded-2xl border border-line px-3.5 py-3">
@@ -1610,8 +1637,8 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                 title="No chapters mapped yet"
                 description={
                   isPlatformAdmin
-                    ? "Use the form to place a published chapter into one of this school's classes. Its teachers can assign practice from it straight away."
-                    : "Use the form to place a published chapter into a class. Your teachers can assign practice from it straight away."
+                    ? "Use the form to place a published chapter into one of this school's classes. Its teachers can assign practice from it once that practice is published."
+                    : "Use the form to place a published chapter into a class. Your teachers can assign practice from it once that practice is published."
                 }
               />
             </div>
@@ -1645,12 +1672,19 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-jade-50 text-jade-700 ring-1 ring-inset ring-jade-100">
                         <BookMarked className="h-4 w-4" aria-hidden />
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-content">{chapterTitle}</span>
-                        <span className="block truncate text-xs text-content-subtle">
+                      {/* Wraps, never truncates (3 Oct 2026): beside the two
+                          actions this column is ~190px wide at 1440, and
+                          "Numbers Up To Ten L…" over "CH01 · Mathematics · Cla…"
+                          told a coordinator neither the chapter nor the
+                          class. basis-44 so that on a narrower card the
+                          actions drop to their own line rather than
+                          squeezing the name to a word a line. */}
+                      <span className="min-w-0 flex-1 basis-44">
+                        <span className="block text-sm font-semibold leading-snug text-content text-pretty">{chapterTitle}</span>
+                        <span className="mt-0.5 block text-xs leading-snug text-content-subtle">
                           {chapterCode ? `${chapterCode} · ` : ""}
                           {boardCourse?.displayName ?? "Board course"}
-                          {mapping.className ? ` · Class ${mapping.className}` : ""}
+                          {mapping.className ? ` · ${classLabel(mapping.className)}` : ""}
                         </span>
                         {!isRescheduling ? (
                           // content-subtle (6.2:1 on this row), not
@@ -1686,7 +1720,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            aria-label={`Remove ${chapterTitle} from the map`}
+                            aria-label={`Remove ${chapterTitle} from the calendar`}
                             leadingIcon={<Trash2 className="h-4 w-4" />}
                             onClick={() => setConfirmRemoveId(mapping.id)}
                           >
@@ -1700,7 +1734,7 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
                       // coral-800 on the coral-50 wash: 8.7:1.
                       <div role="group" aria-label={`Confirm removing ${chapterTitle}`} className="mt-3 flex flex-wrap items-center gap-2 border-t border-coral-200 pt-3 animate-fade-in">
                         <p className="mr-auto text-[0.8125rem] leading-relaxed text-coral-800">
-                          Remove it from {mapping.className ? `Class ${mapping.className}'s` : "this"} calendar? Teachers
+                          Remove it from {mapping.className ? `${classLabel(mapping.className)}'s` : "this"} calendar? Teachers
                           won&rsquo;t be able to assign new practice from it. The chapter itself isn&rsquo;t affected.
                         </p>
                         <Button
@@ -1771,38 +1805,170 @@ function CurriculumMapPanel({ isPlatformAdmin }: { isPlatformAdmin: boolean }) {
   );
 }
 
+/** Local YYYY-MM-DD, so "running now" is judged on the viewer's own
+ *  calendar day rather than UTC's (at 4am IST, UTC is still on yesterday). */
+function todayIso(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 export default function CurriculumStudioPage() {
   const session = useProtectedPage("ADMIN");
   const { user, status } = session;
+  const ready = status === "ready" && Boolean(user);
+  const isPlatformAdmin = user?.role === "SUPER_ADMIN";
+
+  // The masthead's own read of what the page is about (3 Oct 2026). The two
+  // panels below keep their own lists -- they are filtered by whatever the
+  // admin has picked, so they cannot be the source of a page-wide figure --
+  // and tell this page when they have changed something (`onChanged`), so
+  // the figures move with the work.
+  const chaptersQuery = useApiQuery<{ chapters: ChapterSummary[] }>(
+    ready ? "/curriculum-admin/chapters" : null,
+    {},
+    { action: isPlatformAdmin ? "load the chapter list" : "load your published chapters" },
+  );
+  const mapsQuery = useApiQuery<{ schoolCurriculumMaps: SchoolCurriculumMapEntry[] }>(
+    ready && !isPlatformAdmin ? "/curriculum-admin/school-curriculum-maps" : null,
+    {},
+    { action: "load your school's calendar" },
+  );
+  const reloadChapters = chaptersQuery.reload;
+  const reloadMaps = mapsQuery.reload;
+  const refreshFigures = useCallback(() => {
+    reloadChapters();
+    reloadMaps();
+  }, [reloadChapters, reloadMaps]);
 
   if (status !== "ready") {
     return <SessionGate session={session} />;
   }
 
-  const isPlatformAdmin = user?.role === "SUPER_ADMIN";
   // Same reasoning as admin/dashboard/page.tsx: this page is shared by both
   // admin variants, so RoleShell's role prop has to reflect the real
   // signed-in user, not a literal "ADMIN" -- otherwise a super admin's tab
   // always displays as a plain admin in the sidebar.
   const roleForShell = isPlatformAdmin ? "SUPER_ADMIN" : "ADMIN";
 
+  // A read that has failed is not known, even when an older answer is still
+  // held (useApiQuery keeps the last one): after a publish or a mapping whose
+  // refresh failed, the old number would sit above a list that has moved.
+  const chapters = chaptersQuery.problem ? null : (chaptersQuery.data?.chapters ?? null);
+  const mappings = mapsQuery.problem ? null : (mapsQuery.data?.schoolCurriculumMaps ?? null);
+  // `null` while loading (a placeholder bar), "—" if the read failed (the
+  // panel below reports its own failure in words), a number otherwise.
+  const figure = (query: { data: unknown; problem: unknown }, value: number | undefined) =>
+    query.problem ? "—" : query.data ? (value ?? 0) : null;
+
+  let stats: PageHeaderStat[];
+  if (isPlatformAdmin) {
+    const by = (state: ChapterStatus) => chapters?.filter((chapter) => chapter.status === state).length;
+    const inReview = by("REVIEW");
+    const questions = chapters?.reduce((sum, chapter) => sum + (chapter.questionCount ?? 0), 0);
+    stats = [
+      {
+        label: "Chapters",
+        value: figure(chaptersQuery, chapters?.length),
+        hint: chapters
+          ? `${(questions ?? 0).toLocaleString("en-IN")} ${questions === 1 ? "question" : "questions"} in all`
+          : undefined,
+      },
+      {
+        label: "Published",
+        value: figure(chaptersQuery, by("PUBLISHED")),
+        hint: chapters ? "Schools can map these" : undefined,
+        tone: by("PUBLISHED") ? "good" : "default",
+      },
+      {
+        label: "In Review",
+        value: figure(chaptersQuery, inReview),
+        hint: chapters ? (inReview ? "Waiting for you, in step 1" : "Nothing waiting") : undefined,
+        tone: inReview ? "attention" : "default",
+      },
+      {
+        label: "Draft",
+        value: figure(chaptersQuery, by("DRAFT")),
+        hint: chapters ? "Imported, not yet sent for review" : undefined,
+      },
+    ];
+  } else {
+    const today = todayIso();
+    const rows = mappings ?? [];
+    const running = rows.filter(
+      (m) => Boolean(m.plannedStartDate) && m.plannedStartDate! <= today && (!m.plannedEndDate || m.plannedEndDate >= today),
+    ).length;
+    const upcoming = rows.filter((m) => Boolean(m.plannedStartDate) && m.plannedStartDate! > today).length;
+    const classes = new Set(rows.map((m) => m.className).filter(Boolean)).size;
+    // Counted chapter by chapter, not as "published minus mapped": a
+    // chapter mapped earlier and since withdrawn is in the calendar but no
+    // longer in the published list, and a subtraction would under-count.
+    const mappedIds = new Set(rows.map((m) => m.chapterId));
+    const readyToMap = chapters && mappings ? chapters.filter((chapter) => !mappedIds.has(chapter.id)).length : undefined;
+    stats = [
+      {
+        label: "In Your Calendar",
+        value: figure(mapsQuery, rows.length),
+        hint: mappings
+          ? rows.length === 0
+            ? "Nothing mapped yet"
+            : `Across ${classes} ${classes === 1 ? "class" : "classes"}`
+          : undefined,
+      },
+      {
+        label: "Running Now",
+        value: figure(mapsQuery, running),
+        hint: mappings ? (running > 0 ? "Within their planned dates today" : "None within their dates today") : undefined,
+        tone: running > 0 ? "good" : "default",
+      },
+      {
+        label: "Coming Up",
+        value: figure(mapsQuery, upcoming),
+        hint: mappings ? (upcoming > 0 ? "Scheduled to start later" : "Nothing scheduled ahead") : undefined,
+      },
+      {
+        label: "Ready To Map",
+        value: chaptersQuery.problem || mapsQuery.problem ? "—" : readyToMap !== undefined ? readyToMap : null,
+        hint: readyToMap !== undefined ? (readyToMap > 0 ? "Published, not in your calendar" : "Nothing waiting") : undefined,
+        tone: readyToMap && rows.length === 0 ? "attention" : "default",
+      },
+    ];
+  }
+
+  const figureProblem = chaptersQuery.problem ?? mapsQuery.problem ?? null;
+  const figureTitle =
+    chaptersQuery.problem && mapsQuery.problem
+      ? "These figures couldn’t be loaded"
+      : mapsQuery.problem
+        ? "Your calendar’s figures couldn’t be loaded"
+        : isPlatformAdmin
+          ? "The chapter figures couldn’t be loaded"
+          : "The published-chapter figure couldn’t be loaded";
+
   return (
-    <RoleShell role={roleForShell} user={user}>
+    // The working level of the workspace wash: still, and a step down from
+    // the dashboard's, for a page where lists and forms are read.
+    <RoleShell role={roleForShell} user={user} ambience="working">
       <div className="space-y-10">
         <PageHeader
-          eyebrow="Content Workflow"
+          surface="masthead"
+          eyebrow={isPlatformAdmin ? "Content, for Every School" : "Your School's Curriculum"}
           title="Curriculum Studio"
+          // Each role is told only what it can do here. A school admin
+          // cannot review or publish (the status ladders are Super Admin
+          // only), so their sentence no longer opens with it.
           description={
             isPlatformAdmin
-              ? "Review and publish chapters, then map any of them straight into a school's calendar — all in one place."
-              : "Bring a published chapter into your school's own calendar — filter by board, class and subject, and you're set."
+              ? "Review and publish chapters, then map any of them into a school's calendar. Nothing reaches a school until it is published here."
+              : "Bring published chapters into your school's calendar, class by class, and move their dates when the term does."
           }
-          meta={
-            <Badge tone={isPlatformAdmin ? "brand" : "success"} dot>
-              {isPlatformAdmin ? "Platform Admin View" : "School Admin View"}
-            </Badge>
-          }
+          stats={stats}
         />
+
+        {/* The masthead's figures are their own reads (the panels below
+            keep their own, filtered lists). When one fails its figure is a
+            dash; this says which, and offers the way to try again. */}
+        {figureProblem ? <LoadError title={figureTitle} problem={figureProblem} onRetry={refreshFigures} /> : null}
 
         {isPlatformAdmin ? (
           <>
@@ -1816,10 +1982,10 @@ export default function CurriculumStudioPage() {
                   Review &amp; Publish
                 </h2>
                 <p className="text-sm text-content-muted">
-                  Draft &rarr; review &rarr; publish. Nothing reaches any school until it&apos;s published here.
+                  Draft &rarr; review &rarr; publish. Open a chapter to check its lessons and questions before it goes out.
                 </p>
               </div>
-              <ChapterStudio />
+              <ChapterStudio onChanged={refreshFigures} />
             </section>
 
             <section aria-labelledby="studio-map" className="space-y-5 border-t border-line pt-10">
@@ -1829,14 +1995,15 @@ export default function CurriculumStudioPage() {
                   Map Into a School
                 </h2>
                 <p className="text-sm text-content-muted">
-                  Pick any school and place a published chapter into its calendar — no second login needed.
+                  Choose a school, then place a published chapter into one of its classes. You don&apos;t need to sign in
+                  as that school&apos;s admin.
                 </p>
               </div>
-              <CurriculumMapPanel isPlatformAdmin />
+              <CurriculumMapPanel isPlatformAdmin onChanged={refreshFigures} />
             </section>
           </>
         ) : (
-          <CurriculumMapPanel isPlatformAdmin={false} />
+          <CurriculumMapPanel isPlatformAdmin={false} onChanged={refreshFigures} />
         )}
       </div>
     </RoleShell>
