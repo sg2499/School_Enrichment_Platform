@@ -29,13 +29,23 @@
  *  - "View In Tracker" in the success banner was a `ghost` button -- bare
  *    text on a green banner, and the only action in it. It is `secondary`.
  *  - The quiet teacher ambience sits behind the page.
+ *
+ * Masthead pass, same day. Phase A left the header as a title and one grey
+ * sentence on the bare canvas (Shailesh, live: "The hero sections are still
+ * floating text"). It is a masthead now (PageHeader surface="masthead"),
+ * and what it carries is this page's own state rather than a count: the
+ * three things the sentence tells a teacher to pick -- chapter, activity,
+ * section -- as three cells that light as each is chosen (ChoiceTrail,
+ * below). Read from the form's existing state; no field, request or rule
+ * changed. The wash behind the page is the shell's now, at its working
+ * level (RoleShell's `ambience` prop; components/brand/Ambience.tsx).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ArrowRight, Check, ClipboardCheck, Send, Users } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { MASTHEAD_WELL, PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -44,7 +54,6 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { RosterIllustration } from "@/components/brand/Graphics";
-import { TeacherAmbience } from "@/components/tracker/TrackerBits";
 import { cn } from "@/lib/utils";
 import { api, apiErrorMessage } from "@/lib/api";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -99,6 +108,84 @@ function sectionsForChapter(mapping: SchoolCurriculumMapEntry | undefined, secti
 }
 
 type Assigned = { assignment: Assignment; section: TeacherSection };
+
+type Choice = { label: string; value: string | null };
+
+/**
+ * The masthead's content on this page: what has been chosen so far.
+ *
+ * The header's sentence says "pick a published chapter, one of its practice
+ * sets, and the section to send it to". These are those three picks, shown
+ * as the form fills in -- so the top of the page answers "what am I about
+ * to send, and to whom" at a glance, the question the "Goes to 5A" line
+ * beside the submit button answers for the section alone. This page has no
+ * count worth a headline (it fetches no assignments), and a number put
+ * there for the sake of having one would be the decoration PageHeader's
+ * note warns about; its own progress is the real thing it has to show.
+ *
+ * It uses the sign-in page's five-day-loop vocabulary: a milestone that is
+ * hollow until reached and saffron once it is, with the state also said in
+ * words (WCAG 1.4.1). Each cell is one of the masthead's own wells
+ * (PageHeader's MASTHEAD_WELL: the dark well, and the saffron `attention`
+ * tint for a step that is done), so nothing new joins the chrome.
+ *
+ * A real list for assistive technology, not aria-hidden: read in order it
+ * is "Chapter: The Fish Tale, chosen" and so on, which is a fair summary to
+ * hear before the form. It is not a live region -- each select already
+ * announces its own change, and a second announcement would be noise.
+ *
+ * Contrast inside a cell is PageHeader's, measured there at the masthead's
+ * lightest pixel. On the plain well the label, the "Not chosen yet" line
+ * and the step number are content-inverse-muted; on the saffron one the
+ * label is saffron-200 and the value content-inverse. Those are 7.2:1 on
+ * the plain well, and 6.4:1 and 8.5:1 on the saffron one. The hollow step
+ * ring (white at 25%) is 2.1:1 against its well -- it is decoration, the
+ * number inside it and the words beside it carry the state.
+ */
+function ChoiceTrail({ choices }: { choices: Choice[] }) {
+  return (
+    <ol aria-label="What you have chosen so far" className="grid gap-2.5 sm:grid-cols-3 sm:gap-3">
+      {choices.map((choice, index) => {
+        const done = Boolean(choice.value);
+        const well = done ? MASTHEAD_WELL.attention : MASTHEAD_WELL.default;
+        return (
+          <li
+            key={choice.label}
+            className={cn(
+              "flex min-w-0 items-center gap-3 rounded-2xl px-4 py-3 ring-1 ring-inset transition-colors duration-300",
+              well.cell,
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold tabular transition duration-300 ease-spring",
+                // brand-950 on the saffron gradient: 11.2:1 at its lightest
+                // stop, 4.9:1 at its darkest (the accent Button's pairing).
+                done ? "bg-accent-gradient text-brand-950 shadow-accent" : "text-content-inverse-muted ring-1 ring-inset ring-white/25",
+              )}
+            >
+              {done ? <Check className="h-4 w-4" /> : index + 1}
+            </span>
+            <span className="min-w-0">
+              <span className={cn("block text-[0.6875rem] font-bold uppercase tracking-eyebrow", well.label)}>{choice.label}</span>
+              {/* Truncates: an activity title can run to a full sentence,
+                  and the form below shows it whole. The title attribute
+                  gives the rest to a pointer. */}
+              <span
+                title={choice.value ?? undefined}
+                className={cn("block truncate text-sm font-semibold", done ? "text-content-inverse" : "text-content-inverse-muted")}
+              >
+                {choice.value ?? "Not chosen yet"}
+              </span>
+              {done ? <span className="sr-only"> (chosen)</span> : null}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export default function AssignPracticePage() {
   const { user, status } = useProtectedPage("TEACHER");
@@ -247,6 +334,7 @@ export default function AssignPracticePage() {
     return mapping ? `${mapping.chapterTitle ?? mapping.chapterCode ?? "Chapter"}` : null;
   }, [mappings, selectedChapterId]);
 
+  const selectedActivity = activities.find((a) => a.id === selectedActivityId) ?? null;
   const selectedMapping = mappings.find((m) => m.chapterId === selectedChapterId);
   const chapterSections = sectionsForChapter(selectedMapping, sections);
   const selectedSection = sections.find((s) => s.id === selectedSectionId) ?? null;
@@ -266,20 +354,33 @@ export default function AssignPracticePage() {
   }
 
   return (
-    <RoleShell role="TEACHER" user={user}>
-      <TeacherAmbience />
-      {/* `relative` so the page paints above the ambience. */}
-      <div className="relative space-y-8">
+    <RoleShell role="TEACHER" user={user} ambience="working">
+      <div className="space-y-8">
         <PageHeader
+          surface="masthead"
           eyebrow="Teaching Workspace"
           title="Assign Practice"
           description="Pick a published chapter, one of its practice sets, and the section to send it to. Students see it straight away."
           actions={
+            // Still `secondary`. Button.tsx's variant for dark chrome is
+            // `quiet`, but its hover stacks two white fills under a white
+            // label (PageHeader.tsx has the figure, under AA), and fixing
+            // that reaches the rail's Sign Out and the student hero, which
+            // are outside this pass. The white pill is opaque, so its
+            // label is the 17.0:1 it is on any card, and 9.3:1 hovered.
             <ButtonLink href="/teacher/tracker" variant="secondary" leadingIcon={<ClipboardCheck className="h-4 w-4" />}>
               Open Practice Tracker
             </ButtonLink>
           }
-        />
+        >
+          <ChoiceTrail
+            choices={[
+              { label: "Chapter", value: selectedChapterLabel },
+              { label: "Activity", value: selectedActivity?.title ?? null },
+              { label: "Section", value: selectedSection ? sectionLabel(selectedSection) : null },
+            ]}
+          />
+        </PageHeader>
 
         {/* SplitLayout: the rail's last card absorbs any height the form
             card has over it, so both columns end on one line instead of
@@ -512,7 +613,14 @@ export default function AssignPracticePage() {
                     ))}
                   </div>
                 ) : sections.length === 0 ? (
-                  <p className="text-sm text-content-muted">None yet.</p>
+                  // An empty slot rather than a stray "None yet.": the
+                  // dashed outline is the shape of the row that will be
+                  // here, and the sentence says who puts it there. The
+                  // main column carries the full empty state; this is its
+                  // echo in the rail. content-muted on white: 8.6:1.
+                  <p className="rounded-2xl border border-dashed border-line-strong bg-surface px-3.5 py-3 text-[0.8125rem] leading-relaxed text-content-muted">
+                    None yet. Your school admin assigns each teacher to the sections they teach.
+                  </p>
                 ) : (
                   // Rows, not pills. These were Badges, which are a fixed
                   // h-7 single line: a long course name ("Mathematics

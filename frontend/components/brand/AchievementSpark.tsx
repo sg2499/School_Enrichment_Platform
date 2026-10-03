@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * shown when something has actually just been finished. Its first and so
  * far only trigger is a teacher marking the last written answer on an
  * assignment: see lib/hooks/useMarkingMilestone.ts for exactly what fires
- * it, and the To Mark tile in
+ * it, and the To Mark cell of the masthead in
  * app/teacher/tracker/assignments/[assignmentId]/page.tsx for where it
  * lands.
  *

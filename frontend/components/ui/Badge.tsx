@@ -13,6 +13,29 @@ const TONES: Record<BadgeTone, { chip: string; dot: string }> = {
   inverse: { chip: "bg-white/12 text-white ring-white/20", dot: "bg-saffron-300" },
 };
 
+// The same tones on indigo chrome (`onDark`; 2 Oct 2026, with the detail
+// views' mastheads). A status chip on a masthead cannot be the light chip
+// it is on paper -- jade-50 on indigo is a white sticker -- and it cannot
+// drop its colour either, because Active / Needs Marking / Closed is the
+// one thing these chips exist to tell apart. So each semantic tone becomes
+// a tinted well: the 900 step of its own scale at 55%, a 300 hairline, and
+// the 200 step for the label -- the pairing PageHeader's MASTHEAD_WELL uses
+// for its `attention` and `good` cells, one notch denser because a chip is
+// small. Dark tints, not light ones, for MASTHEAD_WELL's reason: they can
+// only add contrast to whatever is behind them. The tones with no state to
+// carry (neutral, brand) fall back to the plain `inverse` chip.
+// PageHeader.tsx has the measured figures for all of them, taken over the
+// masthead's lightest pixel.
+const TONES_ON_DARK: Record<BadgeTone, { chip: string; dot: string }> = {
+  neutral: TONES.inverse,
+  brand: TONES.inverse,
+  inverse: TONES.inverse,
+  accent: { chip: "bg-saffron-900/55 text-saffron-200 ring-saffron-300/45", dot: "bg-saffron-300" },
+  warning: { chip: "bg-saffron-900/55 text-saffron-200 ring-saffron-300/45", dot: "bg-saffron-300" },
+  success: { chip: "bg-jade-900/55 text-jade-200 ring-jade-300/45", dot: "bg-jade-300" },
+  danger: { chip: "bg-coral-900/55 text-coral-200 ring-coral-300/45", dot: "bg-coral-300" },
+};
+
 const SIZES: Record<BadgeSize, string> = {
   sm: "h-6 px-2.5 text-[0.6875rem]",
   md: "h-7 px-3 text-xs",
@@ -25,6 +48,9 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   dot?: boolean;
   pulse?: boolean;
   icon?: React.ReactNode;
+  /** The badge sits on indigo chrome (a masthead): same tone, drawn as a
+   *  tinted dark chip. See TONES_ON_DARK. */
+  onDark?: boolean;
 }
 
 export function Badge({
@@ -34,10 +60,11 @@ export function Badge({
   dot = false,
   pulse = false,
   icon,
+  onDark = false,
   children,
   ...props
 }: BadgeProps) {
-  const t = TONES[tone];
+  const t = (onDark ? TONES_ON_DARK : TONES)[tone];
   return (
     <span
       className={cn(

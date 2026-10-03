@@ -30,7 +30,7 @@ import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { api, apiErrorMessage } from "@/lib/api";
-import { PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
+import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -44,9 +44,7 @@ import {
   PercentText,
   ReadOnlyBadge,
   ScoreBadge,
-  StatTile,
   TargetStatusBadge,
-  TeacherAmbience,
   scopeParams,
 } from "@/components/tracker/TrackerBits";
 import { formatDateTime, formatDay, plural, scopeLabel, scopeShort, studentClassLabel } from "@/lib/tracker";
@@ -209,6 +207,7 @@ function StudentWorkspace() {
 
   // The student code used to be the header's whole description: one line of
   // monospace with nothing around it. It is the same fact, labelled.
+  const backHref = `/teacher/tracker?tab=students${scope ? `&scope=${encodeURIComponent(scope)}` : ""}`;
   const facts: PageHeaderFact[] = student
     ? [
         {
@@ -220,94 +219,105 @@ function StudentWorkspace() {
     : [];
 
   return (
-    <RoleShell role="TEACHER" user={user}>
-      <TeacherAmbience />
+    // The working level of the workspace wash, through the shell -- see the
+    // assignment page.
+    <RoleShell role="TEACHER" user={user} ambience="working">
       {/* space-y-8: the working-page rhythm (Assign, People, Security, Daily
-          Practice); dashboards use space-y-10. This family alone was 7.
-          `relative` so the page paints above the ambience. */}
-      <div className="relative space-y-8">
-        {/* Back link and header as one block -- see the assignment page. */}
-        <div className="space-y-5">
-          <InlineLink href={`/teacher/tracker?tab=students${scope ? `&scope=${encodeURIComponent(scope)}` : ""}`} direction="back">
-            Students
-          </InlineLink>
+          Practice); dashboards use space-y-10. This family alone was 7. */}
+      <div className="space-y-8">
+        {history.error ? (
+          <div className="space-y-5">
+            <InlineLink href={backHref} direction="back">
+              Students
+            </InlineLink>
+            <AlertBanner tone="error" message={`Couldn't open this student (${history.error}).`} />
+          </div>
+        ) : (
+          // The student's masthead: the way back, who they are, and their
+          // four headline figures as one object (it was a back link, a
+          // header and a row of tiles on the canvas). The assignment page
+          // has the full note; while the history loads the same panel is
+          // drawn with its shapes.
+          <PageHeader
+            surface="masthead"
+            back={
+              <InlineLink href={backHref} direction="back" size="sm" tone="inverse">
+                Students
+              </InlineLink>
+            }
+            eyebrow={student ? `Class ${studentClassLabel(student.className, student.section)}` : undefined}
+            title={
+              student ? (
+                (student.studentName ?? student.studentCode)
+              ) : (
+                <>
+                  <MastheadSkeleton className="h-9 w-72 max-w-full" />
+                  <span className="sr-only">Loading student</span>
+                </>
+              )
+            }
+            facts={facts}
+            // Was " · Inactive" appended to the code in plain text. A state
+            // belongs in a badge, like every other state here.
+            meta={student && !student.isActive ? <Badge tone="inverse">Inactive</Badge> : undefined}
+            stats={[
+              { label: "Assigned", value: student ? student.stats.assigned : null },
+              {
+                label: "Completed",
+                value: student ? student.stats.completed : null,
+                hint: student && student.stats.assigned > 0 ? `of ${student.stats.assigned}` : undefined,
+              },
+              {
+                label: "Average",
+                value: student ? <PercentText percent={student.stats.averagePercent} animated onDark /> : null,
+                hint: student ? "Latest final scores" : undefined,
+              },
+              {
+                label: "To Mark",
+                value: student ? student.stats.needsReview : null,
+                tone: student && student.stats.needsReview > 0 ? "attention" : "default",
+                hint: student
+                  ? student.stats.lastSubmittedAt
+                    ? `Last submitted ${formatDateTime(student.stats.lastSubmittedAt)}`
+                    : "Nothing submitted yet"
+                  : undefined,
+              },
+            ]}
+          />
+        )}
 
-          {history.error ? <AlertBanner tone="error" message={`Couldn't open this student (${history.error}).`} /> : null}
-
-          {student ? (
-            <PageHeader
-              eyebrow={`Class ${studentClassLabel(student.className, student.section)}`}
-              title={student.studentName ?? student.studentCode}
-              facts={facts}
-              // Was " · Inactive" appended to the code in plain text. A
-              // state belongs in a badge, like every other state here.
-              meta={!student.isActive ? <Badge tone="neutral">Inactive</Badge> : undefined}
-            />
-          ) : !history.error ? (
-            <div aria-hidden className="space-y-3">
-              <span className="block h-4 w-32 animate-pulse rounded-full bg-ink-100" />
-              <span className="block h-9 w-72 max-w-full animate-pulse rounded-full bg-ink-100" />
-              <span className="block h-11 w-56 max-w-full animate-pulse rounded-2xl bg-ink-100" />
-            </div>
-          ) : null}
-        </div>
-
-        {student ? (
-          <>
-            {scope ? (
-              // The scope note was a loose paragraph: a badge, a sentence
-              // and an underlined text link in a row on the bare canvas. It
-              // is a status with one action, which is what AlertBanner is
-              // for. The action is `secondary` rather than `tinted` because
-              // tinted's fill is surface-brand -- the info banner's own
-              // colour -- and would vanish on it; a white button on a
-              // tinted banner is the same pairing Assign Practice's success
-              // banner uses.
-              //
-              // The button rides inside `message` rather than in
-              // AlertBanner's fixed `action` column, so on a phone it drops
-              // under the sentence instead of squeezing it (Assign Practice
-              // does the same, and says why at more length).
-              <AlertBanner
-                tone="info"
-                className="sm:items-center"
-                message={
-                  <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
-                    <span>
-                      Showing practice for{" "}
-                      <span className="font-semibold">
-                        {scopeSection ? scopeLabel({ ...scopeSection, className: null }) : "one section"}
-                      </span>{" "}
-                      only.
-                    </span>
-                    <ButtonLink href={`/teacher/tracker/students/${studentId}`} variant="secondary" size="sm">
-                      Show All Practice
-                    </ButtonLink>
-                  </span>
-                }
-              />
-            ) : null}
-
-            <div className="grid grid-cols-2 gap-3 animate-fade-up lg:grid-cols-4">
-              <StatTile label="Assigned" value={student.stats.assigned} />
-              <StatTile
-                label="Completed"
-                value={student.stats.completed}
-                hint={student.stats.assigned > 0 ? `of ${student.stats.assigned}` : undefined}
-              />
-              <StatTile
-                label="Average"
-                value={<PercentText percent={student.stats.averagePercent} animated />}
-                hint="Latest final scores"
-              />
-              <StatTile
-                label="To Mark"
-                value={student.stats.needsReview}
-                tone={student.stats.needsReview > 0 ? "attention" : "default"}
-                hint={student.stats.lastSubmittedAt ? `Last submitted ${formatDateTime(student.stats.lastSubmittedAt)}` : "Nothing submitted yet"}
-              />
-            </div>
-          </>
+        {student && scope ? (
+          // The scope note was a loose paragraph: a badge, a sentence
+          // and an underlined text link in a row on the bare canvas. It
+          // is a status with one action, which is what AlertBanner is
+          // for. The action is `secondary` rather than `tinted` because
+          // tinted's fill is surface-brand -- the info banner's own
+          // colour -- and would vanish on it; a white button on a
+          // tinted banner is the same pairing Assign Practice's success
+          // banner uses.
+          //
+          // The button rides inside `message` rather than in
+          // AlertBanner's fixed `action` column, so on a phone it drops
+          // under the sentence instead of squeezing it (Assign Practice
+          // does the same, and says why at more length).
+          <AlertBanner
+            tone="info"
+            className="sm:items-center"
+            message={
+              <span className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
+                <span>
+                  Showing practice for{" "}
+                  <span className="font-semibold">
+                    {scopeSection ? scopeLabel({ ...scopeSection, className: null }) : "one section"}
+                  </span>{" "}
+                  only.
+                </span>
+                <ButtonLink href={`/teacher/tracker/students/${studentId}`} variant="secondary" size="sm">
+                  Show All Practice
+                </ButtonLink>
+              </span>
+            }
+          />
         ) : null}
 
         {notice ? <AlertBanner tone={notice.tone} message={notice.message} /> : null}
@@ -340,16 +350,27 @@ function StudentWorkspace() {
                   />
                 ))}
               </ol>
-              <Pagination
-                page={data.page}
-                pageSize={data.pageSize}
-                total={data.total}
-                totalPages={data.totalPages}
-                onPageChange={(next) => url.set({ page: next })}
-                noun="assignment"
-                label="Practice history pages"
-                busy={history.loading}
-              />
+              {/* On a strip of its own. Everywhere else Pagination is the
+                  foot of a card; here the history is a list of cards, so
+                  its count ("3 assignments", content-subtle at 12px) and
+                  its Previous / Next sat on the bare canvas -- the one
+                  piece of quiet text left there on this page, and under
+                  the working ambience content-subtle on bare canvas falls
+                  to 4.0:1 at the wash's darkest pixel
+                  (components/brand/Ambience.tsx). On white it is the 6.4:1
+                  it is in every other table footer. */}
+              <div className="rounded-2xl border border-line bg-surface px-4 pb-2.5 pt-1.5 shadow-xs">
+                <Pagination
+                  page={data.page}
+                  pageSize={data.pageSize}
+                  total={data.total}
+                  totalPages={data.totalPages}
+                  onPageChange={(next) => url.set({ page: next })}
+                  noun="assignment"
+                  label="Practice history pages"
+                  busy={history.loading}
+                />
+              </div>
             </section>
           )
         ) : null}
