@@ -559,6 +559,22 @@ export function wasRefused(problem: DescribedError): boolean {
 }
 
 /**
+ * One named fact the server attached to a refusal (its envelope's
+ * `details`), for a program to act on: which sign-in choice an account
+ * uses, say. Never for showing. It is whatever the server put there, so the
+ * caller checks it is what it expects before using it. null unless the
+ * response is our own envelope and carries that name.
+ */
+export function errorDetail(error: unknown, name: string): unknown {
+  if (!isDict(error)) return null;
+  const response = isDict(error.response) ? error.response : null;
+  const data = response && isDict(response.data) ? response.data : null;
+  const envelope = data ? ownEnvelope(data) : null;
+  const details = envelope && isDict(envelope.details) ? envelope.details : null;
+  return details && Object.prototype.hasOwnProperty.call(details, name) ? details[name] : null;
+}
+
+/**
  * True when the failure says nothing about the person or their request: the
  * server could not be reached or could not answer. Used to decide between
  * "show a way to try again" and "send them to sign in".

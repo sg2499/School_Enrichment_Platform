@@ -18,10 +18,14 @@
  *     identifier: a shared lab computer that remembers "a student signed in
  *     here" has learned nothing about anyone.
  *
- * It is a hint for wording and nothing else. The server decides who someone
- * is from their credentials; a teacher who signs in under "Student" lands in
- * the teacher workspace. Nothing is ever sent to the server to work this out
- * -- a lookup of "which role is this identifier" would tell anyone which
+ * Until 4 Oct 2026 this was a hint for wording and nothing else: whoever
+ * the credentials belonged to was signed in, so an admin's details under
+ * "Teacher" went into the admin workspace. Each way in now takes only its
+ * own kind of account. The choice is sent with the sign-in, and the server
+ * refuses right details on the wrong one, naming the right one
+ * (backend/app/services/auth_service.py, login). It says so only after the
+ * password has been checked: nothing is ever looked up from the identifier
+ * alone -- "which role is this identifier" would tell anyone which
  * identifiers exist.
  *
  * No runtime imports, so it is unit-tested directly (scripts/run-unit-tests.mjs).
@@ -69,6 +73,84 @@ export function signInRoleFromIdentifier(identifier: string | null | undefined):
 export function identifierIsForAnotherWayIn(identifier: string | null | undefined, chosen: SignInRole): boolean {
   const own = signInRoleFromIdentifier(identifier);
   return own !== null && own !== chosen;
+}
+
+/**
+ * What the card shows, as the first box changes.
+ *
+ * `shown` is the way in on screen. `returnTo` is the one the person was on
+ * before the page moved them, or null when it has not moved them. `inferred`
+ * is what the box's contents last gave away.
+ */
+export interface WayInState {
+  shown: SignInRole;
+  returnTo: SignInRole | null;
+  inferred: SignInRole | null;
+}
+
+/**
+ * Follows what is typed in the first box.
+ *
+ * The moment the text becomes recognisable as an issued code, the card
+ * moves to that code's way in -- once, so choosing another by hand
+ * afterwards is not undone on the next keystroke.
+ *
+ * And it moves back. "stu-affairs@school.in" is an address, but for four
+ * keystrokes it reads as a student code, so someone typing it under "Admin"
+ * was moved to "Student" and left there (found 4 Oct 2026; a test that
+ * pasted the whole address at once had hidden it). That used to cost only
+ * the wrong wording. Now that each way in takes only its own accounts it
+ * would refuse them, so the moment an "@" shows that same text to be an
+ * address, the card returns to where the person was.
+ *
+ * Only that text, though. The way back is forgotten as soon as what is in
+ * the box no longer begins like a code: someone who typed a student code,
+ * cleared it and typed an ordinary address was moved by the code and is
+ * not moved again by the address.
+ */
+export function followIdentifier(state: WayInState, value: string): WayInState {
+  const inferred = signInRoleFromIdentifier(value);
+  if (inferred && inferred !== state.inferred) {
+    if (inferred === state.shown) return { ...state, inferred };
+    return { shown: inferred, returnTo: state.returnTo ?? state.shown, inferred };
+  }
+  if (!inferred && state.returnTo) {
+    if (BEGINS_LIKE_A_CODE.test(value)) {
+      // Begins "stu-" or "tch-" and is not a code: only an "@" does that.
+      return { shown: state.returnTo, returnTo: null, inferred };
+    }
+    if (!COULD_BECOME_A_CODE.test(value)) return { ...state, returnTo: null, inferred };
+  }
+  return state.inferred === inferred ? state : { ...state, inferred };
+}
+
+/** "stu-" or "tch-" at the start, whatever follows. */
+const BEGINS_LIKE_A_CODE = /^\s*(stu|tch)-/i;
+/** Nothing yet, or the first letters of one of those prefixes: a code half
+ *  deleted, about to be typed again. */
+const COULD_BECOME_A_CODE = /^\s*(s|st|stu|t|tc|tch)?$/i;
+
+/**
+ * The way in an address inside the product belongs to ("/teacher/tracker"
+ * is Teacher's), or null for anything else. Used when a session ends: the
+ * page the person was on says which way in they need, which the last one
+ * used on this browser may not (a student signed in at the next tab).
+ */
+export function wayInForPath(path: string | null | undefined): SignInRole | null {
+  if (typeof path !== "string") return null;
+  if (path.startsWith("/student/")) return "STUDENT";
+  if (path.startsWith("/teacher/")) return "TEACHER";
+  if (path.startsWith("/admin/")) return "ADMIN";
+  return null;
+}
+
+/**
+ * The way in the server names when it refuses right details on the wrong
+ * one, or null for anything that is not one of the three. The value arrives
+ * from outside this program, so it is checked rather than trusted.
+ */
+export function wayInFromServer(value: unknown): SignInRole | null {
+  return value === "STUDENT" || value === "TEACHER" || value === "ADMIN" ? value : null;
 }
 
 /** A signed-in account's real role, as one of the three ways in. */

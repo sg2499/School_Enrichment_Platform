@@ -15,6 +15,17 @@ import { SIGN_IN_ROLES } from "../../.test-build/lib/signInRole.mjs";
 const FIELDS = ["tab", "audience", "promise", "intro", "label", "placeholder", "missingIdentifier", "safe", "forgotten", "issuedBy", "newHere"];
 
 describe("SIGN_IN_COPY", () => {
+  test("the three choices are called Student, Teacher and Admin: the server's sentences name them", () => {
+    // "These are a teacher's sign-in details. Choose Teacher above to sign
+    // in." (backend/app/core/errors.py, wrong_way_in_message) only helps if
+    // "Teacher" is the word on the page. The other half of this is
+    // backend/tests/test_sign_in_way_in.py. Rename one, rename both.
+    assert.deepEqual(
+      SIGN_IN_ROLES.map((role) => [role, SIGN_IN_COPY[role].tab]),
+      [["STUDENT", "Student"], ["TEACHER", "Teacher"], ["ADMIN", "Admin"]],
+    );
+  });
+
   test("every way in has every line, and none is empty", () => {
     assert.deepEqual(Object.keys(SIGN_IN_COPY).sort(), [...SIGN_IN_ROLES].sort());
     for (const role of SIGN_IN_ROLES) {
