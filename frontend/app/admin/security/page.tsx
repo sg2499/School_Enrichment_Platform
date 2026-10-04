@@ -704,7 +704,7 @@ function SecuritySettingsPageInner() {
             ref={passwordSavedRef}
             tabIndex={-1}
             role="status"
-            className="flex items-start gap-3 rounded-2xl border border-jade-200 bg-jade-50 p-4 outline-none animate-scale-in focus-visible:shadow-focus"
+            className="flex items-start gap-3 rounded-2xl border border-jade-200 bg-jade-50 p-4 outline-none animate-scale-in focus-visible:shadow-focus-ring"
           >
             <Check className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-700" aria-hidden />
             <p className="text-[0.875rem] font-medium leading-[1.55] text-jade-800">
@@ -714,7 +714,7 @@ function SecuritySettingsPageInner() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleChangePassword} className="max-w-md space-y-4" noValidate>
+          <form method="post" onSubmit={handleChangePassword} className="max-w-md space-y-4" noValidate>
             {/* For password managers only, so the new password is saved
                 against this account and not with no name attached.
                 Off-screen rather than type="hidden": managers ignore
@@ -942,7 +942,7 @@ function SecuritySettingsPageInner() {
                 ) : null}
 
                 {regenOpen && !regenCodes ? (
-                  <form onSubmit={handleRegenerate} className="max-w-md space-y-4 rounded-2xl border border-line p-4 animate-fade-in">
+                  <form method="post" onSubmit={handleRegenerate} className="max-w-md space-y-4 rounded-2xl border border-line p-4 animate-fade-in">
                     <p className="text-[0.8125rem] leading-relaxed text-content-muted">
                       Generating new backup codes immediately invalidates any codes issued before. Confirm your
                       password to continue.

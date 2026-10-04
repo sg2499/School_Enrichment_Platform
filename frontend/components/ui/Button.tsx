@@ -22,16 +22,16 @@ const VARIANTS: Record<ButtonVariant, string> = {
   // Deep ink -- the confident default for form submits and key actions.
   primary:
     "bg-brand-gradient text-content-inverse shadow-brand hover:-translate-y-0.5 hover:shadow-card-hover " +
-    "active:translate-y-0 active:scale-[0.985] active:shadow-brand focus-visible:shadow-focus",
+    "active:translate-y-0 active:scale-[0.985] active:shadow-brand focus-visible:shadow-focus-ring",
   // Warm saffron -- reserved for the single most inviting action on a view.
   accent:
     "bg-accent-gradient text-brand-950 shadow-accent hover:-translate-y-0.5 hover:brightness-[1.04] " +
-    "active:translate-y-0 active:scale-[0.985] focus-visible:shadow-focus-accent",
+    "active:translate-y-0 active:scale-[0.985] focus-visible:shadow-focus-ring",
   // White and bordered -- the committed alternative beside a primary, or a
   // row's one action that needs doing now ("Mark Answers").
   secondary:
     "border border-line-strong bg-surface text-content shadow-xs hover:border-brand-300 hover:bg-surface-brand " +
-    "hover:text-content-brand focus-visible:shadow-focus",
+    "hover:text-content-brand focus-visible:shadow-focus-ring",
   // Ink-tinted -- a standalone action that repeats down a list or sits alone
   // in a card ("Review", "Grant Extra Attempt"): visibly a button at rest,
   // but quiet enough to appear thirty times on one screen. Reach for it
@@ -54,18 +54,18 @@ const VARIANTS: Record<ButtonVariant, string> = {
   // boundary is the sole way to find the control).
   tinted:
     "border border-line-brand bg-surface-brand text-content-brand hover:border-brand-300 hover:bg-brand-100 " +
-    "hover:text-brand-900 focus-visible:shadow-focus",
+    "hover:text-brand-900 focus-visible:shadow-focus-ring",
   // No chrome at rest -- only for the de-emphasised half of a pair, where
   // the committed button beside it supplies the "these are buttons" cue
   // (Cancel next to Save). Never as a row's or a card's only action: that
   // is what `tinted` is for.
   ghost:
-    "border border-transparent text-content-muted hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus",
+    "border border-transparent text-content-muted hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus-ring",
   // For dark chrome (sidebar, brand panels).
   quiet:
-    "border border-line-inverse bg-white/10 text-content-inverse backdrop-blur hover:bg-white/20 focus-visible:shadow-focus",
+    "border border-line-inverse bg-white/10 text-content-inverse backdrop-blur hover:bg-white/20 focus-visible:shadow-focus-ring",
   danger:
-    "bg-coral-600 text-content-inverse shadow-xs hover:bg-coral-700 focus-visible:shadow-focus",
+    "bg-coral-600 text-content-inverse shadow-xs hover:bg-coral-700 focus-visible:shadow-focus-ring",
 };
 
 // Filled variants get a lit top edge (shadow-sheen). Outline/ghost/quiet

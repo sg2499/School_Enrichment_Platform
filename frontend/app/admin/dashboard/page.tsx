@@ -31,6 +31,7 @@ import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "
 import { BlueprintIllustration } from "@/components/brand/Graphics";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { PRODUCT_NAME } from "@/lib/brand";
+import { ROLE_LABEL } from "@/lib/pageTitle";
 import { classLabel, cn } from "@/lib/utils";
 import type { ChapterStatus, ChapterSummary, SchoolCurriculumMapEntry, SchoolOption } from "@/types/curriculum";
 
@@ -1188,10 +1189,13 @@ export default function AdminDashboardPage() {
                 </div>
                 <dl className="-mt-1">
                   <DetailRow label="Administrator" value={user?.fullName ?? "—"} />
-                  {/* "Super Admin", the name the rail, the tab and the
-                      footer use (lib/pageTitle.ts ROLE_LABEL). This row
-                      said "Platform Admin", a third name for one role. */}
-                  <DetailRow label="Access Level" value={isPlatformAdmin ? "Super Admin" : "School Admin"} />
+                  {/* The KIND of access, so the plain role name
+                      (lib/pageTitle.ts ROLE_LABEL) and not the label the
+                      rail and the tab use: that one puts the school's name
+                      in front, and the school is the very next row. This
+                      row once said "Platform Admin", a third name for one
+                      role. */}
+                  <DetailRow label="Access Level" value={ROLE_LABEL[isPlatformAdmin ? "SUPER_ADMIN" : "ADMIN"]} />
                   {isPlatformAdmin ? (
                     <DetailRow label="Reach" value={`Every school on ${PRODUCT_NAME}`} />
                   ) : (

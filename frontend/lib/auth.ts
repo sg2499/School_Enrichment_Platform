@@ -17,7 +17,7 @@ import { clearSignedOutNotice } from "./sessionNotice";
 const LEGACY_USER_KEY = "school_enrichment_user";
 const ACTIVE_ROLE_KEY = "school_enrichment_active_role";
 const CSRF_COOKIE_NAME = "se_csrf";
-const KNOWN_SCHOOL_KEY = "school_enrichment_known_school";
+const LEGACY_KNOWN_SCHOOL_KEY = "school_enrichment_known_school";
 
 // ADMIN and SUPER_ADMIN both live under /admin/*, so the URL alone can't
 // tell them apart the way it does for /teacher and /student. sessionStorage
@@ -158,33 +158,23 @@ export function getStoredUserForRole(role: UserRole): CurrentUser | null {
   }
 }
 
-function schoolNameFromUser(user: CurrentUser): string | null {
-  return user.student?.schoolName || user.teacher?.schoolName || user.admin?.schoolName || null;
-}
-
-/** Remembers which school this browser last signed in as -- purely a
- * display convenience (the sign-in page's "Accounts here are issued by <school>" line) for a
- * returning visitor on their own device. Never used for authorization: the
- * login page still asks for real credentials regardless of what this says,
- * and a person on a shared/public device simply sees the generic pill until
- * they've actually signed in here once. Non-secret, just a name string.
+/**
+ * Drops the school name older builds left in this browser.
+ *
+ * Until 4 Oct 2026 every sign-in wrote the school's name to storage, and
+ * the sign-in page read it back as "Accounts here are issued by <school>".
+ * That line is gone: the sign-in page is shared by every school, so one
+ * school's name on it was the wrong answer for everyone from any other, and
+ * on a shared computer it told the next person where the last one studied.
+ * Nothing writes the name now; this removes what was already written, on
+ * the next sign-in and whenever the sign-in page itself is opened.
  */
-export function rememberSchoolName(name: string | null | undefined): void {
-  if (typeof window === "undefined" || !name) return;
+export function forgetRememberedSchool(): void {
+  if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(KNOWN_SCHOOL_KEY, name);
+    localStorage.removeItem(LEGACY_KNOWN_SCHOOL_KEY);
   } catch {
-    // Storage full or blocked (private browsing) -- the pill just falls
-    // back to generic wording next visit, nothing else depends on this.
-  }
-}
-
-export function getRememberedSchoolName(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(KNOWN_SCHOOL_KEY);
-  } catch {
-    return null;
+    // Storage blocked: then there was nothing to forget either.
   }
 }
 
@@ -199,7 +189,7 @@ export function setSession(user: CurrentUser): void {
   safeSetJson(userKey(role), user);
   localStorage.setItem(ACTIVE_ROLE_KEY, role);
   safeSetJson(LEGACY_USER_KEY, user);
-  rememberSchoolName(schoolNameFromUser(user));
+  forgetRememberedSchool();
   window.dispatchEvent(new Event("school-enrichment-auth-changed"));
 }
 

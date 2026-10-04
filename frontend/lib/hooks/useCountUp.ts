@@ -26,7 +26,8 @@ function easeOutExpo(t: number): number {
  * re-rendering a text node on requestAnimationFrame, which CSS cannot
  * shorten, so the same media query has to be asked here too. It is the same
  * approach the sign-in page takes for its two script-driven effects
- * (usePointerAmbience and shake in app/login/page.tsx): one preference, read
+ * (the climbing light in app/login/FiveDayAscent.tsx and shake in
+ * app/login/page.tsx): one preference, read
  * in the two places it has to be, not a second setting.
  *
  * Read when an animation is about to start rather than once at load, so

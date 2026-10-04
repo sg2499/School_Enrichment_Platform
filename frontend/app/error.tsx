@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { ArrowRight, LogIn, RotateCw, TriangleAlert } from "lucide-react";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { useRoleForPage } from "@/lib/hooks/useRoleForPage";
+import { useAdminSchoolForPage, useRoleForPage } from "@/lib/hooks/useRoleForPage";
 import { defaultRouteForRole } from "@/lib/auth";
 import { PRODUCT_NAME } from "@/lib/brand";
 import type { UserRole } from "@/types/auth";
@@ -55,7 +55,7 @@ const EYEBROW: Record<UserRole, string> = {
 
 export default function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const role = useRoleForPage();
-  usePageTitle("Something Went Wrong", role);
+  usePageTitle("Something Went Wrong", role, useAdminSchoolForPage());
 
   useEffect(() => {
     Sentry.captureException(error);

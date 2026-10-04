@@ -153,6 +153,10 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             icon && "pl-11",
             revealable && "pr-12",
             error ? "border-coral-400 focus:border-coral-500" : "border-line-strong hover:border-ink-300",
+            // A caller that shows the message itself, somewhere else (the
+            // sign-in card's one message for two boxes), marks the box with
+            // aria-invalid and no `error`: the box still turns coral.
+            "aria-[invalid=true]:border-coral-400 aria-[invalid=true]:focus:border-coral-500",
             className,
           )}
           {...props}

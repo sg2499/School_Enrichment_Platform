@@ -27,7 +27,12 @@ export const PRODUCT_SLUG = "krama";
 export const COMPANY_NAME = "Zetta Metrics";
 
 /** The maker's credit, as one phrase. */
-export const PRODUCT_CREDIT = `A ${COMPANY_NAME} product`;
+export const PRODUCT_CREDIT = `A product of ${COMPANY_NAME}`;
+
+/** The company's own website. Wherever the product shows the company's
+ *  logo, the logo links here, and always in a new window: someone signing
+ *  in should never lose the sign-in page to it. */
+export const COMPANY_URL = "https://www.zetta-metrics.com";
 
 /** Who the product is for, as the line that sits under the wordmark. */
 export const PRODUCT_SCOPE = "CBSE · ICSE · Class 5–10";

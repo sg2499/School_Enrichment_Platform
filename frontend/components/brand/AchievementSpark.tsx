@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
  *  - the star is LearningOrbit's spark path, verbatim (the viewBox below is
  *    simply cropped to that path's own bounds);
  *  - the fill is the two-stop saffron gradient every spark and lit dot in
- *    Graphics.tsx uses (#FDDC92 -> #F08D0C: orbit-spark, path-spark,
- *    orbit-rings-spark), declared once more under its own id because SVG
+ *    Graphics.tsx uses (#FDDC92 -> #F08D0C: orbit-spark, path-spark),
+ *    declared once more under its own id because SVG
  *    gradient ids are per document and each graphic there owns its own;
- *  - the halo is the OrbitRings lit-dot halo, rgba(249,171,43,0.16), which
- *    is saffron-400 at 16%;
+ *  - the halo is rgba(249,171,43,0.16), saffron-400 at 16%, the halo the
+ *    lit milestone dots have always had;
  *  - the motion is two keyframes already in tailwind.config.ts.
  *
  * What plays, once, in about a second: a halo and a ring expand out of the
@@ -64,7 +64,7 @@ const BURST = "opacity-0 animate-pulse-ring [animation-duration:1100ms] [animati
 // on the diagonals, between the star's points, and four smaller ones
 // further out on its axes. Written out as literals rather than computed
 // with Math.cos, so server and client can never disagree in the last
-// decimal place (the same hazard OrbitRings rounds away).
+// decimal place.
 const DOTS: { cx: number; cy: number; r: number }[] = [
   { cx: 45.4, cy: 18.6, r: 2 },
   { cx: 45.4, cy: 45.4, r: 2 },
