@@ -6,31 +6,49 @@ import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
+  Award,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  CircleDot,
+  Clock,
   CloudOff,
   Hourglass,
+  ListChecks,
   Loader2,
+  Repeat,
   RotateCcw,
   Send,
   XCircle,
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { MastheadSkeleton, PageHeader, type PageHeaderFact, type PageHeaderStat } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
+import { InlineLink } from "@/components/ui/InlineLink";
 import { SessionGate } from "@/components/SessionGate";
 import { SignInAgainBanner } from "@/components/SignInAgainBanner";
 import { api, describeApiError } from "@/lib/api";
 import { wasRefused, type DescribedError } from "@/lib/errors";
 import { useSessionReturn } from "@/lib/hooks/useSessionReturn";
+import {
+  PRACTICE_LIST_HREF,
+  PRACTICE_LIST_NAME,
+  answerMarks,
+  answerPresentation,
+  answerState,
+  attemptsLeft,
+  resultSentence,
+  resultTally,
+  scorePercent,
+  type AnswerState,
+} from "@/lib/studentPractice";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
-import type { AttemptDetail, AttemptQuestion, AttemptResult } from "@/types/learning";
+import type { ActivityType, AttemptAnswerResult, AttemptDetail, AttemptQuestion, AttemptResult, StudentAssignmentSummary } from "@/types/learning";
 
 /*
  * Taking a practice set, and reading its result -- Phase 2b/c visual pass
@@ -76,6 +94,30 @@ import type { AttemptDetail, AttemptQuestion, AttemptResult } from "@/types/lear
  *    (as lib/api.ts does everywhere else): answers not yet saved exist only
  *    on this screen. The page stays, and says how to sign in again in
  *    another tab.
+ *
+ * The masthead (4 Oct 2026, UI revamp Phase B, slice 5). Presentation and
+ * wording; the attempt lifecycle above is untouched.
+ *  - The set, and its result, open on the lit panel every Teacher and Admin
+ *    screen opens on, over the working level of the wash. Taking a set, the
+ *    panel carries the way back and the set's details (questions, marks,
+ *    time, which attempt). Reading a result, it carries the score.
+ *  - The result's own indigo score card is gone: a second lit panel right
+ *    under the first would be two heroes on one page. Its score, its
+ *    correct / incorrect tally and its marking state are the masthead's
+ *    figures and badge.
+ *  - A result opened from the list now says which set it is the result of.
+ *    It was titled "Your Result" and nothing else, because the result
+ *    request does not carry the set's name; the page reads the name from
+ *    the list the student just came from.
+ *  - A written answer a teacher gave part marks to was shown as
+ *    "Incorrect". The server stores "full marks or not" for a marked
+ *    answer; the page now reads the marks (lib/studentPractice.ts) and says
+ *    "Part Marks", and every marked answer shows what it earned.
+ *  - A result still waiting on a teacher said its written answers "can't be
+ *    marked automatically, so they aren't counted in this score" and
+ *    stopped there, from a time when no teacher could mark them. They can
+ *    (1 Oct 2026); it now says the score is so far and can only go up.
+ *  - "Today's Practice" is "Daily Practice", the screen's one name.
  */
 
 const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"];
@@ -116,103 +158,6 @@ function SkeletonLine({ className }: { className?: string }) {
   return <span aria-hidden className={cn("block animate-pulse rounded-full bg-ink-100", className)} />;
 }
 
-/**
- * A navigation action that looks like a Button but *is* a link (30 Sep 2026).
- *
- * This page's "Back" actions used to wrap <Button> in <Link> -- one
- * interactive element nested in another (invalid HTML, and two tab stops
- * for one action). Same fix, same reasoning, as the student dashboard's
- * HeroAction and /student/practice's LinkAction. Class strings copy
- * components/ui/Button's BASE, VARIANTS.primary / VARIANTS.secondary,
- * SIZES.sm / SIZES.md and HAS_SHEEN verbatim, including the hover/press
- * wash and the primary sheen layer (Button doesn't export them -- keep in
- * step). Only BASE's disabled: and aria-busy classes are left out: a link
- * has no disabled or loading state. Focus is Button's own
- * shadow-focus-ring. `sm` is here for the header's "Back to List", which was
- * size="sm".
- */
-function LinkAction({
-  href,
-  variant,
-  size = "md",
-  icon,
-  className,
-  children,
-}: {
-  href: string;
-  variant: "primary" | "secondary";
-  size?: "sm" | "md";
-  icon?: React.ReactNode;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "group relative inline-flex select-none items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full font-semibold",
-        "transition duration-200 ease-spring focus-visible:outline-none focus-visible:ring-0 active:duration-75",
-        variant === "primary"
-          ? "bg-brand-gradient text-content-inverse shadow-brand hover:-translate-y-0.5 hover:shadow-card-hover active:translate-y-0 active:scale-[0.985] active:shadow-brand focus-visible:shadow-focus-ring"
-          : "border border-line-strong bg-surface text-content shadow-xs hover:border-brand-300 hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus-ring",
-        size === "sm" ? "h-9 px-4 text-[0.8125rem]" : "h-11 px-5 text-sm",
-        className,
-      )}
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/[0.09] group-active:bg-black/[0.07]"
-      />
-      {variant === "primary" ? (
-        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-sheen" />
-      ) : null}
-      <span className="relative z-10 inline-flex min-w-0 items-center gap-2">
-        {icon ? (
-          <span aria-hidden className="-ml-0.5 inline-flex shrink-0">
-            {icon}
-          </span>
-        ) : null}
-        <span className="truncate">{children}</span>
-      </span>
-    </Link>
-  );
-}
-
-/** Score ring for the result card. On the dark card: jade-300 arc, 5.7:1
- *  against the gradient's lightest stop (brand-700; this card has no aurora
- *  over it). On the light review card: saffron-600 arc, 3.5:1 on
- *  surface-accent. Both past WCAG 1.4.11's 3:1 for a graphic; the tracks
- *  are decoration. The score is always printed in words beside it. */
-function ScoreRing({ score, max, tone }: { score: number; max: number; tone: "inverse" | "accent" }) {
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-  const fraction = max > 0 ? Math.min(Math.max(score / max, 0), 1) : 0;
-  return (
-    <svg viewBox="0 0 100 100" aria-hidden className="h-24 w-24 shrink-0 -rotate-90 sm:h-28 sm:w-28">
-      <circle
-        cx="50"
-        cy="50"
-        r={radius}
-        fill="none"
-        stroke={tone === "inverse" ? "rgba(255,255,255,0.15)" : "#FDDC92"}
-        strokeWidth="9"
-      />
-      {fraction > 0 ? (
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke={tone === "inverse" ? "#68D5A8" : "#D06B06"}
-          strokeWidth="9"
-          strokeLinecap={fraction === 1 ? "butt" : "round"}
-          strokeDasharray={`${fraction * circumference} ${circumference}`}
-        />
-      ) : null}
-    </svg>
-  );
-}
-
 const OPTION_LETTERS: string[] = ["A", "B", "C", "D"];
 
 type QuestionOption = { letter: string; text: string };
@@ -250,7 +195,7 @@ function questionOptions(question: AttemptQuestion): QuestionOption[] {
  * - Anything else (Constructed Response, unrecognised types): a plain
  *   textarea. It still saves and submits, but grade_answer deliberately
  *   returns "not auto-graded" for it -- the result view marks these
- *   "Awaiting Teacher Review" rather than right/wrong.
+ *   "Waiting For Marks" rather than right/wrong.
  */
 function QuestionInput({
   question,
@@ -387,173 +332,217 @@ function QuestionInput({
   );
 }
 
+/** How each kind of marked answer is shown: a badge in words with an icon,
+ *  and an edge rail that only echoes it. */
+const ANSWER_CHROME = {
+  correct: { rail: "bg-jade-400", badge: "success", label: "Correct", icon: <CheckCircle2 className="h-3 w-3" /> },
+  partial: { rail: "bg-saffron-500", badge: "accent", label: "Part Marks", icon: <CircleDot className="h-3 w-3" /> },
+  incorrect: { rail: "bg-coral-400", badge: "danger", label: "Incorrect", icon: <XCircle className="h-3 w-3" /> },
+  pending: { rail: "bg-ink-300", badge: "neutral", label: "Waiting For Marks", icon: <Hourglass className="h-3 w-3" /> },
+} as const;
+
+/** Panel label and its answer, for an answer shown as it is stored. */
+const PANEL_LABEL = "text-[0.6875rem] font-bold uppercase tracking-eyebrow";
+
+function NotAnswered() {
+  // content-subtle on surface-muted 6.0:1, on the coral tint 6.1:1.
+  return <span className="font-normal italic text-content-subtle">Not answered</span>;
+}
+
 /**
- * The marked result. Presentation of an AttemptResult, nothing more -- the
- * actions under it (and their handlers) are passed in from the page.
+ * What the student answered, and (once it has been marked) what was right.
+ *
+ * A select question is drawn on its own options, because the stored answer
+ * is only a letter: "Your answer A, correct answer C" says nothing without
+ * what A and C were. The words on each row say which is which, so the
+ * colours carry nothing on their own. Everything else is shown as stored.
  */
-function ResultView({ result, children }: { result: AttemptResult; children: React.ReactNode }) {
-  const awaitingReview = result.reviewStatus === "PENDING_REVIEW";
-  const correct = result.answers.filter((a) => a.isCorrect === true).length;
-  const incorrect = result.answers.filter((a) => a.isCorrect === false).length;
-  const pending = result.answers.length - correct - incorrect;
-  const fullMarks = result.maxScore > 0 && result.finalScore === result.maxScore;
+function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: AnswerState }) {
+  // The right answer is shown for an answer that has been marked, never for
+  // one still waiting for a teacher.
+  const reveal = state !== "pending";
+  const showRight = state === "incorrect" || state === "partial";
+  const shown = answerPresentation(answer, reveal);
 
-  const tally = [
-    { label: "Correct", count: correct, icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> },
-    { label: "Incorrect", count: incorrect, icon: <XCircle className="h-3.5 w-3.5" aria-hidden /> },
-    ...(pending > 0
-      ? [{ label: "Awaiting review", count: pending, icon: <Hourglass className="h-3.5 w-3.5" aria-hidden /> }]
-      : []),
-  ];
-
-  return (
-    <>
-      {/* Two tones, and each now has text that belongs on it. The review
-          tone used to keep the dark tone's white text on a light saffron
-          card (1.05:1). Dark: white on brand-700 10.3:1, the /80 labels
-          7.2:1. Light: content on surface-accent 16.2:1, saffron-900 9.3:1. */}
-      <Card tone={awaitingReview ? "accent" : "inverse"} className="animate-scale-in">
-        <CardBody className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div className="flex items-center gap-5">
-            <div className="relative">
-              <ScoreRing score={result.finalScore} max={result.maxScore} tone={awaitingReview ? "accent" : "inverse"} />
-              <span
-                aria-hidden
+  if (shown.kind === "options") {
+    return (
+      <div className="space-y-2">
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {shown.options.map((option) => {
+            const wrong = option.chosen && reveal && !option.correct;
+            // "Correct Answer", the words the text panel below and the
+            // teacher's review of the same attempt use.
+            const tag = option.chosen ? "Your Answer" : option.correct ? "Correct Answer" : null;
+            return (
+              <li
+                key={option.letter}
                 className={cn(
-                  "absolute inset-0 flex items-center justify-center font-display text-lg font-semibold tabular",
-                  awaitingReview ? "text-saffron-900" : "text-white",
+                  "flex items-start gap-3 rounded-2xl border px-3.5 py-3 text-sm leading-relaxed",
+                  option.correct
+                    ? "border-jade-200 bg-jade-50 text-content"
+                    : wrong
+                      ? "border-coral-200 bg-coral-50/60 text-content"
+                      : option.chosen
+                        ? "border-brand-200 bg-surface-brand text-content"
+                        : "border-line bg-surface-muted text-content-muted",
                 )}
               >
-                {result.maxScore > 0 ? `${Math.round((result.finalScore / result.maxScore) * 100)}%` : "—"}
-              </span>
-            </div>
-            <div>
-              <p
-                className={cn(
-                  "text-xs font-semibold uppercase tracking-eyebrow",
-                  awaitingReview ? "text-saffron-900" : "text-white/80",
-                )}
-              >
-                Your Score
-              </p>
-              <p
-                className={cn(
-                  "mt-1 font-display text-display-md tabular",
-                  awaitingReview ? "text-content" : "text-content-inverse",
-                )}
-              >
-                {result.finalScore} / {result.maxScore}
-              </p>
-              <p className={cn("mt-1 text-sm", awaitingReview ? "text-content-muted" : "text-white/80")}>
-                {/* Deliberately no "this may still go up": nothing can write a
-                    teacher's mark yet (final_score always equals auto_score,
-                    and teacher scoring is Phase 4, per models/learning.py
-                    and README). This says only what is true today. */}
-                {awaitingReview
-                  ? "Some written answers can't be marked automatically, so they aren't counted in this score."
-                  : fullMarks
-                    ? "Full marks. Every answer right."
-                    : "Look through what you missed below — each one shows the right answer."}
-              </p>
-            </div>
-          </div>
-          {awaitingReview ? (
-            <Badge tone="warning" icon={<Hourglass className="h-3 w-3" />}>
-              Awaiting Teacher Review
-            </Badge>
-          ) : (
-            <Badge tone="inverse" dot>
-              Auto-Scored
-            </Badge>
-          )}
-        </CardBody>
-      </Card>
+                {/* Letter chip. White on jade-600 5.1:1, on coral-600 5.2:1,
+                    on brand-700 10.3:1; content-subtle on white 6.4:1. */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                    option.correct
+                      ? "bg-jade-600 text-white"
+                      : wrong
+                        ? "bg-coral-600 text-white"
+                        : option.chosen
+                          ? "bg-brand-700 text-white"
+                          : "bg-surface text-content-subtle ring-1 ring-inset ring-line",
+                  )}
+                >
+                  {option.letter}
+                </span>
+                <span className="min-w-0 flex-1 break-words pt-0.5 font-medium">
+                  <span className="sr-only">Option {option.letter}: </span>
+                  {option.text}
+                </span>
+                {tag ? (
+                  // jade-800 on jade-50 8.9:1; coral-800 on the coral tint
+                  // 8.6:1; content-brand on surface-brand 9.3:1.
+                  <span
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1 pt-1",
+                      PANEL_LABEL,
+                      option.correct ? "text-jade-800" : wrong ? "text-coral-800" : "text-content-brand",
+                    )}
+                  >
+                    {option.correct ? <CheckCircle2 aria-hidden className="h-3.5 w-3.5" /> : wrong ? <XCircle aria-hidden className="h-3.5 w-3.5" /> : null}
+                    {tag}
+                    {option.chosen && reveal ? <span className="sr-only">, {option.correct ? "correct" : "not correct"}</span> : null}
+                  </span>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        {shown.answered ? null : (
+          <p className="text-sm italic text-content-subtle">Not answered</p>
+        )}
+      </div>
+    );
+  }
 
-      {/* The tally, in words and numbers -- the icons and colours only echo
-          them. jade-700 / coral-700 / saffron-900 on their 50 tints: 6.8,
-          6.7 and 9.3:1. */}
-      <ul className="flex flex-wrap gap-2 animate-fade-up delay-70" aria-label="How your answers were marked">
-        {tally.map((item) => (
-          <li
-            key={item.label}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.8125rem] font-semibold ring-1 ring-inset",
-              item.label === "Correct" && "bg-jade-50 text-jade-700 ring-jade-200",
-              item.label === "Incorrect" && "bg-coral-50 text-coral-700 ring-coral-200",
-              item.label === "Awaiting review" && "bg-saffron-50 text-saffron-900 ring-saffron-200",
-            )}
-          >
-            {item.icon}
-            <span className="tabular">{item.count}</span> {item.label}
+  const yours =
+    shown.kind === "sequence" && shown.yours ? (
+      <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm font-medium text-content marker:font-semibold marker:text-content-subtle">
+        {shown.yours.map((item, position) => (
+          <li key={position} className="break-words">
+            {item}
           </li>
         ))}
-      </ul>
+      </ol>
+    ) : (
+      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-content">{answer.responseText || <NotAnswered />}</p>
+    );
 
-      <ol className="space-y-4">
+  const right =
+    shown.kind === "sequence" && shown.right ? (
+      <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm font-medium text-jade-800 marker:font-semibold">
+        {shown.right.map((item, position) => (
+          <li key={position} className="break-words">
+            {item}
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-jade-800">{answer.correctAnswer}</p>
+    );
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {/* Labels content-subtle on surface-muted 6.0:1 (coral tint 6.1:1);
+          the answer itself content 16:1. */}
+      <div
+        className={cn(
+          "rounded-2xl border px-3.5 py-3",
+          state === "incorrect" ? "border-coral-200 bg-coral-50/60" : "border-line bg-surface-muted",
+        )}
+      >
+        <p className={cn(PANEL_LABEL, "text-content-subtle")}>{shown.kind === "sequence" ? "Your Order" : "Your Answer"}</p>
+        {yours}
+      </div>
+      {showRight ? (
+        // jade-800 on jade-50: 8.9:1.
+        <div className="rounded-2xl border border-jade-200 bg-jade-50 px-3.5 py-3">
+          <p className={cn(PANEL_LABEL, "text-jade-800")}>{shown.kind === "sequence" ? "Correct Order" : "Correct Answer"}</p>
+          {right}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The marked answers. Presentation of an AttemptResult's answers, nothing
+ * more -- the score and the tally are in the page's masthead, and the
+ * actions under the list (and their handlers) are passed in from the page.
+ */
+function ResultView({ result, children }: { result: AttemptResult; children: React.ReactNode }) {
+  return (
+    <>
+      <ol className="space-y-4" aria-label="Your answers">
         {result.answers.map((answer, index) => {
-          const state = answer.isCorrect === true ? "correct" : answer.isCorrect === false ? "incorrect" : "pending";
+          const state = answerState(answer);
+          const chrome = ANSWER_CHROME[state];
+          const marks = answerMarks(answer);
           return (
             <Card
               as="li"
               key={answer.questionId}
-              className={cn("animate-fade-up", STAGGER[Math.min(index + 1, STAGGER.length - 1)])}
+              className={cn("animate-fade-up", STAGGER[Math.min(index, STAGGER.length - 1)])}
             >
               {/* Edge rail: decoration only -- the Badge names the state. */}
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute inset-y-0 left-0 w-1",
-                  state === "correct" && "bg-jade-400",
-                  state === "incorrect" && "bg-coral-400",
-                  state === "pending" && "bg-saffron-300",
-                )}
-              />
+              <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", chrome.rail)} />
               <CardBody className="space-y-3.5">
-                {/* items-center: the one-line label and the 24px badge share
-                    a centre line (items-start left the label riding ~2px
-                    high of the badge's text). */}
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Question {index + 1}</p>
-                  {state === "correct" ? (
-                    <Badge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>
-                      Correct
-                    </Badge>
-                  ) : state === "incorrect" ? (
-                    <Badge tone="danger" icon={<XCircle className="h-3 w-3" />}>
-                      Incorrect
-                    </Badge>
-                  ) : (
-                    <Badge tone="neutral" icon={<Hourglass className="h-3 w-3" />}>
-                      Pending Review
-                    </Badge>
-                  )}
+                {/* From `sm`, one row: items-center, so the one-line label
+                    and the 24px badge share a centre line. On a phone the
+                    badge sits under the label on every card -- there is
+                    room for both on one line for "Correct" and not for
+                    "Waiting For Marks", and half the cards one way and
+                    half the other read as a mistake. */}
+                <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  {/* content-subtle on white: 6.4:1. The marks are said for
+                      every answer something has marked: a written answer
+                      with 2 of 3 is neither "Correct" nor "Incorrect", and
+                      the number is what tells the student so. */}
+                  <p className="whitespace-nowrap text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
+                    Question {index + 1}
+                    {state === "pending" ? (
+                      <>
+                        {" "}
+                        &middot; {answer.maxScore} mark{answer.maxScore === 1 ? "" : "s"}
+                      </>
+                    ) : marks !== null ? (
+                      <>
+                        {" "}
+                        &middot; <span className="tabular">{marks} of {answer.maxScore}</span> mark{answer.maxScore === 1 ? "" : "s"}
+                      </>
+                    ) : null}
+                  </p>
+                  <Badge tone={chrome.badge} icon={chrome.icon}>
+                    {chrome.label}
+                  </Badge>
                 </div>
                 <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty">{answer.stem}</p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {/* Answer panels. Labels content-subtle on surface-muted
-                      6.0:1 (coral tint 6.1:1); the answer itself content
-                      16:1. "Not answered" was content-faint, which is 4.6:1
-                      on white but 4.4:1 on these tints -- so subtle here. */}
-                  <div
-                    className={cn(
-                      "rounded-2xl border px-3.5 py-3",
-                      state === "incorrect" ? "border-coral-200 bg-coral-50/60" : "border-line bg-surface-muted",
-                    )}
-                  >
-                    <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">Your answer</p>
-                    <p className="mt-1 text-sm font-medium text-content">
-                      {answer.responseText || <span className="font-normal italic text-content-subtle">Not answered</span>}
-                    </p>
-                  </div>
-                  {answer.isCorrect === false ? (
-                    // jade-800 on jade-50: 8.9:1.
-                    <div className="rounded-2xl border border-jade-200 bg-jade-50 px-3.5 py-3">
-                      <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-jade-800">Correct answer</p>
-                      <p className="mt-1 text-sm font-medium text-jade-800">{answer.correctAnswer}</p>
-                    </div>
-                  ) : null}
-                </div>
-                {answer.explanation ? (
+                <AnswerBody answer={answer} state={state} />
+                {/* Never for an answer still waiting for its marks: the
+                    explanation gives the answer away as surely as the
+                    model answer does, and the set can be tried again. (The
+                    server no longer sends either for one; this is the
+                    screen's own guarantee.) */}
+                {state !== "pending" && answer.explanation ? (
                   // content-muted on surface-brand: 7.8:1.
                   <p className="rounded-2xl bg-surface-brand p-3.5 text-sm leading-relaxed text-content-muted">
                     <span className="font-semibold text-content-brand">Why: </span>
@@ -659,6 +648,39 @@ export default function StudentAttemptPage() {
 
   const viewOnlyAttemptId = searchParams.get("view") === "result" ? searchParams.get("attemptId") : null;
 
+  // Which set a result opened from the list belongs to. The result names
+  // its own set (`activity`, 4 Oct 2026). A server that has not been updated
+  // yet sends a result without it, and only then is the name read from the
+  // list the student has just come from, with one more request. Until that
+  // request settles the title is a placeholder, never a guess that is then
+  // swapped under the reader's eye; if it fails, the title is "Your Result",
+  // as it was before. The result itself does not depend on it.
+  const [listedSet, setListedSet] = useState<{ title: string; activityType: ActivityType } | null>(null);
+  const [listSettled, setListSettled] = useState(false);
+  const needsListedSet = Boolean(viewOnlyAttemptId) && phase === "result" && result !== null && !result.activity && attempt === null;
+  useEffect(() => {
+    if (status !== "ready" || !needsListedSet) return;
+    let cancelled = false;
+    api
+      // If the session has ended, stay here: the result is on screen, and
+      // this request is only for its title.
+      .get<{ assignments: StudentAssignmentSummary[] }>("/learning/assignments", { keepPageOnSessionEnd: true })
+      .then(({ data }) => {
+        if (cancelled) return;
+        const found = data.assignments.find((item) => item.assignmentTargetId === params.assignmentTargetId);
+        if (found) setListedSet({ title: found.learningActivity.title, activityType: found.learningActivity.activityType });
+      })
+      .catch(() => {
+        // Nothing to say: the title is "Your Result".
+      })
+      .finally(() => {
+        if (!cancelled) setListSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [status, needsListedSet, params.assignmentTargetId]);
+
   // `justHandedIn`: this is the result of a set handed in a moment ago on
   // this screen. If it will not load, that must not read as the hand-in
   // having failed -- on the first try or on any Try Again after it.
@@ -675,7 +697,7 @@ export default function StudentAttemptPage() {
         const problem = describeApiError(err, "load your result");
         setBlocked({
           title: "Your practice is handed in",
-          message: `${problem.message} Your answers are safe, and your result will be in Today's Practice.`,
+          message: `${problem.message} Your answers are safe, and your result will be in ${PRACTICE_LIST_NAME}.`,
           tone: "done",
           retry: retryWith(problem),
         });
@@ -956,22 +978,141 @@ export default function StudentAttemptPage() {
   }
 
   // attemptsUsed includes the attempt this result is for (GET .../result).
-  const attemptsRemaining = result ? result.maxAttempts + result.bonusAttempts - result.attemptsUsed : 0;
+  const attemptsRemaining = result ? attemptsLeft(result) : 0;
+
+  // What the masthead says. Three things can be on this page -- a set being
+  // taken, a result, or neither yet -- and the panel names whichever it is.
+  const showingResult = phase === "result" && result !== null;
+  const setTitle = attempt?.activity.title ?? result?.activity?.title ?? listedSet?.title ?? null;
+  const setType = attempt?.activity.activityType ?? result?.activity?.activityType ?? listedSet?.activityType ?? null;
+  // A placeholder for the title while there is nothing certain to put
+  // there: the set or its result is still loading, or the result is here
+  // but its set's name is one request behind (an older server, above).
+  const stillLoading = (phase === "loading" && (!setTitle || Boolean(viewOnlyAttemptId))) || (needsListedSet && !listSettled);
+  const title = showingResult ? (setTitle ?? "Your Result") : (setTitle ?? "Practice");
+  // On a result the set's name is the title, so the line above it says what
+  // this is of it; with no name to show, "Your Result" is the title itself.
+  const eyebrow = showingResult ? (setTitle ? "Your Result" : PRACTICE_LIST_NAME) : setType ? ACTIVITY_TYPE_LABEL[setType] : PRACTICE_LIST_NAME;
+
+  // Taking a set: its details, as the panel's one well.
+  const totalMarks = attempt ? attempt.questions.reduce((sum, question) => sum + question.marks, 0) : 0;
+  const facts: PageHeaderFact[] | undefined =
+    attempt && !showingResult && phase !== "blocked"
+      ? [
+          { label: "Questions", value: <span className="tabular">{totalQuestions}</span>, icon: <ListChecks className="h-3.5 w-3.5" /> },
+          { label: "Marks", value: <span className="tabular">{totalMarks}</span>, icon: <Award className="h-3.5 w-3.5" /> },
+          ...(attempt.activity.estimatedMinutes
+            ? [{ label: "Time", value: `About ${attempt.activity.estimatedMinutes} min`, icon: <Clock className="h-3.5 w-3.5" /> }]
+            : []),
+          { label: "Attempt", value: <span className="tabular">{attempt.attemptNumber}</span>, icon: <Repeat className="h-3.5 w-3.5" /> },
+        ]
+      : undefined;
+
+  // Reading a result: the score and the tally, as the panel's figures.
+  let stats: PageHeaderStat[] | undefined;
+  let resultMeta: React.ReactNode;
+  if (showingResult && result) {
+    const tally = resultTally(result.answers);
+    const percent = scorePercent(result.finalScore, result.maxScore);
+    const waiting = result.reviewStatus === "PENDING_REVIEW";
+    const fullMarks = result.maxScore > 0 && result.finalScore === result.maxScore;
+    const allowed = result.maxAttempts + result.bonusAttempts;
+    stats = [
+      {
+        label: waiting ? "Your Score So Far" : "Your Score",
+        value: (
+          <>
+            {result.finalScore}
+            <span className="text-content-inverse-muted"> / {result.maxScore}</span>
+          </>
+        ),
+        hint: percent === null ? undefined : `${percent}%`,
+        // Jade for full marks: the sentence above says the same in words.
+        tone: fullMarks && !waiting ? "good" : "default",
+      },
+      {
+        label: "Correct",
+        value: tally.correct,
+        hint: tally.correct === result.answers.length && result.answers.length > 0 ? "Every one" : `Of ${result.answers.length}`,
+      },
+      // Part marks and waiting-for-marks only exist for written answers, so
+      // a set with none of them keeps to four figures. With either, all six
+      // are shown: three and three, never a row with a hole in it.
+      ...(tally.partial > 0 || tally.pending > 0
+        ? [{ label: "Part Marks", value: tally.partial, hint: tally.partial > 0 ? "From your teacher" : "None" }]
+        : []),
+      {
+        label: "Incorrect",
+        value: tally.incorrect,
+        hint: tally.incorrect > 0 ? (tally.incorrect === 1 ? "The correct answer is below" : "The correct answers are below") : "None",
+      },
+      ...(tally.partial > 0 || tally.pending > 0
+        ? [
+            {
+              label: "Waiting For Marks",
+              value: tally.pending,
+              hint: tally.pending > 0 ? "Your teacher marks these" : "None",
+              tone: tally.pending > 0 ? ("attention" as const) : ("default" as const),
+            },
+          ]
+        : []),
+      {
+        label: "Attempt",
+        value: (
+          <>
+            {result.attemptNumber}
+            <span className="text-content-inverse-muted"> of {allowed}</span>
+          </>
+        ),
+        hint: attemptsRemaining > 0 ? `${attemptsRemaining} more ${attemptsRemaining === 1 ? "attempt" : "attempts"} left` : "No attempts left",
+      },
+    ];
+    // Who marked it, in the words the teacher's own view of this attempt
+    // uses ("Marked Automatically", "Marked By Teacher").
+    resultMeta = waiting ? (
+      <Badge tone="warning" onDark icon={<Hourglass className="h-3 w-3" />}>
+        Waiting For Your Teacher
+      </Badge>
+    ) : result.reviewStatus === "FINALISED" ? (
+      <Badge tone="inverse">Marked By Your Teacher</Badge>
+    ) : (
+      <Badge tone="inverse">Marked Automatically</Badge>
+    );
+  }
 
   return (
-    <RoleShell role="STUDENT" user={user} title={[attempt?.activity.title ?? (result ? "Your Result" : null), "Daily Practice"]}>
+    // The working level of the workspace wash, as on every Teacher and
+    // Admin working page.
+    <RoleShell
+      role="STUDENT"
+      user={user}
+      ambience="working"
+      title={[setTitle ?? (result ? "Your Result" : null), PRACTICE_LIST_NAME]}
+    >
       {/* space-y-8, the working-page rhythm shared with Daily Practice
           itself (was 6, the only page on that step). */}
       <div className="space-y-8">
         <PageHeader
-          eyebrow="Today's Practice"
-          title={attempt?.activity.title ?? (result ? "Your Result" : "Practice")}
-          description={attempt ? ACTIVITY_TYPE_LABEL[attempt.activity.activityType] : undefined}
-          actions={
-            <LinkAction href="/student/practice" variant="secondary" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>
-              Back to List
-            </LinkAction>
+          surface="masthead"
+          back={
+            <InlineLink href={PRACTICE_LIST_HREF} direction="back" size="sm" tone="inverse">
+              {PRACTICE_LIST_NAME}
+            </InlineLink>
           }
+          eyebrow={stillLoading ? undefined : eyebrow}
+          title={
+            stillLoading ? (
+              // The title's own shape while the set loads. The skeleton
+              // cards below carry the one spoken "Loading".
+              <MastheadSkeleton className="h-9 w-80 max-w-full" />
+            ) : (
+              title
+            )
+          }
+          description={showingResult && result ? resultSentence(result) : undefined}
+          facts={facts}
+          meta={showingResult ? resultMeta : undefined}
+          stats={stats}
         />
 
         {phase === "loading" ? (
@@ -1041,9 +1182,9 @@ export default function StudentAttemptPage() {
                     Try Again
                   </Button>
                 ) : null}
-                <LinkAction href="/student/practice" variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>
-                  Back to Today&apos;s Practice
-                </LinkAction>
+                <ButtonLink href={PRACTICE_LIST_HREF} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
+                  Back To {PRACTICE_LIST_NAME}
+                </ButtonLink>
               </div>
             </CardBody>
           </Card>
@@ -1179,9 +1320,9 @@ export default function StudentAttemptPage() {
         {phase === "result" && result ? (
           <ResultView result={result}>
             <div className="flex flex-wrap items-center gap-3">
-              <LinkAction href="/student/practice" variant="secondary" icon={<ArrowLeft className="h-4 w-4" />}>
-                Back to Today&apos;s Practice
-              </LinkAction>
+              <ButtonLink href={PRACTICE_LIST_HREF} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
+                Back To {PRACTICE_LIST_NAME}
+              </ButtonLink>
               {/* Only offered while an attempt is actually left (30 Sep
                   2026). It used to show unconditionally, so a student out of
                   attempts pressed it and landed on the "That didn't go
@@ -1203,11 +1344,13 @@ export default function StudentAttemptPage() {
                   Try Again
                 </Button>
               ) : (
-                // Wording follows start_attempt's own ATTEMPT_LIMIT_REACHED
-                // message, so the student is told the same thing either
-                // way. content-muted on the canvas: 8.2:1.
+                // start_attempt's own ATTEMPT_LIMIT_REACHED sentence, word for
+                // word, so the student is told the same thing whether they
+                // read it here or press a button that is refused.
+                // content-muted, not content-subtle: this sits on the
+                // canvas, over the wash (5.4:1 at the working level).
                 <p className="text-[0.8125rem] leading-relaxed text-content-muted">
-                  No re-attempts remaining for this assignment. Ask your teacher for an additional attempt.
+                  You&rsquo;ve used all your attempts for this practice. Ask your teacher if you need another one.
                 </p>
               )}
             </div>

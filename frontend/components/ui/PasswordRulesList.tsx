@@ -11,6 +11,10 @@ export interface PasswordRulesListProps {
   /** True once the person has tried to save. Until then an unmet rule is
    *  simply not ticked yet; after, it is what is holding things up. */
   attempted: boolean;
+  /** 2 (the default) on a form with room for it. 1 where the list sits in
+   *  something narrow -- the profile menu is under 300px wide, and two
+   *  columns there broke every rule over two lines. */
+  columns?: 1 | 2;
   className?: string;
 }
 
@@ -26,11 +30,13 @@ export interface PasswordRulesListProps {
  *
  * Two columns from the width of a phone up: five rules stacked would push
  * the button below them off a short laptop screen. The one rule that is a
- * full sentence takes a row to itself.
+ * full sentence takes a row to itself. `columns={1}` is for a narrow
+ * container, where each rule gets a line of its own.
  */
-export function PasswordRulesList({ id, checks, attempted, className }: PasswordRulesListProps) {
+export function PasswordRulesList({ id, checks, attempted, columns = 2, className }: PasswordRulesListProps) {
+  const two = columns === 2;
   return (
-    <ul id={id} aria-label="Password rules" className={cn("grid gap-x-4 gap-y-1.5 min-[420px]:grid-cols-2", className)}>
+    <ul id={id} aria-label="Password rules" className={cn("grid gap-x-4 gap-y-1.5", two && "min-[420px]:grid-cols-2", className)}>
       {checks.map((check) => (
         <li
           key={check.id}
@@ -38,7 +44,7 @@ export function PasswordRulesList({ id, checks, attempted, className }: Password
             "flex items-start gap-2 text-[0.8125rem] font-medium leading-snug transition-colors duration-200",
             // jade-800 on white 7.6:1; coral-700 7.3:1; content-muted 8.6:1.
             check.met ? "text-jade-800" : attempted ? "text-coral-700" : "text-content-muted",
-            check.id === "different" ? "min-[420px]:col-span-2" : null,
+            two && check.id === "different" ? "min-[420px]:col-span-2" : null,
           )}
         >
           <span

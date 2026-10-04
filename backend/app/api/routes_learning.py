@@ -41,7 +41,7 @@ Authorization model:
 """
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.errors import api_error
 from app.core.rate_limit import limiter
@@ -688,13 +688,59 @@ def get_attempt_result(
     if not evaluation:
         api_error(422, "NOT_SUBMITTED", "This attempt hasn't been submitted yet.")
 
-    answer_rows = db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()
+    answer_rows = (
+        db.query(AttemptAnswer)
+        .options(joinedload(AttemptAnswer.question))
+        .filter(AttemptAnswer.attempt_id == attempt.id)
+        .all()
+    )
+    # 4 Oct 2026: the answers come back in the set's own order. They used to
+    # come back in whatever order the database returned the rows -- the
+    # order they were saved in, so a student who answered question 3 first
+    # saw it numbered "Question 1" here, and differently again on the
+    # teacher's review of the same attempt (which has always sorted this
+    # way: routes_practice_tracker._attempt_review_payload).
+    sequence = {
+        question_id: seq
+        for question_id, seq in db.query(LearningActivityQuestion.question_id, LearningActivityQuestion.sequence)
+        .filter(LearningActivityQuestion.learning_activity_id == attempt.assignment_target.assignment.learning_activity_id)
+        .all()
+    }
+    answer_rows.sort(key=lambda row: (sequence.get(row.question_id, 10_000), row.question.code))
     breakdown = []
     for answer in answer_rows:
         question = answer.question
+        # 4 Oct 2026: a student is not sent the model answer, or the
+        # explanation, for an answer nothing has marked yet -- a written
+        # answer waiting for a teacher. The result screen never showed the
+        # model answer for one, but it was in the response all the same, and
+        # the explanation was on the screen: with attempts left, a student
+        # could read both and rewrite the answer before the teacher had
+        # marked the first one. Once it is marked (or auto-marked), both are
+        # sent, as before. A teacher or an admin reading the same attempt
+        # always gets them.
+        unmarked = answer.auto_score is None and answer.manual_score is None
+        withhold_key = user.role == "STUDENT" and unmarked
         breakdown.append(
             {
                 "questionId": question.id,
+                # 4 Oct 2026: the type and the options, so the result can say
+                # what "B" was. Without them a student read "Your answer A,
+                # correct answer C" under "Which is the greatest?" with the
+                # numbers themselves nowhere on the page. Nothing new is
+                # disclosed: the student was shown these options to answer
+                # the question, and the answer key is already below.
+                "questionType": question.question_type,
+                "options": {
+                    letter: text
+                    for letter, text in (
+                        ("A", question.option_a),
+                        ("B", question.option_b),
+                        ("C", question.option_c),
+                        ("D", question.option_d),
+                    )
+                    if text
+                },
                 "stem": question.stem,
                 "responseText": answer.response_text,
                 "isCorrect": answer.is_correct,
@@ -703,13 +749,17 @@ def get_attempt_result(
                 # unscored (routes_practice_tracker's grading endpoint).
                 "manualScore": answer.manual_score,
                 "maxScore": answer.max_score,
-                "correctAnswer": question.correct_answer,
-                "explanation": question.explanation,
+                "correctAnswer": None if withhold_key else question.correct_answer,
+                "explanation": None if withhold_key else question.explanation,
             }
         )
 
     result = _evaluation_dict(evaluation)
     result["attemptNumber"] = attempt.attempt_number
+    # 4 Oct 2026: which set this is the result of. The result screen is
+    # titled with it; opened from the list, it had only "Your Result" until
+    # a second request (the whole list) had come back.
+    result["activity"] = _activity_dict(attempt.assignment_target.assignment.learning_activity)
     # 30 Sep 2026: the result page decides whether to offer "Try Again" and
     # shows "attempt X of Y", but had nothing to compute that from except
     # attemptNumber -- so it guessed against max_attempts alone, ignoring

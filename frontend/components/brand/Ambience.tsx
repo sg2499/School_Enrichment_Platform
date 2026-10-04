@@ -136,10 +136,10 @@ import { cn } from "@/lib/utils";
  * The cost is that the blobs no longer sit exactly where the LoadingScreen
  * had them; the rail arriving over that corner hides the difference.
  *
- * Admin and Student pages don't pass `ambience` and are untouched. When
- * they get this pass, re-run the bare-canvas walk on their screens before
- * switching it on: their headers are still text on the canvas, and the
- * figures above hold only once that text has somewhere to sit.
+ * Admin and Student pages were left without `ambience` at first, until
+ * their headers had somewhere to sit. Both have it now (Admin in slice 4,
+ * Student on 4 Oct 2026), each after its own bare-canvas walk: any new
+ * page that switches it on needs the same walk first.
  */
 export type AmbienceLevel = keyof typeof AMBIENCE;
 

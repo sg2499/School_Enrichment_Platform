@@ -170,8 +170,8 @@ function TrackerWorkspace() {
           stats={stats}
           actions={
             // Still `accent`: the saffron button is the single most inviting
-            // action on this view, and on indigo it is the student hero's
-            // pairing (brand-950 on the saffron gradient, 4.9 to 11.2:1).
+            // action on this view. On indigo its label is brand-950 on the
+            // saffron gradient, 4.9 to 11.2:1.
             <ButtonLink href="/teacher/assign" variant="accent" leadingIcon={<Send className="h-4 w-4" />}>
               Assign Practice
             </ButtonLink>

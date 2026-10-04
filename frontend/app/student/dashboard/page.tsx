@@ -16,10 +16,31 @@
  *  - loading:     skeletons in the shape of what's coming, no claims.
  *  - error:       says it couldn't check, offers a retry; never falls back
  *                 to "nothing to do", which would be a guess.
- *  - none set:    the original "waiting on your school" empty state --
- *                 honest in exactly this case, so it's kept.
+ *  - none set:    the "nothing assigned yet" empty state -- honest in
+ *                 exactly this case, so it's kept.
  *  - work waiting: how much, what's next, and a way straight into it.
  *  - caught up:   says so, with the latest results one click away.
+ *
+ * The masthead (4 Oct 2026, UI revamp Phase B, slice 5). The page used to
+ * open on a greeting set straight on the canvas and, under it, a separate
+ * indigo "hero" card -- the construction the Teacher and Admin dashboards
+ * had before their own masthead pass, and the reason Shailesh, looking at
+ * the three side by side, said the student one "has not been revamped".
+ * It now opens the way they do: one lit panel (PageHeader surface
+ * "masthead") carrying the greeting, the student's four figures and the
+ * one next step, over the workspace wash.
+ *
+ * What moved where:
+ *  - The hero's headline, sentence and button are the masthead's next step
+ *    (MastheadNextStep), worded by lib/studentPractice.ts studentNextStep().
+ *  - The hero's ring ("1/2 done", with Done / Started / Not started beside
+ *    it) is the masthead's figures: Not Started, In Progress, Completed -- and a
+ *    fourth it never had, the latest score.
+ *  - "How practice works", which the hero showed a student with nothing
+ *    set, is a card of its own below (HowPracticeWorks), shown in that same
+ *    case only.
+ *  - The class and student-code chips sit on the masthead; the third chip
+ *    ("1 to Do" / "All Caught Up") said what the figures now say, and went.
  */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -29,77 +50,46 @@ import {
   BookOpen,
   CalendarCheck,
   CalendarClock,
+  Check,
   CheckCircle2,
   Circle,
   FileSpreadsheet,
   MessageCircleQuestion,
   PlayCircle,
   RefreshCcw,
+  Route,
   Target,
   TrendingUp,
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { cn, greetingForHour } from "@/lib/utils";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
+import { MastheadNextStep } from "@/components/ui/MastheadNextStep";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { InlineLink } from "@/components/ui/InlineLink";
 import { SessionGate } from "@/components/SessionGate";
 import { ModuleCard, DetailRow } from "@/components/ui/ModuleCard";
 import { PanelFooter, PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
-import { AuroraBackdropInverse, PathIllustration } from "@/components/brand/Graphics";
+import { PathIllustration } from "@/components/brand/Graphics";
 import { api, errorMessage } from "@/lib/api";
-import { PRODUCT_NAME } from "@/lib/brand";
+import {
+  PRACTICE_LIST_HREF,
+  PRACTICE_LIST_NAME,
+  STATUS_LABEL,
+  latestScore,
+  practiceAction,
+  setWord,
+  stillBeingMarked,
+  studentNextStep,
+  summarisePractice,
+  type PracticeSummary,
+} from "@/lib/studentPractice";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentAssignmentSummary } from "@/types/learning";
-
-type AssignmentStatus = StudentAssignmentSummary["status"];
-
-// ---------------------------------------------------------------------------
-// Conventions shared with /student/practice.
-//
-// Copied verbatim from app/student/practice/page.tsx rather than imported:
-// a Next.js page module may only export the page itself, and moving them to
-// a shared lib/ module was outside this pass's file scope. The dashboard's
-// "up next" list must be exactly the first rows of that page, with the same
-// labels and the same buttons, so keep these in step with it.
-// TODO: lift STATUS_* and actionForAssignment into lib/ (e.g.
-// lib/learning.ts) so the two pages can't drift apart.
-// ---------------------------------------------------------------------------
-
-const STATUS_TONE: Record<AssignmentStatus, BadgeTone> = {
-  PENDING: "brand",
-  IN_PROGRESS: "warning",
-  COMPLETED: "success",
-  SKIPPED: "neutral",
-};
-
-const STATUS_LABEL: Record<AssignmentStatus, string> = {
-  PENDING: "Not Started",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-  SKIPPED: "Skipped",
-};
-
-const STATUS_ORDER: Record<AssignmentStatus, number> = {
-  IN_PROGRESS: 0,
-  PENDING: 1,
-  COMPLETED: 2,
-  SKIPPED: 3,
-};
-
-function actionForAssignment(item: StudentAssignmentSummary): { label: string; href: string } {
-  const base = `/student/practice/${item.assignmentTargetId}`;
-  if (item.status === "COMPLETED" && item.latestAttempt) {
-    // Straight to the stored result -- the attempt page must not POST
-    // /attempts for this, or "View Result" would burn a re-attempt.
-    return { label: "View Result", href: `${base}?attemptId=${item.latestAttempt.id}&view=result` };
-  }
-  if (item.status === "IN_PROGRESS") return { label: "Continue", href: base };
-  return { label: "Start", href: base };
-}
 
 // ---------------------------------------------------------------------------
 // What "you'll find here" -- every status below is a factual claim.
@@ -140,7 +130,10 @@ const MODULES: StudentModule[] = [
     // server-side"), so practice arrives when a teacher assigns it, not on
     // a daily clock. The "marked the moment you submit" half is
     // learning_service.submit_attempt, which grades on submit.
-    description: "Short sets of questions your teacher assigns from the chapter you're on, marked the moment you submit.",
+    // "most of them": written answers wait for a teacher's marks
+    // (learning_service.submit_attempt sets PENDING_REVIEW), the same word
+    // HOW_IT_WORKS below and the sign-in page use.
+    description: "Short sets of questions your teacher assigns from the chapter you're on, most of them marked the moment you submit.",
     tone: "accent",
     // Was "Soon". Live -- evidence: /student/practice lists GET
     // /learning/assignments; /student/practice/[assignmentTargetId] runs
@@ -150,7 +143,7 @@ const MODULES: StudentModule[] = [
     // and the admin dashboard's "Daily Learning Loop" stage lists "Students
     // attempt it and get an instant, auto-marked score" as live.
     status: "live",
-    href: "/student/practice",
+    href: PRACTICE_LIST_HREF,
   },
   {
     icon: <BookOpen className="h-5 w-5" aria-hidden />,
@@ -197,7 +190,8 @@ const MODULES: StudentModule[] = [
 
 /**
  * How practice actually works, today -- shown to a student who has nothing
- * assigned yet, so the page teaches them what to expect.
+ * assigned yet, so the page teaches them what to expect (HowPracticeWorks,
+ * below).
  *
  * Replaces a five-step "Learn / Practise with hints / Check / Fix the bits
  * that wobbled / Master" loop (30 Sep 2026) that described the planned
@@ -210,7 +204,7 @@ const MODULES: StudentModule[] = [
  */
 const HOW_IT_WORKS = [
   {
-    step: "Your teacher sets it",
+    step: "Your teacher assigns it",
     // Teacher POST /learning/assignments (app/teacher/assignments).
     body: "Practice arrives when your teacher assigns it from the chapter you're on.",
   },
@@ -234,16 +228,16 @@ const HOW_IT_WORKS = [
   },
 ];
 
-// The hero's "no app to install" promises, re-checked 30 Sep 2026. The last
+// The "no app to install" promises, re-checked 30 Sep 2026. The last
 // one was "Nothing is graded until you are ready", reworded to name the
 // actual trigger (the Submit button -- learning_service.submit_attempt).
-// TODO(verify): "Works on a shared phone or tablet" is carried over from
-// the original copy. Layouts are responsive and each role signs in with its
-// own session cookie (core/cookies.py), but it hasn't been checked on a
-// real shared device in this pass.
-const HERO_POINTS = [
+// The second was "Works on a shared phone or tablet" until 4 Oct 2026:
+// "shared" was never checked on a real shared device, so it says only what
+// is checked -- all three student screens are laid out for a 320px phone
+// upwards (the slice 5 browser suite), and need nothing but a browser.
+const GOOD_TO_KNOW = [
   "No app to install",
-  "Works on a shared phone or tablet",
+  "Works on a phone, a tablet or a laptop",
   "Your teacher sets the pace",
   "Nothing is marked until you press Submit",
 ];
@@ -283,414 +277,23 @@ function dueLabel(dueDate: string | null, today: string): string | null {
 
 /** Quiet placeholder bars while live data loads -- the shape of what's
  *  coming, not a spinner. Pulse stops under prefers-reduced-motion
- *  (globals.css). `inverse` for use on the indigo hero. */
-function SkeletonLine({ className, inverse = false }: { className?: string; inverse?: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("block animate-pulse rounded-full", inverse ? "bg-white/12" : "bg-ink-100", className)}
-    />
-  );
-}
-
-/** A link that reads as a quiet text action. content-brand on white 10.3:1. */
-function TextLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="group inline-flex items-center gap-1.5 rounded-full text-sm font-semibold text-content-brand transition-colors hover:text-brand-900"
-    >
-      {children}
-      <ArrowRight
-        aria-hidden
-        className="h-4 w-4 transition-transform duration-200 ease-spring group-hover:translate-x-0.5"
-      />
-    </Link>
-  );
-}
-
-/**
- * A navigation action that looks like a Button but *is* a link.
- *
- * The practice pages wrap <Button> in <Link>, which nests one interactive
- * element in another (invalid HTML, and two tab stops for one action).
- * These two only ever navigate, so they're plain links wearing the Button
- * kit's accent/quiet variants (class strings mirror components/ui/Button,
- * which doesn't export them -- keep in step). Focus: a white outline, not
- * the global brand-500 one, which nearly vanishes on the indigo hero; white
- * on brand-700 is 10.3:1.
- */
-function HeroAction({
-  href,
-  variant,
-  icon,
-  children,
-}: {
-  href: string;
-  variant: "accent" | "quiet";
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "group relative inline-flex h-11 min-w-0 select-none items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full px-5 text-sm font-semibold",
-        "transition duration-200 ease-spring active:duration-75 focus-visible:outline-white",
-        variant === "accent"
-          ? // brand-950 on the gradient's darkest stop (saffron-600) 4.9:1,
-            // on its lightest (saffron-300) 11.2:1.
-            "bg-accent-gradient text-brand-950 shadow-accent hover:-translate-y-0.5 hover:brightness-[1.04] active:translate-y-0 active:scale-[0.985]"
-          : "border border-line-inverse bg-white/10 text-content-inverse backdrop-blur hover:bg-white/20",
-      )}
-    >
-      {icon ? (
-        <span aria-hidden className="-ml-0.5 inline-flex shrink-0">
-          {icon}
-        </span>
-      ) : null}
-      <span className="truncate">{children}</span>
-    </Link>
-  );
-}
-
-type Summary = {
-  /** In progress first, then not started -- the practice page's order. */
-  waiting: StudentAssignmentSummary[];
-  inProgress: number;
-  notStarted: number;
-  completed: StudentAssignmentSummary[];
-  /** Everything except SKIPPED. Nothing in the backend sets SKIPPED today
-   *  (the status exists only in models/learning.py's column comment), but
-   *  a skipped set is neither "to do" nor "done", so it's left out of both
-   *  rather than guessed into one. */
-  countable: number;
-};
-
-function summarise(assignments: StudentAssignmentSummary[]): Summary {
-  const sorted = [...assignments].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-  const waiting = sorted.filter((a) => a.status === "IN_PROGRESS" || a.status === "PENDING");
-  // Most recently marked first, for the caught-up "latest results" list.
-  const completed = sorted
-    .filter((a) => a.status === "COMPLETED")
-    .sort((a, b) =>
-      (b.latestAttempt?.evaluation?.evaluatedAt ?? "").localeCompare(a.latestAttempt?.evaluation?.evaluatedAt ?? ""),
-    );
-  return {
-    waiting,
-    inProgress: waiting.filter((a) => a.status === "IN_PROGRESS").length,
-    notStarted: waiting.filter((a) => a.status === "PENDING").length,
-    completed,
-    countable: waiting.length + completed.length,
-  };
-}
-
-/**
- * Done-of-set ring for the hero's glass panel. Two arcs on one track: jade
- * for done, saffron for started. As graphics on the frosted panel (measured
- * at its lightest -- glass over the aurora's glow): jade-300 3.2:1,
- * saffron-300 3.6:1, both past WCAG 1.4.11's 3:1. The legend beside it
- * carries every count in words, so colour is never the only carrier (1.4.1).
- */
-function ProgressRing({ done, started, total }: { done: number; started: number; total: number }) {
-  const radius = 42;
-  const circumference = 2 * Math.PI * radius;
-  const doneLength = total > 0 ? (done / total) * circumference : 0;
-  const startedLength = total > 0 ? (started / total) * circumference : 0;
-  // Butt caps keep each arc exactly proportional (round caps would add half
-  // a stroke to both ends). A small gap between arcs so two colours meeting
-  // don't read as one band on a washed-out projector.
-  const gap = done > 0 && started > 0 ? 2 : 0;
-  return (
-    <svg
-      viewBox="0 0 100 100"
-      role="img"
-      aria-label={`${done} of ${total} practice ${total === 1 ? "set" : "sets"} done${started > 0 ? `, ${started} started` : ""}.`}
-      className="h-28 w-28 shrink-0 -rotate-90"
-    >
-      <circle cx="50" cy="50" r={radius} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="9" />
-      {doneLength > 0 ? (
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="#68D5A8"
-          strokeWidth="9"
-          strokeDasharray={`${Math.max(doneLength - gap, 0)} ${circumference}`}
-        />
-      ) : null}
-      {startedLength > 0 ? (
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="#FBC559"
-          strokeWidth="9"
-          strokeDasharray={`${Math.max(startedLength - gap, 0)} ${circumference}`}
-          strokeDashoffset={-doneLength}
-        />
-      ) : null}
-    </svg>
-  );
-}
-
-/** The hero's right-hand panel for a student with work set: the numbers. */
-function ProgressPanel({ summary }: { summary: Summary }) {
-  const done = summary.completed.length;
-  const rows = [
-    { label: "Done", count: done, dot: "bg-jade-300" },
-    { label: "Started", count: summary.inProgress, dot: "bg-saffron-300" },
-    { label: "Not started", count: summary.notStarted, dot: "bg-white/40" },
-  ];
-  // The dots are a key to the ring, not the carrier: each row names its
-  // state in words, so the white/40 dot (2.3:1) needn't meet 3:1 itself.
-  return (
-    <div className="glass-panel rounded-3xl p-5 animate-scale-in">
-      {/* saffron-100 on the panel's lightest point: 5.0:1. */}
-      <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-saffron-100">Your practice so far</p>
-      <div className="mt-4 flex items-center gap-5">
-        <div className="relative">
-          <ProgressRing done={done} started={summary.inProgress} total={summary.countable} />
-          <span aria-hidden className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-display-sm tabular leading-none text-content-inverse">
-              {done}
-              <span className="text-base text-content-inverse/90">/{summary.countable}</span>
-            </span>
-            <span className="mt-1 text-[0.6875rem] font-semibold uppercase tracking-eyebrow text-content-inverse/90">
-              Done
-            </span>
-          </span>
-        </div>
-        {/* White at 90% on the panel: 5.0:1; full white 5.7:1. */}
-        <ul className="min-w-0 flex-1 space-y-2.5">
-          {rows.map((row) => (
-            <li key={row.label} className="flex items-center justify-between gap-3 text-[0.8125rem]">
-              <span className="flex min-w-0 items-center gap-2 text-content-inverse/90">
-                <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-full", row.dot)} />
-                <span className="truncate">{row.label}</span>
-              </span>
-              <span className="font-semibold tabular text-content-inverse">{row.count}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-/** The hero's right-hand panel for a student with nothing set yet. */
-function HowItWorksPanel() {
-  return (
-    <div className="glass-panel rounded-3xl p-5">
-      <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-saffron-100">How practice works</p>
-      <ol className="mt-4 space-y-3.5">
-        {HOW_IT_WORKS.map((item, index) => (
-          <li key={item.step} className="flex items-start gap-3">
-            {/* A solid saffron disc: brand-950 on saffron-300 is 11.2:1.
-                (It was white/12 with saffron-200 digits -- 3.3:1 once the
-                frosted panel sits over the aurora's glow.) */}
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-saffron-300 text-[0.6875rem] font-bold tabular text-brand-950">
-              {index + 1}
-            </span>
-            <span className="min-w-0">
-              <span className="block text-[0.8125rem] font-semibold text-content-inverse">{item.step}</span>
-              {/* Was text-white/60 (3.2:1 here). White at 90%: 5.0:1. */}
-              <span className="block text-[0.75rem] leading-relaxed text-content-inverse/90">{item.body}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
+ *  (globals.css). */
+function SkeletonLine({ className }: { className?: string }) {
+  return <span aria-hidden className={cn("block animate-pulse rounded-full bg-ink-100", className)} />;
 }
 
 type LoadState =
   | { kind: "loading" }
   | { kind: "error"; message: string }
-  | { kind: "ready"; summary: Summary };
-
-/** The hero's paragraphs carry no max-w-prose (1 Oct 2026). From lg up the
- *  grid's text column is already narrower than 68ch (about 360-735px), so
- *  the cap never engaged there. Below lg the column is the full card, and
- *  between roughly 870 and 1023px wide it did: it stranded a word on a
- *  line of its own ("...or open Daily" / "Practice directly.") with the
- *  card's width still free beside it. The skeleton bar matches. */
-function Hero({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
-  if (state.kind === "loading") {
-    return (
-      <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]" aria-busy="true">
-        <span className="sr-only" role="status">
-          Checking your practice
-        </span>
-        <div className="space-y-4">
-          <SkeletonLine inverse className="h-6 w-32" />
-          <SkeletonLine inverse className="h-9 w-4/5" />
-          <div className="space-y-2 pt-1">
-            <SkeletonLine inverse className="h-3.5 w-full" />
-            <SkeletonLine inverse className="h-3.5 w-2/3" />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <SkeletonLine inverse className="h-11 w-36" />
-            <SkeletonLine inverse className="h-11 w-32" />
-          </div>
-        </div>
-        <SkeletonLine inverse className="h-48 w-full rounded-3xl" />
-      </div>
-    );
-  }
-
-  if (state.kind === "error") {
-    // No claim either way about what's set -- the card under the hero says
-    // what went wrong and offers the retry. This just stays welcoming.
-    return (
-      <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="space-y-4">
-          <h2 className="font-display text-display-md text-balance text-content-inverse">Your practice lives here.</h2>
-          <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
-            We couldn&rsquo;t check what&rsquo;s been set for you just now. Try again in a moment, or open Daily
-            Practice directly.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-1">
-            <Button variant="quiet" leadingIcon={<RefreshCcw className="h-4 w-4" />} onClick={onRetry}>
-              Try Again
-            </Button>
-            <HeroAction href="/student/practice" variant="quiet" icon={<Target className="h-4 w-4" />}>
-              Open Daily Practice
-            </HeroAction>
-          </div>
-        </div>
-        <HowItWorksPanel />
-      </div>
-    );
-  }
-
-  const { summary } = state;
-
-  if (summary.countable === 0) {
-    // Nothing assigned yet: the original "on its way" hero, which is an
-    // honest claim in exactly this case. Copy re-checked: it used to promise
-    // "the lesson, the practice and a clear way to see how you are doing",
-    // but only the practice (and its per-set result) is live.
-    return (
-      <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="space-y-4">
-          <Badge tone="inverse" dot pulse>
-            Nothing to Do Yet
-          </Badge>
-          <h2 className="font-display text-display-md text-balance text-content-inverse">
-            Your first practice is on its way.
-          </h2>
-          {/* content-inverse-muted over the aurora's glow: 5.7:1. */}
-          <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
-            Your teachers are loading this year&apos;s syllabus into {PRODUCT_NAME}. When they set your first
-            practice, it will appear right here &mdash; a short set of questions, marked the moment you submit, with the
-            right answer for anything you missed.
-          </p>
-          <ul className="grid gap-2 pt-1 sm:grid-cols-2">
-            {HERO_POINTS.map((point) => (
-              // Was text-white/70 (5.0:1 on the glow); now the inverse-muted
-              // token (5.7:1), so the hero's small text shares one step.
-              <li key={point} className="flex items-start gap-2.5 text-[0.8125rem] text-content-inverse-muted">
-                <span aria-hidden className="mt-[0.4rem] h-1.5 w-1.5 shrink-0 rounded-full bg-saffron-300" />
-                {point}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <HowItWorksPanel />
-      </div>
-    );
-  }
-
-  const next = summary.waiting[0];
-
-  if (!next) {
-    // Everything set is done.
-    const done = summary.completed.length;
-    return (
-      <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="space-y-4">
-          <Badge tone="inverse" dot>
-            All Caught Up
-          </Badge>
-          <h2 className="font-display text-display-md text-balance text-content-inverse">
-            {/* Warm gradient at its darkest stop (saffron-400) over the glow:
-                4.3:1 -- past the 3:1 large-text bar at display-md. */}
-            You&rsquo;re all caught up. <span className="text-gradient-warm">Nice work.</span>
-          </h2>
-          <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
-            {done === 1 ? "The practice set" : `All ${done} practice sets`} your teacher has given you{" "}
-            {done === 1 ? "is" : "are"} done. The next one will show up here the moment it&rsquo;s set &mdash; and
-            your results are always there to look back on.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-1">
-            <HeroAction href="/student/practice" variant="quiet" icon={<CheckCircle2 className="h-4 w-4" />}>
-              See Your Results
-            </HeroAction>
-          </div>
-        </div>
-        <ProgressPanel summary={summary} />
-      </div>
-    );
-  }
-
-  const waitingCount = summary.waiting.length;
-  const action = actionForAssignment(next);
-  const minutes = next.learningActivity.estimatedMinutes;
-  const headline =
-    summary.inProgress > 0
-      ? "Pick up where you left off."
-      : waitingCount === 1
-        ? "One practice set is ready for you."
-        : `${waitingCount} practice sets are ready for you.`;
-
-  return (
-    <div className="grid items-center gap-8 lg:grid-cols-[1.25fr_0.75fr]">
-      <div className="space-y-4">
-        <Badge tone="inverse" dot pulse>
-          {waitingCount} Waiting
-        </Badge>
-        <h2 className="font-display text-display-md text-balance text-content-inverse">{headline}</h2>
-        <p className="text-[0.9375rem] leading-relaxed text-content-inverse-muted text-pretty">
-          {next.status === "IN_PROGRESS" ? (
-            <>
-              You started <strong className="font-semibold text-content-inverse">{next.learningActivity.title}</strong>
-              . It&rsquo;s still open, so carry on whenever you&rsquo;re ready.
-            </>
-          ) : (
-            <>
-              Next up: <strong className="font-semibold text-content-inverse">{next.learningActivity.title}</strong>
-              {minutes ? <> &mdash; about {minutes} minutes</> : null}.
-            </>
-          )}
-          {waitingCount > 1 ? (
-            <>
-              {" "}
-              {waitingCount - 1} more {waitingCount - 1 === 1 ? "is" : "are"} waiting after that.
-            </>
-          ) : null}
-        </p>
-        <div className="flex flex-wrap gap-3 pt-1">
-          <HeroAction href={action.href} variant="accent" icon={<PlayCircle className="h-4 w-4" />}>
-            {action.label === "Continue" ? "Continue Practice" : "Start Practice"}
-          </HeroAction>
-          <HeroAction href="/student/practice" variant="quiet">
-            See All Practice
-          </HeroAction>
-        </div>
-      </div>
-      <ProgressPanel summary={summary} />
-    </div>
-  );
-}
+  | { kind: "ready"; summary: PracticeSummary };
 
 /** One practice set as a single link row: one tab stop, the whole row is
  *  the target (a Class 5 thumb on a shared tablet shouldn't have to find a
- *  small button). Mirrors a /student/practice card, compressed. */
+ *  small button). Mirrors a Daily Practice card, compressed, and reads its
+ *  label and its destination from the same place that card does
+ *  (lib/studentPractice.ts). */
 function AssignmentRow({ item, today }: { item: StudentAssignmentSummary; today: string }) {
-  const action = actionForAssignment(item);
+  const action = practiceAction(item);
   const due = item.status === "COMPLETED" ? null : dueLabel(item.dueDate, today);
   const score = item.status === "COMPLETED" ? item.latestAttempt?.evaluation : null;
   const minutes = item.learningActivity.estimatedMinutes;
@@ -738,9 +341,12 @@ function AssignmentRow({ item, today }: { item: StudentAssignmentSummary; today:
           </span>
         </span>
         {score ? (
-          // Same tones as /student/practice's score badge.
-          <Badge tone={score.finalScore === score.maxScore ? "success" : "accent"} className="tabular">
+          // Same tones, and the same "So Far", as Daily Practice's score
+          // badge: a score a teacher has not finished marking is not shown
+          // as if it were the whole of it.
+          <Badge tone={stillBeingMarked(item) ? "neutral" : score.finalScore === score.maxScore ? "success" : "accent"} className="tabular">
             {score.finalScore}/{score.maxScore}
+            {stillBeingMarked(item) ? " So Far" : ""}
           </Badge>
         ) : null}
         {/* The action in words, so the row says what clicking it does.
@@ -757,7 +363,8 @@ function AssignmentRow({ item, today }: { item: StudentAssignmentSummary; today:
   );
 }
 
-/** The card under the hero: what to do next, in the detail the hero skips. */
+/** The card under the masthead: what to do next, in the detail the
+ *  masthead's one line skips. */
 function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => void }) {
   const today = todayIso();
 
@@ -801,18 +408,17 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
             </p>
           </div>
         </div>
-        {/* No max-w-prose (1 Oct 2026), like the hero above: the card bounds
-            it, and on a single-column tablet layout the cap split it in two
-            with the card's width still free. */}
+        {/* No max-w-prose (1 Oct 2026): the card bounds it, and on a
+            single-column tablet layout the cap split it in two with the
+            card's width still free. */}
         <p className="text-sm leading-relaxed text-content-muted text-pretty">
-          Nothing you&rsquo;ve done is lost &mdash; this page just couldn&rsquo;t reach the list. School networks can be
-          slow; it usually works on a second try.
+          School networks can be slow, and this usually works on a second try.
         </p>
         <div className="flex flex-wrap items-center gap-4">
           <Button variant="secondary" size="sm" leadingIcon={<RefreshCcw className="h-4 w-4" />} onClick={onRetry}>
             Try Again
           </Button>
-          <TextLink href="/student/practice">Open Daily Practice</TextLink>
+          <InlineLink href={PRACTICE_LIST_HREF}>Open {PRACTICE_LIST_NAME}</InlineLink>
         </div>
       </div>
     );
@@ -827,18 +433,21 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
       <div className="flex flex-1 flex-col justify-center">
         <EmptyState
           illustration={<PathIllustration />}
-          status={{ label: "Waiting on Your School", tone: "accent" }}
+          // The same words as the Daily Practice list in this state, so the
+          // two screens a student moves between never describe it twice.
+          status={{ label: "Nothing Assigned Yet", tone: "brand" }}
           title="Nothing to practise today"
-          description="When your teacher sets your first practice, you'll see it here — usually ten to fifteen minutes' work, never a wall of homework."
+          description="Your first practice set will show up here once your teacher assigns it. Each set says how long it should take before you start."
           // Replaced 30 Sep 2026: "Your streak and progress start counting
           // from your first practice" (no streak exists anywhere in backend/
           // or frontend/) and "Anything you get wrong comes back later"
           // (README: Foundation Repair "not yet built"; nothing re-sets a
           // missed question automatically). Both below are shipped behaviour:
-          // submit_attempt marks on submit; GET .../result returns the
+          // submit_attempt marks on submit (all but written answers, which
+          // wait for a teacher -- hence "most"); GET .../result returns the
           // correct answer for each wrong one.
           points={[
-            "Each set is marked the moment you submit it",
+            "Most questions are marked the moment you submit",
             "You'll see the right answer for anything you got wrong",
           ]}
         />
@@ -861,7 +470,7 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
           <p className="mt-0.5 text-xs text-content-subtle">
             {caughtUp
               ? "Open one to see each answer, and the right one for anything you missed"
-              : "In the same order as your Daily Practice list"}
+              : `In the same order as your ${PRACTICE_LIST_NAME} list`}
           </p>
         </div>
       </div>
@@ -871,15 +480,70 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
         ))}
       </ul>
       <PanelFooter>
-        <TextLink href="/student/practice">
+        <InlineLink href={PRACTICE_LIST_HREF}>
           {listCount > rows.length
-            ? `See all ${listCount} in Daily Practice`
+            ? `See All ${listCount} In ${PRACTICE_LIST_NAME}`
             : caughtUp
-              ? "See everything in Daily Practice"
-              : "Open Daily Practice"}
-        </TextLink>
+              ? `See Everything In ${PRACTICE_LIST_NAME}`
+              : `Open ${PRACTICE_LIST_NAME}`}
+        </InlineLink>
       </PanelFooter>
     </PanelStack>
+  );
+}
+
+/**
+ * "How practice works", for a student nothing has been set for yet: four
+ * things the shipped flow does, and four that are worth knowing before the
+ * first set arrives. It was the right-hand panel of the old hero; as a card
+ * of its own it has room to be read, and it is on paper, where a numbered
+ * list is easier on a ten-year-old's eye than it was on frosted glass.
+ */
+function HowPracticeWorks() {
+  return (
+    <Card className="animate-fade-up delay-210">
+      <CardBody className="space-y-6 sm:p-8">
+        <div className="flex items-start gap-3">
+          <CardIcon tone="brand">
+            <Route className="h-5 w-5" aria-hidden />
+          </CardIcon>
+          <div>
+            <CardTitle>How Practice Works</CardTitle>
+            {/* content-subtle on white: 6.4:1. */}
+            <p className="mt-0.5 text-xs text-content-subtle">Four steps, the same every time</p>
+          </div>
+        </div>
+        <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {HOW_IT_WORKS.map((item, index) => (
+            <li key={item.step} className="flex items-start gap-3 rounded-2xl border border-line bg-surface-muted/70 p-4">
+              {/* White on brand-700: 10.3:1 -- the same numbered chip a
+                  question carries on the practice page. */}
+              <span
+                aria-hidden
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-700 font-display text-sm font-semibold tabular text-white shadow-brand"
+              >
+                {index + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-content">{item.step}</span>
+                {/* content-muted on the muted cell: 8.0:1. */}
+                <span className="mt-0.5 block text-[0.8125rem] leading-relaxed text-content-muted">{item.body}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <ul className="flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-5">
+          {GOOD_TO_KNOW.map((point) => (
+            // content-muted on white: 8.6:1; the tick is jade-600 (a graphic,
+            // 3.4:1) and says nothing the words do not.
+            <li key={point} className="flex items-center gap-2 text-[0.8125rem] font-medium text-content-muted">
+              <Check className="h-4 w-4 shrink-0 text-jade-600" strokeWidth={2.6} aria-hidden />
+              {point}
+            </li>
+          ))}
+        </ul>
+      </CardBody>
+    </Card>
   );
 }
 
@@ -889,7 +553,7 @@ export default function StudentDashboardPage() {
   const [assignments, setAssignments] = useState<StudentAssignmentSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Same request as /student/practice's load(). Kept deliberately small: a
+  // Same request as Daily Practice's load(). Kept deliberately small: a
   // retry clears the error, and the previous list (if any) stays on screen
   // until the new one lands, so a retry never flashes back to skeletons.
   const load = useCallback(async () => {
@@ -923,63 +587,116 @@ export default function StudentDashboardPage() {
   const state: LoadState = error
     ? { kind: "error", message: error }
     : assignments
-      ? { kind: "ready", summary: summarise(assignments) }
+      ? { kind: "ready", summary: summarisePractice(assignments) }
       : { kind: "loading" };
 
-  // The header chip follows the same data as the hero, so the two can't
-  // disagree. (It used to say "Getting Set Up" to everyone, permanently.)
-  let statusChip: React.ReactNode = null;
-  if (state.kind === "ready") {
-    const { summary } = state;
-    statusChip =
-      summary.countable === 0 ? (
-        <Badge tone="accent" dot pulse>
-          Getting Set Up
-        </Badge>
-      ) : summary.waiting.length > 0 ? (
-        <Badge tone="brand" dot pulse>
-          {summary.waiting.length} to Do
-        </Badge>
-      ) : (
-        <Badge tone="success" dot>
-          All Caught Up
-        </Badge>
-      );
-  }
+  // The masthead's figures. `null` while the list loads (a placeholder
+  // bar); a dash if it could not be read, with the card below saying why --
+  // never a zero, which would read as "nothing to do". A hint appears only
+  // once the number it describes is known. The same rules the Teacher and
+  // Admin mastheads follow.
+  const summary = state.kind === "ready" ? state.summary : null;
+  const figure = (value: number | undefined) => (state.kind === "loading" ? null : state.kind === "error" ? "—" : (value ?? 0));
+  // Under a dash, why it is a dash: the words the Teacher dashboard uses.
+  const failed = state.kind === "error" ? "Couldn't load" : undefined;
+  const latest = summary ? latestScore(summary) : null;
+  const stats: PageHeaderStat[] = [
+    {
+      label: "Not Started",
+      value: figure(summary?.notStarted),
+      hint: summary ? (summary.notStarted > 0 ? "Waiting for you to begin" : "Nothing new waiting") : failed,
+      // One tinted cell at most: the set that is already open comes before
+      // the ones that are not, and that is the one the next step names.
+      tone: summary && summary.inProgress === 0 && summary.notStarted > 0 ? "attention" : "default",
+    },
+    {
+      label: "In Progress",
+      value: figure(summary?.inProgress),
+      hint: summary ? (summary.inProgress > 0 ? "Still open, so carry on any time" : "Nothing left half done") : failed,
+      tone: summary && summary.inProgress > 0 ? "attention" : "default",
+    },
+    {
+      label: "Completed",
+      value: figure(summary?.completed.length),
+      hint: summary
+        ? summary.countable > 0
+          ? `Of ${summary.countable} ${setWord(summary.countable)} from your teacher`
+          : "Nothing assigned yet"
+        : failed,
+      // Jade once everything assigned is done: the tint says what "All 2 sets
+      // are done" says in words (WCAG 1.4.1).
+      tone: summary && summary.countable > 0 && summary.waiting.length === 0 ? "good" : "default",
+    },
+    {
+      label: "Latest Score",
+      value:
+        state.kind === "loading" ? null : state.kind === "error" ? (
+          "—"
+        ) : latest ? (
+          <>
+            {latest.finalScore}
+            <span className="text-content-inverse-muted"> / {latest.maxScore}</span>
+          </>
+        ) : (
+          // Not a failure and not a zero: there is no marked set to have a
+          // score. Quieter than a figure, as PercentText draws "no average
+          // yet" on the Teacher mastheads; the hint says it in words.
+          <span className="text-content-inverse-muted">&mdash;</span>
+        ),
+      hint: summary
+        ? latest
+          ? latest.stillBeingMarked
+            ? `So far, in ${latest.title}, until your teacher's marks are in`
+            : latest.title
+          : "No marked set yet"
+        : failed,
+    },
+  ];
 
   const liveModules = MODULES.filter((m) => m.status === "live").length;
 
   return (
-    <RoleShell role="STUDENT" user={user}>
-      {/* space-y-10, the same rhythm as the Admin and Teacher dashboards
-          (this one alone was space-y-8), so the three read as one family. */}
+    // The dashboard level of the workspace wash: the stronger of the two
+    // and the only one that drifts, as on the Teacher and Admin dashboards.
+    // components/brand/Ambience.tsx has the measurements behind both.
+    <RoleShell role="STUDENT" user={user} ambience="dashboard">
+      {/* space-y-10, the same rhythm as the Admin and Teacher dashboards. */}
       <div className="space-y-10">
         <PageHeader
+          surface="masthead"
+          size="lg"
+          // The one masthead that drifts; PageHeader.tsx has why.
+          drift
           eyebrow={greeting}
           title={
             <>
-              Hello, <span className="text-gradient-brand">{firstName}</span>
+              {/* text-gradient-warm (white to saffron), as on the Teacher
+                  dashboard: text-gradient-brand, which this used on the
+                  canvas, is indigo on indigo here. PageHeader.tsx has its
+                  contrast at the gradient's darkest stop. */}
+              Hello, <span className="text-gradient-warm">{firstName}</span>
             </>
           }
           // Was "...your lessons and daily practice will show up right here".
-          // Lessons aren't live (see MODULES), so it now promises only what
-          // this page actually shows.
-          description="This is your learning space. Whenever your teacher sets practice, it shows up right here first."
+          // Lessons aren't live (see MODULES), so it promises only what this
+          // page actually shows.
+          description="This is your learning space. Whenever your teacher assigns practice, it shows up right here first."
+          stats={stats}
           meta={
-            <>
-              {classLabel ? <Badge tone="brand">{classLabel}</Badge> : null}
-              {student?.studentCode ? <Badge tone="neutral">ID {student.studentCode}</Badge> : null}
-              {statusChip}
-            </>
+            classLabel || student?.studentCode ? (
+              <>
+                {/* `inverse`, Badge's tone for indigo chrome. "Student
+                    Code", the name the sign-in page, Your Details below and
+                    the school's own roster give it; this chip alone said
+                    "ID". */}
+                {classLabel ? <Badge tone="inverse">{classLabel}</Badge> : null}
+                {student?.studentCode ? <Badge tone="inverse">Student Code {student.studentCode}</Badge> : null}
+              </>
+            ) : undefined
           }
-        />
-
-        <Card tone="inverse" className="animate-fade-up">
-          <AuroraBackdropInverse />
-          <CardBody className="relative z-10 sm:p-9">
-            <Hero state={state} onRetry={load} />
-          </CardBody>
-        </Card>
+        >
+          <MastheadNextStep step={studentNextStep(state)} checkingLabel="Checking your practice" />
+        </PageHeader>
 
         {/* SplitLayout, as on the other two dashboards: both cards end on
             one line, and each pins its closing element to the bottom. */}
@@ -1005,14 +722,20 @@ export default function StudentDashboardPage() {
                 <DetailRow label="Student Code" value={student?.studentCode ?? "—"} />
               </dl>
               {/* content-muted on surface-brand: 7.8:1. Pinned to the card's
-                  foot (mt-auto) so it lines up with Up Next's footer link. */}
+                  foot (mt-auto) so it lines up with Up Next's footer link.
+                  "Your teacher", not "your class teacher": the product has
+                  no class-teacher role. And not "they can correct it": no
+                  teacher screen edits a student's details -- the school
+                  admin issues them (People). */}
               <p className="mt-auto flex items-start gap-2.5 rounded-2xl bg-surface-brand p-3.5 text-[0.8125rem] leading-relaxed text-content-muted">
                 <MessageCircleQuestion className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
-                Something here looks wrong? Tell your class teacher &mdash; they can correct it for you.
+                Something here looks wrong? Tell your teacher. Your school admin looks after these details.
               </p>
             </PanelStack>
           </StretchCard>
         </SplitLayout>
+
+        {state.kind === "ready" && state.summary.countable === 0 ? <HowPracticeWorks /> : null}
 
         <section aria-labelledby="modules-heading" className="space-y-5">
           <div className="flex flex-wrap items-end justify-between gap-4">
@@ -1020,9 +743,10 @@ export default function StudentDashboardPage() {
               <h2 id="modules-heading" className="font-display text-display-sm text-content">
                 What you&apos;ll find here
               </h2>
+              {/* content-muted, not content-subtle: this sits straight on
+                  the canvas, over the wash (Ambience.tsx's one rule). */}
               <p className="mt-1 text-sm text-content-muted">
-                Anything marked Live opens from here. The rest will appear on their own when they&rsquo;re ready
-                &mdash; nothing to install.
+                Anything marked Live opens from here. The others are not open yet. There is nothing to install.
               </p>
             </div>
             {/* Counted from MODULES, so it can't disagree with the cards. */}

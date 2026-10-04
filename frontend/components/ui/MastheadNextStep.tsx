@@ -75,8 +75,7 @@ export function MastheadNextStep({
             single most inviting action on a view" (Button.tsx), and on a
             dashboard that is, by construction, this. Its label, brand-950
             on the saffron gradient, runs from 11.2:1 at the lightest stop
-            to 4.9:1 at the darkest -- the same pairing as the student
-            hero's action. Its focus ring is the masthead's
+            to 4.9:1 at the darkest. Its focus ring is the masthead's
             (shadow-focus-inverse; PageHeader applies it to everything
             inside the panel). */}
         {step?.action ? (

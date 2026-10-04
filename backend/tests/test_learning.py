@@ -32,6 +32,7 @@ from app.models import (
     CurriculumVersion,
     Discipline,
     LearningActivity,
+    LearningActivityQuestion,
     PrerequisiteLink,
     Question,
     School,
@@ -120,7 +121,7 @@ _CHAPTER_NUM = {
     "API1": 10, "API2": 11, "API3": 12, "API4": 13, "API5": 15, "API6": 16,
     "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
     "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
-    "API8B": 27, "FR4": 28,
+    "API8B": 27, "FR4": 28, "RES1": 29, "RES2": 30,
 }
 
 
@@ -1024,6 +1025,139 @@ def test_get_attempt_result_is_scoped_for_teacher_and_admin(client, db_session):
     assert owned_result.status_code == 200
     assert owned_result.json()["answers"][0]["correctAnswer"] == "A"
 
+
+def test_student_result_lists_answers_in_set_order_with_each_questions_options(client, db_session):
+    """4 Oct 2026. Two things a student's result got wrong:
+
+    - The answers came back in the order the rows were saved, so answering
+      question 3 first made it "Question 1" on the result -- and numbered
+      differently from the teacher's review of the very same attempt.
+    - A select question's result said only the letters ("Your answer A,
+      correct answer B"), with no way to tell what A and B had been.
+    """
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "RES1", n_skills=1)
+    for number, right in ((1, "A"), (2, "B"), (3, "A")):
+        _add_question(
+            db_session, skill1, f"RES1-Q{number}", assignment_code=_ac("RES1", "P01"), question_type="Single Select",
+            correct_answer=right, option_a=f"first {number}", option_b=f"second {number}", marks=1,
+        )
+    db_session.commit()
+
+    school = _make_school(db_session, "res1")
+    teacher = _make_teacher(db_session, school, "res1")
+    student = _make_student(db_session, school, "res1")
+    db_session.commit()
+
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    by_code = {q.code: q for q in db_session.query(Question).filter(Question.code.like("RES1-Q%")).all()}
+    # The set's own order is Q2, Q3, Q1 -- not the order of the codes, and
+    # not the order anything is answered in below -- so only a sort by the
+    # set's sequence can produce it.
+    for code, sequence in (("RES1-Q2", 1), ("RES1-Q3", 2), ("RES1-Q1", 3)):
+        link = (
+            db_session.query(LearningActivityQuestion)
+            .filter(LearningActivityQuestion.learning_activity_id == activity.id, LearningActivityQuestion.question_id == by_code[code].id)
+            .one()
+        )
+        link.sequence = sequence
+    db_session.commit()
+
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=teacher.user_id, class_name="5A",
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+
+    # Answered Q1 first, then Q3; Q2 is left blank, so its row is only
+    # written when the attempt is submitted.
+    attempt = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.save_answer(db_session, student, attempt.id, by_code["RES1-Q1"].id, "A")
+    learning_service.save_answer(db_session, student, attempt.id, by_code["RES1-Q3"].id, "B")
+    learning_service.submit_attempt(db_session, student, attempt.id)
+
+    headers = _login(client, student.user.email)
+    response = client.get(f"/api/learning/attempts/{attempt.id}/result", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    answers = body["answers"]
+
+    assert [a["stem"] for a in answers] == ["Question RES1-Q2?", "Question RES1-Q3?", "Question RES1-Q1?"]
+    assert [a["responseText"] for a in answers] == [None, "B", "A"]
+    assert [a["isCorrect"] for a in answers] == [False, False, True]
+    assert all(a["questionType"] == "Single Select" for a in answers)
+    # Only the options the question has: these have two, so no C or D.
+    assert answers[0]["options"] == {"A": "first 2", "B": "second 2"}
+    assert answers[2]["options"] == {"A": "first 1", "B": "second 1"}
+    # Which set it is the result of, so the screen can be titled with it.
+    assert body["activity"]["id"] == activity.id
+    assert body["activity"]["title"] == activity.title
+
+    # The teacher's own read of the same attempt is in the same order.
+    client.cookies.clear()
+    teacher_headers = _login(client, teacher.user.email)
+    teacher_view = client.get(f"/api/learning/attempts/{attempt.id}/result", headers=teacher_headers)
+    assert [a["stem"] for a in teacher_view.json()["answers"]] == [a["stem"] for a in answers]
+
+
+def test_student_is_not_sent_the_model_answer_for_an_answer_still_waiting_for_marks(client, db_session):
+    """4 Oct 2026. A written answer waits for a teacher's marks. Until it has
+    them, the student's result must not carry its model answer or its
+    explanation: with attempts left, both could be read and the answer
+    rewritten before the first one was marked. The teacher reading the same
+    attempt gets both, and so does the student once it is marked."""
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "RES2", n_skills=1)
+    _add_question(db_session, skill1, "RES2-Q1", assignment_code=_ac("RES2", "P01"), question_type="Single Select", correct_answer="A", marks=1)
+    written = _add_question(
+        db_session, skill1, "RES2-Q2", assignment_code=_ac("RES2", "P01"), question_type="Constructed Response",
+        correct_answer="A model answer.", marks=3, auto_gradable=False,
+    )
+    written.explanation = "Why the model answer is right."
+    db_session.commit()
+
+    school = _make_school(db_session, "res2")
+    teacher = _make_teacher(db_session, school, "res2")
+    student = _make_student(db_session, school, "res2")
+    db_session.commit()
+
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=teacher.user_id, class_name="5A",
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    by_code = {q.code: q for q in db_session.query(Question).filter(Question.code.like("RES2-Q%")).all()}
+    attempt = learning_service.start_attempt(db_session, student, target.id)
+    learning_service.save_answer(db_session, student, attempt.id, by_code["RES2-Q1"].id, "B")
+    learning_service.save_answer(db_session, student, attempt.id, by_code["RES2-Q2"].id, "What I wrote.")
+    evaluation = learning_service.submit_attempt(db_session, student, attempt.id)
+    assert evaluation.review_status == "PENDING_REVIEW"
+
+    def answers_for(email):
+        client.cookies.clear()
+        response = client.get(f"/api/learning/attempts/{attempt.id}/result", headers=_login(client, email))
+        assert response.status_code == 200
+        return {a["stem"]: a for a in response.json()["answers"]}
+
+    seen = answers_for(student.user.email)
+    # The auto-marked one: wrong, and its key is shown, as it always was.
+    assert seen["Question RES2-Q1?"]["correctAnswer"] == "A"
+    # The written one: what was written, and nothing that gives it away.
+    assert seen["Question RES2-Q2?"]["responseText"] == "What I wrote."
+    assert seen["Question RES2-Q2?"]["correctAnswer"] is None
+    assert seen["Question RES2-Q2?"]["explanation"] is None
+
+    # The teacher marking it needs both.
+    taught = answers_for(teacher.user.email)
+    assert taught["Question RES2-Q2?"]["correctAnswer"] == "A model answer."
+    assert taught["Question RES2-Q2?"]["explanation"] == "Why the model answer is right."
+
+    # Marked: the student now sees what it should have been.
+    learning_service.apply_manual_grades(db_session, attempt=attempt, grades={by_code["RES2-Q2"].id: 2}, grader_user_id=teacher.user_id)
+    db_session.commit()
+    marked = answers_for(student.user.email)
+    assert marked["Question RES2-Q2?"]["manualScore"] == 2
+    assert marked["Question RES2-Q2?"]["correctAnswer"] == "A model answer."
+    assert marked["Question RES2-Q2?"]["explanation"] == "Why the model answer is right."
 
 def test_teacher_can_assign_to_one_section_through_the_api(client, db_session):
     """30 Sep 2026: the same section fix, end to end through
