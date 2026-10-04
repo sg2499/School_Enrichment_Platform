@@ -316,7 +316,7 @@ function QuestionInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Type your answer"
-        className="h-12 w-full max-w-xs rounded-2xl border border-line-strong bg-surface px-4 text-base tabular text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-brand-200 focus:border-brand-400 focus:shadow-focus-field"
+        className="h-12 w-full max-w-xs rounded-2xl border border-line-field bg-surface px-4 text-base tabular text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
       />
     );
   }
@@ -327,7 +327,7 @@ function QuestionInput({
       onChange={(event) => onChange(event.target.value)}
       rows={question.questionType === "Constructed Response" ? 5 : 2}
       placeholder="Type your answer"
-      className="w-full rounded-2xl border border-line-strong bg-surface px-4 py-3 text-base leading-relaxed text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-brand-200 focus:border-brand-400 focus:shadow-focus-field"
+      className="w-full rounded-2xl border border-line-field bg-surface px-4 py-3 text-base leading-relaxed text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
     />
   );
 }

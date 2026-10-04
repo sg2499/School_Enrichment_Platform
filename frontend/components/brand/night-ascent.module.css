@@ -16,7 +16,7 @@
  * idea with one number to reason about, and it is far easier to read as
  * rules than as forty arbitrary-value class names per element.
  *
- * The card is ordinary utility classes (page.tsx): it holds the product's
+ * The card is ordinary utility classes (app/login/page.tsx): it holds the product's
  * own form controls, and those are sized in rem like everywhere else.
  *
  * Colours come from the design tokens (tailwind.config.ts) through theme().
@@ -27,6 +27,18 @@
  * lowest anything here reaches is the "Day n" label on a lit step (4.9:1 on
  * the narrowest laptop); the paragraph is 8.6:1 and the small caps 6:1 or
  * better.
+ *
+ * Who uses it (4 Oct 2026). It began as the sign-in page's own file, in
+ * app/login. Two more screens belong to the same night and now share it,
+ * which is why it lives beside the brand components:
+ *
+ *   - the sign-in page (app/login): the two columns, the five steps;
+ *   - "choose your own password" as a page of its own
+ *     (components/SetPasswordScreen.tsx): the same two columns, with what
+ *     the step is for where the steps are (.heroPlain, .facts);
+ *   - a page with one card and nothing else: an address outside every
+ *     workspace, and the session check or the "can't reach" screen in front
+ *     of the password page (components/brand/NightStage.tsx, .solo).
  */
 
 .page {
@@ -152,7 +164,7 @@
 }
 
 /* Stars are for the laptop page, where each has a place that never holds
-   words (page.tsx, STARS). On a phone the same percentages land on the
+   words (app/login/page.tsx, STARS). On a phone the same percentages land on the
    headline, so there are none. */
 .star {
   display: none;
@@ -353,7 +365,7 @@
 /* Who makes it, in the header. The same small caps as the two labels below
    it on this panel; its right edge is the right edge of the steps. Below
    `lg` there is no header bar, and the credit sits under the card instead
-   (.makerBelow). */
+   (.makerBelowRow). */
 .makerTop.makerTop {
   display: none;
 }
@@ -465,7 +477,7 @@
      leaving a word alone on the second.
 
      The three versions are stacked in one grid cell and one is shown
-     (PerWayIn in page.tsx), so the block is as tall as the tallest of them
+     (PerWayIn in app/login/page.tsx), so the block is as tall as the tallest of them
      and the steps below never move when the choice changes. */
   .promise.promise {
     display: grid;
@@ -938,3 +950,133 @@
     opacity: 0.85;
   }
 }
+
+/* ------------------------------------------------------------------
+ * "Choose your own password" as a page: the same two columns as the
+ * sign-in page, without the steps.
+ * ------------------------------------------------------------------ */
+
+/* Header at the top; under it the message, with the facts as part of the
+   same block, a little above the middle of what is left (the gap below is
+   the larger by a third). There is no picture under it to stand on the
+   floor of the panel, so it is not pushed up against the header as the
+   sign-in page's message is. */
+@media (min-width: theme(screens.lg)) {
+  .heroPlain {
+    grid-template-rows:
+      auto
+      minmax(calc(var(--u) * 2.6), 1fr)
+      auto
+      minmax(calc(var(--u) * 3.4), 1.35fr);
+  }
+}
+
+/* Three things that are true of the password being chosen. Shown from
+   `lg`, like the sentence above them; on a phone the card says the one
+   that matters. */
+.facts {
+  display: none;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .facts {
+    display: grid;
+    gap: calc(var(--u) * 1.5);
+    margin: calc(var(--u) * 4) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: max(13.5px, calc(var(--u) * 1.5));
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .facts li {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--u) * 1.4);
+    max-width: 44em;
+  }
+
+  .facts svg {
+    flex: none;
+    width: 1.3em;
+    height: 1.3em;
+    margin-top: 0.1em;
+    color: theme(colors.jade.300);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * One card on the night, and nothing else.
+ * ------------------------------------------------------------------ */
+
+/* The page grows with its card and the window scrolls, as on any page:
+   there is no picture here to keep in one window. Sideways is clipped,
+   because the glows run past the edges on purpose. */
+.solo {
+  --u: clamp(6.6px, min(1.111vh, 0.6944vw), 12px);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
+  color: theme(colors.content.inverse);
+  background: linear-gradient(158deg, #221c58 0%, theme(colors.brand.950) 46%, #0e0b24 100%);
+}
+
+.soloTop {
+  padding: 1.5rem 1.25rem 0;
+}
+
+.soloMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.75rem 1rem 2rem;
+}
+
+/* Centred with auto margins, not justify-content: when the card is taller
+   than the window, centring would push its top above the page. */
+.soloColumn {
+  width: 100%;
+  max-width: 33rem;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .soloTop {
+    padding: calc(var(--u) * 4) calc(var(--u) * 6.4) 0;
+  }
+
+  .soloMain {
+    padding: calc(var(--u) * 3) calc(var(--u) * 3) calc(var(--u) * 6);
+  }
+}
+
+/* The two rings, centred behind the card here (on the sign-in page they
+   are cropped by the right edge, behind a card that sits to the right). */
+.soloRing,
+.soloRingDashed {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.soloRing {
+  width: calc(var(--u) * 96);
+  height: calc(var(--u) * 96);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.soloRingDashed {
+  width: calc(var(--u) * 70);
+  height: calc(var(--u) * 70);
+  border: 1px dashed rgba(255, 255, 255, 0.09);
+}
+
