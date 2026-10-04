@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowRight,
   Building2,
   GraduationCap,
   IdCard,
@@ -19,7 +18,6 @@ import {
 } from "lucide-react";
 import { api, describeApiError, errorMessage } from "@/lib/api";
 import { defaultRouteForRole, forgetRememberedSchool, setSession } from "@/lib/auth";
-import { PRODUCT_NAME, PRODUCT_SCOPE } from "@/lib/brand";
 import { wasRefused } from "@/lib/errors";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { clearSignedOutNotice, readSignedOutNotice, returnPathFor } from "@/lib/sessionNotice";
@@ -41,10 +39,10 @@ import { Button } from "@/components/ui/Button";
 import { CodeInput, type CodeInputHandle } from "@/components/ui/CodeInput";
 import { TextField } from "@/components/ui/Field";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { LogoMark } from "@/components/brand/Logo";
 import { MakerCredit } from "@/components/brand/MakerCredit";
 import { Assurances, FiveDayAscent } from "./FiveDayAscent";
-import styles from "./night-ascent.module.css";
+import { GoArrow, NightHeader } from "@/components/brand/NightStage";
+import styles from "@/components/brand/night-ascent.module.css";
 
 /**
  * The mark beside each choice in "Who is signing in". What the page says to
@@ -602,22 +600,10 @@ export default function LoginPage() {
 
       {/* ---------------- The product ---------------- */}
       <section className={styles.hero}>
-        <header className={cn("stage-in stage-d0", styles.top)}>
-          {/* The lockup is laid out here rather than with <Lockup>: on this
-              page alone the mark and the name scale with the window. */}
-          <span className={styles.lockup}>
-            {/* The mark calls itself "Krama", and the name is right beside
-                it: hidden from screen readers here so it is said once. */}
-            <span aria-hidden className="flex flex-none">
-              <LogoMark variant="inverse" className={styles.lockupMark} />
-            </span>
-            <span>
-              <span className={cn("font-display", styles.lockupName)}>{PRODUCT_NAME}</span>
-              <span className={styles.lockupScope}>{PRODUCT_SCOPE}</span>
-            </span>
-          </span>
-          <MakerCredit className={styles.makerTop} arrowClassName={styles.makerArrow} />
-        </header>
+        {/* The same header bar as the other screens on this night
+            (components/brand/NightStage.tsx): the lockup scales with the
+            window, and the maker's credit is on its right from `lg`. */}
+        <NightHeader className="stage-in stage-d0" />
 
         <div className={cn("stage-in stage-d1", styles.message)}>
           {/* Who the page is talking to, and the one sentence that is theirs.
@@ -1051,19 +1037,5 @@ function PerWayIn({
         </div>
       ))}
     </div>
-  );
-}
-
-/**
- * The arrow on the card's one button, on a saffron disc: the single warm
- * thing in a white card, on the single thing to press.
- */
-function GoArrow() {
-  return (
-    // Left out on the narrowest phones, where the longest label ("Save
-    // Password & Continue") needs the room more than the button needs it.
-    <span className="inline-flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-full bg-saffron-400 text-brand-950 max-[339px]:hidden">
-      <ArrowRight className="h-[0.9375rem] w-[0.9375rem]" strokeWidth={2.6} />
-    </span>
   );
 }

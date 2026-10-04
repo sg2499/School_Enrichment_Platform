@@ -139,12 +139,12 @@ export const CodeInput = forwardRef<CodeInputHandle, CodeInputProps>(function Co
                   // would have come out of the third box instead).
                   length === 6 && index === 3 && "ml-1.5 sm:ml-2",
                   invalid
-                    ? "border-coral-400"
+                    ? "border-coral-500"
                     : isActive
-                      ? "border-brand-400 shadow-focus-field -translate-y-px"
+                      ? "border-brand-500 shadow-focus-field -translate-y-px"
                       : digit
-                        ? "border-brand-300"
-                        : "border-line-strong",
+                        ? "border-brand-400"
+                        : "border-line-field",
                   disabled && "opacity-60",
                 )}
               >

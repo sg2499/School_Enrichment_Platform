@@ -11,8 +11,9 @@ import wordmark from "@/public/brand/zetta-metrics-wordmark.png";
  * Until now the product credited its maker in words only. The logo is what
  * makes the credit read as the company's own rather than as a claim about
  * it, and it is a link: to the company's website, always in a new window,
- * because the only place this sits is the sign-in page and nobody should
- * lose that page to a link.
+ * because it sits only on the sign-in page and the screens that share its
+ * night (components/brand/NightStage.tsx), and nobody should lose one of
+ * those to a link.
  *
  * Sized entirely in em, so the caller sets one font-size (the size of the
  * small caps) and the logo, the rule and the gaps all follow. For dark

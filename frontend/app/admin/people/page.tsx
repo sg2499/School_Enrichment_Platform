@@ -853,7 +853,7 @@ function RosterTable({
                 ? "Search school admins by name or email"
                 : `Search ${ROLE_LABEL[role].toLowerCase()} by name, ${LOGIN_LABEL[role].toLowerCase()} or email`
             }
-            className="h-10 w-full rounded-xl border border-line-strong bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-300 focus:border-brand-400 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
+            className="h-10 w-full rounded-xl border border-line-field bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
           />
           {search ? (
             <button
@@ -1557,7 +1557,10 @@ function BulkImportForm({
         <label
           className={cn(
             "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-7 text-center transition-colors",
-            file ? "border-brand-300 bg-surface-brand" : "border-line-strong bg-surface hover:border-brand-300 hover:bg-surface-brand/60",
+            // The well is the file control's edge: 3:1 or better in both
+            // states (line-field 3.2:1 on white; brand-400 3.3:1 on its
+            // own surface-brand fill).
+            file ? "border-brand-400 bg-surface-brand" : "border-line-field bg-surface hover:border-brand-400 hover:bg-surface-brand/60",
             "focus-within:border-brand-400 focus-within:shadow-focus",
           )}
         >

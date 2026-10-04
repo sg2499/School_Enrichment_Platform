@@ -117,6 +117,17 @@ const config: Config = {
         line: {
           DEFAULT: "#E8E4DB",
           strong: "#D7D2C6",
+          // The resting outline of anything typed into or chosen from: text
+          // boxes, dropdowns, search boxes, the two-factor boxes (4 Oct
+          // 2026). 3.2:1 on white and 3.0:1 on surface-muted, which is the
+          // 3:1 the guideline asks of a control's edge (WCAG 1.4.11). It
+          // was `strong`, 1.5:1: a white box on a white card with an
+          // outline that a projector or a sunlit monitor loses. `strong`
+          // stays for what is not a field -- buttons, tabs, chips, dashed
+          // empty panels -- where the label or the fill says what it is,
+          // and for a row that holds a radio or a tick box, where the
+          // control inside has its own edge.
+          field: "#8F8DA6",
           brand: "#CFCBF0",
           inverse: "rgba(255,255,255,0.14)",
         },

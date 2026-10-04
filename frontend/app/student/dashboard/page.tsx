@@ -224,7 +224,7 @@ const HOW_IT_WORKS = [
     step: "See what you missed",
     // GET .../result returns correctAnswer for each wrong answer; the
     // re-attempt cap is the assignment's maxAttempts.
-    body: "Check the right answer for anything you got wrong, and try again if you have attempts left.",
+    body: "Check the correct answer for anything you got wrong, and try again if you have attempts left.",
   },
 ];
 
@@ -437,7 +437,7 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
           // two screens a student moves between never describe it twice.
           status={{ label: "Nothing Assigned Yet", tone: "brand" }}
           title="Nothing to practise today"
-          description="Your first practice set will show up here once your teacher assigns it. Each set says how long it should take before you start."
+          description="Your first practice set will show up here once your teacher assigns it. Each set says how long it should take."
           // Replaced 30 Sep 2026: "Your streak and progress start counting
           // from your first practice" (no streak exists anywhere in backend/
           // or frontend/) and "Anything you get wrong comes back later"
@@ -448,7 +448,7 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
           // correct answer for each wrong one.
           points={[
             "Most questions are marked the moment you submit",
-            "You'll see the right answer for anything you got wrong",
+            "You'll see the correct answer for anything you got wrong",
           ]}
         />
       </div>

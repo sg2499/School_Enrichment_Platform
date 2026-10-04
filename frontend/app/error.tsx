@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { ArrowRight, LogIn, RotateCw, TriangleAlert } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { useAdminSchoolForPage, useRoleForPage } from "@/lib/hooks/useRoleForPage";
 import { defaultRouteForRole } from "@/lib/auth";
@@ -56,6 +57,10 @@ const EYEBROW: Record<UserRole, string> = {
 export default function PageError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const role = useRoleForPage();
   usePageTitle("Something Went Wrong", role, useAdminSchoolForPage());
+  // The choose-a-password page is a workspace address on the sign-in
+  // page's night, and the one page its person can open: "Back To
+  // Dashboard" from there would only come straight back.
+  const onPasswordPage = (usePathname() ?? "").endsWith("/set-password");
 
   useEffect(() => {
     Sentry.captureException(error);
@@ -65,6 +70,10 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
     <StatusScreen
       icon={<TriangleAlert />}
       tone="problem"
+      // Outside a workspace (the sign-in page itself, say) and on the
+      // choose-a-password page it stands on the night those pages are on;
+      // inside a workspace, on the workspace's own page.
+      surface={role && !onPasswordPage ? "paper" : "night"}
       eyebrow={role ? EYEBROW[role] : PRODUCT_NAME}
       title="This page ran into a problem"
       message={
@@ -79,13 +88,13 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
           <Button onClick={reset} leadingIcon={<RotateCw className="h-4 w-4" />}>
             Try Again
           </Button>
-          {role ? (
+          {onPasswordPage ? null : role ? (
             <ButtonLink href={defaultRouteForRole(role)} variant="secondary" trailingIcon={<ArrowRight className="h-4 w-4" />}>
-              Back to Dashboard
+              Back To Dashboard
             </ButtonLink>
           ) : (
             <ButtonLink href="/login" variant="secondary" leadingIcon={<LogIn className="h-4 w-4" />}>
-              Go to Sign In
+              Go To Sign In
             </ButtonLink>
           )}
         </>

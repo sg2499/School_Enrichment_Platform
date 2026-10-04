@@ -136,7 +136,7 @@ function MarksPicker({
             const n = Math.round(Number(raw));
             onChange(Number.isFinite(n) ? Math.min(Math.max(n, 0), answer.maxScore) : null);
           }}
-          className="h-10 w-20 rounded-xl border border-line-strong bg-surface px-3 text-base tabular text-content shadow-xs outline-none focus:border-brand-400 focus:shadow-focus disabled:opacity-60"
+          className="h-10 w-20 rounded-xl border border-line-field bg-surface px-3 text-base tabular text-content shadow-xs outline-none transition hover:border-ink-500 focus:border-brand-500 focus:shadow-focus disabled:opacity-60"
         />
         <span className="font-medium text-content-subtle">out of {answer.maxScore}</span>
       </label>

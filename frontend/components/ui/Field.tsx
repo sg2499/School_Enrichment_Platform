@@ -143,20 +143,28 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             onBlur?.(event);
           }}
           className={cn(
+            // The outline. At rest line-field, 3.2:1 on the white of the
+            // box (it was line-strong, 1.5:1: see tailwind.config.ts);
+            // hovered ink-500, 4.6:1; focused brand-500, 5.9:1 (it was
+            // brand-400, 3.7:1, which against the new resting outline was
+            // barely a change, and lighter than the hover it follows); in
+            // error coral-500, 3.8:1 (it was coral-400, 2.7:1). Rest, hover
+            // and focus each get darker, and nothing is under 3:1.
+            //
             // 1rem text is deliberate: it is the legibility floor the product
             // owner asked for, and it also stops iOS Safari zooming the page
             // whenever a student taps into a field.
             "peer relative h-12 w-full rounded-2xl border bg-surface px-4 text-base text-content shadow-xs outline-none",
             "placeholder:text-content-faint",
             "transition duration-200 ease-spring",
-            "focus:border-brand-400 focus:shadow-focus-field",
+            "focus:border-brand-500 focus:shadow-focus-field",
             icon && "pl-11",
             revealable && "pr-12",
-            error ? "border-coral-400 focus:border-coral-500" : "border-line-strong hover:border-ink-300",
+            error ? "border-coral-500 focus:border-coral-600" : "border-line-field hover:border-ink-500",
             // A caller that shows the message itself, somewhere else (the
             // sign-in card's one message for two boxes), marks the box with
             // aria-invalid and no `error`: the box still turns coral.
-            "aria-[invalid=true]:border-coral-400 aria-[invalid=true]:focus:border-coral-500",
+            "aria-[invalid=true]:border-coral-500 aria-[invalid=true]:focus:border-coral-600",
             className,
           )}
           {...props}
@@ -265,8 +273,8 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
           className={cn(
             "peer relative h-12 w-full appearance-none rounded-2xl border bg-surface px-4 pr-11 text-base text-content shadow-xs outline-none",
             "transition duration-200 ease-spring",
-            "focus:border-brand-400 focus:shadow-focus-field",
-            error ? "border-coral-400 focus:border-coral-500" : "border-line-strong hover:border-ink-300",
+            "focus:border-brand-500 focus:shadow-focus-field",
+            error ? "border-coral-500 focus:border-coral-600" : "border-line-field hover:border-ink-500",
             className,
           )}
           {...props}

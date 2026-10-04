@@ -6,7 +6,7 @@ import type { ErrorKind } from "@/lib/errors";
 import type { ProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { Button } from "@/components/ui/Button";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { StatusScreen, type StatusTone } from "@/components/ui/StatusScreen";
+import { StatusScreen, type StatusSurface, type StatusTone } from "@/components/ui/StatusScreen";
 
 const LOOK: Partial<Record<ErrorKind, { icon: React.ReactNode; eyebrow: string; tone: StatusTone }>> = {
   offline: { icon: <WifiOff />, eyebrow: "No connection", tone: "attention" },
@@ -30,14 +30,15 @@ const FALLBACK_LOOK = { icon: <TriangleAlert />, eyebrow: "Something went wrong"
  * told what happened, in words written for their role, and can try again
  * from where they are.
  */
-export function SessionGate({ session }: { session: ProtectedPage }) {
+export function SessionGate({ session, surface = "paper" }: { session: ProtectedPage; surface?: StatusSurface }) {
   const { status, problem, retry } = session;
   if (status !== "unreachable" || !problem) {
-    return <LoadingScreen />;
+    return <LoadingScreen surface={surface} />;
   }
   const look = LOOK[problem.kind] ?? FALLBACK_LOOK;
   return (
     <StatusScreen
+      surface={surface}
       icon={look.icon}
       tone={look.tone}
       eyebrow={look.eyebrow}

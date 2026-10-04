@@ -66,7 +66,7 @@ export function SearchInput({
         }}
         aria-label={label}
         placeholder={placeholder ?? label}
-        className="h-10 w-full rounded-xl border border-line-strong bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-300 focus:border-brand-400 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full rounded-xl border border-line-field bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
       />
       {draft ? (
         <button
