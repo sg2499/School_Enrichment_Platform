@@ -367,8 +367,7 @@ export default function AssignPracticePage() {
             // Still `secondary`. Button.tsx's variant for dark chrome is
             // `quiet`, but its hover stacks two white fills under a white
             // label (PageHeader.tsx has the figure, under AA), and fixing
-            // that reaches the rail's Sign Out and the student hero, which
-            // are outside this pass. The white pill is opaque, so its
+            // that reaches the rail's Sign Out, which is outside this pass. The white pill is opaque, so its
             // label is the 17.0:1 it is on any card, and 9.3:1 hovered.
             <ButtonLink href="/teacher/tracker" variant="secondary" leadingIcon={<ClipboardCheck className="h-4 w-4" />}>
               Open Practice Tracker

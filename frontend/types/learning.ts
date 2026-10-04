@@ -168,6 +168,12 @@ export type AttemptDetail = {
 // the answer key IS included here, only here, post-submission.
 export type AttemptAnswerResult = {
   questionId: string;
+  // The question's type and its lettered options (4 Oct 2026), so a result
+  // can say what "B" was. Optional: a result fetched from a server that has
+  // not been updated yet arrives without them, and the screen then shows
+  // the answer as it is stored.
+  questionType?: string;
+  options?: Record<string, string>;
   stem: string;
   responseText: string | null;
   isCorrect: boolean | null;
@@ -175,7 +181,10 @@ export type AttemptAnswerResult = {
   // A teacher's mark for an answer auto-marking couldn't score (1 Oct 2026).
   manualScore?: number | null;
   maxScore: number;
-  correctAnswer: string;
+  // Null for a student while the answer is still waiting for a teacher's
+  // marks (4 Oct 2026): the server does not send the model answer, or the
+  // explanation, for an answer nothing has marked yet.
+  correctAnswer: string | null;
   explanation: string | null;
 };
 
@@ -189,6 +198,9 @@ export type AttemptResult = EvaluationResult & {
   maxAttempts: number;
   bonusAttempts: number;
   attemptsUsed: number;
+  // The set this is the result of (4 Oct 2026). Optional for the same
+  // reason as the two fields above: an older server does not send it.
+  activity?: LearningActivity;
   answers: AttemptAnswerResult[];
 };
 

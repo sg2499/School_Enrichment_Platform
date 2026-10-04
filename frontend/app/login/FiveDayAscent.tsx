@@ -168,17 +168,31 @@ export function FiveDayAscent({
         ))}
       </ol>
 
-      <ul className={styles.assurances}>
-        {ASSURANCES.map((item) => {
-          const Icon = item.icon;
-          return (
-            <li key={item.label}>
-              <Icon aria-hidden />
-              {item.label}
-            </li>
-          );
-        })}
-      </ul>
     </div>
+  );
+}
+
+/**
+ * Three things that are true of every sign-in, as one bar under the steps.
+ *
+ * A sibling of the steps on the page, not part of them (4 Oct 2026): the
+ * space between the two is one of the three gaps the panel shares its spare
+ * height between (night-ascent.module.css, .hero), and only things that are
+ * laid out side by side in the panel can share it. Inside the steps' own
+ * box the gap was a fixed sliver, and the bar read as the staircase's base.
+ */
+export function Assurances({ className }: { className?: string }) {
+  return (
+    <ul className={cn(styles.assurances, className)}>
+      {ASSURANCES.map((item) => {
+        const Icon = item.icon;
+        return (
+          <li key={item.label}>
+            <Icon aria-hidden />
+            {item.label}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
