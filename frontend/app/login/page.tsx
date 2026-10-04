@@ -613,16 +613,18 @@ export default function LoginPage() {
         <div className="stage-in stage-d1">
           {/* Who the page is talking to, and the one sentence that is theirs.
               Both follow the choice in the card, and fade rather than swap
-              under the reader's eye. Below `lg` only the headline shows. */}
+              under the reader's eye. The sentence is one line wherever a
+              line is wide enough for it (night-ascent.module.css, .promise).
+              Below `lg` only the headline shows. */}
           <p key={`for-${signInRole}`} className={cn("animate-fade-in", styles.eyebrow)}>
             {way.audience}
           </p>
           <h1 className={cn("font-display", styles.headline)}>
             Every chapter, practised <em>until it sticks.</em>
           </h1>
-          <p key={`promise-${signInRole}`} className={cn("animate-fade-in", styles.promise)}>
-            {way.promise}
-          </p>
+          <PerWayIn current={signInRole} className={styles.promise}>
+            {(copy) => <p>{copy.promise}</p>}
+          </PerWayIn>
         </div>
 
         <FiveDayAscent arrived={stage === "ready"} paused={motionPaused} onPausedChange={setMotionPaused} className="stage-in stage-d3" />
@@ -1001,8 +1003,9 @@ export default function LoginPage() {
 }
 
 /**
- * A block of the card whose wording depends on who is signing in, laid out
- * so the card is the same height whichever of the three is chosen.
+ * A block whose wording depends on who is signing in (the card's notes and
+ * foot, the sentence under the headline), laid out so that it is the same
+ * height whichever of the three is chosen.
  *
  * All three versions are drawn in the same grid cell, one on top of the
  * other, and only the chosen one is shown. The cell is as tall as the

@@ -31,6 +31,17 @@ import { cn } from "@/lib/utils";
  * Pure inline SVG, so it needs no request and takes the surrounding size.
  * The steps are listed back to front (painter's order); the fourth is the
  * gold one.
+ *
+ * The tile and its gold frame (4 Oct 2026, later the same day). The stair
+ * stands on a rounded indigo tile, and the tile is enclosed in a gold
+ * frame. The frame is why the mark can be seen: the product's own pages
+ * are indigo, and an indigo tile on an indigo sign-in page or rail had no
+ * edge at all -- the logo "meshed in with the background". Gold is the one
+ * colour that is neither the dark surfaces' nor the light ones', so one
+ * mark now reads on both, and it is the gold step's colour, so the frame
+ * belongs to the object rather than being a border put round it. The stair
+ * is also drawn a tenth larger inside the tile than the geometry above
+ * gives, for the same reason: at 36px every pixel of it counts.
  */
 const STEPS: ReadonlyArray<readonly [x: number, y: number, gold?: true]> = [
   [24.5, 18.73],
@@ -51,13 +62,27 @@ const STEP_RIGHT = "M7.5 0L0 5.3L0 16.73L7.5 11.43Z";
 // The two front edges of the top face, which catch the light.
 const STEP_RIM = "M-7.5 0L0 5.3L7.5 0";
 
+// The stair drawn a tenth larger than its geometry, about its own centre
+// (32, 32.4). app/icon.svg carries the same transform.
+const STAIR_ENLARGED = "translate(32 32.4) scale(1.1) translate(-32 -32.4)";
+// The frame's width, in the 64-unit box. Drawn wholly inside the tile's
+// edge, so the mark's outline is still the tile's.
+const FRAME = 2.2;
+
+/** On dark chrome the frame is given a little of its own light, and the
+ *  tile a shadow to sit on: gold on indigo glows, and a glow is what stops
+ *  a small mark from looking stuck on. Not on paper, where a gold haze
+ *  reads as a smudge. */
+const ON_DARK = "[filter:drop-shadow(0_0_9px_rgba(249,171,43,0.35))_drop-shadow(0_6px_12px_rgba(0,0,0,0.4))]";
+
 export function LogoMark({
   className,
   variant = "brand",
 }: {
   className?: string;
-  /** `brand` = the indigo tile, `inverse` = the same tile lifted a little
-   *  for dark chrome, where the standard one would sink into the rail. */
+  /** Where the mark sits. It is the same mark either way; `inverse` (dark
+   *  chrome: the rail, the sign-in page) adds a soft gold glow round the
+   *  frame, `brand` (paper) does not. */
   variant?: "brand" | "inverse";
 }) {
   // Per-instance gradient ids (30 Sep 2026). These used to be fixed strings
@@ -72,15 +97,26 @@ export function LogoMark({
   // anything that isn't a plain identifier character is stripped to keep
   // the reference valid inside url(#...).
   const id = `se-mark-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const lifted = variant === "inverse";
   return (
-    <svg viewBox="0 0 64 64" role="img" aria-label={PRODUCT_NAME} className={cn("h-11 w-11", className)}>
+    <svg
+      viewBox="0 0 64 64"
+      role="img"
+      aria-label={PRODUCT_NAME}
+      className={cn("h-11 w-11", variant === "inverse" && ON_DARK, className)}
+    >
       <defs>
         <radialGradient id={`${id}-tile`} cx="0.22" cy="0.08" r="1.3">
-          <stop offset="0" stopColor={lifted ? "#5A4DB0" : "#3C3489"} />
-          <stop offset="0.48" stopColor={lifted ? "#2E2870" : "#1E1A52"} />
-          <stop offset="1" stopColor={lifted ? "#171338" : "#0E0B24"} />
+          <stop offset="0" stopColor="#4A3FA0" />
+          <stop offset="0.48" stopColor="#241F62" />
+          <stop offset="1" stopColor="#120E2E" />
         </radialGradient>
+        {/* Lit from the top left like everything else in the mark: pale
+            gold where the light lands, deep gold in the far corner. */}
+        <linearGradient id={`${id}-frame`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFF1C6" />
+          <stop offset="0.45" stopColor="#F9AB2B" />
+          <stop offset="1" stopColor="#D06B06" />
+        </linearGradient>
         {/* Each face takes its gradient across its own bounding box, so
             every step is lit the same way wherever it sits. */}
         <linearGradient id={`${id}-top`} x1="0" y1="0" x2="1" y2="1">
@@ -110,33 +146,35 @@ export function LogoMark({
       </defs>
       <rect width="64" height="64" rx="17.5" fill={`url(#${id}-tile)`} />
       <rect
-        x="0.5"
-        y="0.5"
-        width="63"
-        height="63"
-        rx="17"
+        x={FRAME / 2}
+        y={FRAME / 2}
+        width={64 - FRAME}
+        height={64 - FRAME}
+        rx={17.5 - FRAME / 2}
         fill="none"
-        stroke="#FFFFFF"
-        strokeOpacity={lifted ? 0.26 : 0.16}
+        stroke={`url(#${id}-frame)`}
+        strokeWidth={FRAME}
       />
-      {STEPS.map(([x, y, gold]) => {
-        const face = gold ? `${id}-gold` : id;
-        return (
-          <g key={`${x}-${y}`} transform={`translate(${x} ${y})`} strokeLinejoin="round">
-            <path d={STEP_RIGHT} fill={`url(#${face}-right)`} stroke={gold ? "#6E3306" : "#221C5E"} strokeWidth="0.12" />
-            <path d={STEP_LEFT} fill={`url(#${face}-left)`} stroke={gold ? "#D06B06" : "#5D50B6"} strokeWidth="0.12" />
-            <path d={STEP_TOP} fill={`url(#${face}-top)`} stroke={gold ? "#FFF6D8" : "#B9B1EC"} strokeWidth="0.16" />
-            <path
-              d={STEP_RIM}
-              fill="none"
-              stroke={gold ? "#FFFDF2" : "#FFFFFF"}
-              strokeOpacity="0.9"
-              strokeWidth="0.26"
-              strokeLinecap="round"
-            />
-          </g>
-        );
-      })}
+      <g transform={STAIR_ENLARGED}>
+        {STEPS.map(([x, y, gold]) => {
+          const face = gold ? `${id}-gold` : id;
+          return (
+            <g key={`${x}-${y}`} transform={`translate(${x} ${y})`} strokeLinejoin="round">
+              <path d={STEP_RIGHT} fill={`url(#${face}-right)`} stroke={gold ? "#6E3306" : "#221C5E"} strokeWidth="0.12" />
+              <path d={STEP_LEFT} fill={`url(#${face}-left)`} stroke={gold ? "#D06B06" : "#5D50B6"} strokeWidth="0.12" />
+              <path d={STEP_TOP} fill={`url(#${face}-top)`} stroke={gold ? "#FFF6D8" : "#B9B1EC"} strokeWidth="0.16" />
+              <path
+                d={STEP_RIM}
+                fill="none"
+                stroke={gold ? "#FFFDF2" : "#FFFFFF"}
+                strokeOpacity="0.9"
+                strokeWidth="0.26"
+                strokeLinecap="round"
+              />
+            </g>
+          );
+        })}
+      </g>
     </svg>
   );
 }

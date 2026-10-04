@@ -19,10 +19,10 @@ Where it appears in the app:
 
 | In the app | Made from |
 | --- | --- |
-| `components/brand/Logo.tsx` (`LogoMark`) | The small cut, drawn by hand in a 64-unit box on the indigo tile. Same numbers as `forged-stair.mjs`. |
+| `components/brand/Logo.tsx` (`LogoMark`) | The small cut, drawn by hand in a 64-unit box on the indigo tile in its gold frame, a tenth larger than its geometry. Same numbers as `forged-stair.mjs`. |
 | `app/icon.svg` | The same drawing as `LogoMark`, as a file, for the browser tab. |
 | `app/favicon.ico` | `app/icon.svg` at 16, 32 and 48px. |
-| `app/apple-icon.png` | `krama-mark.svg` at 172px, centred on the indigo tile, 180x180. |
+| `app/apple-icon.png` | `krama-mark.svg` at 172px, centred on the indigo tile, 180x180. No frame: a phone rounds the corners of a touch icon itself and would cut a frame unevenly. |
 | `app/opengraph-image.png` | `krama-mark.svg` with the name and the Zetta Metrics credit, 1200x630. |
 
 The PNG and ICO files were rasterised in headless Chromium, which is what the
@@ -30,6 +30,12 @@ glow needs (`feGaussianBlur`). Any tool that renders SVG filters will do.
 
 If the geometry changes, change `forged-stair.mjs`, `LogoMark` and
 `app/icon.svg` together, then re-render the pictures.
+
+The gold frame (4 Oct 2026) is what lets one mark be seen on every surface:
+the product's own dark pages are indigo, and an indigo tile on them had no
+edge. It is drawn 2.2 units wide, wholly inside the tile, pale gold at the
+top left to deep gold at the bottom right. `LogoMark` and `app/icon.svg`
+carry it; change it in both.
 
 ## The Zetta Metrics logo
 
