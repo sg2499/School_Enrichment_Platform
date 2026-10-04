@@ -41,8 +41,10 @@ interface PageHeaderCommon {
   className?: string;
 }
 
-/** The header every Admin and Student page uses, and a Teacher detail view:
- *  text set directly on the page canvas. Unchanged by the masthead. */
+/** The plain header: text set directly on the page canvas. Every screen in
+ *  the four workspaces has since moved to the masthead (Teacher, then Admin
+ *  and Super Admin, then Student on 4 Oct 2026); this stays for a page with
+ *  no ambience behind it. Unchanged by the masthead. */
 export interface PlainPageHeaderProps extends PageHeaderCommon {
   surface?: "plain";
   /** Structured metadata for a detail view, instead of a joined sentence. */
@@ -144,10 +146,10 @@ export function PageHeader(props: PageHeaderProps) {
 
             No page passes `facts` to the plain header today: the three
             Teacher detail views it was built for moved to the masthead
-            (which draws the same list as a well), and no Admin or Student
-            page has used it yet. It stays because it is the right shape
-            for their detail views when they come, and those have no
-            ambience behind them.
+            (which draws the same list as a well), and the Admin and
+            Student pages went straight to the masthead too. It stays
+            because it is the right shape for a detail view on a page
+            with no ambience behind it.
 
             Contrast inside the band on plain canvas (surface at 70% over
             it): label content-subtle 6.3:1, value content 16.6:1. The
@@ -200,10 +202,11 @@ export function PageHeader(props: PageHeaderProps) {
  * What it is. The whole header -- eyebrow, title, context, badges, actions
  * and the page's headline numbers -- on one inverse panel: brand-gradient
  * with the aurora in it. That is not a new surface. It is the construction
- * the student dashboard's hero and the sign-in page's brand panel already
- * share (an indigo gradient carrying AuroraBackdropInverse), so the three
- * places a person lands -- sign-in, a student's home, a teacher's workspace
- * -- now open on the same material, and it is the rail's material too, so
+ * the student dashboard's hero and the sign-in page's brand panel shared
+ * when this was written (an indigo gradient carrying
+ * AuroraBackdropInverse; the hero has since become a masthead itself, and
+ * the sign-in page its own night), so the places a person lands opened on
+ * the same material, and it is the rail's material too, so
  * the two indigo surfaces on screen frame the paper between them.
  *
  * Why not a box round the sentence. That was the idea the first note in
@@ -222,8 +225,9 @@ export function PageHeader(props: PageHeaderProps) {
  * that opens on a lit panel and a row that opens on bare text is the same
  * complaint one click later. On a detail view the masthead also carries
  * the way back (`back`) and the record's metadata (`facts`, the plain
- * header's hairline band redrawn as a well). Admin and Student pages do not
- * pass `surface` and are untouched.
+ * header's hairline band redrawn as a well). The Admin and Super Admin
+ * screens followed (slice 4), and the three Student screens on 4 Oct 2026
+ * (slice 5): every workspace screen now passes `surface="masthead"`.
  *
  * Contrast. Measured, not estimated, and at the worst pixel rather than a
  * typical one -- the same standard as the inverse ramp in
@@ -274,8 +278,8 @@ export function PageHeader(props: PageHeaderProps) {
  * The first two rows are the dashboard at phone widths only, mid-drift; the
  * third is the full sweep described above. 80% passes on what was measured
  * of it, by a quarter of a point and on a partial run -- not a margin to
- * build six screens on. 70% is also the figure the student hero and Phase
- * A's card were already drawn at, so the three inverse surfaces match.
+ * build six screens on. 70% is also the figure the old student hero and
+ * Phase A's card were drawn at.
  *
  * Drift is opt-in (`drift`) and only the dashboard opts in. Everywhere else
  * the aurora is held still from the outside, the way the workspace ambience

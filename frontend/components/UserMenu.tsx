@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -14,12 +14,14 @@ import {
 import { api, errorMessage } from "@/lib/api";
 import { clearSession, updateStoredUser } from "@/lib/auth";
 import { roleLabel } from "@/lib/pageTitle";
+import { passwordChecks, passwordProblem } from "@/lib/passwordRules";
 import { rememberSignedOut } from "@/lib/sessionNotice";
 import { compressImageForUpload } from "@/lib/imageCompression";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn, initialsFromName } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/Field";
+import { PasswordRulesList } from "@/components/ui/PasswordRulesList";
 
 // The role's name comes from lib/pageTitle.ts, the one place it is written.
 // This file kept its own copy, which is how the rail went on saying "Admin"
@@ -153,6 +155,22 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  // The rules a new password has to meet, shown as a checklist that fills
+  // in while it is typed (4 Oct 2026). This form had one line of hint, "8+
+  // characters, a letter and a number", which is three of the server's
+  // rules and not the two people actually trip on (it must not be a common
+  // word, and it must differ from the current one) -- so a teacher or a
+  // student could meet the hint and still be refused. It is the list the
+  // first-password step (ChoosePassword) and the admin's Security Settings
+  // already show, from the same source: lib/passwordRules.ts.
+  const rulesId = useId();
+  const currentPasswordRef = useRef<HTMLInputElement>(null);
+  const newPasswordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  // Rules are shown neutrally until the person has tried to save; after
+  // that, the ones still unmet are marked as what is holding things up.
+  const [passwordAttempted, setPasswordAttempted] = useState(false);
+  const passwordRuleChecks = passwordChecks(newPassword, { current: currentPassword || null, replacing: "current" });
 
   async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -203,8 +221,29 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
   async function handleChangePassword(event: React.FormEvent) {
     event.preventDefault();
     setPasswordError(null);
+    setPasswordAttempted(true);
+    // Checked here first, in the order the boxes are in, so nobody presses
+    // the button to learn their password was a character short. The server
+    // checks all of it again (core/security.py, strong_password_issue).
+    // The same order and the same sentences as the admin's form.
+    if (!currentPassword) {
+      setPasswordError("Enter your current password, so we know it's you.");
+      currentPasswordRef.current?.focus();
+      return;
+    }
+    const problem = passwordProblem(newPassword, { current: currentPassword, replacing: "current" });
+    if (problem) {
+      setPasswordError(problem);
+      newPasswordRef.current?.focus();
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      setPasswordError("New password and confirmation do not match.");
+      setPasswordError(
+        confirmPassword
+          ? "The two passwords don't match. Type your new password again in the last box."
+          : "Type your new password once more in the last box.",
+      );
+      confirmPasswordRef.current?.focus();
       return;
     }
     setChangingPassword(true);
@@ -229,7 +268,10 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
 
   if (view === "password") {
     return (
-      <form method="post" onSubmit={handleChangePassword} className="space-y-4">
+      // noValidate: the checks above say what is wrong in the product's own
+      // words, in the order of the boxes; the browser's own bubbles would
+      // get in first with theirs.
+      <form method="post" onSubmit={handleChangePassword} className="space-y-4" noValidate>
         <button
           type="button"
           onClick={() => setView("menu")}
@@ -238,6 +280,7 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
           &larr; Back
         </button>
         <TextField
+          ref={currentPasswordRef}
           id={`userMenuCurrentPassword-${role}`}
           name="currentPassword"
           label="Current Password"
@@ -246,21 +289,34 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
           revealable
           required
           value={currentPassword}
-          onChange={(event) => setCurrentPassword(event.target.value)}
+          onChange={(event) => {
+            setCurrentPassword(event.target.value);
+            setPasswordError(null);
+          }}
         />
+        <div className="space-y-2.5">
+          <TextField
+            ref={newPasswordRef}
+            id={`userMenuNewPassword-${role}`}
+            name="newPassword"
+            label="New Password"
+            type="password"
+            autoComplete="new-password"
+            revealable
+            required
+            aria-describedby={rulesId}
+            value={newPassword}
+            onChange={(event) => {
+              setNewPassword(event.target.value);
+              // What the message said was about what was typed before.
+              setPasswordError(null);
+            }}
+          />
+          {/* One column: the menu is too narrow for two. */}
+          <PasswordRulesList id={rulesId} checks={passwordRuleChecks} attempted={passwordAttempted} columns={1} />
+        </div>
         <TextField
-          id={`userMenuNewPassword-${role}`}
-          name="newPassword"
-          label="New Password"
-          type="password"
-          autoComplete="new-password"
-          revealable
-          required
-          hint="8+ characters, a letter and a number"
-          value={newPassword}
-          onChange={(event) => setNewPassword(event.target.value)}
-        />
-        <TextField
+          ref={confirmPasswordRef}
           id={`userMenuConfirmPassword-${role}`}
           name="confirmPassword"
           label="Confirm New Password"
@@ -269,10 +325,13 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
           revealable
           required
           value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
+          onChange={(event) => {
+            setConfirmPassword(event.target.value);
+            setPasswordError(null);
+          }}
         />
         {passwordError ? (
-          <p className="flex items-start gap-2 text-[0.8125rem] font-medium text-coral-700">
+          <p role="alert" className="flex items-start gap-2 text-[0.8125rem] font-medium text-coral-700">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {passwordError}
           </p>

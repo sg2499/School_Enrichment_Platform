@@ -43,7 +43,7 @@ import { TextField } from "@/components/ui/Field";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { LogoMark } from "@/components/brand/Logo";
 import { MakerCredit } from "@/components/brand/MakerCredit";
-import { FiveDayAscent } from "./FiveDayAscent";
+import { Assurances, FiveDayAscent } from "./FiveDayAscent";
 import styles from "./night-ascent.module.css";
 
 /**
@@ -95,17 +95,26 @@ const SHORT_FORM = "lg:[@media(max-height:680px)]:space-y-2.5";
  * A few points of light in the night behind the page: where, and how far
  * into its five-second twinkle each one starts. Fixed, not random, so the
  * server and the browser draw the same sky.
+ *
+ * Shown on a laptop and larger only (night-ascent.module.css, .star).
+ * There, every one of them is in a part of the page that never holds
+ * words: the two outer margins, the strip above the header, and the gap
+ * between the panel and the card. Their places are percentages of the window while the
+ * text is laid out in units of its height, so a star anywhere else ends up
+ * beside a word at some window size -- one sat directly in front of "The
+ * five-day chapter loop" like a stray full stop, and another on the Zetta
+ * Metrics logo.
  */
 const STARS: ReadonlyArray<readonly [left: string, top: string, delay: string]> = [
-  ["3%", "47%", "0s"],
-  ["23%", "12%", "1.2s"],
-  ["41%", "22%", "2.1s"],
-  ["52%", "9%", "0.6s"],
-  ["66%", "17%", "3s"],
-  ["78%", "8%", "1.8s"],
-  ["91%", "20%", "2.6s"],
-  ["84%", "88%", "0.9s"],
-  ["61%", "93%", "3.4s"],
+  ["1.6%", "47%", "0s"],
+  ["1.4%", "86%", "2.4s"],
+  ["30%", "1.8%", "1.2s"],
+  ["47%", "2.4%", "2.1s"],
+  ["60%", "16%", "0.6s"],
+  ["61%", "91%", "3.4s"],
+  ["78%", "2%", "1.8s"],
+  ["95.5%", "20%", "2.6s"],
+  ["97%", "71%", "0.9s"],
 ];
 
 /**
@@ -610,7 +619,7 @@ export default function LoginPage() {
           <MakerCredit className={styles.makerTop} arrowClassName={styles.makerArrow} />
         </header>
 
-        <div className="stage-in stage-d1">
+        <div className={cn("stage-in stage-d1", styles.message)}>
           {/* Who the page is talking to, and the one sentence that is theirs.
               Both follow the choice in the card, and fade rather than swap
               under the reader's eye. The sentence is one line wherever a
@@ -628,6 +637,7 @@ export default function LoginPage() {
         </div>
 
         <FiveDayAscent arrived={stage === "ready"} paused={motionPaused} onPausedChange={setMotionPaused} className="stage-in stage-d3" />
+        <Assurances className="stage-in stage-d4" />
       </section>
 
       {/* ---------------- The card ---------------- */}

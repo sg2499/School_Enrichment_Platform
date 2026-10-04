@@ -151,13 +151,23 @@
   border: 1px dashed rgba(255, 255, 255, 0.09);
 }
 
+/* Stars are for the laptop page, where each has a place that never holds
+   words (page.tsx, STARS). On a phone the same percentages land on the
+   headline, so there are none. */
 .star {
+  display: none;
   position: absolute;
   width: 2px;
   height: 2px;
   border-radius: 50%;
   background: #fff;
   opacity: 0.5;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .star {
+    display: block;
+  }
 }
 
 /* The night moves, slowly, on a laptop and larger -- where the switch that
@@ -210,11 +220,56 @@
    just not drawn until it is in place -- and it is invisible until then
    anyway. Sideways stays open: shadows and glows are meant to spill. */
 @media (min-width: theme(screens.lg)) {
+  /* Four things, top to bottom: the header, the message, the steps, the
+     assurances. The header is at the top and the assurances at the bottom;
+     the height left over goes into the three gaps between them, and NOT in
+     equal shares.
+
+       above the message   1      it belongs to the header it sits under
+       below the message   1.75   the pause before a new subject, the loop
+       below the steps     1.1    the steps stand clear of the bar
+
+     (Until 4 Oct 2026 the first two were equal -- `space-between` -- and
+     the third was a fixed sliver: the message floated in the middle of the
+     panel with as much empty space above "For Students" as below the
+     sentence, and the steps were pushed down onto the assurances bar.)
+
+     Each gap has a floor, so on a window too short to share anything out
+     the four still do not touch. The floors keep the same 1 : 1.75 : 1.1
+     (a floor out of proportion would set the size of all three), and add
+     up to 7.7 units against the old layout's 7.6: a pixel, at most, more
+     height needed. Every laptop size the page is checked at still fits on
+     one screen. */
   .hero {
-    justify-content: space-between;
-    gap: calc(var(--u) * 2.6);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows:
+      auto
+      minmax(calc(var(--u) * 2), 1fr)
+      auto
+      minmax(calc(var(--u) * 3.5), 1.75fr)
+      auto
+      minmax(calc(var(--u) * 2.2), 1.1fr)
+      auto;
+    gap: 0;
     overflow-y: clip;
     padding: calc(var(--u) * 4) calc(var(--u) * 3.4) calc(var(--u) * 3.4) calc(var(--u) * 6.4);
+  }
+
+  .top {
+    grid-row: 1;
+  }
+
+  .message {
+    grid-row: 3;
+  }
+
+  .stage {
+    grid-row: 5;
+  }
+
+  .assurances {
+    grid-row: 7;
   }
 }
 
@@ -729,15 +784,19 @@
     bottom 0.75s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
-/* Three things that are true of every sign-in, as the base the steps stand
-   on: one glass bar exactly the width of the steps, three equal cells,
-   hairlines between them. (Until 4 Oct 2026 they were three pieces of text
-   in a row that stopped three quarters of the way across, lined up with
-   nothing.) Its left and right edges are the edges of the header rule, the
-   caption and the steps. */
+/* Three things that are true of every sign-in: one glass bar exactly the
+   width of the steps, three equal cells, hairlines between them. (Until
+   4 Oct 2026 they were three pieces of text in a row that stopped three
+   quarters of the way across, lined up with nothing.) Its left and right
+   edges are the edges of the header rule, the caption and the steps. How
+   far below the steps it sits is the panel's to say (.hero): on an
+   ordinary window, about as far as the warm light on the ground under them
+   reaches (.steps::after), so the bar begins where that light is all but
+   gone; on a short one, less. Shown from `lg`, with the steps it sits
+   under. */
 .assurances {
-  display: flex;
-  margin: calc(var(--u) * 2.4) 0 0;
+  display: none;
+  margin: 0;
   padding: 0;
   list-style: none;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -763,6 +822,12 @@
 
 .assurances li:first-child {
   border-left: 0;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .assurances {
+    display: flex;
+  }
 }
 
 .assurances svg {
