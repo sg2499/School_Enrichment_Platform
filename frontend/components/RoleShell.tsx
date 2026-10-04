@@ -413,7 +413,7 @@ function SidebarContent({
           inDrawer && "pr-16",
         )}
       >
-        {collapsed ? <LogoMark className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
+        {collapsed ? <LogoMark variant="inverse" className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
       </div>
 
       <div className={cn("relative", collapsed ? "px-3" : "px-5")}>

@@ -250,7 +250,10 @@
   flex: none;
   width: 2.875rem;
   height: 2.875rem;
-  filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.45));
+  /* The mark's own gold glow (components/brand/Logo.tsx), restated here
+     because this rule replaces the component's filter, plus the deeper
+     shadow a mark this size on this page can carry. */
+  filter: drop-shadow(0 0 9px rgba(249, 171, 43, 0.35)) drop-shadow(0 14px 16px rgba(0, 0, 0, 0.45));
 }
 
 .lockupName {
@@ -367,7 +370,9 @@
   background-clip: text;
 }
 
-.promise {
+/* Doubled selector: the element also carries the `grid` utility, and one
+   class against one class is settled by stylesheet order. */
+.promise.promise {
   display: none;
 }
 
@@ -396,17 +401,28 @@
     font-size: calc(var(--u) * 6);
   }
 
-  /* Held to two lines' height, so the steps below do not move when the
-     sentence changes with the choice of who is signing in. */
-  .promise {
-    display: block;
-    max-width: 33em;
-    min-height: 3.1em;
+  /* The sentence that goes with the headline. It runs the full width of
+     the panel, and at this size all three versions fit on ONE line on every
+     window from 1280px wide up (measured; the longest is 96 characters).
+     Until 4 Oct 2026 it was held to 33em, which wrapped it at about 460px
+     with twice that free beside it. On a narrower laptop there is no room
+     for one line, and it breaks into two even ones (`balance`) rather than
+     leaving a word alone on the second.
+
+     The three versions are stacked in one grid cell and one is shown
+     (PerWayIn in page.tsx), so the block is as tall as the tallest of them
+     and the steps below never move when the choice changes. */
+  .promise.promise {
+    display: grid;
     margin: calc(var(--u) * 2) 0 0;
-    font-size: max(14px, calc(var(--u) * 1.75));
+    font-size: max(14px, calc(var(--u) * 1.6));
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.84);
-    text-wrap: pretty;
+  }
+
+  .promise p {
+    margin: 0;
+    text-wrap: balance;
   }
 }
 
@@ -533,7 +549,8 @@
   right: -4%;
   top: 100%;
   height: calc(var(--u) * 5);
-  background: radial-gradient(60% 100% at 50% 0%, rgba(249, 171, 43, 0.2), rgba(249, 171, 43, 0));
+  /* Faint: at 0.2 it read as a band behind whatever sat under the steps. */
+  background: radial-gradient(60% 100% at 50% 0%, rgba(249, 171, 43, 0.09), rgba(249, 171, 43, 0));
   pointer-events: none;
 }
 
@@ -712,30 +729,39 @@
     bottom 0.75s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
-/* Three things that are true of every sign-in, as one divided row hanging
-   from the ground line. */
+/* Three things that are true of every sign-in, as the base the steps stand
+   on: one glass bar exactly the width of the steps, three equal cells,
+   hairlines between them. (Until 4 Oct 2026 they were three pieces of text
+   in a row that stopped three quarters of the way across, lined up with
+   nothing.) Its left and right edges are the edges of the header rule, the
+   caption and the steps. */
 .assurances {
   display: flex;
-  align-items: center;
   margin: calc(var(--u) * 2.4) 0 0;
   padding: 0;
   list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: calc(var(--u) * 1.5);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   font-size: max(12px, calc(var(--u) * 1.32));
   font-weight: 600;
   color: rgba(255, 255, 255, 0.86);
 }
 
 .assurances li {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 0;
   align-items: center;
+  justify-content: center;
   gap: 9px;
-  padding: 0 calc(var(--u) * 2.4);
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  min-width: 0;
+  padding: calc(var(--u) * 1.25) calc(var(--u) * 1);
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
   white-space: nowrap;
 }
 
 .assurances li:first-child {
-  padding-left: 0;
   border-left: 0;
 }
 
@@ -746,15 +772,19 @@
   color: theme(colors.jade.300);
 }
 
-/* On the narrowest laptops the three have to share a shorter line. */
+/* On the narrowest laptops three equal cells are too narrow for the longest
+   of the three, so each cell takes the room its own words need and shares
+   out what is left. */
 @media (max-width: 1150px) {
   .assurances {
-    font-size: 11.5px;
+    font-size: 11px;
   }
 
   .assurances li {
-    gap: 7px;
-    padding: 0 10px;
+    flex: 1 1 auto;
+    gap: 6px;
+    padding-right: 6px;
+    padding-left: 6px;
   }
 }
 
