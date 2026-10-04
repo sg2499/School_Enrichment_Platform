@@ -257,8 +257,8 @@ export function PageHeader(props: PageHeaderProps) {
 /*
  * The aurora's strength inside a masthead: 70%.
  *
- * AuroraBackdropInverse at full strength is tuned for the sign-in page's
- * full-height panel, where its blobs sit well apart. A masthead is a
+ * AuroraBackdropInverse at full strength was tuned for a full-height
+ * panel, where its blobs sit well apart. A masthead is a
  * fraction of that height, so the same fixed-size blobs stack inside it,
  * and where they do the panel gets light enough to cost small text its
  * contrast. (Phase A's NextStepCard met the same thing and also settled on
@@ -371,10 +371,9 @@ const MASTHEAD_SHELL =
   // deepest cast in the scale for the same reason.
   "relative isolate overflow-hidden rounded-3xl border border-white/10 bg-brand-gradient text-content-inverse shadow-panel sm:rounded-4xl " +
   // Focus. Every Button and InlineLink draws its focus ring as a shadow
-  // tinted for paper (shadow-focus, shadow-focus-accent), and on this panel
-  // those measure 1.04:1 and 1.5:1 against the indigo beside them -- a
-  // keyboard user tabbing to a masthead's action would get no visible focus
-  // at all. So the masthead swaps the ring for shadow-focus-inverse
+  // made for paper (shadow-focus-ring: a white gap and an indigo ring), and
+  // on this panel the indigo sinks into the indigo beside it. So the
+  // masthead swaps the ring for shadow-focus-inverse
   // (tailwind.config.ts: a brand-950 gap and a solid saffron-200 ring,
   // 5.4:1 on the lightest pixel, against the 3:1 WCAG 1.4.11 asks of a
   // focus indicator) on any link or button inside it. A

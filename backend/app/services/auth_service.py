@@ -88,11 +88,10 @@ def reset_lockout(user: User) -> None:
 
 
 def _school_name(db: Session, school_id: str | None) -> str | None:
-    """Human-readable school name for display only (e.g. the sign-in page's
-    "Accounts here are issued by <school>" line, remembered client-side per
-    browser once a person has actually signed in -- see frontend
-    lib/auth.ts's rememberSchoolName()). Never used for authorization; schoolId remains
-    the real tenant anchor everywhere else."""
+    """Human-readable school name for display only (the workspace footer,
+    and a school admin's own label, "<School> Admin" -- see frontend
+    lib/pageTitle.ts's roleLabel()). Never used for authorization; schoolId
+    remains the real tenant anchor everywhere else."""
     if not school_id:
         return None
     school = db.query(School).filter(School.id == school_id).first()

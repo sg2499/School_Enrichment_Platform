@@ -2,7 +2,7 @@
 
 import { ArrowRight, Compass, LogIn } from "lucide-react";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { useRoleForPage } from "@/lib/hooks/useRoleForPage";
+import { useAdminSchoolForPage, useRoleForPage } from "@/lib/hooks/useRoleForPage";
 import { defaultRouteForRole } from "@/lib/auth";
 import { PRODUCT_NAME } from "@/lib/brand";
 import type { UserRole } from "@/types/auth";
@@ -65,7 +65,7 @@ const SIGNED_OUT: Copy = {
 
 export default function NotFound() {
   const role = useRoleForPage();
-  usePageTitle("Page Not Found", role);
+  usePageTitle("Page Not Found", role, useAdminSchoolForPage());
   const copy = role ? COPY[role] : SIGNED_OUT;
 
   return (

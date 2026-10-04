@@ -45,10 +45,30 @@ export const DEFAULT_SIGN_IN_ROLE: SignInRole = "STUDENT";
  */
 export function signInRoleFromIdentifier(identifier: string | null | undefined): SignInRole | null {
   if (typeof identifier !== "string") return null;
+  // An address that happens to begin "stu-" or "tch-" (stu-affairs@...) is
+  // still an address, and an address is anyone's.
+  if (identifier.includes("@")) return null;
   const start = identifier.trimStart().slice(0, 4).toUpperCase();
   if (start === "STU-") return "STUDENT";
   if (start === "TCH-") return "TEACHER";
   return null;
+}
+
+/**
+ * Whether what is in the first box is a code issued to a different kind of
+ * person than the way in that has just been chosen by hand -- a student
+ * code sitting under "Teacher", say.
+ *
+ * That happens two ways: a browser fills in the last code it saved before
+ * anyone has chosen anything, or someone starts typing under the wrong
+ * choice. Either way the box now holds something that can never be right
+ * for the label above it, so the sign-in page empties it (and the password
+ * that came with it) when this is true. An email address is left alone: it
+ * could belong to any of the three.
+ */
+export function identifierIsForAnotherWayIn(identifier: string | null | undefined, chosen: SignInRole): boolean {
+  const own = signInRoleFromIdentifier(identifier);
+  return own !== null && own !== chosen;
 }
 
 /** A signed-in account's real role, as one of the three ways in. */

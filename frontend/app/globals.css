@@ -28,7 +28,7 @@
   --brand-700: #3c3489;
   --brand-500: #6355bc;
 
-  /* Shared easing so entrance choreography, parallax and hover all decelerate
+  /* Shared easing so entrance choreography and hover both decelerate
      on the same curve instead of each component inventing its own. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -231,57 +231,6 @@
   }
 
   /* ------------------------------------------------------------------
-   * Pointer-reactive depth.
-   *
-   * A container writes --pointer-x / --pointer-y (both normalised to the
-   * range -1..1) and --pointer-px / --pointer-py (0%..100%) onto itself as
-   * the cursor moves. Descendants opt in by class, so the whole effect is
-   * two custom properties and zero React re-renders.
-   *
-   * Never put these on the same element as a Tailwind translate/scale
-   * utility -- both write `transform` and the utility layer wins. Wrap
-   * instead.
-   * ------------------------------------------------------------------ */
-  .parallax-layer {
-    transform: translate3d(
-      calc(var(--pointer-x, 0) * var(--parallax-depth, 12px)),
-      calc(var(--pointer-y, 0) * var(--parallax-depth, 12px)),
-      0
-    );
-    transition: transform 900ms var(--ease-out-expo);
-    will-change: transform;
-  }
-
-  .parallax-tilt {
-    transform: perspective(1600px) rotateY(calc(var(--pointer-x, 0) * 7deg))
-      rotateX(calc(var(--pointer-y, 0) * -6deg))
-      translate3d(
-        calc(var(--pointer-x, 0) * var(--parallax-depth, 18px)),
-        calc(var(--pointer-y, 0) * var(--parallax-depth, 18px)),
-        0
-      );
-    transition: transform 700ms var(--ease-out-expo);
-    will-change: transform;
-  }
-
-  /* A warm light that follows the cursor across the dark brand panel. Only
-     lit while the pointer is actually over the panel. */
-  .pointer-spotlight {
-    background-image: radial-gradient(
-      520px circle at var(--pointer-px, 50%) var(--pointer-py, 42%),
-      rgba(249, 171, 43, 0.14),
-      rgba(133, 121, 210, 0.1) 42%,
-      transparent 72%
-    );
-    opacity: 0;
-    transition: opacity 700ms ease-out;
-  }
-
-  [data-pointer="active"] .pointer-spotlight {
-    opacity: 1;
-  }
-
-  /* ------------------------------------------------------------------
    * Entrance choreography.
    *
    * Elements start settled-but-hidden and are released when the page
@@ -299,41 +248,14 @@
     transition-delay: var(--stage-delay, 0ms);
   }
 
-  .stage-zoom {
-    opacity: 0;
-    transform: scale(0.9);
-    transition:
-      opacity 900ms var(--ease-out-expo),
-      transform 1100ms var(--ease-out-expo);
-    transition-delay: var(--stage-delay, 0ms);
-  }
-
-  /* A line that draws itself left-to-right once the stage is ready -- used
-     for progress tracks (the login's five-day loop) so "how far along"
-     is shown as a movement rather than just stated. Same gate and same
-     --stage-delay contract as .stage-in, so it slots into one sequence. */
-  .stage-grow-x {
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform 720ms var(--ease-out-expo);
-    transition-delay: var(--stage-delay, 0ms);
-  }
-
-  [data-stage="ready"] .stage-in,
-  [data-stage="ready"] .stage-zoom {
+  [data-stage="ready"] .stage-in {
     opacity: 1;
     transform: none;
   }
 
-  [data-stage="ready"] .stage-grow-x {
-    transform: scaleX(1);
-  }
-
   /* Without JS the stage never flips, so show everything immediately. */
   @media (scripting: none) {
-    .stage-in,
-    .stage-zoom,
-    .stage-grow-x {
+    .stage-in {
       opacity: 1;
       transform: none;
     }
@@ -375,22 +297,7 @@
     animation-delay: 420ms;
   }
 
-  /* Depth steps for .parallax-layer / .parallax-tilt. Higher number = the
-     layer reads as closer to the viewer. */
-  .parallax-1 {
-    --parallax-depth: 8px;
-  }
-  .parallax-2 {
-    --parallax-depth: 16px;
-  }
-  .parallax-3 {
-    --parallax-depth: 26px;
-  }
-  .parallax-4 {
-    --parallax-depth: 38px;
-  }
-
-  /* Stagger steps for .stage-in / .stage-zoom. Deliberately tight at the
+  /* Stagger steps for .stage-in. Deliberately tight at the
      front (the eye reads the lockup and headline as one move) and looser
      towards the supporting detail. */
   .stage-d0 {
@@ -436,30 +343,17 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     /* A stagger delay is choreography, and with the motion gone it is just
-       lag -- the login loop's dots would otherwise still pop on one by one,
-       up to ~0.9s late. Transition delays only: animation-delay is left
+       lag -- things would otherwise still pop on one by one, up to ~0.9s
+       late. Transition delays only: animation-delay is left
        alone because some of those carry meaning rather than motion (the
        LoadingScreen's "still connecting" line should still wait 4.5s). */
     transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 
-  /* Content is never gated on the entrance sequence, and nothing tracks the
-     cursor. (The pointer listener is also skipped in JS, but this keeps the
-     rules honest on their own.) */
-  .stage-in,
-  .stage-zoom,
-  .stage-grow-x {
+  /* Content is never gated on the entrance sequence. */
+  .stage-in {
     opacity: 1 !important;
     transform: none !important;
-  }
-
-  .parallax-layer,
-  .parallax-tilt {
-    transform: none !important;
-  }
-
-  .pointer-spotlight {
-    opacity: 0 !important;
   }
 }

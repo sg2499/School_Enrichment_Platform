@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { PRODUCT_NAME } from "@/lib/brand";
+import { PRODUCT_CREDIT, PRODUCT_NAME } from "@/lib/brand";
 
 // B9 fix (30 Sep 2026 security/DPDP review): previously loaded from a
 // fonts.googleapis.com/fonts.gstatic.com <link> in <head> below -- every
@@ -39,22 +39,16 @@ export const metadata: Metadata = {
     default: PRODUCT_NAME,
     template: `%s \u00b7 ${PRODUCT_NAME}`,
   },
-  description: "CBSE/ICSE academic learning platform",
+  description: `Chapter-by-chapter practice for CBSE and ICSE schools, Class 5 to 10. ${PRODUCT_CREDIT}.`,
   applicationName: PRODUCT_NAME,
-  icons: {
-    // Inline SVG favicon -- keeps the brand mark in the tab without adding a
-    // binary asset or an external request.
-    icon: [
-      {
-        url:
-          "data:image/svg+xml," +
-          encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="#26215C"/><path d="M9 21.5h5.2v3H9zM9 15.5h9.5v3H9zM9 9.5h14v3H9z" fill="#fff"/><circle cx="24" cy="22" r="3" fill="#F9AB2B"/></svg>',
-          ),
-        type: "image/svg+xml",
-      },
-    ],
-  },
+  // The tab icon, the touch icon and the social-share image are files in
+  // this folder (icon.svg, favicon.ico, apple-icon.png, opengraph-image.png)
+  // and Next links them by itself. They replaced an inline data: URI here
+  // on 4 Oct 2026, when the mark became the Forged Stair: see brand/README.md.
+  // No metadataBase on purpose: on Vercel, Next already gives the share
+  // image the production address in production and the preview's own
+  // address on a preview. Setting one here would point every preview at
+  // production.
 };
 
 export const viewport: Viewport = {

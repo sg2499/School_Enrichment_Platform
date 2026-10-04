@@ -121,9 +121,7 @@ import { cn } from "@/lib/utils";
  * 3.8:1 at the dashboard level and 4.0:1 at the working one. Give it a
  * surface, or set it in content-muted (5.1:1 and 5.4:1).
  *
- * No parallax and no grain at either level -- the sign-in page's
- * cursor-following depth is a first-impression moment, not something to
- * live with all day, and grain is for dithering large dark gradients.
+ * No grain at either level: grain is for dithering large dark gradients.
  *
  * `fixed`, not `absolute`. AuroraBackdrop places its blobs on the corners
  * of its own box and clips them there, which is right when the box's edges

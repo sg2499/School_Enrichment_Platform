@@ -120,7 +120,7 @@ export function SetPasswordScreen({ role }: { role: ChoosePasswordRole }) {
           type="button"
           onClick={handleSignOut}
           disabled={leaving || finishing}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-line-strong bg-surface/85 px-4 text-[0.8125rem] font-semibold text-content-muted shadow-xs backdrop-blur transition hover:border-brand-300 hover:text-content-brand focus-visible:shadow-focus focus-visible:outline-none disabled:pointer-events-none disabled:opacity-60"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-line-strong bg-surface/85 px-4 text-[0.8125rem] font-semibold text-content-muted shadow-xs backdrop-blur transition hover:border-brand-300 hover:text-content-brand focus-visible:shadow-focus-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-60"
         >
           <LogOut className="h-4 w-4" aria-hidden />
           Sign Out

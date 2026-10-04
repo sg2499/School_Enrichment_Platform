@@ -48,6 +48,7 @@ const UNITS = [
   "lib/pageTitle.ts",
   "lib/sessionNotice.ts",
   "lib/signInRole.ts",
+  "lib/signInCopy.ts",
   "lib/passwordRules.ts",
 ];
 

@@ -37,8 +37,8 @@ function resolveBackendOrigin() {
 // src>`), even though it doesn't stop an inline-script XSS payload if one
 // were otherwise achievable. style-src needs 'unsafe-inline' for the same
 // class of reason -- this codebase sets inline styles both via React's
-// `style={{...}}` (components/brand/Graphics.tsx) and via direct
-// `element.style.setProperty()` (login page's pointer-ambience effect) --
+// `style={{...}}` (components/brand/Graphics.tsx, the sign-in page's
+// steps) --
 // style-based injection is a much narrower vector than script-based, so
 // this is the standard, accepted trade-off.
 //
