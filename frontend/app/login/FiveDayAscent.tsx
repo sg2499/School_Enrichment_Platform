@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Building2, Layers, Pause, Play, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import styles from "./night-ascent.module.css";
+import styles from "@/components/brand/night-ascent.module.css";
 
 /**
  * The five-day chapter loop, as five steps the light climbs.

@@ -72,6 +72,10 @@ export interface ChoosePasswordProps {
    *  out, it is the product's standard button with a plain arrow. */
   submitClassName?: string;
   submitIcon?: React.ReactNode;
+  /** Extra classes for the last line ("Only you should know it. If you
+   *  forget it, ..."). The standalone page says the same thing beside the
+   *  card from `lg`, and hides this one there. */
+  keepClassName?: string;
 }
 
 /**
@@ -103,6 +107,7 @@ export function ChoosePassword({
   finishing = false,
   submitClassName,
   submitIcon,
+  keepClassName,
 }: ChoosePasswordProps) {
   const copy = COPY[role];
   const knowsCurrent = typeof currentPassword === "string" && currentPassword.length > 0;
@@ -286,7 +291,7 @@ export function ChoosePassword({
         Save Password &amp; Continue
       </Button>
 
-      <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.5] text-content-muted">
+      <p className={cn("flex items-start gap-2.5 text-[0.875rem] leading-[1.5] text-content-muted", keepClassName)}>
         <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />
         <span>{copy.keep}</span>
       </p>

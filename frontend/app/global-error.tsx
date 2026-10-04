@@ -108,7 +108,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
                 cursor: "pointer",
               }}
             >
-              Reload the Page
+              Reload The Page
             </button>
             {/* A plain link, not next/link: with the layout broken, a full
                 page load is the point. */}
@@ -130,7 +130,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
                 textDecoration: "none",
               }}
             >
-              Go to Sign In
+              Go To Sign In
             </a>
           </div>
         </main>

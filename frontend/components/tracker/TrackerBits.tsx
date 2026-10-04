@@ -148,7 +148,7 @@ export function SectionPicker({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={disabled}
-          className="h-10 w-full max-w-[22rem] appearance-none truncate rounded-xl border border-line-strong bg-surface pl-3.5 pr-9 text-[0.8125rem] font-medium text-content shadow-xs outline-none transition hover:border-ink-300 focus:border-brand-400 focus:shadow-focus disabled:opacity-60"
+          className="h-10 w-full max-w-[22rem] appearance-none truncate rounded-xl border border-line-field bg-surface pl-3.5 pr-9 text-[0.8125rem] font-medium text-content shadow-xs outline-none transition hover:border-ink-500 focus:border-brand-500 focus:shadow-focus disabled:opacity-60"
         >
           <option value="">All My Sections</option>
           {sections.map((section) => (

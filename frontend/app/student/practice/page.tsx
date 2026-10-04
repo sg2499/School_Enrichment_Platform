@@ -386,7 +386,7 @@ export default function StudentPracticePage() {
                 illustration={<PathIllustration />}
                 status={{ label: "Nothing Assigned Yet", tone: "brand" }}
                 title="Nothing to practise today"
-                description="Your first practice set will show up here once your teacher assigns it. Each set says how long it should take before you start."
+                description="Your first practice set will show up here once your teacher assigns it. Each set says how long it should take."
                 // Copy corrected 30 Sep 2026 (the one non-visual change on
                 // this page): it promised "Your streak starts counting" --
                 // no streak exists anywhere in backend/ or frontend/ -- and
@@ -396,7 +396,7 @@ export default function StudentPracticePage() {
                 // marks on submit -- all but written answers, hence "most";
                 // GET .../result returns the correct answer for each wrong
                 // one), and match the student dashboard.
-                points={["Most questions are marked the moment you submit", "You'll see the right answer for anything you got wrong"]}
+                points={["Most questions are marked the moment you submit", "You'll see the correct answer for anything you got wrong"]}
               />
             </CardBody>
           </Card>
