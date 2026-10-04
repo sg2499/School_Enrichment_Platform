@@ -11,7 +11,7 @@ from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.errors import api_error, who_can_help
+from app.core.errors import WAY_IN_FOR_ROLE, api_error, who_can_help, wrong_way_in_message
 from app.core.security import (
     create_access_token,
     create_two_factor_challenge_token,
@@ -210,7 +210,25 @@ def user_payload(db: Session, user: User) -> dict:
     return data
 
 
-def login(db: Session, identifier: str, password: str, request: Request | None = None) -> dict:
+def login(
+    db: Session,
+    identifier: str,
+    password: str,
+    request: Request | None = None,
+    sign_in_as: str | None = None,
+) -> dict:
+    """Sign someone in.
+
+    `sign_in_as` is the way in chosen on the sign-in page ("STUDENT",
+    "TEACHER" or "ADMIN"). When it is given, only that kind of account is
+    let in through it: see the check after the password below. None means
+    the caller did not say (a page loaded before this existed, mid-deploy),
+    and the account's own role decides, as it always did. What was chosen is
+    written beside every accepted password in the audit trail, so the day
+    nothing arrives without it is visible, and the field can then be
+    required.
+    """
+    chosen_way_in = {"signInAs": sign_in_as} if sign_in_as is not None else None
     cleaned_identifier = identifier.strip() if identifier else ""
     # Case-insensitive but exact -- deliberately not ilike(). ilike() treats
     # a raw, unescaped identifier as a SQL LIKE pattern, so a login attempt
@@ -286,6 +304,30 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
             f"This account is inactive. Please ask {who_can_help(user.role)} to reactivate it.",
         )
 
+    # Right details, wrong way in (4 Oct 2026). Until now the choice on the
+    # sign-in page only changed its wording: an admin's details under
+    # "Teacher" went on to the two-factor step and into the admin workspace.
+    # Each way in now takes only its own kind of account. This sits AFTER the
+    # password check on purpose: a wrong password gets the one sentence it
+    # always got, whatever was chosen, so the page cannot be used to learn
+    # what kind of account an address belongs to. And it sits BEFORE the
+    # second factor and the session: nothing is issued, not even a challenge.
+    #
+    # One thing to know when reading the audit trail: this event means the
+    # PASSWORD WAS RIGHT. Someone who holds a password but not its second
+    # factor can produce it without ever producing a success.
+    expected_way_in = WAY_IN_FOR_ROLE.get(user.role)
+    if sign_in_as is not None and sign_in_as != expected_way_in:
+        log_audit_event(
+            db,
+            "auth.login.wrong_way_in",
+            user_id=user.id,
+            request=request,
+            details={"chosen": sign_in_as, "accountUses": expected_way_in},
+        )
+        db.commit()
+        api_error(403, "WRONG_SIGN_IN_TAB", wrong_way_in_message(user.role), {"signInAs": expected_way_in})
+
     if user.totp_enabled:
         # Password was correct, but a second factor is required before a
         # real access token is issued -- logged as its own event, distinct
@@ -293,7 +335,7 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         # password-correct-but-2FA-pending step separately from a fully
         # completed sign-in (see two_factor_verify_login in routes_auth.py
         # for the event logged once the second factor actually clears).
-        log_audit_event(db, "auth.login.password_ok_awaiting_2fa", user_id=user.id, request=request)
+        log_audit_event(db, "auth.login.password_ok_awaiting_2fa", user_id=user.id, request=request, details=chosen_way_in)
         db.commit()
         return {
             "twoFactorRequired": True,
@@ -302,7 +344,7 @@ def login(db: Session, identifier: str, password: str, request: Request | None =
         }
 
     session_id = start_session(db, user, request=request)
-    log_audit_event(db, "auth.login.success", user_id=user.id, request=request)
+    log_audit_event(db, "auth.login.success", user_id=user.id, request=request, details=chosen_way_in)
     db.commit()
     token = create_access_token(user.id, user.role, session_id=session_id, password_hash=verified_hash)
     return {

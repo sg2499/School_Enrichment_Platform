@@ -50,8 +50,10 @@
  *     operators, a handful of people who know that; the tab is written for
  *     the hundreds who are not.
  *
- * Picking a way in changes wording only. Whoever the credentials belong to
- * is who gets signed in (lib/signInRole.ts).
+ * Picking a way in also decides who may sign in through it: each takes
+ * only its own kind of account, and right details on the wrong one are
+ * refused with the right one named (lib/signInRole.ts). A Super Admin uses
+ * "Admin".
  *
  * No runtime imports, so it is unit-tested directly
  * (scripts/run-unit-tests.mjs).
