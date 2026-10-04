@@ -14,6 +14,7 @@ import { afterEach, describe, test } from "node:test";
 import {
   UserFacingError,
   describeError,
+  errorDetail,
   isOutage,
   referenceLine,
   spokenWait,
@@ -516,5 +517,25 @@ describe("helpers", () => {
     assert.equal(spokenWait(200), "about 4 minutes");
     assert.equal(spokenWait(3600), "about an hour");
     assert.equal(spokenWait(7200), "about 2 hours");
+  });
+
+  test("errorDetail hands a program one named fact from our own envelope, and nothing from anyone else's", () => {
+    const refused = httpError(403, envelope("WRONG_SIGN_IN_TAB", "These are a teacher's sign-in details. Choose Teacher above to sign in.", { details: { signInAs: "TEACHER" } }), { method: "post" });
+    assert.equal(errorDetail(refused, "signInAs"), "TEACHER");
+    assert.equal(errorDetail(refused, "somethingElse"), null);
+    // The sentence shown is still the server's, and the fact is not in it.
+    assert.equal(describeError(refused).message, "These are a teacher's sign-in details. Choose Teacher above to sign in.");
+    assert.equal(describeError(refused).code, "WRONG_SIGN_IN_TAB");
+    // Not our envelope: a framework's detail, a proxy's page, a platform's own error object.
+    assert.equal(errorDetail(httpError(403, { detail: "Forbidden" }), "signInAs"), null);
+    assert.equal(errorDetail(httpError(403, "<html>403</html>"), "signInAs"), null);
+    assert.equal(errorDetail(httpError(403, { error: { code: "x", message: "y", details: { signInAs: "ADMIN" } } }), "signInAs"), null);
+    assert.equal(errorDetail(httpError(403, { details: { signInAs: "ADMIN" } }), "signInAs"), null);
+    // No response at all, or not an error from a request.
+    assert.equal(errorDetail(noResponse("ERR_NETWORK", "Network Error", "post"), "signInAs"), null);
+    assert.equal(errorDetail(new Error("boom"), "signInAs"), null);
+    assert.equal(errorDetail(null, "signInAs"), null);
+    // An inherited name is not a fact the server sent.
+    assert.equal(errorDetail(httpError(403, envelope("WRONG_SIGN_IN_TAB", "x", { details: {} })), "toString"), null);
   });
 });

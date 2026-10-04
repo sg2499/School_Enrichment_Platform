@@ -51,6 +51,33 @@ def who_can_help(role: str | None) -> str:
     return "your school"
 
 
+# The sign-in page's three ways in, and which one each kind of account uses.
+# A Super Admin signs in on the Admin tab: same steps (email, then a
+# two-factor code), and the platform has only a handful of them. The names
+# below are the words on that page's three choices
+# (frontend/lib/signInCopy.ts, `tab`); the roles are named as the interface
+# names them ("Super Admin", never a second name for the same role).
+WAY_IN_FOR_ROLE = {"STUDENT": "STUDENT", "TEACHER": "TEACHER", "ADMIN": "ADMIN", "SUPER_ADMIN": "ADMIN"}
+_WAY_IN_NAME = {"STUDENT": "Student", "TEACHER": "Teacher", "ADMIN": "Admin"}
+_WHOSE_DETAILS = {
+    "STUDENT": "a student's",
+    "TEACHER": "a teacher's",
+    "ADMIN": "a school admin's",
+    "SUPER_ADMIN": "a Super Admin's",
+}
+
+
+def wrong_way_in_message(role: str | None) -> str:
+    """What someone is told when their details are right but they chose the
+    wrong way in on the sign-in page: whose details these are, and which
+    choice takes them. Said only after the password has been checked, so it
+    tells the account's owner something and nobody else anything."""
+    way_in = WAY_IN_FOR_ROLE.get(role or "")
+    if not way_in:
+        return "These sign-in details belong to a different kind of account. Choose the right one above to sign in."
+    return f"These are {_WHOSE_DETAILS[role]} sign-in details. Choose {_WAY_IN_NAME[way_in]} above to sign in."
+
+
 def status_words(status: str | None) -> str:
     """IN_REVIEW -> "In Review". Stored status values are upper snake case;
     the interface shows them as words, and so should a sentence about them."""

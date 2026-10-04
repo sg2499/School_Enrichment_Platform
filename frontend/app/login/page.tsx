@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   Building2,
   GraduationCap,
   IdCard,
@@ -16,19 +17,22 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { api, describeApiError, errorMessage } from "@/lib/api";
+import { api, describeApiError } from "@/lib/api";
 import { defaultRouteForRole, forgetRememberedSchool, setSession } from "@/lib/auth";
-import { wasRefused } from "@/lib/errors";
+import { errorDetail, wasRefused } from "@/lib/errors";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
 import { clearSignedOutNotice, readSignedOutNotice, returnPathFor } from "@/lib/sessionNotice";
 import {
   DEFAULT_SIGN_IN_ROLE,
   SIGN_IN_ROLES,
   type SignInRole,
+  type WayInState,
+  followIdentifier,
   rememberSignInRole,
   identifierIsForAnotherWayIn,
   rememberedSignInRole,
-  signInRoleFromIdentifier,
+  wayInForPath,
+  wayInFromServer,
 } from "@/lib/signInRole";
 import { SIGN_IN_COPY, type SignInCopy } from "@/lib/signInCopy";
 import type { LoginResponse, LoginResult, UserRole } from "@/types/auth";
@@ -227,14 +231,15 @@ export default function LoginPage() {
   const codeRef = useRef<CodeInputHandle>(null);
   const backupRef = useRef<HTMLInputElement>(null);
 
-  // Which of the three ways in the page is speaking to. A hint for wording
-  // only -- the server decides who someone is (lib/signInRole.ts).
+  // Which of the three ways in is chosen. It decides the wording, and it is
+  // sent with the sign-in: each way in takes only its own kind of account
+  // (lib/signInRole.ts).
   const [signInRole, setSignInRole] = useState<SignInRole>(DEFAULT_SIGN_IN_ROLE);
-  // The role last read off the identifier itself. The page follows a typed
-  // code once, at the moment it becomes recognisable; after that the choice
-  // is the person's again, so picking a different one by hand is not undone
-  // on the next keystroke.
-  const inferredRole = useRef<SignInRole | null>(null);
+  // What the page has read off the identifier, and where the person was
+  // before it moved them. The page follows a typed code once, at the moment
+  // it becomes recognisable, and goes back if the text turns out to be an
+  // address after all (followIdentifier). A choice made by hand clears both.
+  const followed = useRef<Pick<WayInState, "returnTo" | "inferred">>({ returnTo: null, inferred: null });
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -243,6 +248,13 @@ export default function LoginPage() {
   // (to the eye and to a screen reader) and points at the message. A
   // refused sign-in is about both: the server never says which was wrong.
   const [errorField, setErrorField] = useState<"identifier" | "password" | "both" | null>(null);
+  // Set when the details were right but the way in was not: the one the
+  // server says this account uses. The message then offers to go there.
+  const [rightWayIn, setRightWayIn] = useState<SignInRole | null>(null);
+  // Said to a screen reader after that message's button has been pressed:
+  // the message is gone and the caret is in the password, and nothing else
+  // would tell someone who cannot see the card that the choice has changed.
+  const [switched, setSwitched] = useState<SignInRole | null>(null);
   // Counts refusals. The message box is keyed by it, so the same message a
   // second time is a new box: announced again, not passed over in silence.
   const [errorCount, setErrorCount] = useState(0);
@@ -326,9 +338,13 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     forgetRememberedSchool();
-    const remembered = rememberedSignInRole();
-    if (remembered) setSignInRole(remembered);
     const pending = readSignedOutNotice();
+    // Whose session ended says more than who signed in here last: a teacher
+    // sent here from the tracker needs "Teacher", even if a student used
+    // this browser in the meantime. Each way in takes only its own accounts,
+    // so opening on the wrong one would refuse them.
+    const startOn = wayInForPath(pending?.returnTo) ?? rememberedSignInRole();
+    if (startOn) setSignInRole(startOn);
     if (!pending) return;
     setNotice(pending.message);
     // A notice with no page to return to has done its whole job once it is
@@ -338,26 +354,42 @@ export default function LoginPage() {
     if (!pending.returnTo) clearSignedOutNotice();
   }, []);
 
-  /** Shows a problem with the first step, and which box it belongs to. */
-  function refuse(message: string, field: "identifier" | "password" | "both") {
+  /** Shows a problem with the first step, and which box it belongs to
+   *  (neither, when it is the choice above them that was wrong). */
+  function refuse(message: string, field: "identifier" | "password" | "both" | null, elsewhere: SignInRole | null = null) {
     setError(message);
     setErrorField(field);
+    setRightWayIn(elsewhere);
     setErrorCount((count) => count + 1);
   }
 
   function handleIdentifierChange(value: string) {
     setIdentifier(value);
     if (errorField === "identifier") setErrorField(null);
-    const inferred = signInRoleFromIdentifier(value);
-    if (inferred && inferred !== inferredRole.current) setSignInRole(inferred);
-    inferredRole.current = inferred;
+    if (switched) setSwitched(null);
+    const next = followIdentifier({ shown: signInRole, ...followed.current }, value);
+    followed.current = { returnTo: next.returnTo, inferred: next.inferred };
+    if (next.shown !== signInRole) {
+      setSignInRole(next.shown);
+      // "Choose Teacher above" is about a choice that has just moved by
+      // itself. (Otherwise the message stays while the boxes are edited,
+      // as every message on this card does: taking it away on the first
+      // keystroke moved the form under the caret.)
+      if (rightWayIn) {
+        setError(null);
+        setRightWayIn(null);
+      }
+    }
   }
 
   /** Someone has picked a way in by hand. */
   function chooseSignInRole(role: SignInRole) {
     setSignInRole(role);
+    followed.current = { returnTo: null, inferred: followed.current.inferred };
     if (error) setError(null);
     setErrorField(null);
+    setRightWayIn(null);
+    setSwitched(null);
     // A student code under "Teacher" can never be right, and it is usually
     // not theirs: the browser filled in whoever signed in here last. The
     // box is emptied, and the password that came with it. An email stays --
@@ -365,8 +397,17 @@ export default function LoginPage() {
     if (identifierIsForAnotherWayIn(identifier, role)) {
       setIdentifier("");
       setPassword("");
-      inferredRole.current = null;
+      followed.current = { returnTo: null, inferred: null };
     }
+  }
+
+  /** The button in "right details, wrong way in": the same as choosing
+   *  that way in by hand, so what was typed stays (it was right), and then
+   *  the caret is put where Enter signs in. */
+  function goToRightWayIn(role: SignInRole) {
+    chooseSignInRole(role);
+    setSwitched(role);
+    passwordRef.current?.focus();
   }
 
   function completeSignIn(user: LoginResponse["user"]) {
@@ -407,6 +448,8 @@ export default function LoginPage() {
     if (submitting || redirecting) return;
     setError(null);
     setErrorField(null);
+    setRightWayIn(null);
+    setSwitched(null);
     if (!identifier.trim()) {
       refuse(way.missingIdentifier, "identifier");
       identifierRef.current?.focus();
@@ -419,9 +462,12 @@ export default function LoginPage() {
     }
     setSubmitting(true);
     try {
-      const { data } = await api.post<LoginResult>("/auth/login", { identifier, password });
+      // The way in goes with the details: the server lets only that kind of
+      // account in through it.
+      const { data } = await api.post<LoginResult>("/auth/login", { identifier, password, signInAs: signInRole });
       if (isTwoFactorChallenge(data)) {
-        // Only admins have a second factor, whatever was selected above.
+        // Only admins have a second factor. (Already "Admin" unless an
+        // older server, which does not check the way in, answered.)
         setSignInRole("ADMIN");
         setStepSwapped(true);
         setChallengeToken(data.challengeToken);
@@ -431,7 +477,13 @@ export default function LoginPage() {
       }
       afterSignIn(data.user);
     } catch (err) {
-      refuse(errorMessage(err, "sign you in"), "both");
+      const problem = describeApiError(err, "sign you in");
+      // Right details, wrong way in: the server names the one this account
+      // uses. Neither box is wrong, so neither is marked; the message
+      // offers the way there instead.
+      const elsewhere = problem.code === "WRONG_SIGN_IN_TAB" ? wayInFromServer(errorDetail(err, "signInAs")) : null;
+      if (elsewhere && elsewhere !== signInRole) refuse(problem.message, null, elsewhere);
+      else refuse(problem.message, "both");
       shake(cardRef.current);
       // Pressing the button itself (rather than Enter in a box) leaves
       // focus on a button that is switched off while the request runs, and
@@ -548,7 +600,7 @@ export default function LoginPage() {
     // The next person at this computer starts from an empty form: the code
     // in the first box was the one who just left.
     setIdentifier("");
-    inferredRole.current = null;
+    followed.current = { returnTo: null, inferred: null };
     setStepSwapped(true);
     setChoosing(null);
     setPassword("");
@@ -878,6 +930,11 @@ export default function LoginPage() {
                     placeholder={way.placeholder}
                     required
                     value={identifier}
+                    // Not while a sign-in is on its way: the answer is about
+                    // what was sent, and typing a code here can move the
+                    // choice above. Read-only rather than disabled, so the
+                    // caret and the look of the box stay as they were.
+                    readOnly={submitting || redirecting}
                     onChange={(event) => handleIdentifierChange(event.target.value)}
                     aria-invalid={error && (errorField === "identifier" || errorField === "both") ? true : undefined}
                     aria-describedby={error && (errorField === "identifier" || errorField === "both") ? "signInError" : undefined}
@@ -894,9 +951,11 @@ export default function LoginPage() {
                     required
                     revealable
                     value={password}
+                    readOnly={submitting || redirecting}
                     onChange={(event) => {
                       setPassword(event.target.value);
                       if (errorField === "password") setErrorField(null);
+                      if (switched) setSwitched(null);
                     }}
                     aria-invalid={error && (errorField === "password" || errorField === "both") ? true : undefined}
                     aria-describedby={error && (errorField === "password" || errorField === "both") ? "signInError" : undefined}
@@ -911,9 +970,30 @@ export default function LoginPage() {
                       className="flex items-start gap-3 rounded-2xl border border-coral-200 bg-coral-50 p-4 animate-scale-in lg:py-3"
                     >
                       <AlertCircle className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-coral-600" aria-hidden />
-                      <p className="text-[0.875rem] font-medium leading-[1.55] text-coral-800">{error}</p>
+                      <div className="min-w-0">
+                        <p className="text-[0.875rem] font-medium leading-[1.55] text-coral-800 text-pretty">{error}</p>
+                        {rightWayIn ? (
+                          // Right details, wrong way in. One press does what
+                          // the sentence says; what was typed stays, because
+                          // it was right. coral-800 on coral-50: 8.7:1.
+                          <button
+                            type="button"
+                            onClick={() => goToRightWayIn(rightWayIn)}
+                            className="-mx-1.5 mt-1 inline-flex min-h-[1.75rem] items-center gap-1.5 rounded-lg px-1.5 text-[0.875rem] font-bold text-coral-800 underline decoration-coral-300 decoration-2 underline-offset-[3px] transition hover:decoration-coral-600 focus-visible:shadow-focus-ring focus-visible:outline-none"
+                          >
+                            Switch To {SIGN_IN_COPY[rightWayIn].tab}
+                            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   ) : null}
+
+                  {/* Always here, so a screen reader is already listening when
+                      it changes. */}
+                  <p role="status" className="sr-only">
+                    {switched ? `${SIGN_IN_COPY[switched].tab} is now chosen. What you typed is still there. Press Sign In.` : ""}
+                  </p>
 
                   <Button
                     type="submit"
@@ -934,7 +1014,15 @@ export default function LoginPage() {
                 // their session safe, and who gives them a new password.
                 <PerWayIn
                   current={signInRole}
-                  className="mt-6 border-t border-line pt-5 lg:mt-[clamp(0.75rem,calc(var(--u)*2),1.375rem)] lg:pt-[clamp(0.75rem,calc(var(--u)*2),1.375rem)]"
+                  className={cn(
+                    "mt-6 border-t border-line pt-5 lg:mt-[clamp(0.75rem,calc(var(--u)*2),1.375rem)] lg:pt-[clamp(0.75rem,calc(var(--u)*2),1.375rem)]",
+                    // "Right details, wrong way in" is a line taller than any
+                    // other message (its button), and neither note helps
+                    // someone whose password was just accepted. On a short
+                    // window both notes give it their room; on a middling
+                    // one, the first does (below).
+                    error && rightWayIn && "lg:[@media(max-height:760px)]:hidden",
+                  )}
                 >
                   {(copy) => (
                     <div className="space-y-3 lg:space-y-[clamp(0.375rem,calc(var(--u)*1),0.6875rem)]">
@@ -946,7 +1034,11 @@ export default function LoginPage() {
                       <p
                         className={cn(
                           "flex items-start gap-2.5 text-[0.875rem] leading-[1.5] text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)] lg:leading-[1.45]",
-                          error && "lg:[@media(max-height:760px)]:hidden",
+                          // "Right details, wrong way in" is a line taller
+                          // still, so it needs this line's room on windows
+                          // up to 840px tall (measured: without it the page
+                          // scrolled by up to 19px between 761 and 789).
+                          error && (rightWayIn ? "lg:[@media(max-height:840px)]:hidden" : "lg:[@media(max-height:760px)]:hidden"),
                         )}
                       >
                         <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />

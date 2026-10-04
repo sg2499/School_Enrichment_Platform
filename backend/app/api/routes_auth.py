@@ -18,6 +18,7 @@ import re
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from fastapi.responses import Response
@@ -78,6 +79,11 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 class LoginRequest(BaseModel):
     identifier: str
     password: str
+    # Which of the sign-in page's three ways in was chosen. Optional so a
+    # page loaded before this field existed (a tab left open across a
+    # deploy) can still sign in; anything other than the three is refused
+    # as a malformed request.
+    signInAs: Literal["STUDENT", "TEACHER", "ADMIN"] | None = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -111,7 +117,7 @@ class TwoFactorVerifyLoginRequest(BaseModel):
 # traffic now that it isn't lumped in with every other school's traffic too.
 @limiter.limit("60/minute")
 def login_route(request: Request, response: Response, payload: LoginRequest, db: Session = Depends(get_db)):
-    result = login(db, payload.identifier, payload.password, request=request)
+    result = login(db, payload.identifier, payload.password, request=request, sign_in_as=payload.signInAs)
     if result.get("twoFactorRequired"):
         return result
 
