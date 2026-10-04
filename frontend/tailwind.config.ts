@@ -210,13 +210,27 @@ const config: Config = {
         panel: "0 1px 2px rgba(28,27,41,0.05), 0 30px 60px -30px rgba(28,27,41,0.45)",
         brand: "0 12px 30px -14px rgba(60,52,137,0.75)",
         accent: "0 12px 28px -14px rgba(208,107,6,0.7)",
+        // The soft halo: for a row that lights up when something inside it
+        // has focus (an answer option, the upload well, a search box), where
+        // it shows on a mouse click too and must not shout. It is NOT enough
+        // for keyboard focus on a control -- see focus-ring below.
         focus: "0 0 0 4px rgba(99,85,188,0.24)",
-        "focus-accent": "0 0 0 4px rgba(249,171,43,0.32)",
+        // Keyboard focus on a control, on paper or on white (4 Oct 2026): a
+        // white gap, then a solid brand-500 ring -- 5.9:1 on white, 5.2:1
+        // on the sunken trough. Buttons, links and the segmented control
+        // used the halo above for this (and a saffron one like it), and
+        // those measure 1.2 to
+        // 1.5:1 against what is behind them, far under the 3:1 a focus
+        // indicator needs (WCAG 1.4.11): on the sign-in page nobody using
+        // a keyboard could see which of the three choices, or which
+        // button, they were on. Only ever drawn on :focus-visible, so a
+        // mouse click never shows it. The white gap is what the ring is
+        // read against, so it works round a saffron button as well as an
+        // indigo one.
+        "focus-ring": "0 0 0 2px #FFFFFF, 0 0 0 4px #6355BC",
         // Focus on indigo chrome (2 Oct 2026, with PageHeader's masthead).
-        // The two rings above are translucent tints made to sit on paper,
-        // and over brand-gradient they all but vanish; PageHeader.tsx has
-        // the measured figures, both far under the 3:1 WCAG 1.4.11 asks of
-        // a focus indicator. This one is solid -- a brand-950 gap, then a
+        // The rings above are made to sit on paper, and their indigo
+        // disappears into brand-gradient. This one is a brand-950 gap, then a
         // saffron-200 ring -- so it does not depend on what is behind it,
         // and the dark gap keeps the ring distinct from a saffron button it
         // surrounds. The masthead applies it to every link and button

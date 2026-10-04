@@ -67,6 +67,11 @@ export interface ChoosePasswordProps {
   /** True once the caller has taken over and is navigating away, so the
    *  button keeps saying something is happening until the page changes. */
   finishing?: boolean;
+  /** How the caller dresses the one button, so that on the sign-in card the
+   *  third step's button is the same button as the first two steps'. Left
+   *  out, it is the product's standard button with a plain arrow. */
+  submitClassName?: string;
+  submitIcon?: React.ReactNode;
 }
 
 /**
@@ -96,6 +101,8 @@ export function ChoosePassword({
   onSessionEnded,
   className,
   finishing = false,
+  submitClassName,
+  submitIcon,
 }: ChoosePasswordProps) {
   const copy = COPY[role];
   const knowsCurrent = typeof currentPassword === "string" && currentPassword.length > 0;
@@ -192,7 +199,10 @@ export function ChoosePassword({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={cn("space-y-5", className)} noValidate>
+    // `method`: script handles the submit, but a form with no method is a
+    // GET, and a GET before the script has loaded would put both passwords
+    // in the address bar.
+    <form method="post" onSubmit={handleSubmit} className={cn("space-y-5", className)} noValidate>
       {/* For password managers only (see `username` above). Off-screen
           rather than type="hidden": managers ignore hidden inputs. */}
       {username ? (
@@ -270,7 +280,8 @@ export function ChoosePassword({
         fullWidth
         loading={saving || finishing}
         loadingLabel={finishing ? copy.opening : "Saving your password"}
-        trailingIcon={<ArrowRight className="h-4 w-4" />}
+        trailingIcon={submitIcon ?? <ArrowRight className="h-4 w-4" />}
+        className={submitClassName}
       >
         Save Password &amp; Continue
       </Button>

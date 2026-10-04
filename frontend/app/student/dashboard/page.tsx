@@ -1002,7 +1002,7 @@ export default function StudentDashboardPage() {
               <dl className="-mt-1">
                 <DetailRow label="Name" value={user?.fullName ?? "—"} />
                 <DetailRow label="Class" value={classLabel ?? "Not assigned yet"} />
-                <DetailRow label="Student ID" value={student?.studentCode ?? "—"} />
+                <DetailRow label="Student Code" value={student?.studentCode ?? "—"} />
               </dl>
               {/* content-muted on surface-brand: 7.8:1. Pinned to the card's
                   foot (mt-auto) so it lines up with Up Next's footer link. */}

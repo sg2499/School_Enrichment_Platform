@@ -81,7 +81,12 @@ export function SegmentedControl<K extends string>({
           it by whole columns. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute bottom-1 left-1 top-1 rounded-xl bg-surface shadow-card ring-1 ring-inset ring-line-brand transition-transform duration-300 ease-spring motion-reduce:transition-none"
+        // The outline is brand-400: 3.2:1 against the trough and 3.7:1
+        // against the thumb's own white. It was line-brand (1.4:1), and
+        // white on the trough is 1.1:1, so the chosen segment could only be
+        // told from the others by a soft shadow (WCAG 1.4.11 asks 3:1 of
+        // whatever shows a control's state).
+        className="pointer-events-none absolute bottom-1 left-1 top-1 rounded-xl bg-surface shadow-card ring-[1.5px] ring-inset ring-brand-400 transition-transform duration-300 ease-spring motion-reduce:transition-none"
         style={{
           width: `calc((100% - 0.5rem) / ${segments.length})`,
           transform: `translateX(${selectedIndex * 100}%)`,
@@ -105,13 +110,19 @@ export function SegmentedControl<K extends string>({
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
               "relative z-10 flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-[0.875rem] font-semibold outline-none",
-              "transition-colors duration-200 focus-visible:shadow-focus disabled:cursor-not-allowed",
+              "transition-colors duration-200 focus-visible:shadow-focus-ring disabled:cursor-not-allowed",
               // brand-800 on white 12:1; content-muted on surface-sunken 7.6:1.
               selected ? "text-brand-800" : "text-content-muted hover:text-content",
             )}
           >
             {segment.icon ? (
-              <span aria-hidden className={cn("inline-flex shrink-0 transition-colors duration-200", selected ? "text-brand-600" : "text-content-faint")}>
+              // Left out below 380px: three segments across a small phone
+              // leave room for the mark or the whole word, not both, and
+              // "Stud..." beside a cap is worse than "Student" alone.
+              <span
+                aria-hidden
+                className={cn("inline-flex shrink-0 transition-colors duration-200 max-[379px]:hidden", selected ? "text-brand-600" : "text-content-faint")}
+              >
                 {segment.icon}
               </span>
             ) : null}

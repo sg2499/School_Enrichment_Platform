@@ -116,7 +116,7 @@ function formatDate(value: string | null): string | null {
  * hover/press wash and the primary sheen layer (Button doesn't export them
  * -- keep in step). Only BASE's disabled: and aria-busy classes are left
  * out: a link has no disabled or loading state. Focus is Button's own
- * shadow-focus ring, which reads on these white cards -- the dashboard's
+ * shadow-focus-ring, which reads on these white cards -- the dashboard's
  * white outline exists only for its indigo hero.
  */
 function LinkAction({
@@ -139,8 +139,8 @@ function LinkAction({
         "group relative inline-flex select-none items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full font-semibold",
         "transition duration-200 ease-spring focus-visible:outline-none focus-visible:ring-0 active:duration-75",
         variant === "primary"
-          ? "bg-brand-gradient text-content-inverse shadow-brand hover:-translate-y-0.5 hover:shadow-card-hover active:translate-y-0 active:scale-[0.985] active:shadow-brand focus-visible:shadow-focus"
-          : "border border-line-strong bg-surface text-content shadow-xs hover:border-brand-300 hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus",
+          ? "bg-brand-gradient text-content-inverse shadow-brand hover:-translate-y-0.5 hover:shadow-card-hover active:translate-y-0 active:scale-[0.985] active:shadow-brand focus-visible:shadow-focus-ring"
+          : "border border-line-strong bg-surface text-content shadow-xs hover:border-brand-300 hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus-ring",
         "h-11 px-5 text-sm",
         className,
       )}

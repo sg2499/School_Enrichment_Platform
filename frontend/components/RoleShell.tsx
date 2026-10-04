@@ -34,7 +34,7 @@ import { wasRefused } from "@/lib/errors";
 import { clearSession } from "@/lib/auth";
 import { PRODUCT_CREDIT, PRODUCT_NAME } from "@/lib/brand";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
-import { ROLE_LABEL } from "@/lib/pageTitle";
+import { ROLE_LABEL, roleLabel } from "@/lib/pageTitle";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn } from "@/lib/utils";
 import { Ambience, type AmbienceLevel } from "@/components/brand/Ambience";
@@ -44,10 +44,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { UserMenu, SidebarUserMenu } from "@/components/UserMenu";
 
-// ROLE_LABEL (Title Case throughout) is the single source every surface in
+// roleLabel() (Title Case throughout) is the single source every surface in
 // RoleShell reads from -- rail title, user card, mobile top bar, footer --
-// and, since 3 Oct 2026, the browser tab too, which is why it now lives in
-// lib/pageTitle.ts. SUPER_ADMIN used to collapse to "Admin" here, which was
+// and, since 3 Oct 2026, the browser tab too, which is why it lives in
+// lib/pageTitle.ts. Since 4 Oct 2026 it names a school admin after their
+// school ("MathPath Admin"). SUPER_ADMIN used to collapse to "Admin" here, which was
 // the real cause of a platform admin's tab looking visually identical to a
 // school admin's (18 Aug 2026, Shailesh: two tabs signed into different
 // admin variants at once still "ended up as either admin or super admin,
@@ -319,9 +320,13 @@ function NavRow({
       </span>
       {!collapsed ? (
         <>
-          <span className="truncate">{item.label}</span>
+          {/* May run to a second line. With the pill beside it there is
+              room for about fourteen characters, and "Classes & Sections"
+              was being cut to "Classes & Secti..." -- a name nobody can
+              read is worse than a row one line taller. */}
+          <span className="min-w-0 leading-[1.25] text-pretty">{item.label}</span>
           {/* inverse-muted on the white/10 pill: 4.6:1 (was white/60, ~3.4:1). */}
-          <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-content-inverse-muted">
+          <span className="ml-auto shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-content-inverse-muted">
             Soon
           </span>
         </>
@@ -364,14 +369,14 @@ function SidebarContent({
   const HelpIcon = help.icon;
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-brand-gradient">
-      {/* Deliberately static -- the login panel's drifting aurora is a
+      {/* Deliberately static -- the sign-in page's slow-moving night is a
           first-impression moment, but this rail sits in peripheral vision
           for a whole school day, where ambient motion is a distraction. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-brand-500/40 blur-3xl" />
         <div className="absolute bottom-10 right-[-4rem] h-56 w-56 rounded-full bg-saffron-500/20 blur-3xl" />
         <div className="absolute inset-0 bg-grid-inverse opacity-60" />
-        {/* Same film grain as the login brand panel, so the two dark
+        {/* Film grain, the same as the mastheads carry, so the dark
             surfaces a user sees read as one material. */}
         <div className="bg-grain absolute inset-0" />
       </div>
@@ -626,8 +631,11 @@ export function RoleShell({
   }, [menuOpen]);
 
   const currentItem = currentNavItem(role, pathname);
-  usePageTitle(title ?? currentItem?.label, role);
-  const place = signedInPlace(role, user);
+  const who = roleLabel(role, user?.admin?.schoolName);
+  usePageTitle(title ?? currentItem?.label, role, user?.admin?.schoolName);
+  // The footer says who and where. A school admin's label already names
+  // the school, so saying it again after the dot would be an echo.
+  const place = role === "ADMIN" && who !== ROLE_LABEL.ADMIN ? null : signedInPlace(role, user);
   const focusRoute = isFocusRoute(pathname);
   // On a focus route the rail starts collapsed; the toggle can still open
   // it for this visit, but that choice is not saved -- it resets on the
@@ -729,8 +737,11 @@ export function RoleShell({
           <LogoMark className="h-9 w-9" />
           <span className="flex flex-col leading-tight">
             <span className="font-display text-base font-semibold leading-none tracking-[-0.015em] text-content">{PRODUCT_NAME}</span>
-            <span className="text-[0.625rem] font-bold uppercase tracking-eyebrow text-content-brand">
-              {ROLE_LABEL[role]}
+            {/* The longest label there can be (28 characters) fits whole
+                from 360px up; on a 320px phone the letter spacing closes up
+                so it still does. */}
+            <span className="max-w-[60vw] truncate text-[0.625rem] font-bold uppercase tracking-eyebrow text-content-brand max-[359px]:tracking-[0.03em]">
+              {who}
             </span>
           </span>
         </span>
@@ -872,8 +883,7 @@ export function RoleShell({
           </span>
           <span className="flex shrink-0 items-center gap-3">
             {/* success (jade), not brand: jade is this system's "all good"
-                colour, and it matches the live dot on the sign-in page that
-                promised this session in the first place. */}
+                colour. */}
             <Badge tone="success" dot pulse>
               Session Active
             </Badge>
@@ -934,7 +944,7 @@ export function RoleShell({
                 a student and two admins open side by side, "Signed In as
                 Admin" did not say which school. */}
             <span>
-              Signed in as {ROLE_LABEL[role]}
+              Signed in as {who}
               {place ? <> &middot; {place}</> : null}
             </span>
           </div>

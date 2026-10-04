@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { roleForCurrentPage } from "@/lib/auth";
+import { getStoredUserForRole, roleForCurrentPage } from "@/lib/auth";
 import type { UserRole } from "@/types/auth";
 
 function subscribe(): () => void {
@@ -24,4 +24,31 @@ function subscribe(): () => void {
  */
 export function useRoleForPage(): UserRole | null {
   return useSyncExternalStore(subscribe, roleForCurrentPage, () => null);
+}
+
+function adminSchoolForCurrentPage(): string | null {
+  // Two things this must never do, because of where it is used. It must not
+  // throw: the error screen calls it, and a browser with storage blocked
+  // throws on every read. And it must return the same value until
+  // something changes: useSyncExternalStore re-renders for ever on a
+  // snapshot that is a new object each time, which is what a stored
+  // profile with something other than text in this field would give.
+  try {
+    const role = roleForCurrentPage();
+    if (role !== "ADMIN") return null;
+    const name = getStoredUserForRole(role)?.admin?.schoolName;
+    return typeof name === "string" && name ? name : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The school of the school admin whose workspace this tab is in, so those
+ * same two screens can title the tab the way every other admin page does
+ * ("Page Not Found · MathPath Admin · Krama": lib/pageTitle.ts). null for
+ * every other role, and before hydration.
+ */
+export function useAdminSchoolForPage(): string | null {
+  return useSyncExternalStore(subscribe, adminSchoolForCurrentPage, () => null);
 }

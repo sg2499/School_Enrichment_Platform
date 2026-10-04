@@ -23,8 +23,10 @@ import type { UserRole } from "@/types/auth";
 export function usePageTitle(
   page: string | Array<string | null | undefined> | null | undefined,
   role?: UserRole | null,
+  /** A school admin's school, so the tab names it: see roleLabel(). */
+  schoolName?: string | null,
 ): void {
-  const title = pageTitle(page, role);
+  const title = pageTitle(page, role, schoolName);
   useEffect(() => {
     const apply = () => {
       if (document.title !== title) document.title = title;

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { clearSession, updateStoredUser } from "@/lib/auth";
-import { ROLE_LABEL } from "@/lib/pageTitle";
+import { roleLabel } from "@/lib/pageTitle";
 import { rememberSignedOut } from "@/lib/sessionNotice";
 import { compressImageForUpload } from "@/lib/imageCompression";
 import type { CurrentUser, UserRole } from "@/types/auth";
@@ -229,7 +229,7 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
 
   if (view === "password") {
     return (
-      <form onSubmit={handleChangePassword} className="space-y-4">
+      <form method="post" onSubmit={handleChangePassword} className="space-y-4">
         <button
           type="button"
           onClick={() => setView("menu")}
@@ -297,7 +297,7 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-content">{user?.fullName ?? "Signed in"}</p>
           <p className="text-[0.6875rem] font-semibold uppercase tracking-eyebrow text-content-brand">
-            {ROLE_LABEL[role]}
+            {roleLabel(role, user?.admin?.schoolName)}
           </p>
         </div>
       </div>
@@ -494,6 +494,8 @@ export function SidebarUserMenu({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [open]);
 
+  const who = roleLabel(role, user?.admin?.schoolName);
+
   return (
     <div ref={containerRef} className="relative">
       <button
@@ -501,7 +503,7 @@ export function SidebarUserMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        title={collapsed ? `${user?.fullName ?? "Signed in"} · ${ROLE_LABEL[role]}` : undefined}
+        title={collapsed ? `${user?.fullName ?? "Signed in"} · ${who}` : undefined}
         className={cn(
           "glass-panel flex w-full items-center gap-3 rounded-2xl transition hover:bg-white/[0.1]",
           collapsed ? "justify-center px-2 py-2" : "px-3.5 py-3",
@@ -513,8 +515,13 @@ export function SidebarUserMenu({
             <span className="block truncate text-sm font-semibold text-content-inverse">
               {user?.fullName ?? "Signed in"}
             </span>
-            <span className="block truncate text-[0.6875rem] font-semibold uppercase tracking-eyebrow text-saffron-300">
-              {ROLE_LABEL[role]}
+            {/* Up to two lines. A school admin's label carries the school's
+                name, and the rail fits about eighteen of these letter-spaced
+                capitals to a line: "RIVERSIDE ACADEMY ADMIN" was being cut
+                to "RIVERSIDE ACADEMY A...". The longest label there can be
+                (lib/pageTitle.ts) fits in two. */}
+            <span className="mt-0.5 block text-[0.6875rem] font-semibold uppercase leading-[1.3] tracking-eyebrow text-saffron-300 text-pretty break-words line-clamp-2">
+              {who}
             </span>
           </span>
         ) : null}

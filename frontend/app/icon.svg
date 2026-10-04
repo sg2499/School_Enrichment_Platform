@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The Krama mark, small cut, as the browser-tab icon. The same drawing as
+       LogoMark in components/brand/Logo.tsx: change one, change the other. -->
+  <defs>
+    <radialGradient id="tile" cx="0.22" cy="0.08" r="1.3">
+      <stop offset="0" stop-color="#3C3489"/>
+      <stop offset="0.48" stop-color="#1E1A52"/>
+      <stop offset="1" stop-color="#0E0B24"/>
+    </radialGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DAD6F6"/></linearGradient>
+    <linearGradient id="left" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A99FE8"/><stop offset="1" stop-color="#5D50B6"/></linearGradient>
+    <linearGradient id="right" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5145AC"/><stop offset="1" stop-color="#221C5E"/></linearGradient>
+    <linearGradient id="gold-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF6D8"/><stop offset="1" stop-color="#FBC559"/></linearGradient>
+    <linearGradient id="gold-left" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F9AB2B"/><stop offset="1" stop-color="#D06B06"/></linearGradient>
+    <linearGradient id="gold-right" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C2600A"/><stop offset="1" stop-color="#6E3306"/></linearGradient>
+    <g id="step">
+      <path d="M7.5 0L0 5.3L0 16.73L7.5 11.43Z" fill="url(#right)"/>
+      <path d="M-7.5 0L0 5.3L0 16.73L-7.5 11.43Z" fill="url(#left)"/>
+      <path d="M0 -5.3L7.5 0L0 5.3L-7.5 0Z" fill="url(#top)" stroke="#B9B1EC" stroke-width="0.16" stroke-linejoin="round"/>
+      <path d="M-7.5 0L0 5.3L7.5 0" fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="0.26" stroke-linejoin="round" stroke-linecap="round"/>
+    </g>
+    <g id="gold-step">
+      <path d="M7.5 0L0 5.3L0 16.73L7.5 11.43Z" fill="url(#gold-right)"/>
+      <path d="M-7.5 0L0 5.3L0 16.73L-7.5 11.43Z" fill="url(#gold-left)"/>
+      <path d="M0 -5.3L7.5 0L0 5.3L-7.5 0Z" fill="url(#gold-top)" stroke="#FFF6D8" stroke-width="0.16" stroke-linejoin="round"/>
+      <path d="M-7.5 0L0 5.3L7.5 0" fill="none" stroke="#FFFDF2" stroke-opacity="0.9" stroke-width="0.26" stroke-linejoin="round" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" rx="17.5" fill="url(#tile)"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="17" fill="none" stroke="#FFFFFF" stroke-opacity="0.16"/>
+  <use href="#step" x="24.5" y="18.73"/>
+  <use href="#step" x="32" y="21.38"/>
+  <use href="#step" x="39.5" y="24.03"/>
+  <use href="#gold-step" x="17" y="26.68"/>
+  <use href="#step" x="47" y="26.68"/>
+  <use href="#step" x="39.5" y="29.34"/>
+  <use href="#step" x="32" y="31.99"/>
+  <use href="#step" x="24.5" y="34.64"/>
+</svg>

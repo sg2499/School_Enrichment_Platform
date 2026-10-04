@@ -12,6 +12,7 @@ import { describe, test } from "node:test";
 import {
   DEFAULT_SIGN_IN_ROLE,
   SIGN_IN_ROLES,
+  identifierIsForAnotherWayIn,
   rememberSignInRole,
   rememberedSignInRole,
   signInRoleForAccount,
@@ -118,5 +119,46 @@ describe("the three ways in", () => {
   test("student first: the default, and the first tab", () => {
     assert.deepEqual(SIGN_IN_ROLES, ["STUDENT", "TEACHER", "ADMIN"]);
     assert.equal(DEFAULT_SIGN_IN_ROLE, "STUDENT");
+  });
+});
+
+describe("identifierIsForAnotherWayIn", () => {
+  test("a student code under Teacher or Admin is someone else's", () => {
+    assert.equal(identifierIsForAnotherWayIn("STU-MATH-0003", "TEACHER"), true);
+    assert.equal(identifierIsForAnotherWayIn("stu-math-0003", "ADMIN"), true);
+  });
+
+  test("a teacher code under Student or Admin is someone else's", () => {
+    assert.equal(identifierIsForAnotherWayIn("TCH-MATH-0001", "STUDENT"), true);
+    assert.equal(identifierIsForAnotherWayIn("TCH-MATH-0001", "ADMIN"), true);
+  });
+
+  test("a code under its own choice stays", () => {
+    assert.equal(identifierIsForAnotherWayIn("STU-MATH-0003", "STUDENT"), false);
+    assert.equal(identifierIsForAnotherWayIn("TCH-MATH-0001", "TEACHER"), false);
+  });
+
+  test("an address that happens to start like a code is still an address", () => {
+    for (const email of ["stu-affairs@school.in", "STU-OFFICE@school.in", "tch-rao@school.edu", "  tch-1@x.in"]) {
+      assert.equal(signInRoleFromIdentifier(email), null, email);
+      for (const role of SIGN_IN_ROLES) {
+        assert.equal(identifierIsForAnotherWayIn(email, role), false, `${email} under ${role}`);
+      }
+    }
+  });
+
+  test("an email could be anyone's, so it is never cleared", () => {
+    for (const role of SIGN_IN_ROLES) {
+      assert.equal(identifierIsForAnotherWayIn("someone@school.edu", role), false);
+    }
+  });
+
+  test("nothing typed, or something half-typed, is left alone", () => {
+    for (const role of SIGN_IN_ROLES) {
+      assert.equal(identifierIsForAnotherWayIn("", role), false);
+      assert.equal(identifierIsForAnotherWayIn(null, role), false);
+      assert.equal(identifierIsForAnotherWayIn(undefined, role), false);
+      assert.equal(identifierIsForAnotherWayIn("ST", role), false);
+    }
   });
 });

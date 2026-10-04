@@ -30,7 +30,7 @@ export type InlineLinkSize = "sm" | "md";
  */
 const BASE =
   "group inline-flex max-w-full select-none items-center gap-1.5 rounded-full border font-semibold " +
-  "transition duration-200 ease-spring focus-visible:outline-none focus-visible:shadow-focus";
+  "transition duration-200 ease-spring focus-visible:outline-none focus-visible:shadow-focus-ring";
 
 // The chrome is a translucent ink tint rather than a named surface, on
 // purpose. This link has to sit on three different grounds -- the paper

@@ -1,0 +1,845 @@
+/*
+ * The sign-in page: "Night Ascent" (4 Oct 2026).
+ *
+ * One dark page rather than an indigo half beside a paper half. On the left,
+ * the product says what it is with the thing it is named for: five steps,
+ * lit one after another. On the right, one white card holds everything the
+ * person has to read or type, and nothing sits loose around it.
+ *
+ * Why a stylesheet of its own, when the rest of the product is utility
+ * classes. Everything on the left is sized from ONE length, --u, which is
+ * 1/90 of the window's height or 1/144 of its width, whichever is smaller.
+ * A sign-in page that scrolls reads as a mistake, so the picture has to fit
+ * whatever window it is given, and a staircase only stays a staircase if
+ * every tread, gap and label shrinks together. The page this replaced did
+ * that with a separate clamp() on every property; a single unit is the same
+ * idea with one number to reason about, and it is far easier to read as
+ * rules than as forty arbitrary-value class names per element.
+ *
+ * The card is ordinary utility classes (page.tsx): it holds the product's
+ * own form controls, and those are sized in rem like everywhere else.
+ *
+ * Colours come from the design tokens (tailwind.config.ts) through theme().
+ * The whites are written as rgba because a hairline at 14% is not a token.
+ *
+ * Text contrast is measured, not estimated: each piece of text is hidden,
+ * the pixels behind it photographed, and the worst pixel is the figure. The
+ * lowest anything here reaches is the "Day n" label on a lit step (4.9:1 on
+ * the narrowest laptop); the paragraph is 8.6:1 and the small caps 6:1 or
+ * better.
+ */
+
+.page {
+  --u: clamp(6.6px, min(1.111vh, 0.6944vw), 12px);
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  color: theme(colors.content.inverse);
+  background: linear-gradient(158deg, #221c58 0%, theme(colors.brand.950) 46%, #0e0b24 100%);
+}
+
+/* On a laptop the page is exactly one window tall, and at every ordinary
+   size everything fits in it. When it cannot -- a very short window, a
+   browser zoomed far in, someone's own wider text spacing -- the one row
+   grows to the taller of its two columns and the page scrolls as one piece,
+   rather than cutting anything off. (`hidden` is for the sideways direction
+   only: the glows and rings run past the edges on purpose.) When it does
+   scroll, a thin pale thumb and no track: the default light-grey bar would
+   be the brightest thing on the page. */
+@media (min-width: theme(screens.lg)) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(0, 1.42fr) minmax(0, 1fr);
+    /* As tall as the taller column needs, and never less than the window
+       (the `1fr` takes whatever height is left over). */
+    grid-template-rows: minmax(max-content, 1fr);
+    height: 100vh;
+    /* Where it is understood: the window as it is now, without the part a
+       tablet's browser bar covers. */
+    height: 100dvh;
+    overflow: hidden auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * The night behind everything. Decorative, never interactive.
+ * ------------------------------------------------------------------ */
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* On a laptop the page is the window, so the night is pinned to it: if the
+   page ever has to scroll, the sky stays where it is. */
+@media (min-width: theme(screens.lg)) {
+  .backdrop {
+    position: fixed;
+  }
+}
+
+.glowIndigo,
+.glowSaffron,
+.glowViolet {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.glowIndigo {
+  left: -18%;
+  top: -34%;
+  width: 70%;
+  height: 90%;
+  background: radial-gradient(closest-side, rgba(99, 85, 188, 0.62), rgba(99, 85, 188, 0));
+}
+
+/* The warm light the stairs stand in: a horizon, low and off-centre. */
+.glowSaffron {
+  left: 18%;
+  bottom: -46%;
+  width: 64%;
+  height: 92%;
+  background: radial-gradient(closest-side, rgba(240, 141, 12, 0.3), rgba(240, 141, 12, 0));
+}
+
+.glowViolet {
+  right: -16%;
+  top: 8%;
+  width: 52%;
+  height: 84%;
+  background: radial-gradient(closest-side, rgba(133, 121, 210, 0.34), rgba(133, 121, 210, 0));
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: calc(var(--u) * 6.4) calc(var(--u) * 6.4);
+  -webkit-mask-image: radial-gradient(120% 90% at 30% 60%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(120% 90% at 30% 60%, #000 0%, transparent 72%);
+}
+
+/* Two rings centred off the right edge, behind the card. The crop is the
+   point: they read as something larger than the page. */
+.ring,
+.ringDashed {
+  position: absolute;
+  top: 50%;
+  border-radius: 50%;
+}
+
+.ring {
+  right: calc(var(--u) * -22);
+  width: calc(var(--u) * 86);
+  height: calc(var(--u) * 86);
+  margin-top: calc(var(--u) * -43);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ringDashed {
+  right: calc(var(--u) * -10);
+  width: calc(var(--u) * 62);
+  height: calc(var(--u) * 62);
+  margin-top: calc(var(--u) * -31);
+  border: 1px dashed rgba(255, 255, 255, 0.09);
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.5;
+}
+
+/* The night moves, slowly, on a laptop and larger -- where the switch that
+   stops it is (.motion, beside the five steps). On a phone it is a still
+   picture: there is no room there for the steps or the switch, and motion
+   that never ends must be something a person can stop. For the same reason
+   it waits for the page to arrive (data-stage, set by script): without
+   JavaScript there is no switch, so there is no motion either. */
+@media (min-width: theme(screens.lg)) {
+  .page[data-stage="ready"] .glowIndigo {
+    animation: drift 26s ease-in-out infinite alternate;
+  }
+
+  .page[data-stage="ready"] .glowSaffron {
+    animation: drift 32s ease-in-out infinite alternate-reverse;
+  }
+
+  .page[data-stage="ready"] .ringDashed {
+    animation: turn 120s linear infinite;
+  }
+
+  .page[data-stage="ready"] .star {
+    animation: twinkle 5s ease-in-out infinite;
+  }
+
+  .page[data-motion="paused"] .glowIndigo,
+  .page[data-motion="paused"] .glowSaffron,
+  .page[data-motion="paused"] .ringDashed,
+  .page[data-motion="paused"] .star {
+    animation-play-state: paused;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Left: header bar, message, the five steps, assurances.
+ * ------------------------------------------------------------------ */
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+  padding: 1.5rem 1.25rem 0.25rem;
+}
+
+/* `overflow-y: clip` here and on .side: everything arrives by sliding up
+   22px (.stage-in), and for that moment the last thing in each column
+   hangs below it. Left alone, that would count as something to scroll to,
+   and a scrollbar would flash on and off as the page loads. Clipped, it is
+   just not drawn until it is in place -- and it is invisible until then
+   anyway. Sideways stays open: shadows and glows are meant to spill. */
+@media (min-width: theme(screens.lg)) {
+  .hero {
+    justify-content: space-between;
+    gap: calc(var(--u) * 2.6);
+    overflow-y: clip;
+    padding: calc(var(--u) * 4) calc(var(--u) * 3.4) calc(var(--u) * 3.4) calc(var(--u) * 6.4);
+  }
+}
+
+/* The header: the product on the left, who makes it on the right, and a
+   hairline under both so the two sit ON something. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 3);
+}
+
+@media (min-width: theme(screens.lg)) {
+  .top {
+    padding-bottom: calc(var(--u) * 2.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  }
+}
+
+.lockup {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Doubled selectors here and on .makerTop: the same elements carry utility
+   classes of their own (a size on the mark, a display on the credit), and
+   one class against one class is settled by which stylesheet loads last.
+   Two classes win outright. */
+.lockupMark.lockupMark {
+  display: block;
+  flex: none;
+  width: 2.875rem;
+  height: 2.875rem;
+  filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.45));
+}
+
+.lockupName {
+  display: block;
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.022em;
+}
+
+.lockupScope {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: theme(colors.content.inverse-muted);
+}
+
+@media (min-width: theme(screens.lg)) {
+  .lockup {
+    gap: calc(var(--u) * 1.4);
+  }
+
+  .lockupMark.lockupMark {
+    width: calc(var(--u) * 5.6);
+    height: calc(var(--u) * 5.6);
+  }
+
+  .lockupName {
+    font-size: calc(var(--u) * 3.5);
+  }
+
+  .lockupScope {
+    margin-top: calc(var(--u) * 0.6);
+    font-size: max(10px, calc(var(--u) * 1.05));
+  }
+}
+
+/* Who makes it, in the header. The same small caps as the two labels below
+   it on this panel; its right edge is the right edge of the steps. Below
+   `lg` there is no header bar, and the credit sits under the card instead
+   (.makerBelow). */
+.makerTop.makerTop {
+  display: none;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .makerTop.makerTop {
+    display: inline-flex;
+    font-size: max(10.5px, calc(var(--u) * 1.15));
+  }
+}
+
+/* On the narrowest laptops the header holds the two logos and nothing
+   spare: the little arrow goes, and the space between them tightens. */
+@media (min-width: theme(screens.lg)) and (max-width: 1150px) {
+  .top {
+    gap: calc(var(--u) * 1.6);
+  }
+
+  .makerArrow {
+    display: none;
+  }
+}
+
+/* The row under the card that holds the credit on a phone. The whole row
+   goes at `lg`, not only the link in it, so nothing empty is left behind
+   for a screen reader to stop on. The size follows the window on the
+   narrowest phones (and for anyone with a larger default text size), so
+   the row never runs wider than the card above it. */
+.makerBelowRow {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.375rem;
+  font-size: min(0.6875rem, 3.1vw);
+}
+
+@media (min-width: theme(screens.lg)) {
+  .makerBelowRow {
+    display: none;
+  }
+}
+
+/* Who this is for, the promise, and one sentence about it: one block. */
+.eyebrow {
+  display: none;
+}
+
+.headline {
+  margin: 0;
+  /* Stated, not inherited: globals.css gives every heading the page's dark
+     ink, which is the wrong ink for this page. */
+  color: theme(colors.content.inverse);
+  font-size: clamp(1.875rem, 8vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.03;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+
+/* The promise itself. Never broken across two lines: a gradient clipped to
+   text restarts on every line fragment. */
+.headline em {
+  padding-right: 0.06em;
+  font-style: italic;
+  font-weight: 500;
+  white-space: nowrap;
+  color: transparent;
+  background: linear-gradient(92deg, theme(colors.saffron.200) 0%, theme(colors.saffron.400) 55%, theme(colors.saffron.500) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.promise {
+  display: none;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--u) * 1.2);
+    margin: 0 0 calc(var(--u) * 1.6);
+    font-size: max(10.5px, calc(var(--u) * 1.15));
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: theme(colors.saffron.200);
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: calc(var(--u) * 3.2);
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, theme(colors.saffron.500), theme(colors.saffron.200));
+  }
+
+  .headline {
+    font-size: calc(var(--u) * 6);
+  }
+
+  /* Held to two lines' height, so the steps below do not move when the
+     sentence changes with the choice of who is signing in. */
+  .promise {
+    display: block;
+    max-width: 33em;
+    min-height: 3.1em;
+    margin: calc(var(--u) * 2) 0 0;
+    font-size: max(14px, calc(var(--u) * 1.75));
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.84);
+    text-wrap: pretty;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * The five steps.
+ * ------------------------------------------------------------------ */
+
+.stage {
+  display: none;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .stage {
+    display: block;
+    position: relative;
+  }
+}
+
+/* Label, a rule that runs between, and the line that goes with it. */
+.caption {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.6);
+  margin: 0 0 calc(var(--u) * 3.4);
+}
+
+.captionLabel {
+  flex: none;
+  font-size: max(10.5px, calc(var(--u) * 1.15));
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: theme(colors.saffron.200);
+}
+
+/* Pause and play for everything on this page that moves by itself. Small,
+   because it is not what anyone came here for; 24px at the least, because
+   it still has to be easy to press. The negative margin keeps the row the
+   height of its text. */
+.motion {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: max(24px, calc(var(--u) * 2.4));
+  height: max(24px, calc(var(--u) * 2.4));
+  margin: calc(var(--u) * -0.6) 0 calc(var(--u) * -0.6) calc(var(--u) * -0.4);
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.motion:hover {
+  border-color: rgba(253, 220, 146, 0.7);
+  color: theme(colors.saffron.200);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.motion:focus-visible {
+  outline: 2px solid theme(colors.saffron.300);
+  outline-offset: 3px;
+}
+
+.motion svg {
+  width: 46%;
+  height: 46%;
+  fill: currentColor;
+}
+
+.captionRule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(253, 220, 146, 0.5), rgba(255, 255, 255, 0.14));
+}
+
+.captionLine {
+  flex: none;
+  font-size: max(12.5px, calc(var(--u) * 1.4));
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* On the narrowest laptops the label and its line fill the row between
+   them: no rule, and the line keeps to the right edge. */
+@media (max-width: 1150px) {
+  .caption {
+    gap: calc(var(--u) * 1.2);
+  }
+
+  .captionRule {
+    visibility: hidden;
+  }
+}
+
+/* Each step is a glass block seen slightly from the left and above: a
+   front face, a top face and a left side. --n is its place (0 to 4) and
+   sets its height. The row's left padding is the width of a side face, so
+   the first block's side starts exactly on the panel's left edge. */
+.steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: calc(var(--u) * 1.1);
+  align-items: end;
+  height: calc(var(--u) * 29);
+  margin: 0;
+  padding: 0 0 0 calc(var(--u) * 2.22);
+  list-style: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+/* The ground the steps stand on catches the same warm light. */
+.steps::after {
+  content: "";
+  position: absolute;
+  left: -6%;
+  right: -4%;
+  top: 100%;
+  height: calc(var(--u) * 5);
+  background: radial-gradient(60% 100% at 50% 0%, rgba(249, 171, 43, 0.2), rgba(249, 171, 43, 0));
+  pointer-events: none;
+}
+
+/* Earlier steps sit in front of later ones, so a step's front face covers
+   the foot of the next step's side. */
+.step {
+  position: relative;
+  z-index: calc(6 - var(--n));
+  height: calc(var(--u) * (9 + 4.2 * var(--n)));
+  transform-origin: 50% 100%;
+}
+
+/* They rise from the ground, shortest first, once the page is ready --
+   for people who have not asked for less motion. For those who have, the
+   global override shortens an animation but leaves its delay alone, and
+   `both` holds each step at the first frame (invisible) for that delay: the
+   steps would vanish and pop back one by one. So there is no animation to
+   shorten. */
+@media (prefers-reduced-motion: no-preference) {
+  .page[data-stage="ready"] .step {
+    animation: rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(0.25s + var(--n) * 0.09s);
+  }
+}
+
+.stepTop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: calc(var(--u) * 1.5);
+  transform-origin: 0 100%;
+  transform: skewX(56deg);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.16));
+  transition:
+    background 0.6s ease,
+    border-color 0.6s ease,
+    box-shadow 0.6s ease;
+}
+
+.stepSide {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--u) * 2.22);
+  transform-origin: 100% 0;
+  transform: skewY(34deg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.015));
+  transition:
+    background 0.6s ease,
+    border-color 0.6s ease;
+}
+
+.stepFace {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 1.5) 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.025));
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.6s ease,
+    background 0.6s ease;
+}
+
+.stepFace::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 75%;
+  background: linear-gradient(180deg, rgba(249, 171, 43, 0.27), rgba(249, 171, 43, 0));
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.stepDay {
+  position: relative;
+  z-index: 1;
+  display: block;
+  font-size: max(9.5px, calc(var(--u) * 1.02));
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+  transition: color 0.6s ease;
+}
+
+.stepName {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: calc(var(--u) * 0.3);
+  font-size: calc(var(--u) * 2.5);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: #fff;
+  transition: color 0.6s ease;
+}
+
+/* The day's number, large and barely there, set into the face. */
+.stepNumber {
+  position: absolute;
+  right: calc(var(--u) * 0.6);
+  bottom: calc(var(--u) * -2.6);
+  font-size: calc(var(--u) * 11);
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  opacity: 0.07;
+  transition: opacity 0.6s ease;
+}
+
+/* A step the light has reached. */
+.lit .stepTop {
+  border-color: theme(colors.saffron.100);
+  background: linear-gradient(90deg, theme(colors.saffron.200), theme(colors.saffron.400));
+  box-shadow: 0 0 34px 6px rgba(249, 171, 43, 0.5);
+}
+
+.lit .stepSide {
+  border-color: rgba(253, 220, 146, 0.4);
+  background: linear-gradient(180deg, rgba(249, 171, 43, 0.34), rgba(249, 171, 43, 0.02));
+}
+
+.lit .stepFace {
+  border-color: rgba(253, 220, 146, 0.55);
+}
+
+.lit .stepFace::after {
+  opacity: 1;
+}
+
+/* The small caps go to full white on a lit face: the warm light behind
+   them is lighter than the glass, and 0.78 white no longer reads against
+   it (measured: 3.6:1; full white is 4.8:1 or better). */
+.lit .stepDay {
+  color: #fff;
+}
+
+.lit .stepName {
+  color: theme(colors.saffron.100);
+}
+
+.lit .stepNumber {
+  opacity: 0.14;
+}
+
+/* The light itself: it stands over the step it has reached. --i is that
+   step. Its left is the centre of that step's top face, which is half a
+   side-width to the left of the centre of its front face. */
+.light {
+  position: absolute;
+  z-index: 9;
+  left: calc(var(--u) * 2.22 + ((100% - var(--u) * 6.62) / 5) * (var(--i) + 0.5) + var(--u) * 1.1 * var(--i) - var(--u) * 1.1);
+  bottom: calc(var(--u) * (9 + 4.2 * var(--i) + 3.1));
+  width: calc(var(--u) * 1.5);
+  height: calc(var(--u) * 1.5);
+  margin-left: calc(var(--u) * -0.75);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff4d6, theme(colors.saffron.400) 55%, theme(colors.saffron.500));
+  box-shadow:
+    0 0 0 calc(var(--u) * 0.55) rgba(249, 171, 43, 0.2),
+    0 0 28px 8px rgba(249, 171, 43, 0.55);
+  transition:
+    left 0.75s cubic-bezier(0.5, 0, 0.2, 1),
+    bottom 0.75s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+/* Three things that are true of every sign-in, as one divided row hanging
+   from the ground line. */
+.assurances {
+  display: flex;
+  align-items: center;
+  margin: calc(var(--u) * 2.4) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: max(12px, calc(var(--u) * 1.32));
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.assurances li {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 calc(var(--u) * 2.4);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
+}
+
+.assurances li:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.assurances svg {
+  flex: none;
+  width: 1.25em;
+  height: 1.25em;
+  color: theme(colors.jade.300);
+}
+
+/* On the narrowest laptops the three have to share a shorter line. */
+@media (max-width: 1150px) {
+  .assurances {
+    font-size: 11.5px;
+  }
+
+  .assurances li {
+    gap: 7px;
+    padding: 0 10px;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Right: the card, and nothing else.
+ * ------------------------------------------------------------------ */
+
+.side {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1rem 2rem;
+}
+
+/* The sign-in and two-factor steps are sized to fit one screen; the
+   choose-a-password step, with an error showing on the shortest laptops,
+   can be a little taller than one, and then the page scrolls (.page,
+   above). The card is centred with auto margins rather than
+   justify-content, which would push half of any overflow off the top,
+   where no scrollbar can reach it. This column is deliberately not a
+   scroller of its own: one would cut the card's glow off in a straight
+   line down the middle of the page. */
+@media (min-width: theme(screens.lg)) {
+  .side {
+    overflow-y: clip;
+    padding: calc(var(--u) * 2) calc(var(--u) * 5) calc(var(--u) * 2) calc(var(--u) * 2);
+  }
+}
+
+.column {
+  width: 100%;
+  max-width: 27.5rem;
+}
+
+@media (min-width: theme(screens.lg)) {
+  .column {
+    width: clamp(24.375rem, calc(var(--u) * 46), 32.5rem);
+    max-width: 100%;
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+}
+
+/* A lit object on a dark page: a hairline of light round it, a deep shadow
+   under it, and a violet glow behind. */
+.card {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 50px 90px -34px rgba(0, 0, 0, 0.75),
+    0 0 120px -20px rgba(133, 121, 210, 0.5);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: scaleY(0.25);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6%, 5%, 0) scale(1.12);
+  }
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
