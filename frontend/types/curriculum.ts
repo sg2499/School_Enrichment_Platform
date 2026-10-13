@@ -97,6 +97,11 @@ export type QuestionDetail = {
   // server does not send them, and the card then shows nothing about it.
   answerUnit?: string | null;
   answerUnitLabel?: string | null;
+  /** The unit marking uses: the recorded one, or (13 Oct 2026) one read
+   *  from the question's wording when none is recorded. */
+  effectiveAnswerUnit?: string | null;
+  effectiveAnswerUnitLabel?: string | null;
+  answerUnitSource?: "RECORDED" | "QUESTION" | null;
   /** What is stored; null means "not set" (the Response Format decides). */
   unitRule?: UnitRule | null;
   /** What marking follows, after that default. */
