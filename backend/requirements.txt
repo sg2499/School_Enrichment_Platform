@@ -12,7 +12,7 @@ httpx==0.28.1
 openpyxl==3.1.5
 python-multipart==0.0.32
 reportlab==5.0.1
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.13
 sentry-sdk[fastapi]==2.68.0
 gunicorn
 
