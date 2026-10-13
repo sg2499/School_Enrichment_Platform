@@ -41,6 +41,17 @@ describe("markingSummary", () => {
     ]);
   });
 
+  test("a unit read from the question says so; a recorded one does not", () => {
+    assert.deepEqual(
+      markingSummary({ ...plain, effectiveUnitRule: "STATED", effectiveAnswerUnitLabel: "centimetres", answerUnitSource: "QUESTION" }),
+      ["Unit: centimetres (read from the question), stated in the question (from the Response Format)"],
+    );
+    assert.deepEqual(
+      markingSummary({ ...plain, effectiveUnitRule: "STATED", unitRule: "STATED", answerUnitLabel: "grams", effectiveAnswerUnitLabel: "grams", answerUnitSource: "RECORDED" }),
+      ["Unit: grams, stated in the question"],
+    );
+  });
+
   test("a required unit on a longer question names the unit mark", () => {
     const lines = markingSummary({
       ...plain,

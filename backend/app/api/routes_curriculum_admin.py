@@ -523,11 +523,18 @@ def _marking_detail(question: Question) -> dict:
     """How a measured answer is marked (Phase 4, #164). unitRule is what
     is stored (null: not set); effectiveUnitRule is what marking follows,
     after the Response Format default."""
+    rule = marking_rule(question)
     return {
         "answerUnit": question.answer_unit,
         "answerUnitLabel": units.unit_label(question.answer_unit),
+        # The unit marking uses, and where it came from: "RECORDED", or
+        # "QUESTION" when it was read from the question's wording (13 Oct
+        # 2026); null when there is none.
+        "effectiveAnswerUnit": rule.answer_unit,
+        "effectiveAnswerUnitLabel": units.unit_label(rule.answer_unit),
+        "answerUnitSource": rule.unit_source,
         "unitRule": question.unit_rule,
-        "effectiveUnitRule": marking_rule(question).unit_rule,
+        "effectiveUnitRule": rule.unit_rule,
         "allowUnitConversion": bool(question.allow_unit_conversion),
         "numericTolerance": question.numeric_tolerance,
         "decimalPlaces": question.decimal_places,

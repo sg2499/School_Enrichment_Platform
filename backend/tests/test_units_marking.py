@@ -370,3 +370,83 @@ def test_the_unit_word_after_a_key_of_one_is_singular():
 
     assert answer_unit_label(_q("1", response_format=STATED_FORMAT, answer_unit="kg")) == "kilogram"
     assert answer_unit_label(_q("2", response_format=STATED_FORMAT, answer_unit="kg")) == "kilograms"
+
+
+# --- The unit read from the question; variants in another unit (13 Oct 2026) --
+
+
+def test_a_stated_question_with_no_recorded_unit_takes_the_unit_it_asks_for():
+    q = _q("200", response_format=STATED_FORMAT, stem="2 m equals how many centimetres?")
+    rule = marking_rule(q)
+    assert (rule.answer_unit, rule.unit_source) == ("cm", "QUESTION")
+    assert grade_answer_detail(q, "200") == GradeResult(True, 1)
+    assert grade_answer_detail(q, "200 cm") == GradeResult(True, 1)
+    assert grade_answer_detail(q, "200 m") == GradeResult(False, 0, WRONG_UNIT)
+
+
+def test_a_recorded_unit_always_wins_over_the_question():
+    q = _q("2", response_format=STATED_FORMAT, answer_unit="m", stem="2 m equals how many centimetres?")
+    assert (marking_rule(q).answer_unit, marking_rule(q).unit_source) == ("m", "RECORDED")
+
+
+def test_nothing_is_read_where_the_question_does_not_say():
+    for stem in ("How many children wear glasses?", "A rectangle has area 35 cm² and breadth 5 cm. Find its length."):
+        q = _q("8", response_format=STATED_FORMAT, stem=stem)
+        assert marking_rule(q).answer_unit is None
+        assert grade_answer(q, "8 kg") == (True, 1)  # as before: number alone
+
+
+def test_a_rule_none_question_is_never_read():
+    q = _q("200", stem="2 m equals how many centimetres?")  # Response Format without "unit stated"
+    assert marking_rule(q).answer_unit is None
+    assert grade_answer(q, "200 m") == (True, 1)  # as before
+
+
+def test_a_variant_in_another_unit_no_longer_makes_a_wrong_unit_right():
+    # The real Chapter 5 list (CBSE-C5-CH05-Q161).
+    q = _q("6550", variants="6550|6550 mm|6550 cm|6550 m|6550 km|6550 markers|6550 children|₹6550",
+           response_format=STATED_FORMAT, stem="6 km 550 m equals how many metres?")
+    for right in ("6550", "6550 m", "6550 metres", "6,550 m", "6550 markers"):
+        assert grade_answer(q, right) == (True, 1), right
+    for wrong in ("6550 km", "6550 mm", "6550 cm", "₹6550", "6550 rupees"):
+        assert grade_answer_detail(q, wrong) == GradeResult(False, 0, WRONG_UNIT), wrong
+
+
+def test_a_variant_that_is_the_same_amount_in_another_unit_still_counts():
+    q = _q("6550", variants="6.55 km|6 km 550 m", response_format=STATED_FORMAT, stem="6 km 550 m equals how many metres?")
+    assert grade_answer(q, "6.55 km") == (True, 1)  # listed, and the same amount
+    assert grade_answer(q, "6 km 550 m") == (True, 1)
+    assert grade_answer_detail(q, "6.5 km") == GradeResult(False, 0)  # not listed, conversion off
+
+
+def test_variants_are_untouched_where_no_unit_is_checked():
+    q = _q("8", variants="8|8 items|8 children|8 hours|8 icons|8 kg", response_format=STATED_FORMAT, stem="How many children wear glasses?")
+    for given in ("8", "8 kg", "8 hours", "8 children"):
+        assert grade_answer(q, given) == (True, 1), given
+
+
+def test_the_student_is_told_the_unit_read_from_the_question():
+    from app.services.learning_service import answer_instruction, answer_unit_label
+
+    q = _q("200", response_format=STATED_FORMAT, stem="2 m equals how many centimetres?")
+    assert answer_instruction(q) == "Answer in centimetres."
+    assert answer_unit_label(q) == "centimetres"
+
+
+def test_an_equivalent_variant_within_the_questions_tolerance_or_rounding_still_counts():
+    # Found in review: the equal-amount check ignored the question's own rule.
+    rounded = _q("3.33", variants="333.3 cm", response_format=STATED_FORMAT, answer_unit="m", decimal_places=2)
+    assert grade_answer(rounded, "333.3 cm") == (True, 1)
+    near = _q("2.5", variants="245 cm", response_format=STATED_FORMAT, answer_unit="m", numeric_tolerance="0.1")
+    assert grade_answer(near, "245 cm") == (True, 1)
+    approx = _q("20", variants="0.33 h", response_format=STATED_FORMAT, answer_unit="min")
+    assert grade_answer(approx, "0.33 h") == (True, 1)  # a different number, listed on purpose
+    blanket = _q("20", variants="20 h|20 s", response_format=STATED_FORMAT, answer_unit="min")
+    assert grade_answer_detail(blanket, "20 h") == GradeResult(False, 0, WRONG_UNIT)
+
+
+def test_an_answer_the_rules_cannot_read_gets_what_marking_always_gave_it():
+    q = _q("60", response_format=STATED_FORMAT, answer_unit="km")
+    for given in ("60 km/h", "60 kmph"):
+        assert grade_answer(q, given) == (True, 1), given
+    assert grade_answer(q, "61 km/h") == (False, 0)

@@ -1171,7 +1171,11 @@ def test_question_detail_shows_marking_settings_and_notes(client, db_session):
     detail = next(q for q in body["questions"] if q["code"] == "QN-mark01")
     assert detail["unitRule"] is None and detail["effectiveUnitRule"] == "STATED"
     assert detail["answerUnit"] is None and detail["allowUnitConversion"] is False
-    assert detail["markingNotes"] == ["Unit stated in the question, but the answer unit is not recorded."]
+    # "How many grams ...?": the unit is read from the question (13 Oct 2026).
+    assert (detail["effectiveAnswerUnit"], detail["effectiveAnswerUnitLabel"], detail["answerUnitSource"]) == ("g", "grams", "QUESTION")
+    assert detail["markingNotes"] == [
+        "Answer unit read from the question (grams). Record it to confirm, or record another unit to replace it."
+    ]
     # Advice only: a missing unit is not a quality flag (flags stop bulk approval).
     assert not any("unit" in flag.lower() for flag in detail["qualityFlags"])
 

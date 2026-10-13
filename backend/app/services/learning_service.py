@@ -77,6 +77,7 @@ from app.models import (
     Teacher,
 )
 from app.services import units
+from app.services.unit_reader import answer_unit_from_question
 
 # --- Phase 3 ingestion: Question.assignment_code -> LearningActivity -------
 
@@ -538,6 +539,10 @@ class MarkingRule:
     tolerance: Decimal | None
     decimal_places: int | None
     unit_mark: int
+    # Where answer_unit came from: "RECORDED" (the question's own Answer
+    # Unit), "QUESTION" (read from the question's wording, 13 Oct 2026,
+    # app/services/unit_reader.py), or None when there is no unit.
+    unit_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -575,6 +580,13 @@ def marking_rule(question: Question) -> MarkingRule:
     if rule not in UNIT_RULES:
         rule = default_unit_rule(question.response_format)
     unit = units.unit_code(question.answer_unit) if question.answer_unit else None
+    source = "RECORDED" if unit else None
+    if unit is None and rule in ("STATED", "REQUIRED"):
+        # Shailesh, 13 Oct 2026: the unit is read from the question when no
+        # Answer Unit is recorded -- only where the question itself says it
+        # ("in minutes", "how many metres"). A recorded unit always wins.
+        unit = answer_unit_from_question(question.stem)
+        source = "QUESTION" if unit else None
     unit_mark = question.unit_mark if question.unit_mark is not None and question.unit_mark >= 0 else 1
     places = question.decimal_places if question.decimal_places is not None and question.decimal_places >= 0 else None
     return MarkingRule(
@@ -584,6 +596,7 @@ def marking_rule(question: Question) -> MarkingRule:
         tolerance=parse_tolerance(question.numeric_tolerance),
         decimal_places=places,
         unit_mark=unit_mark,
+        unit_source=source,
     )
 
 
@@ -695,6 +708,11 @@ def marking_notes(question: Question) -> list[str]:
         return []
     rule = marking_rule(question)
     notes = []
+    if rule.unit_source == "QUESTION" and rule.unit_rule in ("STATED", "REQUIRED"):
+        notes.append(
+            f"Answer unit read from the question ({units.unit_label(rule.answer_unit)}). "
+            "Record it to confirm, or record another unit to replace it."
+        )
     if rule.unit_rule in ("STATED", "REQUIRED") and not rule.answer_unit:
         if rule.unit_rule == "STATED":
             notes.append("Unit stated in the question, but the answer unit is not recorded.")
@@ -798,6 +816,32 @@ def _mark_against(given: units.Measurement, expected: units.Measurement, rule: M
     return GradeResult(False, 0, WRONG_UNIT if same(given.number) else None)
 
 
+def _variant_fits_unit(variant: str, key: str | None, rule: MarkingRule) -> bool:
+    """Whether an Accepted Variant still counts once the unit is known.
+
+    The variants this rules out are the ones that repeat the key's number
+    in another unit ("6550 km" or "₹6550" when the key is 6550 metres):
+    lists like Chapter 5's, which would keep a wrong unit right. A variant
+    with no unit, the answer's own unit, words that are not a unit, or a
+    different number in another unit ("2.05 kg" for 2050 g, "0.33 h" for 20
+    minutes) was written on purpose as an equivalent and still counts, as
+    does one that is the same amount within the question's own tolerance
+    and rounding (found in review, 13 Oct 2026)."""
+    written = units.parse_measurement(variant)
+    if written is None or written.unit is None or written.unit == rule.answer_unit:
+        return True
+    expected = units.parse_measurement(key)
+    if expected is None:
+        return True  # a key these rules cannot read: the author's list stands
+    amount = units.convert(written.number, written.unit, rule.answer_unit)
+    target = expected.number if expected.unit in (None, rule.answer_unit) else units.convert(expected.number, expected.unit, rule.answer_unit)
+    if amount is not None and target is not None and units.numbers_match(
+        amount, target, tolerance=rule.tolerance, decimal_places=rule.decimal_places
+    ):
+        return True
+    return written.number != expected.number
+
+
 def _grade_measured(question: Question, response: str, rule: MarkingRule) -> GradeResult:
     marks = question.marks
     if not response:
@@ -806,12 +850,21 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
     # right, whatever the rules below would say ("2 kg 50 g"). Only the
     # variants: the key itself goes through the rules, or "12" would pass
     # as the key "12" where the unit is Required.
+    checks_unit = rule.unit_rule != "NONE" and bool(rule.answer_unit)
     variants = [v for v in (question.accepted_variants or "").split("|") if v.strip()]
+    if checks_unit:
+        # Shailesh, 13 Oct 2026: once the unit is known, a variant written in
+        # another unit no longer counts. Chapters 5 and 15 list every answer
+        # in every unit ("6550|6550 mm|...|6550 km"), which would keep a
+        # wrong unit right. A variant with no unit, the answer's own unit,
+        # the same amount in another unit ("2.05 kg" for 2050 g), or words
+        # that are not a unit ("2 kg 50 g", "6550 markers") still counts.
+        # The key always counts.
+        variants = [v for v in variants if _variant_fits_unit(v, question.correct_answer, rule)]
     if any(_normalize_value(response) == _normalize_value(v) for v in variants):
         return GradeResult(True, marks)
-    candidates = _candidate_answers(question)
+    candidates = [c for c in [question.correct_answer or ""] + variants if c and c.strip()]
     given = units.parse_measurement(response)
-    checks_unit = rule.unit_rule != "NONE" and bool(rule.answer_unit)
     if given is None and not checks_unit:
         # Not one number with a known unit, and no unit to check: marked the
         # way it always was (found in review: "60 km/h", "1/2", "$250").
@@ -835,6 +888,13 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
         # that can say why (a note) over one that cannot.
         if (result.score, result.note is not None) > (best.score, best.note is not None):
             best = result
+    if given is None and best.score == 0:
+        # An answer these rules cannot read at all ("60 km/h") is never
+        # marked down by them: it gets what marking always gave it (found
+        # in review, 13 Oct 2026).
+        is_correct, score = _grade_answer_text(question, response)
+        if is_correct:
+            return GradeResult(is_correct, score)
     return best
 
 

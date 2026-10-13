@@ -41,7 +41,7 @@ export function hasMarkingSettings(question: Pick<QuestionDetail, "questionType"
 
 type MarkingFields = Pick<
   QuestionDetail,
-  "answerUnitLabel" | "effectiveUnitRule" | "unitRule" | "allowUnitConversion" | "numericTolerance" | "decimalPlaces" | "unitMark" | "marks"
+  "answerUnitLabel" | "effectiveAnswerUnitLabel" | "answerUnitSource" | "effectiveUnitRule" | "unitRule" | "allowUnitConversion" | "numericTolerance" | "decimalPlaces" | "unitMark" | "marks"
 >;
 
 /** The settings in a line each, for the card. Empty when nothing about
@@ -50,7 +50,12 @@ export function markingSummary(question: MarkingFields): string[] {
   const lines: string[] = [];
   const rule = question.effectiveUnitRule ?? "NONE";
   if (rule !== "NONE") {
-    const unit = question.answerUnitLabel ? `Unit: ${question.answerUnitLabel}` : "Unit: not recorded";
+    const read = question.answerUnitSource === "QUESTION" && question.effectiveAnswerUnitLabel;
+    const unit = question.answerUnitLabel
+      ? `Unit: ${question.answerUnitLabel}`
+      : read
+        ? `Unit: ${question.effectiveAnswerUnitLabel} (read from the question)`
+        : "Unit: not recorded";
     const ruleWords = rule === "STATED" ? "stated in the question" : "must be written";
     const defaulted = question.unitRule ? "" : " (from the Response Format)";
     lines.push(`${unit}, ${ruleWords}${defaulted}`);

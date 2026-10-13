@@ -175,7 +175,11 @@ export function MarkingSettings({
               hint={units ? undefined : "Loading…"}
               error={fieldProblems.answerUnit}
             >
-              <option value="">Not Recorded</option>
+              <option value="">
+                {question.answerUnitSource === "QUESTION" && question.effectiveAnswerUnitLabel
+                  ? `Not Recorded (Read from the Question: ${question.effectiveAnswerUnitLabel})`
+                  : "Not Recorded"}
+              </option>
               {form.answerUnit && units && !units.some((unit) => unit.code === form.answerUnit) ? (
                 <option value={form.answerUnit}>{form.answerUnit}</option>
               ) : null}
