@@ -48,7 +48,7 @@ import {
   TargetStatusBadge,
   scopeParams,
 } from "@/components/tracker/TrackerBits";
-import { formatDateTime, formatDay, plural, scopeLabel, scopeShort, studentClassLabel } from "@/lib/tracker";
+import { formatDateTime, formatDay, FOUNDATION_REPAIR_LABEL, isFoundationRepair, plural, scopeLabel, scopeShort, studentClassLabel } from "@/lib/tracker";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentHistoryItem, StudentHistoryPage, TrackerOverview } from "@/types/tracker";
 
@@ -82,6 +82,7 @@ function HistoryCard({
             <p className="text-xs text-content-subtle">
               {[
                 scopeShort(a),
+                isFoundationRepair(a.reason) ? FOUNDATION_REPAIR_LABEL : null,
                 a.activityType ? ACTIVITY_TYPE_LABEL[a.activityType] : null,
                 a.createdAt ? `Set ${formatDay(a.createdAt)}` : null,
                 a.dueDate ? `Due ${formatDay(a.dueDate)}` : null,

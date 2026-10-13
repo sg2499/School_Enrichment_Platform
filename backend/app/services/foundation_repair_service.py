@@ -178,9 +178,19 @@ def approve_recommendation(
     teacher: Teacher,
     student: Student,
     recommendation: FoundationRepairRecommendation,
+    section_scope: tuple[str, str, str],
 ) -> Assignment:
     """Teacher-in-the-loop step turning a recommendation into a real
-    Assignment (Section 11: assignment stays under teacher control)."""
+    Assignment (Section 11: assignment stays under teacher control).
+
+    `section_scope` is the (class_level_id, section, board_course_id) the
+    approving teacher was just verified to teach this student in -- the
+    student's own class and section, and the course of the concept being
+    repaired (not the rescue activity's, which can be an earlier class's).
+    Until 13 Oct 2026 these assignments recorded no section, so the teacher
+    who set one could still change it after handing the section over, and
+    the section's new teacher could not. Recorded, the handover rule applies
+    to them as to every other section's practice."""
     from app.services.learning_service import (
         create_assignment,  # local import avoids a service-to-service circular import
     )
@@ -197,4 +207,5 @@ def approve_recommendation(
         student_ids=[student.id],
         reason="PREREQUISITE_GAP" if recommendation.recommendation == "PREREQUISITE_GAP" else "LOW_ACCURACY",
         source_prerequisite_link_id=recommendation.gap_prerequisite_link_id,
+        section_scope=section_scope,
     )

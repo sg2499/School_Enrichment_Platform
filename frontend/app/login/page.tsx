@@ -981,7 +981,7 @@ export default function LoginPage() {
                             onClick={() => goToRightWayIn(rightWayIn)}
                             className="-mx-1.5 mt-1 inline-flex min-h-[1.75rem] items-center gap-1.5 rounded-lg px-1.5 text-[0.875rem] font-bold text-coral-800 underline decoration-coral-300 decoration-2 underline-offset-[3px] transition hover:decoration-coral-600 focus-visible:shadow-focus-ring focus-visible:outline-none"
                           >
-                            Switch To {SIGN_IN_COPY[rightWayIn].tab}
+                            Switch to {SIGN_IN_COPY[rightWayIn].tab}
                             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
                           </button>
                         ) : null}

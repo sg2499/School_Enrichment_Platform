@@ -517,7 +517,7 @@ function AttemptWorkspace() {
               review ? (
                 <>
                   <ScoreBadge evaluation={review.evaluation} onDark />
-                  {review.evaluation.reviewStatus === "FINALISED" ? <Badge tone="inverse">Marked By Teacher</Badge> : null}
+                  {review.evaluation.reviewStatus === "FINALISED" ? <Badge tone="inverse">Marked by Teacher</Badge> : null}
                   {review.evaluation.reviewStatus === "AUTO_FINALISED" ? (
                     <Badge tone="inverse">Marked Automatically</Badge>
                   ) : null}

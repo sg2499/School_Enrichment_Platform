@@ -50,25 +50,25 @@ const COPY: Record<UserRole, Copy> = {
   STUDENT: {
     eyebrow: "Your Learning Space",
     message: "There's nothing at this address in your learning space. The link may be old, or mistyped. Your practice is where you left it.",
-    home: { href: defaultRouteForRole("STUDENT"), label: "Back To My Dashboard" },
+    home: { href: defaultRouteForRole("STUDENT"), label: "Back to My Dashboard" },
     second: { href: "/student/practice", label: "Open Daily Practice" },
   },
   TEACHER: {
     eyebrow: "Teaching Workspace",
     message: "There's nothing at this address in your teaching workspace. The link may be out of date, or mistyped. Your classes and their work are where you left them.",
-    home: { href: defaultRouteForRole("TEACHER"), label: "Back To Dashboard" },
+    home: { href: defaultRouteForRole("TEACHER"), label: "Back to Dashboard" },
     second: { href: "/teacher/tracker", label: "Open Practice Tracker" },
   },
   ADMIN: {
     eyebrow: "School Control Centre",
     message: "There's nothing at this address in your school's control centre. The link may be out of date, or mistyped. Nothing in your school's setup has changed.",
-    home: { href: defaultRouteForRole("ADMIN"), label: "Back To Dashboard" },
+    home: { href: defaultRouteForRole("ADMIN"), label: "Back to Dashboard" },
     second: { href: "/admin/people", label: "Open People" },
   },
   SUPER_ADMIN: {
     eyebrow: "Platform Control Centre",
     message: "There's nothing at this address in the platform control centre. The link may be out of date, or mistyped. No school's setup has changed.",
-    home: { href: defaultRouteForRole("SUPER_ADMIN"), label: "Back To Dashboard" },
+    home: { href: defaultRouteForRole("SUPER_ADMIN"), label: "Back to Dashboard" },
     second: { href: "/admin/people", label: "Open People" },
   },
 };
@@ -76,7 +76,7 @@ const COPY: Record<UserRole, Copy> = {
 const SIGNED_OUT: Copy = {
   eyebrow: PRODUCT_NAME,
   message: "There's nothing at this address. The link may be out of date, or mistyped. If your school gave you an account, sign in to reach your workspace.",
-  home: { href: "/login", label: "Go To Sign In" },
+  home: { href: "/login", label: "Go to Sign In" },
 };
 
 export type NotFoundSegment = "student" | "teacher" | "admin";

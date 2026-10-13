@@ -1,6 +1,19 @@
 // Small, pure formatting helpers shared by the Practice Tracker pages.
 
+import type { AssignmentReason } from "@/types/learning";
 import type { SectionScope, TrackerSection } from "@/types/tracker";
+
+/** Practice a teacher set from a Foundation Repair recommendation: rescue
+ *  work for a prerequisite gap, or a reteach of the current concept. The
+ *  Assign form offers neither reason, so in the product only Foundation
+ *  Repair sets them. Since 13 Oct 2026 such an assignment
+ *  records the student's section, so its scope reads like any section's
+ *  ("5A · Mathematics"); this is what still tells it apart. */
+export function isFoundationRepair(reason: AssignmentReason | null | undefined): boolean {
+  return reason === "PREREQUISITE_GAP" || reason === "LOW_ACCURACY";
+}
+
+export const FOUNDATION_REPAIR_LABEL = "Foundation Repair";
 
 /** "Class 5 · Section A · Mathematics", leaving out whatever isn't known.
  *  A whole-class assignment (no section) reads "Class 5 · All Sections". */

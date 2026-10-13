@@ -181,10 +181,14 @@ def test_a_way_in_that_does_not_exist_is_a_malformed_request(client, db_session)
 
 
 def test_the_wrong_way_in_does_not_count_towards_the_lockout(client, db_session):
-    """The password was right: this is the account's owner, not a guess."""
+    """The password was right: this is the account's owner, not a guess.
+
+    Since 13 Oct 2026 it does not clear the count either: only a complete
+    sign-in does (test_login_lockout.py), so a right password can never be
+    used to wipe failures it did not cause."""
     accounts = Accounts(db_session)
     users, email = accounts.users, accounts.email["TEACHER"]
-    # Two real wrong passwords first, so there is a count to clear.
+    # Two real wrong passwords first, so there is a count to watch.
     for _ in range(2):
         assert _login(client, email, "TEACHER", password="not-the-password").status_code == 401
     db_session.refresh(users["TEACHER"])
@@ -192,9 +196,11 @@ def test_the_wrong_way_in_does_not_count_towards_the_lockout(client, db_session)
     for _ in range(8):
         assert _login(client, email, "STUDENT").status_code == 403
     db_session.refresh(users["TEACHER"])
-    assert users["TEACHER"].failed_login_attempts == 0
+    assert users["TEACHER"].failed_login_attempts == 2
     assert users["TEACHER"].locked_until is None
     assert _login(client, email, "TEACHER").status_code == 200
+    db_session.refresh(users["TEACHER"])
+    assert users["TEACHER"].failed_login_attempts == 0
 
 
 def test_an_inactive_account_is_told_it_is_inactive_whatever_was_chosen(client, db_session):

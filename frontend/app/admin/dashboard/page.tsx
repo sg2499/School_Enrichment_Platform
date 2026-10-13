@@ -478,7 +478,7 @@ function CurriculumPanel({
   const today = todayIso();
   const classCount = new Set(mapRows.map((m) => m.className).filter(Boolean)).size;
   const mappedIds = new Set(mapRows.map((m) => m.chapterId));
-  // The same count the masthead's "Ready To Map" shows, made the same way.
+  // The same count the masthead's "Ready to Map" shows, made the same way.
   const readyToMap = chapterRows.filter((chapter) => !mappedIds.has(chapter.id)).length;
   // What's running now first, then what's next, then anything undated;
   // finished chapters drop off -- this is a "what's live" glance, not the
@@ -904,7 +904,7 @@ export default function AdminDashboardPage() {
         tone: published ? "good" : "default",
       },
       {
-        label: "Waiting In Review",
+        label: "Waiting in Review",
         value: figure(chaptersQuery, inReview),
         hint: chapters
           ? inReview
@@ -962,7 +962,7 @@ export default function AdminDashboardPage() {
         tone: running > 0 ? "good" : "default",
       },
       {
-        label: "Ready To Map",
+        label: "Ready to Map",
         // Needs both sources: published chapters, less the ones already in
         // the calendar. If either failed, there is no honest number.
         value: chaptersQuery.problem || mapsQuery.problem ? "—" : readyToMap !== undefined ? readyToMap : null,

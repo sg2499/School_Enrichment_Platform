@@ -49,6 +49,7 @@ from app.database import get_db
 from app.dependencies import get_current_student, get_current_teacher, require_roles
 from app.models import (
     ASSIGNMENT_REASONS,
+    FOUNDATION_REPAIR_REASONS,
     Assignment,
     AssignmentTarget,
     Attempt,
@@ -245,6 +246,12 @@ def create_assignment(
 ):
     if payload.reason not in ASSIGNMENT_REASONS:
         api_error(422, "VALIDATION_ERROR", "Choose a reason for this assignment.")
+    # Set only by approving a Foundation Repair recommendation (13 Oct
+    # 2026), which is also what the tracker marks "Foundation Repair": an
+    # ordinary assignment carrying one would be marked as rescue work it
+    # isn't. The Assign form never offers them.
+    if payload.reason in FOUNDATION_REPAIR_REASONS:
+        api_error(422, "VALIDATION_ERROR", "Foundation Repair practice is set from a student's recommendation, not from here.")
 
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
@@ -804,7 +811,7 @@ def _require_student_in_scope(db: Session, user: User, student: Student) -> None
 
 def _require_teacher_currently_teaches_student(
     db: Session, teacher: Teacher | None, student: Student, concept_lesson: ConceptLesson
-) -> None:
+) -> tuple[str, str, str]:
     """A11 completeness pass (1 Oct 2026): both Foundation Repair endpoints
     were only school-scoped for a TEACHER -- any teacher could pull any
     same-school student's concept mastery (computed from that student's
@@ -834,7 +841,12 @@ def _require_teacher_currently_teaches_student(
     letting a since-transferred teacher keep reading it would show them
     attempts made after their end_date, which is exactly what the 20 Aug
     2026 handover policy rules out. Only today's teacher of that section
-    sees it."""
+    sees it.
+
+    Returns the (class_level_id, section, board_course_id) it verified. The
+    approve endpoint records it on the new assignment (13 Oct 2026), so the
+    assignment belongs to that section and the handover rule applies to it
+    like any other section's practice."""
     if not teacher or not teacher.is_active:
         api_error(403, "FORBIDDEN", "Your teacher profile isn't active. Please ask your school admin.")
     class_level = (
@@ -859,6 +871,7 @@ def _require_teacher_currently_teaches_student(
             "FORBIDDEN",
             "You're not the current teacher for this student's class, section and subject.",
         )
+    return class_level.id, section, chapter.board_course_id
 
 
 def _recommendation_dict(rec) -> dict:
@@ -917,12 +930,17 @@ def approve_foundation_repair_recommendation(
         api_error(403, "FORBIDDEN", "You can only manage students in your own school.")
     # A11 (1 Oct 2026): approving creates a real Assignment -- a WRITE -- so
     # the teacher must currently own the student's section for this course.
-    _require_teacher_currently_teaches_student(db, teacher, student, concept_lesson)
+    section_scope = _require_teacher_currently_teaches_student(db, teacher, student, concept_lesson)
 
     recommendation = foundation_repair_service.get_recommendation(db, student, concept_lesson)
     school = db.get(School, teacher.school_id)
     assignment = foundation_repair_service.approve_recommendation(
-        db, school=school, teacher=teacher, student=student, recommendation=recommendation
+        db,
+        school=school,
+        teacher=teacher,
+        student=student,
+        recommendation=recommendation,
+        section_scope=section_scope,
     )
     target_count = db.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).count()
     return _assignment_dict(assignment, target_count)

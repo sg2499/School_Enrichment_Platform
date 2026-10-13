@@ -58,6 +58,13 @@ def record_failed_attempt(db: Session, user: User, request: Request | None, even
     password itself, instead of being able to brute-force TOTP/backup codes
     with only a shared 10/minute IP limit standing in the way.
     """
+    # A lock that has run out starts a fresh count (13 Oct 2026). Without
+    # this the count stays at five or more after the lock expires, and since
+    # a correct password no longer clears it (see login()), one mistyped
+    # two-factor code would lock the owner out for another fifteen minutes.
+    # Five guesses per lock window, as before; the bypass stays closed.
+    if user.locked_until and not _is_locked(user):
+        reset_lockout(user)
     user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
     if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
         user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
@@ -288,11 +295,14 @@ def login(
             )
         api_error(401, "INVALID_CREDENTIALS", "Those sign-in details don't match. Please check them and try again.")
 
-    # Correct password -- clear any accumulated lockout state so a
-    # legitimate sign-in isn't held against a later, unrelated attempt.
-    if user.failed_login_attempts or user.locked_until:
-        reset_lockout(user)
-        db.commit()
+    # A correct password does NOT clear the failed-attempt count (13 Oct
+    # 2026). It used to, right here, and that let anyone holding an
+    # account's password sidestep the two-factor lockout: four wrong codes,
+    # a fresh password step to wipe the count, four more, for ever. The count
+    # now clears only when a sign-in is complete -- a session issued, below
+    # for an account without two-factor, in two_factor_verify_login
+    # (routes_auth.py) for one with it. A legitimate holder loses nothing:
+    # their next complete sign-in clears it as before.
 
     if not user.is_active:
         # The password was right, so this is the account's owner: say who
@@ -343,6 +353,7 @@ def login(
             "tokenType": "Bearer",
         }
 
+    reset_lockout(user)
     session_id = start_session(db, user, request=request)
     log_audit_event(db, "auth.login.success", user_id=user.id, request=request, details=chosen_way_in)
     db.commit()

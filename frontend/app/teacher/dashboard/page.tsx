@@ -712,7 +712,7 @@ function SectionsPanel({ sections, maps }: Pick<Signals, "sections" | "maps">) {
       </ul>
 
       <PanelFooter>
-        <InlineLink href="/teacher/assign">Assign Practice To A Section</InlineLink>
+        <InlineLink href="/teacher/assign">Assign Practice to a Section</InlineLink>
       </PanelFooter>
     </PanelStack>
   );
@@ -999,7 +999,7 @@ export default function TeacherDashboardPage() {
       // cell it has room for both numbers at a size that can be read, and
       // its tint says the same as its words (WCAG 1.4.1): jade once every
       // live check is ready, saffron while some are not.
-      label: "Ready To Teach",
+      label: "Ready to Teach",
       value: stillChecking ? null : (
         <>
           <CountUp value={readyCount} />
@@ -1045,7 +1045,7 @@ export default function TeacherDashboardPage() {
                 {/* `inverse`, Badge's tone for indigo chrome: the light
                     brand / neutral chips these were would sit on the
                     masthead as two white stickers. The live status badge
-                    that used to follow them is the "Ready To Teach" cell
+                    that used to follow them is the "Ready to Teach" cell
                     above. */}
                 {teacher.designation ? <Badge tone="inverse">{teacher.designation}</Badge> : null}
                 {teacher.subjectSpecialization ? <Badge tone="inverse">{teacher.subjectSpecialization}</Badge> : null}

@@ -26,7 +26,7 @@
  *    whenever the rail was the taller column the button used to float with
  *    a band of empty card under it; now any spare height opens above the
  *    rule, the way SplitLayout's PanelFooter intends.
- *  - "View In Tracker" in the success banner was a `ghost` button -- bare
+ *  - "View in Tracker" in the success banner was a `ghost` button -- bare
  *    text on a green banner, and the only action in it. It is `secondary`.
  *  - The quiet teacher ambience sits behind the page.
  *
@@ -557,7 +557,7 @@ export default function AssignPracticePage() {
                             size="sm"
                             trailingIcon={<ArrowRight className="h-3.5 w-3.5" />}
                           >
-                            View In Tracker
+                            View in Tracker
                           </ButtonLink>
                         </span>
                       }
