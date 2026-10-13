@@ -15,7 +15,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { RosterIllustration } from "@/components/brand/Graphics";
 import { AssignmentStatusBadge, PercentText, ReadOnlyBadge, scopeParams } from "@/components/tracker/TrackerBits";
-import { formatDay, scopeShort } from "@/lib/tracker";
+import { FOUNDATION_REPAIR_LABEL, formatDay, isFoundationRepair, scopeShort } from "@/lib/tracker";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { Paginated, TrackerAssignmentRow } from "@/types/tracker";
 
@@ -82,7 +82,7 @@ export function AssignmentsPanel({
                 needs chrome of its own -- ghost left it as a grey word
                 under the message. */}
             <Button type="button" variant="tinted" size="sm" onClick={() => onChange({ q: null, status: null, page: null })}>
-              Clear Search And Filters
+              Clear Search and Filters
             </Button>
           </div>
         ) : (
@@ -126,6 +126,7 @@ export function AssignmentsPanel({
                       </Link>
                       <span className="mt-0.5 block truncate text-xs text-content-subtle">
                         {[
+                          isFoundationRepair(row.reason) ? FOUNDATION_REPAIR_LABEL : null,
                           row.activityType ? ACTIVITY_TYPE_LABEL[row.activityType] : null,
                           row.isMine ? null : row.assignedByName ? `Set by ${row.assignedByName}` : "Set by your school",
                           row.createdAt ? `Set ${formatDay(row.createdAt)}` : null,

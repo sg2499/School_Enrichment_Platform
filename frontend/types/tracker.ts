@@ -149,6 +149,7 @@ export type StudentHistoryItem = TargetSummary & {
     id: string;
     title: string | null;
     activityType: ActivityType | null;
+    reason: AssignmentReason;
     dueDate: string | null;
     createdAt: string | null;
     status: TrackerAssignmentStatus;

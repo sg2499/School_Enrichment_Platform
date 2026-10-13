@@ -122,7 +122,7 @@ function formatDate(value: string | null): string | null {
   return date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 }
 
-/** A group's label -- "Waiting For You 2" -- as a small surfaced chip. It
+/** A group's label -- "Waiting for You 2" -- as a small surfaced chip. It
  *  used to be bare text on the canvas in content-subtle, and with the wash
  *  behind the page that is under 4.5:1. On the chip (surface at 80%):
  *  content-subtle 6.0:1, the count in content 15:1. */
@@ -407,7 +407,7 @@ export default function StudentPracticePage() {
             {waiting.length > 0 ? (
               <section aria-labelledby="practice-waiting" className="space-y-3">
                 <GroupLabel id="practice-waiting" count={waiting.length}>
-                  Waiting For You
+                  Waiting for You
                 </GroupLabel>
                 <ul className="space-y-3">{waiting.map((item, index) => renderCard(item, index))}</ul>
               </section>

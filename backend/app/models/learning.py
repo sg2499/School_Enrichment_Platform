@@ -120,6 +120,11 @@ ASSIGNMENT_REASONS = (
     "ADMIN_APPROVED",
 )
 
+# The reasons only Foundation Repair sets (foundation_repair_service.
+# approve_recommendation). POST /learning/assignments refuses them, so the
+# tracker's "Foundation Repair" marker, which keys on them, is always true.
+FOUNDATION_REPAIR_REASONS = ("PREREQUISITE_GAP", "LOW_ACCURACY")
+
 
 class LearningActivity(Base):
     """One deliverable unit (blueprint Section 6.3's `learning_activities`).

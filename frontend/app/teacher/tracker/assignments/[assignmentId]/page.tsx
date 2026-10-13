@@ -70,7 +70,7 @@ import {
   ScoreBadge,
   TargetStatusBadge,
 } from "@/components/tracker/TrackerBits";
-import { formatDay, plural, scopeLabel, studentClassLabel } from "@/lib/tracker";
+import { FOUNDATION_REPAIR_LABEL, formatDay, isFoundationRepair, plural, scopeLabel, studentClassLabel } from "@/lib/tracker";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { AssignmentStudentRow, AssignmentStudentsPage, StudentFilter, TrackerAssignmentDetail } from "@/types/tracker";
 
@@ -217,6 +217,7 @@ function AssignmentWorkspace() {
                 <>
                   <AssignmentStatusBadge status={a.status} onDark />
                   {a.activityType ? <Badge tone="inverse">{ACTIVITY_TYPE_LABEL[a.activityType]}</Badge> : null}
+                  {isFoundationRepair(a.reason) ? <Badge tone="inverse">{FOUNDATION_REPAIR_LABEL}</Badge> : null}
                   {!a.canAct ? <ReadOnlyBadge onDark /> : null}
                 </>
               ) : undefined
@@ -304,7 +305,7 @@ function AssignmentWorkspace() {
                   {filter || q ? (
                     // tinted, was ghost: it is the only action in this box.
                     <Button type="button" variant="tinted" size="sm" onClick={() => url.set({ status: null, q: null, page: null })}>
-                      Clear Search And Filters
+                      Clear Search and Filters
                     </Button>
                   ) : null}
                 </div>

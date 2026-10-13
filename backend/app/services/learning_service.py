@@ -230,6 +230,7 @@ def create_assignment(
     due_date: str | None = None,
     available_from: str | None = None,
     max_attempts: int = 3,
+    section_scope: tuple[str, str, str] | None = None,
 ) -> Assignment:
     if learning_activity.status != "PUBLISHED":
         api_error(422, "VALIDATION_ERROR", "Only a published activity can be assigned.")
@@ -280,19 +281,31 @@ def create_assignment(
     # class-wide assignment gets a class level/section; a student_ids
     # assignment is not section-scoped (section stays None, matching the
     # targeting rule above, which ignores section in that case too).
+    #
+    # `section_scope` (13 Oct 2026) is the exception: a caller that has
+    # already verified which (class_level_id, section, board_course_id) a
+    # student_ids assignment belongs to passes it, and it is recorded as is.
+    # Only Foundation Repair does this today (foundation_repair_service.
+    # approve_recommendation); who is targeted is unchanged by it.
     class_level = None
     if class_name and not student_ids:
         class_level = db.query(ClassLevel).filter(ClassLevel.code == class_name).first()
     chapter = db.get(Chapter, learning_activity.chapter_id)
+    if section_scope is not None:
+        scope_class_level_id, scope_section, scope_board_course_id = section_scope
+    else:
+        scope_class_level_id = class_level.id if class_level else None
+        scope_section = None if student_ids else section
+        scope_board_course_id = chapter.board_course_id if chapter else None
 
     assignment = Assignment(
         school_id=school.id,
         learning_activity_id=learning_activity.id,
         assigned_by_user_id=assigned_by_user_id,
         class_name=class_name,
-        section=None if student_ids else section,
-        class_level_id=class_level.id if class_level else None,
-        board_course_id=chapter.board_course_id if chapter else None,
+        section=scope_section,
+        class_level_id=scope_class_level_id,
+        board_course_id=scope_board_course_id,
         reason=reason,
         source_prerequisite_link_id=source_prerequisite_link_id,
         pacing_mode=pacing_mode,

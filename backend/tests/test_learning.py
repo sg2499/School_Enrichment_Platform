@@ -15,7 +15,7 @@ existing test files' own convention -- see test_curriculum_admin.py's
 docstring on why: cross-role setup goes through direct ORM/service calls
 instead of juggling multiple simultaneous cookie logins in one client).
 """
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pyotp
 from fastapi import HTTPException
@@ -42,7 +42,7 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import foundation_repair_service, learning_service, teacher_assignment_service
+from app.services import foundation_repair_service, learning_service, practice_access_service, teacher_assignment_service
 from app.services.learning_service import classify_assignment_code, grade_answer
 
 PASSWORD = "Passw0rd1"
@@ -121,7 +121,7 @@ _CHAPTER_NUM = {
     "API1": 10, "API2": 11, "API3": 12, "API4": 13, "API5": 15, "API6": 16,
     "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
     "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
-    "API8B": 27, "FR4": 28, "RES1": 29, "RES2": 30,
+    "API8B": 27, "FR4": 28, "RES1": 29, "RES2": 30, "FR5": 31, "FR6": 32,
 }
 
 
@@ -1581,3 +1581,99 @@ def test_foundation_repair_requires_current_section_ownership(client, db_session
     admin_read = recommendation(in_5b, headers)
     assert admin_read.status_code == 200, admin_read.text
     assert admin_read.json()["recommendation"] == "LOW_ACCURACY"
+
+
+def test_foundation_repair_assignment_belongs_to_the_students_section(client, db_session):
+    """13 Oct 2026: a Foundation Repair assignment used to record no
+    section, so it fell outside the handover rule -- the teacher who set it
+    could still change it after being moved off the section, and the
+    section's new teacher could not. It now records the student's class and
+    section and the course of the concept being repaired, and the rule
+    applies to it like any other section's practice."""
+    chapter, (skill,) = _make_chapter_with_skills(db_session, "FR5", n_skills=1)
+    _add_question(db_session, skill, "FR5-P01-01", assignment_code=_ac("FR5", "P01"), correct_answer="A")
+    db_session.commit()
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+
+    school = _make_school(db_session, "fr5")
+    setter = _make_teacher(db_session, school, "fr5-setter")
+    successor = _make_teacher(db_session, school, "fr5-successor")
+    row = _assign_teacher_section(db_session, setter, chapter.board_course_id, "A")
+    student = _student_with_low_mastery(db_session, school, "fr5-a", activity, class_name="5", section="A")
+
+    headers = {**_login(client, setter.user.email), "x-auth-role": "TEACHER"}
+    approved = client.post(
+        "/api/learning/foundation-repair/approve",
+        json={"studentId": student.id, "conceptLessonId": skill.id},
+        headers=headers,
+    )
+    assert approved.status_code == 200, approved.text
+    assignment = db_session.get(Assignment, approved.json()["id"])
+
+    # Recorded against the student's own section and the repaired concept's
+    # course; still aimed at this one student only.
+    assert assignment.reason == "LOW_ACCURACY"
+    assert assignment.class_level.code == "5"
+    assert assignment.section == "A"
+    assert assignment.board_course_id == chapter.board_course_id
+    assert assignment.class_name is None
+    targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+    assert [t.student_id for t in targets] == [student.id]
+
+    def access(teacher):
+        viewer = practice_access_service.resolve_viewer(db_session, teacher.user)
+        return (
+            practice_access_service.can_read_assignment(db_session, viewer, assignment),
+            practice_access_service.can_act_on_assignment(db_session, viewer, assignment),
+        )
+
+    assert access(setter) == (True, True)
+    assert access(successor) == (False, False)
+
+    # The section is handed over today (the server's day, which is UTC).
+    teacher_assignment_service.transfer_teacher(
+        db_session,
+        assignment=row,
+        new_teacher_id=successor.id,
+        transfer_date=datetime.now(timezone.utc).date(),
+        admin_user_id=None,
+    )
+    db_session.commit()
+
+    # The setter keeps sight of what they set, but can no longer change it;
+    # the section's teacher now can, as with any practice set for 5A today.
+    assert access(setter) == (True, False)
+    assert access(successor) == (True, True)
+
+
+def test_foundation_repair_reasons_cannot_be_set_by_hand(client, db_session):
+    """13 Oct 2026: the tracker marks an assignment "Foundation Repair" by
+    its reason, so the two reasons only that route sets are refused on the
+    ordinary assign route, for a teacher and an admin alike."""
+    activity = _published_single_activity(db_session, "FR6")
+    course_id = db_session.get(Chapter, activity.chapter_id).board_course_id
+    school = _make_school(db_session, "fr6")
+    teacher = _make_teacher(db_session, school, "fr6")
+    _make_sectioned_student(db_session, school, "fr6-5a", class_name="5", section="A")
+    _assign_teacher_section(db_session, teacher, course_id, "A")
+
+    headers = _login(client, teacher.user.email)
+    for reason in ("PREREQUISITE_GAP", "LOW_ACCURACY"):
+        refused = client.post(
+            "/api/learning/assignments",
+            json={"learningActivityId": activity.id, "className": "5", "section": "A", "reason": reason},
+            headers=headers,
+        )
+        assert refused.status_code == 422, reason
+        assert refused.json()["detail"]["message"] == (
+            "Foundation Repair practice is set from a student's recommendation, not from here."
+        )
+    assert db_session.query(Assignment).filter(Assignment.assigned_by_user_id == teacher.user_id).count() == 0
+
+    allowed = client.post(
+        "/api/learning/assignments",
+        json={"learningActivityId": activity.id, "className": "5", "section": "A", "reason": "TEACHER_SELECTED"},
+        headers=headers,
+    )
+    assert allowed.status_code == 200, allowed.text

@@ -135,6 +135,22 @@ Step "Staging changes"
 git add -A
 if ($LASTEXITCODE -ne 0) { throw "git add failed (see output above)." }
 
+# --- Whitespace check (mirrors the repository-safety CI job) ---------------
+# Added 13 Oct 2026. CI runs `git diff --check` and fails on trailing spaces,
+# a stray tab before a space, or a blank line at the end of a file. On 4 Oct
+# one blank line at the end of a stylesheet failed CI after the push (PR
+# #91). Checking what is staged catches it here, before anything leaves the
+# machine. The output names each file and line. It sees this commit only;
+# CI checks the whole branch, so a commit made on the branch outside this
+# script is still checked there, not here.
+Step "Checking the staged changes for whitespace errors"
+git diff --cached --check
+if ($LASTEXITCODE -ne 0) {
+    git reset -q
+    throw "Refusing to commit: whitespace errors in the lines listed above (trailing spaces, or a blank line at the end of a file). Fix them and re-run. Nothing was committed or pushed, and the changes have been unstaged."
+}
+Ok "No whitespace errors."
+
 Step "Scanning what is about to be committed for secrets (names and contents)"
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     # Fail closed: without the scan there is nothing between `git add -A`

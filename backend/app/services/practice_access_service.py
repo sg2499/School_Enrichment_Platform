@@ -33,8 +33,10 @@ The rule, for a TEACHER and one Assignment:
            since-transferred one, even on records they can still read. An
            assignment that is NOT section-scoped (a pre-1-Oct whole-class
            row the migration couldn't pin to one section, or a
-           single-student Foundation Repair assignment) has no triple to
-           check, so it falls back to the old rule: its creator may act.
+           single-student Foundation Repair assignment made before 13 Oct
+           2026, when those began recording the student's section) has no
+           triple to check, so it falls back to the old rule: its creator
+           may act.
 
 Outside READ, callers return 404 (this codebase's "don't disclose that
 another teacher's/school's record exists" convention). READ but not ACT is

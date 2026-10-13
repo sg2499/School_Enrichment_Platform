@@ -195,7 +195,7 @@ function questionOptions(question: AttemptQuestion): QuestionOption[] {
  * - Anything else (Constructed Response, unrecognised types): a plain
  *   textarea. It still saves and submits, but grade_answer deliberately
  *   returns "not auto-graded" for it -- the result view marks these
- *   "Waiting For Marks" rather than right/wrong.
+ *   "Waiting for Marks" rather than right/wrong.
  */
 function QuestionInput({
   question,
@@ -338,7 +338,7 @@ const ANSWER_CHROME = {
   correct: { rail: "bg-jade-400", badge: "success", label: "Correct", icon: <CheckCircle2 className="h-3 w-3" /> },
   partial: { rail: "bg-saffron-500", badge: "accent", label: "Part Marks", icon: <CircleDot className="h-3 w-3" /> },
   incorrect: { rail: "bg-coral-400", badge: "danger", label: "Incorrect", icon: <XCircle className="h-3 w-3" /> },
-  pending: { rail: "bg-ink-300", badge: "neutral", label: "Waiting For Marks", icon: <Hourglass className="h-3 w-3" /> },
+  pending: { rail: "bg-ink-300", badge: "neutral", label: "Waiting for Marks", icon: <Hourglass className="h-3 w-3" /> },
 } as const;
 
 /** Panel label and its answer, for an answer shown as it is stored. */
@@ -510,7 +510,7 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                     and the 24px badge share a centre line. On a phone the
                     badge sits under the label on every card -- there is
                     room for both on one line for "Correct" and not for
-                    "Waiting For Marks", and half the cards one way and
+                    "Waiting for Marks", and half the cards one way and
                     half the other read as a mistake. */}
                 <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   {/* content-subtle on white: 6.4:1. The marks are said for
@@ -1049,7 +1049,7 @@ export default function StudentAttemptPage() {
       ...(tally.partial > 0 || tally.pending > 0
         ? [
             {
-              label: "Waiting For Marks",
+              label: "Waiting for Marks",
               value: tally.pending,
               hint: tally.pending > 0 ? "Your teacher marks these" : "None",
               tone: tally.pending > 0 ? ("attention" as const) : ("default" as const),
@@ -1068,13 +1068,13 @@ export default function StudentAttemptPage() {
       },
     ];
     // Who marked it, in the words the teacher's own view of this attempt
-    // uses ("Marked Automatically", "Marked By Teacher").
+    // uses ("Marked Automatically", "Marked by Teacher").
     resultMeta = waiting ? (
       <Badge tone="warning" onDark icon={<Hourglass className="h-3 w-3" />}>
-        Waiting For Your Teacher
+        Waiting for Your Teacher
       </Badge>
     ) : result.reviewStatus === "FINALISED" ? (
-      <Badge tone="inverse">Marked By Your Teacher</Badge>
+      <Badge tone="inverse">Marked by Your Teacher</Badge>
     ) : (
       <Badge tone="inverse">Marked Automatically</Badge>
     );
@@ -1183,7 +1183,7 @@ export default function StudentAttemptPage() {
                   </Button>
                 ) : null}
                 <ButtonLink href={PRACTICE_LIST_HREF} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
-                  Back To {PRACTICE_LIST_NAME}
+                  Back to {PRACTICE_LIST_NAME}
                 </ButtonLink>
               </div>
             </CardBody>
@@ -1321,7 +1321,7 @@ export default function StudentAttemptPage() {
           <ResultView result={result}>
             <div className="flex flex-wrap items-center gap-3">
               <ButtonLink href={PRACTICE_LIST_HREF} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
-                Back To {PRACTICE_LIST_NAME}
+                Back to {PRACTICE_LIST_NAME}
               </ButtonLink>
               {/* Only offered while an attempt is actually left (30 Sep
                   2026). It used to show unconditionally, so a student out of

@@ -482,9 +482,9 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
       <PanelFooter>
         <InlineLink href={PRACTICE_LIST_HREF}>
           {listCount > rows.length
-            ? `See All ${listCount} In ${PRACTICE_LIST_NAME}`
+            ? `See All ${listCount} in ${PRACTICE_LIST_NAME}`
             : caughtUp
-              ? `See Everything In ${PRACTICE_LIST_NAME}`
+              ? `See Everything in ${PRACTICE_LIST_NAME}`
               : `Open ${PRACTICE_LIST_NAME}`}
         </InlineLink>
       </PanelFooter>

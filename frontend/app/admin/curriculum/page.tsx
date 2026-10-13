@@ -1927,7 +1927,7 @@ export default function CurriculumStudioPage() {
         hint: mappings ? (upcoming > 0 ? "Scheduled to start later" : "Nothing scheduled ahead") : undefined,
       },
       {
-        label: "Ready To Map",
+        label: "Ready to Map",
         value: chaptersQuery.problem || mapsQuery.problem ? "—" : readyToMap !== undefined ? readyToMap : null,
         hint: readyToMap !== undefined ? (readyToMap > 0 ? "Published, not in your calendar" : "Nothing waiting") : undefined,
         tone: readyToMap && rows.length === 0 ? "attention" : "default",

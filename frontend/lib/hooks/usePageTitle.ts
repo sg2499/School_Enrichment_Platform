@@ -39,8 +39,15 @@ export function usePageTitle(
     // default a moment after this had set it. So for as long as this
     // component is on screen, any change to the title that isn't ours is
     // put back. It cannot loop: apply() writes only when the value differs.
+    //
+    // The whole document is watched, not only <head> (13 Oct 2026). On a
+    // page opened directly, Next streams the layout's <title> into <body>.
+    // Safari's engine (WebKit) then takes that element as the tab's title,
+    // and an observer on <head> never saw it, so the tab fell back to the
+    // bare "Student · Krama" a moment after loading. Watching everything
+    // costs one string comparison per batch of DOM changes.
     const observer = new MutationObserver(apply);
-    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [title]);
 }

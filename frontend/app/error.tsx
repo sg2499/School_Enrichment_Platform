@@ -58,7 +58,7 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
   const role = useRoleForPage();
   usePageTitle("Something Went Wrong", role, useAdminSchoolForPage());
   // The choose-a-password page is a workspace address on the sign-in
-  // page's night, and the one page its person can open: "Back To
+  // page's night, and the one page its person can open: "Back to
   // Dashboard" from there would only come straight back.
   const onPasswordPage = (usePathname() ?? "").endsWith("/set-password");
 
@@ -90,11 +90,11 @@ export default function PageError({ error, reset }: { error: Error & { digest?: 
           </Button>
           {onPasswordPage ? null : role ? (
             <ButtonLink href={defaultRouteForRole(role)} variant="secondary" trailingIcon={<ArrowRight className="h-4 w-4" />}>
-              Back To Dashboard
+              Back to Dashboard
             </ButtonLink>
           ) : (
             <ButtonLink href="/login" variant="secondary" leadingIcon={<LogIn className="h-4 w-4" />}>
-              Go To Sign In
+              Go to Sign In
             </ButtonLink>
           )}
         </>

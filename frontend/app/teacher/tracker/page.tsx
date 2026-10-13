@@ -128,7 +128,7 @@ function TrackerWorkspace() {
   // The masthead's figures. `null` while the overview loads (a placeholder
   // bar); "—" if it failed, with the banner below saying why -- never a
   // zero, which would read as a real count. The tiles these replace printed
-  // "–" for both cases, and "Nothing waiting" under Waiting For Marks even
+  // "–" for both cases, and "Nothing waiting" under Waiting for Marks even
   // before the count had arrived; a hint now appears only once the number
   // it describes is known.
   const pending = !overview.data && !overview.error;
@@ -140,13 +140,13 @@ function TrackerWorkspace() {
       hint: counts ? `${counts.assignments} in total` : undefined,
     },
     {
-      label: "Waiting For Marks",
+      label: "Waiting for Marks",
       value: figure(counts?.needsReview),
       hint: counts ? (counts.needsReview > 0 ? "Open Needs Review to mark them" : "Nothing waiting") : undefined,
       tone: counts && counts.needsReview > 0 ? "attention" : "default",
     },
     {
-      label: "Students On Roster",
+      label: "Students on Roster",
       value: figure(counts?.studentsOnRoster),
       hint: "Across your current sections",
     },

@@ -659,6 +659,7 @@ def get_tracker_student(
                     "title": activity.title if activity else None,
                     "activityType": activity.activity_type if activity else None,
                     **_section_label_parts(assignment),
+                    "reason": assignment.reason,
                     "dueDate": assignment.due_date,
                     "createdAt": _iso(assignment.created_at),
                     "status": assignment.status,
