@@ -2,8 +2,7 @@ fastapi==0.141.1
 uvicorn[standard]==0.52.4
 sqlalchemy==2.0.52
 pydantic==2.13.4
-python-jose[cryptography]==3.5.0
-pyasn1==0.6.4
+PyJWT==2.15.1
 passlib==1.7.4
 bcrypt==4.0.1
 python-dotenv==1.2.3
@@ -29,9 +28,9 @@ qrcode[pil]==8.2
 # a direct import; pinning what you actually import is the correct pattern.
 pillow==12.3.0
 # Fernet encryption of TOTP secrets at rest (app/core/totp_crypto.py and
-# alembic f7c2a9d4e1b8, 1 Oct 2026). Already installed transitively via
-# python-jose[cryptography]; pinned explicitly for the same reason as
-# pillow above -- it's imported directly now.
+# alembic f7c2a9d4e1b8, 1 Oct 2026). It used to arrive with
+# python-jose[cryptography]; that is gone (PyJWT replaced it, 13 Oct 2026),
+# so this pin is now the only thing that installs it.
 cryptography==50.0.2
 
 alembic

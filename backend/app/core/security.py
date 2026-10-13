@@ -9,7 +9,7 @@ import hmac
 import re
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
@@ -281,7 +281,19 @@ def decode_two_factor_challenge_token(token: str) -> str | None:
 
 
 def decode_token(token: str) -> dict | None:
+    """The claims of a valid, unexpired token signed with SECRET_KEY under
+    ALGORITHM, or None for anything else.
+
+    PyJWT since 13 Oct 2026 (it replaced python-jose, whose 3.5.0 carries
+    CVE-2026-85394 with no fixed release). The two libraries write the same
+    HS256 token byte for byte, so tokens issued before the switch still
+    verify. `algorithms` stays a one-item list: a token signed any other way,
+    including "none", is refused. PyJWTError is the base of every refusal
+    PyJWT raises (bad signature, expired, malformed, wrong algorithm). The
+    other three are for text that cannot be a token at all -- a lone UTF-16
+    surrogate in a JSON body, for one, raises UnicodeEncodeError before PyJWT
+    looks at it -- so that, too, is a refusal and never a server error."""
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
+    except (jwt.PyJWTError, UnicodeError, ValueError, TypeError):
         return None
