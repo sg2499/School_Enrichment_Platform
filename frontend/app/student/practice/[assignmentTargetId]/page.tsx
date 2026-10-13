@@ -41,6 +41,8 @@ import {
   answerPresentation,
   answerState,
   attemptsLeft,
+  correctAnswerText,
+  partMarksHint,
   resultSentence,
   resultTally,
   scorePercent,
@@ -309,15 +311,30 @@ function QuestionInput({
   }
 
   if (question.questionType === "Numeric Entry") {
+    // Phase 4 (#164): how a measured answer is to be written, from the
+    // server ("Answer in grams." / "Write the number and the unit."). It
+    // says how to answer, never what the answer is. Read out with the box.
+    const instruction = question.answerInstruction;
+    const instructionId = `answer-instruction-${question.id}`;
     return (
-      <input
-        type="text"
-        inputMode="decimal"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="Type your answer"
-        className="h-12 w-full max-w-xs rounded-2xl border border-line-field bg-surface px-4 text-base tabular text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
-      />
+      <div className="space-y-2">
+        <input
+          type="text"
+          // A unit to be written needs letters: a decimal keypad has none.
+          inputMode={question.answerNeedsUnit ? "text" : "decimal"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Type your answer"
+          aria-describedby={instruction ? instructionId : undefined}
+          className="h-12 w-full max-w-xs rounded-2xl border border-line-field bg-surface px-4 text-base tabular text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
+        />
+        {instruction ? (
+          // content-subtle on white: 6.4:1.
+          <p id={instructionId} className="text-sm text-content-subtle">
+            {instruction}
+          </p>
+        ) : null}
+      </div>
     );
   }
 
@@ -457,7 +474,7 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
         ))}
       </ol>
     ) : (
-      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-jade-800">{answer.correctAnswer}</p>
+      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-jade-800">{correctAnswerText(answer)}</p>
     );
 
   return (
@@ -537,6 +554,13 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                 </div>
                 <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty">{answer.stem}</p>
                 <AnswerBody answer={answer} state={state} />
+                {/* Phase 4 (#164): why a right number lost marks -- a
+                    missing or wrong unit -- said in words, so "1 of 2"
+                    is not left to explain itself. content-muted on
+                    surface-muted: 7.4:1. */}
+                {state !== "pending" && state !== "correct" && answer.gradingNoteText ? (
+                  <p className="rounded-2xl bg-surface-muted p-3.5 text-sm leading-relaxed text-content-muted">{answer.gradingNoteText}</p>
+                ) : null}
                 {/* Never for an answer still waiting for its marks: the
                     explanation gives the answer away as surely as the
                     model answer does, and the set can be tried again. (The
@@ -1035,11 +1059,12 @@ export default function StudentAttemptPage() {
         value: tally.correct,
         hint: tally.correct === result.answers.length && result.answers.length > 0 ? "Every one" : `Of ${result.answers.length}`,
       },
-      // Part marks and waiting-for-marks only exist for written answers, so
-      // a set with none of them keeps to four figures. With either, all six
-      // are shown: three and three, never a row with a hole in it.
+      // Part marks and waiting-for-marks are rare (a written answer, or a
+      // measured one with its unit missing), so a set with none of them
+      // keeps to four figures. With either, all six are shown: three and
+      // three, never a row with a hole in it.
       ...(tally.partial > 0 || tally.pending > 0
-        ? [{ label: "Part Marks", value: tally.partial, hint: tally.partial > 0 ? "From your teacher" : "None" }]
+        ? [{ label: "Part Marks", value: tally.partial, hint: partMarksHint(result.answers) }]
         : []),
       {
         label: "Incorrect",

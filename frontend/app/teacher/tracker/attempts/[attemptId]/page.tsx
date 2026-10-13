@@ -27,12 +27,13 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, ChevronRight, Clock3, Hourglass, IdCard, Lock, PenLine, Save, Users, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, CircleDot, Clock3, Hourglass, IdCard, Lock, PenLine, Save, Users, XCircle } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { recordAttemptFinalised } from "@/lib/hooks/useMarkingMilestone";
 import { api, describeApiError, errorMessage } from "@/lib/api";
+import { correctAnswerText } from "@/lib/studentPractice";
 import { cn } from "@/lib/utils";
 import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -88,6 +89,15 @@ function AnswerState({ answer, draft }: { answer: ReviewAnswer; draft: number | 
     return (
       <Badge tone="success" icon={<CheckCircle2 className="h-3 w-3" />}>
         Correct
+      </Badge>
+    );
+  }
+  // Phase 4 (#164): automatic part marks -- a right number with a
+  // required unit missing loses only the unit mark.
+  if (typeof answer.autoScore === "number" && answer.autoScore > 0 && answer.autoScore < answer.maxScore) {
+    return (
+      <Badge tone="accent" icon={<CircleDot className="h-3 w-3" />}>
+        Part Marks
       </Badge>
     );
   }
@@ -212,7 +222,15 @@ function AnswerCard({
         aria-hidden
         className={cn(
           "absolute inset-y-0 left-0 w-1",
-          answer.needsManualGrade ? (unmarked ? "bg-saffron-300" : "bg-brand-400") : answer.isCorrect ? "bg-jade-400" : "bg-coral-400",
+          answer.needsManualGrade
+            ? unmarked
+              ? "bg-saffron-300"
+              : "bg-brand-400"
+            : answer.isCorrect
+              ? "bg-jade-400"
+              : (answer.autoScore ?? 0) > 0
+                ? "bg-saffron-500"
+                : "bg-coral-400",
         )}
       />
       <CardBody className="space-y-4">
@@ -270,10 +288,14 @@ function AnswerCard({
             <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-jade-800">
               {answer.needsManualGrade ? "Model Answer" : "Correct Answer"}
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-jade-800">{answer.correctAnswer}</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-jade-800">{correctAnswerText(answer)}</p>
           </div>
         </div>
         )}
+        {answer.gradingNoteText ? (
+          // content-muted on surface-muted: 7.4:1.
+          <p className="rounded-2xl bg-surface-muted px-3.5 py-3 text-sm leading-relaxed text-content-muted">{answer.gradingNoteText}</p>
+        ) : null}
         {optionEntries.length > 0 && chosen.size === 0 ? (
           <p className="text-sm italic text-content-subtle">Not answered</p>
         ) : null}

@@ -93,7 +93,26 @@ export type QuestionDetail = {
   status: QuestionStatus;
   qualityStatus: QualityStatus;
   qualityFlags: string[];
+  // How a measured answer is marked (Phase 4, #164). Optional: an older
+  // server does not send them, and the card then shows nothing about it.
+  answerUnit?: string | null;
+  answerUnitLabel?: string | null;
+  /** What is stored; null means "not set" (the Response Format decides). */
+  unitRule?: UnitRule | null;
+  /** What marking follows, after that default. */
+  effectiveUnitRule?: UnitRule;
+  allowUnitConversion?: boolean;
+  numericTolerance?: string | null;
+  decimalPlaces?: number | null;
+  unitMark?: number | null;
+  /** Advice for the reviewer, never a quality flag. */
+  markingNotes?: string[];
 };
+
+export type UnitRule = "NONE" | "STATED" | "REQUIRED";
+
+/** One unit an Answer Unit can be (GET /curriculum-admin/marking-units). */
+export type MarkingUnit = { code: string; kind: string; label: string; singular: string };
 
 export type BulkApproveResult = {
   approvedCount: number;

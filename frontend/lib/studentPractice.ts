@@ -238,9 +238,14 @@ export type AnswerState = "correct" | "partial" | "incorrect" | "pending";
  * A teacher's marks, when there are any, are the answer: full marks is
  * correct, none is incorrect, anything between is part marks. Otherwise it
  * is what automatic marking said, and an answer nothing has marked yet is
- * pending.
+ * pending. Automatic marking can give part marks too (Phase 4, #164: a
+ * right number with a required unit missing loses only the unit mark), and
+ * the server stores is_correct false for it, so the marks are read here
+ * as well: some but not all is part marks, not Incorrect.
  */
-export function answerState(answer: Pick<AttemptAnswerResult, "isCorrect" | "manualScore" | "maxScore">): AnswerState {
+export function answerState(
+  answer: Pick<AttemptAnswerResult, "isCorrect" | "manualScore" | "maxScore"> & Partial<Pick<AttemptAnswerResult, "autoScore">>,
+): AnswerState {
   const manual = answer.manualScore;
   if (typeof manual === "number") {
     if (manual >= answer.maxScore) return "correct";
@@ -248,8 +253,39 @@ export function answerState(answer: Pick<AttemptAnswerResult, "isCorrect" | "man
     return "partial";
   }
   if (answer.isCorrect === true) return "correct";
+  const auto = answer.autoScore;
+  if (answer.isCorrect === false && typeof auto === "number" && auto > 0 && auto < answer.maxScore) return "partial";
   if (answer.isCorrect === false) return "incorrect";
   return "pending";
+}
+
+/**
+ * The answer key as a student reads it: with its unit when the unit counts
+ * ("250 grams"), and as it is when the key already says one or none is
+ * sent.
+ */
+export function correctAnswerText(answer: Pick<AttemptAnswerResult, "correctAnswer"> & Partial<Pick<AttemptAnswerResult, "answerUnitLabel">>): string | null {
+  const key = answer.correctAnswer;
+  if (key === null || key === undefined) return null;
+  const unit = answer.answerUnitLabel;
+  if (!unit || !/^\s*[-+]?[\d,]*\.?\d+\s*$/.test(key)) return key;
+  return `${key.trim()} ${unit}`;
+}
+
+/**
+ * Where a set's part marks came from, for the figure under "Part Marks":
+ * a teacher's marking, or automatic marking of a measured answer whose
+ * unit was missing (the reason is then on the answer itself).
+ */
+export function partMarksHint(
+  answers: readonly (Pick<AttemptAnswerResult, "isCorrect" | "manualScore" | "maxScore"> & Partial<Pick<AttemptAnswerResult, "autoScore">>)[],
+): string {
+  const partial = answers.filter((answer) => answerState(answer) === "partial");
+  if (partial.length === 0) return "None";
+  const byTeacher = partial.filter((answer) => typeof answer.manualScore === "number").length;
+  if (byTeacher === partial.length) return "From your teacher";
+  if (byTeacher === 0) return "The reason is below";
+  return "Some from your teacher";
 }
 
 /** The marks an answer earned, or null while nothing has marked it. */
@@ -266,7 +302,9 @@ export interface ResultTally {
   pending: number;
 }
 
-export function resultTally(answers: readonly Pick<AttemptAnswerResult, "isCorrect" | "manualScore" | "maxScore">[]): ResultTally {
+export function resultTally(
+  answers: readonly (Pick<AttemptAnswerResult, "isCorrect" | "manualScore" | "maxScore"> & Partial<Pick<AttemptAnswerResult, "autoScore">>)[],
+): ResultTally {
   const tally: ResultTally = { correct: 0, partial: 0, incorrect: 0, pending: 0 };
   for (const answer of answers) tally[answerState(answer)] += 1;
   return tally;

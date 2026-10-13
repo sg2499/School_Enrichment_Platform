@@ -50,6 +50,7 @@ const UNITS = [
   "lib/signInRole.ts",
   "lib/signInCopy.ts",
   "lib/passwordRules.ts",
+  "lib/marking.ts",
   "lib/studentPractice.ts",
   "lib/tracker.ts",
 ];

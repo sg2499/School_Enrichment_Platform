@@ -341,6 +341,11 @@ class AttemptAnswer(Base):
     # distinct from `is_correct=False`, which means "graded, and wrong".
     is_correct = Column(Boolean, nullable=True)
     auto_score = Column(Integer, nullable=True)
+    # Why automatic marking gave less than full marks when the reason is
+    # not simply "wrong number" (Phase 4, #164): "WRONG_UNIT" or
+    # "UNIT_MISSING". Null otherwise. Lets the result screen say "the unit
+    # was missing, so 1 mark was taken off" instead of a bare score.
+    grading_note = Column(String(30), nullable=True)
     max_score = Column(Integer, nullable=False, default=1)
     answered_at = Column(DateTime(timezone=True), nullable=True)
     # Manual grading (1 Oct 2026). Only ever set on an answer grade_answer

@@ -52,7 +52,9 @@ question_type it doesn't recognise, e.g. Constructed Response) returns
 question_quality_service.py's math verifiers already established.
 """
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -74,6 +76,7 @@ from app.models import (
     Student,
     Teacher,
 )
+from app.services import units
 
 # --- Phase 3 ingestion: Question.assignment_code -> LearningActivity -------
 
@@ -512,7 +515,349 @@ def _candidate_answers(question: Question) -> list[str]:
     return [c for c in candidates if c and c.strip()]
 
 
+# --- Measured answers: units, tolerance, rounding (Phase 4, #164) -----------
+#
+# Ashalatha's clarification note, item 5, as designed in
+# PHASE4_UNITS_DESIGN.md (approved 13 Oct 2026). Applies to a Numeric Entry
+# question with one blank, and only once its marking fields say so (see
+# _uses_measured_marking); every other question is marked by the code after
+# this block exactly as before.
+
+UNIT_RULES = ("NONE", "STATED", "REQUIRED")
+
+# Grading notes recorded on AttemptAnswer.grading_note.
+WRONG_UNIT = "WRONG_UNIT"
+UNIT_MISSING = "UNIT_MISSING"
+
+
+@dataclass(frozen=True)
+class MarkingRule:
+    unit_rule: str  # one of UNIT_RULES, after the Response Format default
+    answer_unit: str | None  # a units.UNITS code
+    allow_conversion: bool
+    tolerance: Decimal | None
+    decimal_places: int | None
+    unit_mark: int
+
+
+@dataclass(frozen=True)
+class GradeResult:
+    is_correct: bool | None
+    score: int | None
+    note: str | None = None
+
+
+def default_unit_rule(response_format: str | None) -> str:
+    """The rule a question follows when none is recorded: STATED when its
+    Response Format says the unit is stated in the question (1,270 Class 5
+    questions), NONE otherwise."""
+    return "STATED" if "unit stated" in (response_format or "").lower() else "NONE"
+
+
+def parse_tolerance(text: str | None) -> Decimal | None:
+    """A stored tolerance as a Decimal, or None when empty or unreadable.
+    Writes are checked (routes_curriculum_admin, the importer), so an
+    unreadable one can only be old or hand-made data; it is ignored rather
+    than allowed to stop marking."""
+    if text is None or not str(text).strip():
+        return None
+    try:
+        value = Decimal(str(text).strip())
+    except InvalidOperation:
+        return None
+    if not value.is_finite() or value < 0:
+        return None
+    return value
+
+
+def marking_rule(question: Question) -> MarkingRule:
+    rule = (question.unit_rule or "").strip().upper()
+    if rule not in UNIT_RULES:
+        rule = default_unit_rule(question.response_format)
+    unit = units.unit_code(question.answer_unit) if question.answer_unit else None
+    unit_mark = question.unit_mark if question.unit_mark is not None and question.unit_mark >= 0 else 1
+    places = question.decimal_places if question.decimal_places is not None and question.decimal_places >= 0 else None
+    return MarkingRule(
+        unit_rule=rule,
+        answer_unit=unit,
+        allow_conversion=bool(question.allow_unit_conversion),
+        tolerance=parse_tolerance(question.numeric_tolerance),
+        decimal_places=places,
+        unit_mark=unit_mark,
+    )
+
+
+# The six fields as people name them (workbook headers, the Curriculum
+# Studio form) -> the Question attribute each is stored in.
+MARKING_FIELD_LABELS = {
+    "answer_unit": "Answer Unit",
+    "unit_rule": "Unit Rule",
+    "allow_unit_conversion": "Allow Conversion",
+    "numeric_tolerance": "Tolerance",
+    "decimal_places": "Decimal Places",
+    "unit_mark": "Unit Mark",
+}
+MAX_DECIMAL_PLACES = 6
+
+
+def _blank(value) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+MAX_UNIT_MARK = 100
+MAX_TOLERANCE_PLACES = 10
+
+
+def _whole_number(value) -> int | None:
+    """An int from 2, 2.0, "2" or " 2 "; None for anything else (2.5, "two",
+    True, and anything with more than six digits, so "1e100000000" is never
+    expanded)."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if abs(value) < 10**6 else None
+    try:
+        number = Decimal(str(value).strip())
+    except InvalidOperation:
+        return None
+    if not number.is_finite() or number.adjusted() >= 6 or number != number.to_integral_value():
+        return None
+    return int(number)
+
+
+def clean_marking_fields(raw: dict) -> tuple[dict, list[tuple[str, str]]]:
+    """Checks the marking fields given (keys are Question attribute names,
+    only those present are looked at) and returns (values to store,
+    problems as (field, sentence) pairs). A blank value clears the field. Used by the workbook import
+    and the Curriculum Studio edit, so both accept exactly the same things."""
+    values: dict = {}
+    problems: list[tuple[str, str]] = []
+    for key, value in raw.items():
+        label = MARKING_FIELD_LABELS[key]
+        if key == "allow_unit_conversion":
+            word = "" if _blank(value) or isinstance(value, bool) else str(value).strip().lower()
+            # 1 and 0 too: a spreadsheet often holds them for Yes and No.
+            if value is True or word in ("yes", "y", "true", "1", "1.0"):
+                values[key] = True
+            elif _blank(value) or value is False or word in ("no", "n", "false", "0", "0.0"):
+                values[key] = False
+            else:
+                problems.append((key, f"{label} must be Yes or No."))
+            continue
+        if _blank(value):
+            values[key] = None
+            continue
+        if key == "answer_unit":
+            code = units.unit_code(str(value))
+            if code is None:
+                problems.append((key, f"{label} \"{str(value).strip()[:30]}\" is not one of the units marking knows."))
+            else:
+                values[key] = code
+        elif key == "unit_rule":
+            rule = str(value).strip().upper()
+            if rule not in UNIT_RULES:
+                problems.append((key, f"{label} must be None, Stated or Required."))
+            else:
+                values[key] = rule
+        elif key == "numeric_tolerance":
+            tolerance = parse_tolerance(str(value))
+            if tolerance is None:
+                problems.append((key, f"{label} must be a number of 0 or more."))
+            elif -tolerance.normalize().as_tuple().exponent > MAX_TOLERANCE_PLACES:
+                problems.append((key, f"{label} can have at most {MAX_TOLERANCE_PLACES} decimal places."))
+            else:
+                text = format(tolerance.normalize(), "f")
+                if len(text) > 20:
+                    problems.append((key, f"{label} must be less than 1,000,000."))
+                else:
+                    values[key] = text
+        elif key == "decimal_places":
+            places = _whole_number(value)
+            if places is None or not 0 <= places <= MAX_DECIMAL_PLACES:
+                problems.append((key, f"{label} must be a whole number from 0 to {MAX_DECIMAL_PLACES}."))
+            else:
+                values[key] = places
+        elif key == "unit_mark":
+            mark = _whole_number(value)
+            if mark is None or not 0 <= mark <= MAX_UNIT_MARK:
+                problems.append((key, f"{label} must be a whole number from 0 to {MAX_UNIT_MARK}."))
+            else:
+                values[key] = mark
+    return values, problems
+
+
+def marking_notes(question: Question) -> list[str]:
+    """What a content reviewer should know about how this question is
+    marked. Advice, never a quality flag: a flag would stop bulk approval,
+    and a question with no unit recorded is still marked correctly (as
+    before)."""
+    if (question.question_type or "").strip() != "Numeric Entry":
+        return []
+    rule = marking_rule(question)
+    notes = []
+    if rule.unit_rule in ("STATED", "REQUIRED") and not rule.answer_unit:
+        if rule.unit_rule == "STATED":
+            notes.append("Unit stated in the question, but the answer unit is not recorded.")
+        else:
+            notes.append("Unit required, but the answer unit is not recorded, so the unit is not checked yet.")
+    if rule.unit_rule == "REQUIRED" and rule.answer_unit and question.marks and question.marks > 1 and rule.unit_mark >= question.marks:
+        notes.append("The unit mark is the whole question's marks, so a missing unit gives 0.")
+    return notes
+
+
+def answer_instruction(question: Question) -> str | None:
+    """The line shown under a student's answer box, or None. Stated names
+    the unit ("Answer in grams."); Required does not, because naming it
+    would answer half the question."""
+    if (question.question_type or "").strip() != "Numeric Entry":
+        return None
+    rule = marking_rule(question)
+    if not _uses_measured_marking(question, rule) or not rule.answer_unit:
+        return None
+    if rule.unit_rule == "STATED":
+        return f"Answer in {units.unit_label(rule.answer_unit)}."
+    if rule.unit_rule == "REQUIRED":
+        return "Write the number and the unit."
+    return None
+
+
+def answer_needs_unit(question: Question) -> bool:
+    """True when the child must write the unit (a REQUIRED unit that is
+    recorded), so the answer box should offer letters, not a number pad."""
+    rule = marking_rule(question)
+    return rule.unit_rule == "REQUIRED" and bool(rule.answer_unit) and _uses_measured_marking(question, rule)
+
+
+def answer_unit_label(question: Question) -> str | None:
+    """The unit the correct answer is in, in words, for showing the answer
+    key ("500 grams"); None when the unit plays no part in marking."""
+    rule = marking_rule(question)
+    if rule.unit_rule == "NONE" or not rule.answer_unit or not _uses_measured_marking(question, rule):
+        return None
+    key = units.parse_measurement(question.correct_answer)
+    one = key is not None and key.unit is None and key.number == 1
+    return units.unit_label(rule.answer_unit, plural=not one)  # "1 kilogram", "2 kilograms"
+
+
+def grading_note_words(note: str | None, *, marks_lost: int | None = None) -> str | None:
+    """A grading note as a sentence a student or teacher can read."""
+    if note == WRONG_UNIT:
+        return "Correct number, but in the wrong unit."
+    if note == UNIT_MISSING:
+        if marks_lost:
+            word = "mark was" if marks_lost == 1 else "marks were"
+            return f"Correct number, but the unit was missing, so {marks_lost} {word} taken off."
+        return "Correct number, but the unit was missing."
+    return None
+
+
+def _uses_measured_marking(question: Question, rule: MarkingRule) -> bool:
+    if (question.question_type or "").strip() != "Numeric Entry":
+        return False
+    if len([p for p in (question.correct_answer or "").split(";") if p.strip()]) != 1:
+        return False  # several blanks: not in this PR (#160)
+    if rule.unit_rule in ("STATED", "REQUIRED") and rule.answer_unit:
+        return True
+    return (rule.tolerance is not None and rule.tolerance > 0) or rule.decimal_places is not None
+
+
+def _mark_against(given: units.Measurement, expected: units.Measurement, rule: MarkingRule, marks: int) -> GradeResult:
+    """One answer against one correct value."""
+    # Rule NONE: the number alone is marked, even when the key itself
+    # carries a unit.
+    expected_unit = None if rule.unit_rule == "NONE" else (expected.unit or rule.answer_unit)
+    given = units.Measurement(given.number, units.reads_as(given.written, given.unit, expected_unit), given.written)
+
+    def same(number: Decimal) -> bool:
+        return units.numbers_match(number, expected.number, tolerance=rule.tolerance, decimal_places=rule.decimal_places)
+
+    if given.unit is None or expected_unit is None:
+        # No unit written, or none to check against (rule NONE, or the
+        # answer unit not yet recorded): the number decides, and a written
+        # unit is ignored, as marking always has.
+        if not same(given.number):
+            return GradeResult(False, 0)
+        if given.unit is None and expected_unit is not None and rule.unit_rule == "REQUIRED":
+            # Item 5: on a one-mark answer a missing required unit makes it
+            # wrong; on a longer answer only the unit mark is lost.
+            kept = 0 if marks <= 1 else max(marks - rule.unit_mark, 0)
+            if kept >= marks:  # a unit mark of 0: nothing is lost
+                return GradeResult(True, marks)
+            return GradeResult(False, kept, UNIT_MISSING)
+        return GradeResult(True, marks)
+
+    if given.unit == expected_unit:
+        return GradeResult(True, marks) if same(given.number) else GradeResult(False, 0)
+
+    converted = units.convert(given.number, given.unit, expected_unit)
+    if rule.allow_conversion and converted is not None:
+        return GradeResult(True, marks) if same(converted) else GradeResult(False, 0)
+    # Another unit, not allowed (or of another kind). Say why only when the
+    # number itself was right ("250 kg" for 250 g), so the note never
+    # suggests a wrong number was nearly right.
+    return GradeResult(False, 0, WRONG_UNIT if same(given.number) else None)
+
+
+def _grade_measured(question: Question, response: str, rule: MarkingRule) -> GradeResult:
+    marks = question.marks
+    if not response:
+        return GradeResult(False, 0)
+    # Accepted Variants always win: a listed variant written out exactly is
+    # right, whatever the rules below would say ("2 kg 50 g"). Only the
+    # variants: the key itself goes through the rules, or "12" would pass
+    # as the key "12" where the unit is Required.
+    variants = [v for v in (question.accepted_variants or "").split("|") if v.strip()]
+    if any(_normalize_value(response) == _normalize_value(v) for v in variants):
+        return GradeResult(True, marks)
+    candidates = _candidate_answers(question)
+    given = units.parse_measurement(response)
+    checks_unit = rule.unit_rule != "NONE" and bool(rule.answer_unit)
+    if given is None and not checks_unit:
+        # Not one number with a known unit, and no unit to check: marked the
+        # way it always was (found in review: "60 km/h", "1/2", "$250").
+        is_correct, score = _grade_answer_text(question, response)
+        return GradeResult(is_correct, score)
+    best = GradeResult(False, 0)
+    for candidate in candidates:
+        expected = units.parse_measurement(candidate)
+        if expected is None:
+            # A key these rules cannot read ("60 km/h", "1/2") is compared
+            # the old way, so it can never make a question impossible.
+            if _blank_matches(response, candidate):
+                return GradeResult(True, marks)
+            continue
+        if given is None:
+            continue
+        result = _mark_against(given, expected, rule, marks)
+        if result.is_correct:
+            return result
+        # Keep the best of the wrong results: more marks first, then one
+        # that can say why (a note) over one that cannot.
+        if (result.score, result.note is not None) > (best.score, best.note is not None):
+            best = result
+    return best
+
+
+def grade_answer_detail(question: Question, response_text: str | None) -> GradeResult:
+    """grade_answer, with the reason for a unit mark lost or a wrong unit
+    (GradeResult.note). submit_attempt records the note."""
+    if question.auto_gradable:
+        rule = marking_rule(question)
+        if _uses_measured_marking(question, rule):
+            return _grade_measured(question, (response_text or "").strip(), rule)
+    is_correct, score = _grade_answer_text(question, response_text)
+    return GradeResult(is_correct, score)
+
+
 def grade_answer(question: Question, response_text: str | None) -> tuple[bool | None, int | None]:
+    """(is_correct, auto_score). See _grade_answer_text, and
+    grade_answer_detail for measured answers. A unit mark lost on a
+    REQUIRED unit gives is_correct False with a score above 0."""
+    result = grade_answer_detail(question, response_text)
+    return result.is_correct, result.score
+
+
+def _grade_answer_text(question: Question, response_text: str | None) -> tuple[bool | None, int | None]:
     """Returns (is_correct, auto_score). (None, None) means "not auto-graded
     here" -- either the question isn't auto_gradable, or its question_type
     isn't one of the response shapes this function recognises (see module
@@ -585,9 +930,11 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
             answer = AttemptAnswer(attempt_id=attempt.id, question_id=question_id, response_text=None, max_score=question.marks)
             db.add(answer)
 
-        is_correct, score = grade_answer(question, answer.response_text)
+        result = grade_answer_detail(question, answer.response_text)
+        is_correct, score = result.is_correct, result.score
         answer.is_correct = is_correct
         answer.auto_score = score
+        answer.grading_note = result.note
         max_score += question.marks
         if score is None:
             any_unscored = True

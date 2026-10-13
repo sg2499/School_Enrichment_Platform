@@ -122,6 +122,7 @@ _CHAPTER_NUM = {
     "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
     "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
     "API8B": 27, "FR4": 28, "RES1": 29, "RES2": 30, "FR5": 31, "FR6": 32,
+    "UNIT1": 33,
 }
 
 
@@ -1677,3 +1678,55 @@ def test_foundation_repair_reasons_cannot_be_set_by_hand(client, db_session):
         headers=headers,
     )
     assert allowed.status_code == 200, allowed.text
+
+
+def test_a_measured_answer_is_marked_with_its_unit_end_to_end(client, db_session):
+    """Phase 4 (#164). Three measured questions in one set, answered by a
+    student through the API: the box says how to answer, a missing
+    Required unit costs the unit mark, a wrong unit is wrong and says why,
+    and the result shows the answer key with its unit."""
+    chapter, (skill,) = _make_chapter_with_skills(db_session, "UNIT1", n_skills=1)
+    stated = _add_question(db_session, skill, "UNIT1-Q1", assignment_code=_ac("UNIT1", "P01"), question_type="Numeric Entry", correct_answer="250")
+    stated.response_format, stated.answer_unit = "Integer; unit stated in question", "g"
+    required = _add_question(db_session, skill, "UNIT1-Q2", assignment_code=_ac("UNIT1", "P01"), question_type="Numeric Entry", correct_answer="12", marks=3)
+    required.unit_rule, required.answer_unit = "REQUIRED", "cm"
+    untouched = _add_question(db_session, skill, "UNIT1-Q3", assignment_code=_ac("UNIT1", "P01"), question_type="Numeric Entry", correct_answer="40")
+    untouched.response_format = "Integer; unit stated in question"  # no unit recorded: marked as before
+    db_session.commit()
+
+    school = _make_school(db_session, "unit1")
+    teacher = _make_teacher(db_session, school, "unit1")
+    student = _make_student(db_session, school, "unit1")
+    db_session.commit()
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    _publish(db_session, activity)
+    assignment = learning_service.create_assignment(
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=teacher.user_id, class_name="5A",
+    )
+    [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
+
+    headers = _login(client, student.user.email)
+    attempt = client.post("/api/learning/attempts", json={"assignmentTargetId": target.id}, headers=headers).json()
+    instructions = {q["code"]: q["answerInstruction"] for q in attempt["questions"]}
+    assert instructions == {"UNIT1-Q1": "Answer in grams.", "UNIT1-Q2": "Write the number and the unit.", "UNIT1-Q3": None}
+    assert all("answerUnitLabel" not in q and "correctAnswer" not in q for q in attempt["questions"])
+    assert {q["code"]: q["answerNeedsUnit"] for q in attempt["questions"]} == {"UNIT1-Q1": False, "UNIT1-Q2": True, "UNIT1-Q3": False}
+
+    for question, given in ((stated, "250 kg"), (required, "12"), (untouched, "40 kg")):
+        saved = client.put(
+            f"/api/learning/attempts/{attempt['id']}/answers", json={"questionId": question.id, "responseText": given}, headers=headers,
+        )
+        assert saved.status_code == 200
+    submitted = client.post(f"/api/learning/attempts/{attempt['id']}/submit", headers=headers).json()
+    assert (submitted["autoScore"], submitted["maxScore"]) == (0 + 2 + 1, 5)
+
+    result = client.get(f"/api/learning/attempts/{attempt['id']}/result", headers=headers).json()
+    by_stem = {a["stem"]: a for a in result["answers"]}
+    q1, q2, q3 = by_stem["Question UNIT1-Q1?"], by_stem["Question UNIT1-Q2?"], by_stem["Question UNIT1-Q3?"]
+    assert (q1["isCorrect"], q1["autoScore"], q1["gradingNote"]) == (False, 0, "WRONG_UNIT")
+    assert q1["gradingNoteText"] == "Correct number, but in the wrong unit."
+    assert (q1["correctAnswer"], q1["answerUnitLabel"]) == ("250", "grams")
+    assert (q2["isCorrect"], q2["autoScore"], q2["gradingNote"]) == (False, 2, "UNIT_MISSING")
+    assert q2["gradingNoteText"] == "Correct number, but the unit was missing, so 1 mark was taken off."
+    assert q2["answerUnitLabel"] == "centimetres"
+    assert (q3["isCorrect"], q3["autoScore"], q3["gradingNote"], q3["answerUnitLabel"]) == (True, 1, None, None)
