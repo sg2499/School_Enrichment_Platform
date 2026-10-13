@@ -10,7 +10,8 @@ import os
 # a Secure-flagged cookie is silently dropped by the client on an insecure
 # origin, which would otherwise break every cookie-authenticated test here.
 os.environ.setdefault("COOKIE_SECURE", "false")
-os.environ.setdefault("SECRET_KEY", "test-secret")
+# 32 bytes or more: PyJWT warns about a shorter HS256 key (RFC 7518 3.2).
+os.environ.setdefault("SECRET_KEY", "test-secret-for-the-suite-only-0123456789")
 os.environ.setdefault("PLATFORM_OPERATOR_KEY", "test-platform-operator-key")
 # TOTP secrets are Fernet-encrypted at rest (app/core/totp_crypto.py).
 # Tests don't set ENVIRONMENT, so config.py treats them as production and

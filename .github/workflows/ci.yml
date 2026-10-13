@@ -260,24 +260,11 @@ jobs:
           set -euo pipefail
           mkdir -p ../ci-artifacts
           pip install -q pip-audit
-          # PYSEC-2026-1325 (ecdsa): no fix has been released upstream (the
-          # ecdsa package's own maintainers have stated pure-Python
-          # constant-time ECDSA is out of scope for the project) -- and it is
-          # unreachable in this app regardless, since every token this app
-          # signs/verifies (app/core/security.py) uses HS256 (HMAC), never
-          # ECDSA. A documented, reviewed exception, not a silent ignore --
-          # any *other* vulnerability still fails this job.
-          #
-          # CVE-2026-85394 / GHSA-3qf3-8w2g-rqmx (python-jose <= 3.5.0, no
-          # fixed release; found 13 Oct 2026 on PR #93): HMAC initialisation
-          # accepts a DER-encoded public key, so someone holding the service
-          # PUBLIC key can forge an HS256 token where the algorithms accepted
-          # are not restricted. Neither condition holds here: this app has no
-          # asymmetric key at all (tokens are HS256 under SECRET_KEY), and its
-          # one verification call (app/core/security.py, decode_token) passes
-          # algorithms=[ALGORITHM], i.e. HS256 only. Temporary: python-jose is
-          # to be replaced by PyJWT (TASKS.md #175), and this line removed with it.
-          pip-audit -r requirements.txt --no-deps --ignore-vuln PYSEC-2026-1325 --ignore-vuln CVE-2026-85394 2>&1 | tee ../ci-artifacts/backend-dependency-audit.txt
+          # No exceptions (13 Oct 2026). The only two advisories ever excepted
+          # here, PYSEC-2026-1325 (ecdsa) and CVE-2026-85394 (python-jose), both
+          # came with python-jose, which PyJWT replaced. Any known vulnerability
+          # in backend/requirements.txt fails this job.
+          pip-audit -r requirements.txt --no-deps 2>&1 | tee ../ci-artifacts/backend-dependency-audit.txt
       - uses: actions/setup-node@v7
         with:
           node-version: '20'
