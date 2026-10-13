@@ -809,6 +809,12 @@ def _attempt_review_payload(db: Session, viewer: Viewer, attempt: Attempt, assig
             "maxScore": answer.max_score,
             "needsManualGrade": learning_service.needs_manual_grade(answer),
             "correctAnswer": question.correct_answer,
+            "answerUnitLabel": learning_service.answer_unit_label(question),
+            "gradingNote": answer.grading_note,
+            "gradingNoteText": learning_service.grading_note_words(
+                answer.grading_note,
+                marks_lost=(answer.max_score or 0) - answer.auto_score if answer.auto_score is not None else None,
+            ),
             "explanation": question.explanation,
             "teacherNote": question.teacher_note,
             "gradedByName": answer.graded_by.full_name if answer.graded_by else None,

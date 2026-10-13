@@ -38,6 +38,7 @@ from app.models import (
     Question,
     SubjectGroup,
 )
+from app.services.learning_service import MARKING_FIELD_LABELS, clean_marking_fields
 
 # Question Bank sheet column positions (0-indexed) -- see module docstring.
 QB_QUESTION_ID = 0
@@ -72,6 +73,25 @@ QB_MEDIA_REQUIRED = 28
 QB_TEACHER_NOTE = 29
 QB_STATUS = 30
 QB_SOURCE_ALIGNMENT = 31
+
+# Optional marking columns (Phase 4, #164, 13 Oct 2026). Unlike the 32 above
+# these are found by header name, wherever they sit, because they are new:
+# a workbook made before them has none and imports exactly as before. A
+# column that is absent leaves what is stored alone (so re-importing an old
+# file never wipes a unit set in Curriculum Studio); a column that is there
+# with an empty cell clears the field.
+_MARKING_HEADERS = {label.lower(): key for key, label in MARKING_FIELD_LABELS.items()}
+_MARKING_HEADERS["allow unit conversion"] = "allow_unit_conversion"
+
+
+def _marking_columns(header_row) -> dict[str, int]:
+    columns: dict[str, int] = {}
+    for index, cell in enumerate(header_row or ()):
+        key = _MARKING_HEADERS.get(str(cell).strip().lower()) if cell is not None else None
+        if key and key not in columns:
+            columns[key] = index
+    return columns
+
 
 STATUS_MAP = {
     "draft": "DRAFT",
@@ -251,6 +271,7 @@ def import_chapter_workbook(
     if not qb_rows or qb_rows[0][QB_QUESTION_ID] != "Question ID":
         raise ValueError("Question Bank sheet does not start with the expected header row")
     qb_data_rows = [r for r in qb_rows[1:] if r and r[QB_QUESTION_ID]]
+    marking_columns = _marking_columns(qb_rows[0])
 
     sm_rows = list(wb["Skill Map"].iter_rows(values_only=True))
     sm_header_idx = _find_header_row(sm_rows, "Skill ID")
@@ -386,6 +407,14 @@ def import_chapter_workbook(
         question.teacher_note = row[QB_TEACHER_NOTE]
         question.status = _normalize_status(row[QB_STATUS])
         question.source_alignment = row[QB_SOURCE_ALIGNMENT]
+        if marking_columns:
+            marking, problems = clean_marking_fields(
+                {key: (row[index] if index < len(row) else None) for key, index in marking_columns.items()}
+            )
+            for key, value in marking.items():
+                setattr(question, key, value)
+            for _field, problem in problems:
+                result.warnings.append(f"Question {code}: {problem} Left as it was.")
 
         if is_new:
             db.add(question)

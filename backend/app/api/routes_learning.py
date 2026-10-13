@@ -115,7 +115,16 @@ def _question_public_dict(question: Question) -> dict:
         "marks": question.marks,
         "timeSeconds": question.time_seconds,
         "responseFormat": question.response_format,
+        # Phase 4 (#164): "Answer in grams." or "Write the number and the
+        # unit." Says how to answer, never what the answer is.
+        "answerInstruction": learning_service.answer_instruction(question),
+        "answerNeedsUnit": learning_service.answer_needs_unit(question),
     }
+
+
+def _grading_note_text(answer: AttemptAnswer) -> str | None:
+    lost = (answer.max_score or 0) - (answer.auto_score or 0) if answer.auto_score is not None else None
+    return learning_service.grading_note_words(answer.grading_note, marks_lost=lost)
 
 
 def _activity_dict(activity: LearningActivity) -> dict:
@@ -758,6 +767,11 @@ def get_attempt_result(
                 "maxScore": answer.max_score,
                 "correctAnswer": None if withhold_key else question.correct_answer,
                 "explanation": None if withhold_key else question.explanation,
+                # Phase 4 (#164): the unit the answer key is in, and why a
+                # right number lost marks (wrong or missing unit).
+                "answerUnitLabel": None if withhold_key else learning_service.answer_unit_label(question),
+                "gradingNote": answer.grading_note,
+                "gradingNoteText": _grading_note_text(answer),
             }
         )
 

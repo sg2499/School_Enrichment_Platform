@@ -186,6 +186,12 @@ export type ReviewAnswer = {
    *  a teacher marks. */
   needsManualGrade: boolean;
   correctAnswer: string;
+  // Phase 4 (#164): the answer key's unit in words, when the unit counts in
+  // marking; and why a right number lost marks (a wrong or missing unit),
+  // as a code and in words. Optional: an older server does not send them.
+  answerUnitLabel?: string | null;
+  gradingNote?: string | null;
+  gradingNoteText?: string | null;
   explanation: string | null;
   teacherNote: string | null;
   gradedByName: string | null;

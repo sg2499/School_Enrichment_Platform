@@ -19,7 +19,9 @@ import {
   answerState,
   attemptsLeft,
   averageScore,
+  correctAnswerText,
   latestScore,
+  partMarksHint,
   practiceAction,
   resultSentence,
   resultTally,
@@ -228,6 +230,36 @@ describe("answerState, answerMarks and resultTally", () => {
     assert.equal(answerState({ isCorrect: false, manualScore: 2, maxScore: 3 }), "partial");
     assert.equal(answerState({ isCorrect: true, manualScore: 3, maxScore: 3 }), "correct");
     assert.equal(answerState({ isCorrect: false, manualScore: 0, maxScore: 3 }), "incorrect");
+  });
+
+  test("automatic part marks (a required unit missing) are part marks, not 'incorrect'", () => {
+    assert.equal(answerState({ isCorrect: false, autoScore: 2, manualScore: null, maxScore: 3 }), "partial");
+    assert.equal(answerState({ isCorrect: false, autoScore: 0, manualScore: null, maxScore: 3 }), "incorrect");
+    assert.equal(answerState({ isCorrect: true, autoScore: 3, manualScore: null, maxScore: 3 }), "correct");
+    // Without the score (an older server) it reads as before.
+    assert.equal(answerState({ isCorrect: false, manualScore: null, maxScore: 3 }), "incorrect");
+  });
+
+  test("where part marks came from", () => {
+    const auto = { isCorrect: false, autoScore: 1, manualScore: null, maxScore: 2 };
+    const teacher = { isCorrect: false, autoScore: null, manualScore: 1, maxScore: 2 };
+    const wrong = { isCorrect: false, autoScore: 0, manualScore: null, maxScore: 2 };
+    assert.equal(partMarksHint([wrong]), "None");
+    assert.equal(partMarksHint([teacher, wrong]), "From your teacher");
+    assert.equal(partMarksHint([auto]), "The reason is below");
+    assert.equal(partMarksHint([auto, teacher]), "Some from your teacher");
+  });
+
+  test("the answer key is shown with its unit when the unit counts", () => {
+    assert.equal(correctAnswerText({ correctAnswer: "250", answerUnitLabel: "grams" }), "250 grams");
+    assert.equal(correctAnswerText({ correctAnswer: " 1,250 ", answerUnitLabel: "rupees" }), "1,250 rupees");
+    assert.equal(correctAnswerText({ correctAnswer: "2.5", answerUnitLabel: "kilograms" }), "2.5 kilograms");
+    // A key that already says its unit, or is not a number, is left alone.
+    assert.equal(correctAnswerText({ correctAnswer: "1.5 m", answerUnitLabel: "centimetres" }), "1.5 m");
+    assert.equal(correctAnswerText({ correctAnswer: "2 kg 50 g", answerUnitLabel: "grams" }), "2 kg 50 g");
+    assert.equal(correctAnswerText({ correctAnswer: "250", answerUnitLabel: null }), "250");
+    assert.equal(correctAnswerText({ correctAnswer: "250" }), "250");
+    assert.equal(correctAnswerText({ correctAnswer: null, answerUnitLabel: "grams" }), null);
   });
 
   test("the marks an answer earned: the teacher's if there are any, else automatic, else none yet", () => {

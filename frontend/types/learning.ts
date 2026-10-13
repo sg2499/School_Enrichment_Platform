@@ -147,6 +147,12 @@ export type AttemptQuestion = {
   marks: number;
   timeSeconds: number | null;
   responseFormat: string | null;
+  // How to answer a measured question (Phase 4, #164): "Answer in grams."
+  // or "Write the number and the unit." Null when the unit plays no part.
+  // Optional: an older server does not send it.
+  answerInstruction?: string | null;
+  // The unit must be written (a Required unit), so the box offers letters.
+  answerNeedsUnit?: boolean;
   // The student's own previously-saved answer on THIS attempt (30 Sep 2026),
   // null for a fresh attempt or an unanswered question -- so a resumed
   // attempt can show back what autosave already stored, instead of a blank
@@ -186,6 +192,14 @@ export type AttemptAnswerResult = {
   // explanation, for an answer nothing has marked yet.
   correctAnswer: string | null;
   explanation: string | null;
+  // Phase 4 (#164). The unit the answer key is in, in words ("grams"),
+  // when the unit counts in marking; null otherwise, and while the key is
+  // withheld. gradingNote says why a right number lost marks:
+  // "WRONG_UNIT" or "UNIT_MISSING"; gradingNoteText is the same in words.
+  // Optional: an older server does not send them.
+  answerUnitLabel?: string | null;
+  gradingNote?: string | null;
+  gradingNoteText?: string | null;
 };
 
 export type AttemptResult = EvaluationResult & {

@@ -151,3 +151,71 @@ def test_import_warns_on_orphan_skill_reference(db_session, tmp_path):
     assert len(result.warnings) == 1
     assert "T5-C5-S99" in result.warnings[0]
     assert result.questions_created == 1  # the other, valid row still imports
+
+
+# --- Marking columns (Phase 4, #164, 13 Oct 2026) ----------------------------
+
+MARKING_HEADERS = ["Answer Unit", "Unit Rule", "Allow Conversion", "Tolerance", "Decimal Places", "Unit Mark"]
+
+
+def _with_marking_columns(path: str, chapter_no: int, title: str, q001_marking: list, *, headers=MARKING_HEADERS) -> None:
+    """The fixture workbook with the marking columns added after the 32
+    existing ones, filled for Q001 and left empty for Q002."""
+    _build_fixture_workbook(path, chapter_no, title)
+    wb = openpyxl.load_workbook(path)
+    qb = wb["Question Bank"]
+    for offset, header in enumerate(headers):
+        qb.cell(row=1, column=33 + offset, value=header)
+        qb.cell(row=2, column=33 + offset, value=q001_marking[offset])
+    wb.save(path)
+
+
+def test_marking_columns_are_read_by_header_name(db_session, tmp_path):
+    path = tmp_path / "marking.xlsx"
+    _with_marking_columns(str(path), 903, "Marking One", ["Grams", "required", "Yes", 0.5, 1, 2])
+    result = import_chapter_workbook(db_session, str(path))
+    assert result.warnings == []
+    q = db_session.query(Question).filter(Question.code == "TEST-C5-CH903-Q001").one()
+    assert (q.answer_unit, q.unit_rule, q.allow_unit_conversion) == ("g", "REQUIRED", True)
+    assert (q.numeric_tolerance, q.decimal_places, q.unit_mark) == ("0.5", 1, 2)
+    other = db_session.query(Question).filter(Question.code == "TEST-C5-CH903-Q002").one()
+    assert (other.answer_unit, other.unit_rule, other.allow_unit_conversion) == (None, None, False)
+    assert (other.numeric_tolerance, other.decimal_places, other.unit_mark) == (None, None, None)
+
+
+def test_a_workbook_without_the_columns_imports_as_before_and_keeps_stored_values(db_session, tmp_path):
+    with_columns = tmp_path / "with.xlsx"
+    _with_marking_columns(str(with_columns), 904, "Marking Two", ["cm", "Stated", "No", None, None, None])
+    import_chapter_workbook(db_session, str(with_columns))
+    old_format = tmp_path / "old.xlsx"
+    _build_fixture_workbook(str(old_format), 904, "Marking Two")
+    result = import_chapter_workbook(db_session, str(old_format))
+    assert result.warnings == [] and result.questions_updated == 2
+    q = db_session.query(Question).filter(Question.code == "TEST-C5-CH904-Q001").one()
+    assert (q.answer_unit, q.unit_rule) == ("cm", "STATED")  # not wiped by the older file
+
+
+def test_an_empty_cell_clears_and_a_bad_value_is_warned_and_left(db_session, tmp_path):
+    first = tmp_path / "first.xlsx"
+    _with_marking_columns(str(first), 905, "Marking Three", ["kg", "Required", "No", "0.1", 2, 1])
+    import_chapter_workbook(db_session, str(first))
+    second = tmp_path / "second.xlsx"
+    _with_marking_columns(str(second), 905, "Marking Three", [None, "Sometimes", "maybe", "-1", 2.5, "two"])
+    result = import_chapter_workbook(db_session, str(second))
+    q = db_session.query(Question).filter(Question.code == "TEST-C5-CH905-Q001").one()
+    assert q.answer_unit is None  # empty cell: cleared
+    assert (q.unit_rule, q.allow_unit_conversion, q.numeric_tolerance, q.decimal_places, q.unit_mark) == (
+        "REQUIRED", False, "0.1", 2, 1,
+    )  # each bad value left as it was
+    assert len(result.warnings) == 5
+    assert all(w.startswith("Question TEST-C5-CH905-Q001: ") and w.endswith("Left as it was.") for w in result.warnings)
+    assert any("Unit Rule must be None, Stated or Required." in w for w in result.warnings)
+
+
+def test_only_some_marking_columns_may_be_present(db_session, tmp_path):
+    path = tmp_path / "some.xlsx"
+    _with_marking_columns(str(path), 906, "Marking Four", ["m", "Stated"], headers=["answer unit", " UNIT RULE "])
+    result = import_chapter_workbook(db_session, str(path))
+    assert result.warnings == []
+    q = db_session.query(Question).filter(Question.code == "TEST-C5-CH906-Q001").one()
+    assert (q.answer_unit, q.unit_rule, q.allow_unit_conversion, q.unit_mark) == ("m", "STATED", False, None)

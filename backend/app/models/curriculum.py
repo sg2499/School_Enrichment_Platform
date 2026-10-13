@@ -65,6 +65,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -388,6 +389,30 @@ class Question(Base):
     quality_status = Column(String(20), nullable=False, default="UNCHECKED")
     quality_flags = Column(Text, nullable=True)  # JSON list of human-readable reasons, only set when FLAGGED
     quality_checked_at = Column(DateTime(timezone=True), nullable=True)
+    # How a measured answer is marked (Phase 4, #164, 13 Oct 2026; design in
+    # PHASE4_UNITS_DESIGN.md). All optional: a question with none of them
+    # set is marked exactly as before. Read through
+    # learning_service.marking_rule, never directly, because unit_rule's
+    # empty value has a meaning of its own (see below).
+    #   answer_unit: a code from app/services/units.py ("g", "cm2").
+    #   unit_rule: "NONE" | "STATED" | "REQUIRED". Empty means "not set":
+    #     STATED when response_format says "unit stated in question", else
+    #     NONE -- so the 1,270 Class 5 questions worded that way need no
+    #     data change.
+    #   allow_unit_conversion: accept an equal amount in another unit of
+    #     the same kind (2 kg for 2000 g).
+    #   numeric_tolerance: the allowed difference, in the answer unit. Kept
+    #     as exact decimal text ("0.5"), never a float; checked on write.
+    #   decimal_places: the final answer is rounded half up to this many
+    #     places before it is compared.
+    #   unit_mark: marks taken off when a REQUIRED unit is missing on a
+    #     question worth more than 1 mark (empty means 1).
+    answer_unit = Column(String(20), nullable=True)
+    unit_rule = Column(String(10), nullable=True)
+    allow_unit_conversion = Column(Boolean, nullable=False, default=False, server_default=false())
+    numeric_tolerance = Column(String(20), nullable=True)
+    decimal_places = Column(Integer, nullable=True)
+    unit_mark = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

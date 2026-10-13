@@ -1138,3 +1138,110 @@ def test_chapter_summary_exposes_board_course_and_curriculum_version_ids(client,
     body = response.json()
     assert body["boardCourseId"] == board_course.id
     assert body["curriculumVersionId"] == chapter.curriculum_version_id
+
+
+# --- Marking settings for measured answers (Phase 4, #164) -------------------
+
+
+def _numeric_question(db, chapter, suffix: str, **fields) -> Question:
+    lesson, _ = _add_lesson_with_question(db, chapter, suffix)
+    question = Question(
+        concept_lesson_id=lesson.id,
+        code=f"QN-{suffix}",
+        question_type="Numeric Entry",
+        stem="A packet weighs 250 grams. How many grams in 2 packets?",
+        correct_answer="500",
+        marks=2,
+        status="DRAFT",
+        **fields,
+    )
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+def test_question_detail_shows_marking_settings_and_notes(client, db_session):
+    chapter, _ = _make_chapter(db_session, "mark01")
+    question = _numeric_question(db_session, chapter, "mark01", response_format="Integer; unit stated in question")
+    _make_super_admin(db_session, "sa-mark01@example.com")
+    _login(client, "sa-mark01@example.com")
+
+    body = client.get(f"/api/curriculum-admin/concept-lessons/{question.concept_lesson_id}/questions").json()
+    detail = next(q for q in body["questions"] if q["code"] == "QN-mark01")
+    assert detail["unitRule"] is None and detail["effectiveUnitRule"] == "STATED"
+    assert detail["answerUnit"] is None and detail["allowUnitConversion"] is False
+    assert detail["markingNotes"] == ["Unit stated in the question, but the answer unit is not recorded."]
+    # Advice only: a missing unit is not a quality flag (flags stop bulk approval).
+    assert not any("unit" in flag.lower() for flag in detail["qualityFlags"])
+
+    units_list = client.get("/api/curriculum-admin/marking-units").json()["units"]
+    assert {"code": "g", "kind": "mass", "label": "grams", "singular": "gram"} in units_list
+
+
+def test_super_admin_sets_marking_and_it_is_audited(client, db_session):
+    from app.models import AuditLog
+
+    chapter, _ = _make_chapter(db_session, "mark02")
+    question = _numeric_question(db_session, chapter, "mark02")
+    _make_super_admin(db_session, "sa-mark02@example.com")
+    csrf = _login(client, "sa-mark02@example.com")
+    url = f"/api/curriculum-admin/questions/{question.id}/marking"
+
+    response = client.patch(
+        url,
+        json={"answerUnit": "grams", "unitRule": "Required", "allowUnitConversion": "Yes", "numericTolerance": "0.50", "decimalPlaces": 1, "unitMark": "1"},
+        headers=csrf,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert (body["answerUnit"], body["answerUnitLabel"], body["unitRule"]) == ("g", "grams", "REQUIRED")
+    assert (body["allowUnitConversion"], body["numericTolerance"], body["decimalPlaces"], body["unitMark"]) == (True, "0.5", 1, 1)
+    assert body["markingNotes"] == []
+
+    audit = db_session.query(AuditLog).filter(AuditLog.event_type == "curriculum.question.marking_changed").all()
+    entry = next(a for a in audit if question.id in a.event_data_json)
+    assert '"answer_unit": {"from": null, "to": "g"}' in entry.event_data_json
+
+    # Only what is sent changes; null clears.
+    cleared = client.patch(url, json={"numericTolerance": None}, headers=csrf).json()
+    assert cleared["numericTolerance"] is None and cleared["answerUnit"] == "g"
+
+    # Marking follows the new settings straight away.
+    from app.services.learning_service import grade_answer_detail
+
+    db_session.refresh(question)
+    assert grade_answer_detail(question, "500 g").score == 2
+    assert grade_answer_detail(question, "500").note == "UNIT_MISSING"
+
+
+def test_bad_marking_values_are_refused_in_words(client, db_session):
+    chapter, _ = _make_chapter(db_session, "mark03")
+    question = _numeric_question(db_session, chapter, "mark03")
+    _make_super_admin(db_session, "sa-mark03@example.com")
+    csrf = _login(client, "sa-mark03@example.com")
+    url = f"/api/curriculum-admin/questions/{question.id}/marking"
+
+    bad = client.patch(url, json={"answerUnit": "furlongs", "decimalPlaces": 9}, headers=csrf)
+    assert bad.status_code == 422
+    detail = bad.json()["detail"]
+    assert detail["code"] == "INVALID_MARKING"
+    assert "is not one of the units marking knows" in detail["message"]
+    assert "Decimal Places must be a whole number from 0 to 6." in detail["message"]
+    assert [f["field"] for f in detail["details"]["fields"]] == ["answerUnit", "decimalPlaces"]
+    db_session.refresh(question)
+    assert question.answer_unit is None and question.decimal_places is None  # nothing half-applied
+
+    assert client.patch(url, json={}, headers=csrf).status_code == 422
+    assert client.patch("/api/curriculum-admin/questions/nope/marking", json={"unitRule": "None"}, headers=csrf).status_code == 404
+
+
+def test_only_a_super_admin_can_change_marking(client, db_session):
+    chapter, _ = _make_chapter(db_session, "mark04", status="PUBLISHED")
+    question = _numeric_question(db_session, chapter, "mark04")
+    _make_school_admin(db_session, "admin-mark04@example.com", "Marking Test School")
+    csrf = _login(client, "admin-mark04@example.com")
+    response = client.patch(f"/api/curriculum-admin/questions/{question.id}/marking", json={"unitRule": "Required"}, headers=csrf)
+    assert response.status_code == 403
+    db_session.refresh(question)
+    assert question.unit_rule is None

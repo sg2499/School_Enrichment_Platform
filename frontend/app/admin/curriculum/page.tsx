@@ -40,7 +40,9 @@ import { SessionGate } from "@/components/SessionGate";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { PanelStack, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { BlueprintIllustration } from "@/components/brand/Graphics";
+import { MarkingSettings } from "@/components/curriculum/MarkingSettings";
 import { api, errorMessage } from "@/lib/api";
+import { hasMarkingSettings } from "@/lib/marking";
 import { classLabel, cn } from "@/lib/utils";
 import type {
   BoardCourseOption,
@@ -156,12 +158,14 @@ function QuestionCard({
   question,
   pendingStatus,
   onAdvance,
+  onMarkingSaved,
 }: {
   question: QuestionDetail;
   /** The status this card is currently being moved to, if any -- so only
    *  the button that was pressed shows progress (both used to spin). */
   pendingStatus: QuestionStatus | null;
   onAdvance: (status: QuestionStatus) => void;
+  onMarkingSaved: (updated: QuestionDetail) => void;
 }) {
   const options: Array<[string, string | null]> = [
     ["A", question.optionA],
@@ -250,6 +254,8 @@ function QuestionCard({
         <span className="font-semibold text-content-subtle">Correct answer: </span>
         <span className="text-content">{question.correctAnswer}</span>
       </p>
+
+      {hasMarkingSettings(question) ? <MarkingSettings question={question} onSaved={onMarkingSaved} /> : null}
 
       {question.explanation ? (
         <p className="text-sm text-content-muted">
@@ -1178,6 +1184,12 @@ function ChapterStudio({ onChanged }: { onChanged: () => void }) {
                                     question={question}
                                     pendingStatus={questionAction?.id === question.id ? questionAction.status : null}
                                     onAdvance={(status) => advanceQuestion(lesson.id, question.id, status)}
+                                    onMarkingSaved={(updated) =>
+                                      setQuestionsByLesson((prev) => ({
+                                        ...prev,
+                                        [lesson.id]: (prev[lesson.id] ?? []).map((q) => (q.id === updated.id ? updated : q)),
+                                      }))
+                                    }
                                   />
                                 ))}
                               </div>

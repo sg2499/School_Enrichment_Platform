@@ -61,7 +61,9 @@ from app.models import (
     Teacher,
     User,
 )
+from app.services import units
 from app.services.audit_service import log_audit_event
+from app.services.learning_service import clean_marking_fields, marking_notes, marking_rule
 from app.services.question_quality_service import run_quality_checks
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
@@ -513,6 +515,24 @@ def _question_detail(question: Question) -> dict:
         "status": question.status,
         "qualityStatus": question.quality_status,
         "qualityFlags": json.loads(question.quality_flags) if question.quality_flags else [],
+        **_marking_detail(question),
+    }
+
+
+def _marking_detail(question: Question) -> dict:
+    """How a measured answer is marked (Phase 4, #164). unitRule is what
+    is stored (null: not set); effectiveUnitRule is what marking follows,
+    after the Response Format default."""
+    return {
+        "answerUnit": question.answer_unit,
+        "answerUnitLabel": units.unit_label(question.answer_unit),
+        "unitRule": question.unit_rule,
+        "effectiveUnitRule": marking_rule(question).unit_rule,
+        "allowUnitConversion": bool(question.allow_unit_conversion),
+        "numericTolerance": question.numeric_tolerance,
+        "decimalPlaces": question.decimal_places,
+        "unitMark": question.unit_mark,
+        "markingNotes": marking_notes(question),
     }
 
 
@@ -609,6 +629,88 @@ def update_question_status(
     db.commit()
     db.refresh(question)
     return {"id": question.id, "code": question.code, "status": question.status}
+
+
+class MarkingUpdateRequest(BaseModel):
+    """Any of the six marking fields; only those sent are changed, and null
+    or an empty string clears one. Values are checked by
+    learning_service.clean_marking_fields, the same check the workbook
+    import uses."""
+    answerUnit: str | None = None
+    unitRule: str | None = None
+    allowUnitConversion: bool | str | None = None
+    numericTolerance: str | int | float | None = None
+    # Floats too, so 2.5 reaches the check below and is refused in words,
+    # not by the framework's own message.
+    decimalPlaces: int | float | str | None = None
+    unitMark: int | float | str | None = None
+
+
+_MARKING_PAYLOAD_KEYS = {
+    "answerUnit": "answer_unit",
+    "unitRule": "unit_rule",
+    "allowUnitConversion": "allow_unit_conversion",
+    "numericTolerance": "numeric_tolerance",
+    "decimalPlaces": "decimal_places",
+    "unitMark": "unit_mark",
+}
+
+
+@router.get("/marking-units", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def list_marking_units():
+    """The units an Answer Unit can be, for the editor's list."""
+    return {
+        "units": [
+            {"code": unit.code, "kind": unit.kind, "label": unit.plural, "singular": unit.singular}
+            for unit in units.UNITS.values()
+        ]
+    }
+
+
+@router.patch("/questions/{question_id}/marking")
+def update_question_marking(
+    question_id: str,
+    payload: MarkingUpdateRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Sets how a measured answer is marked. Applies to attempts submitted
+    from now on; an attempt already marked keeps its marks."""
+    question = db.get(Question, question_id)
+    if not question:
+        api_error(404, "NOT_FOUND", "That question couldn't be found. It may have been removed.")
+    # In the form's order, so problems are listed the way the fields are.
+    sent = {
+        attribute: getattr(payload, name) for name, attribute in _MARKING_PAYLOAD_KEYS.items() if name in payload.model_fields_set
+    }
+    if not sent:
+        api_error(422, "NOTHING_TO_CHANGE", "Choose at least one marking setting to change.")
+    values, problems = clean_marking_fields(sent)
+    if problems:
+        field_names = {attribute: name for name, attribute in _MARKING_PAYLOAD_KEYS.items()}
+        api_error(
+            422,
+            "INVALID_MARKING",
+            " ".join(sentence for _field, sentence in problems),
+            {"fields": [{"field": field_names[field], "in": "body", "issue": sentence} for field, sentence in problems]},
+        )
+
+    before = {key: getattr(question, key) for key in values}
+    for key, value in values.items():
+        setattr(question, key, value)
+    changed = {key: {"from": before[key], "to": value} for key, value in values.items() if before[key] != value}
+    if changed:
+        log_audit_event(
+            db,
+            "curriculum.question.marking_changed",
+            user_id=user.id,
+            request=request,
+            details={"questionId": question.id, "code": question.code, "changes": changed},
+        )
+    db.commit()
+    db.refresh(question)
+    return _question_detail(question)
 
 
 class BulkApproveRequest(BaseModel):
