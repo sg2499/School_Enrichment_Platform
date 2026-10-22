@@ -21,6 +21,14 @@ single-page view couldn't do:
    POST /attempts/{id}/grades records a teacher's marks
    (learning_service.apply_manual_grades), audit-logged.
 
+4. Part and method marks (#163, 22 Oct 2026). On a question worth 2 or
+   more marks that is marked automatically, a teacher may review the
+   machine's mark: POST /attempts/{id}/mark-reviews
+   (learning_service.apply_mark_reviews), audit-logged. GET /method-marks
+   lists the attempts with working typed under an answer that fell short
+   of full marks and no review yet. Nothing waits on it: the automatic
+   mark stands until a teacher changes it.
+
 Relationship to routes_learning.py: that file keeps the assignment-create
 and student attempt lifecycle, plus the original per-assignment
 `/targets`, `/attempts/{id}/result` and `/grant-attempt` endpoints (now
@@ -343,6 +351,15 @@ def tracker_overview(viewer: Viewer = Depends(_viewer), db: Session = Depends(ge
         .scalar()
         or 0
     )
+    method_marks = (
+        db.query(func.count(distinct(Attempt.id)))
+        .join(AttemptAnswer, AttemptAnswer.attempt_id == Attempt.id)
+        .join(AssignmentTarget, AssignmentTarget.id == Attempt.assignment_target_id)
+        .join(Assignment, Assignment.id == AssignmentTarget.assignment_id)
+        .filter(_awaits_method_marks_clause(), practice_access_service.actionable_assignments_clause(viewer))
+        .scalar()
+        or 0
+    )
     roster = None
     if viewer.is_teacher:
         roster = (
@@ -357,6 +374,7 @@ def tracker_overview(viewer: Viewer = Depends(_viewer), db: Session = Depends(ge
             "assignments": assignment_count,
             "activeAssignments": active_count,
             "needsReview": needs_review,
+            "methodMarks": method_marks,
             "studentsOnRoster": roster,
         },
     }
@@ -750,6 +768,80 @@ def list_review_queue(
     return page_envelope(items, total, params)
 
 
+def _awaits_method_marks_clause():
+    """SQL twin of learning_service.awaits_method_marks: working typed, an
+    automatic mark short of full marks on a 2+ mark answer, not yet
+    reviewed. (Working that is only spaces is never stored.)"""
+    return and_(
+        AttemptAnswer.working_text.isnot(None),
+        AttemptAnswer.auto_score.isnot(None),
+        AttemptAnswer.max_score >= 2,
+        AttemptAnswer.auto_score < AttemptAnswer.max_score,
+        AttemptAnswer.manual_score.is_(None),
+    )
+
+
+@router.get("/method-marks")
+def list_method_marks(
+    classLevelId: str | None = None,
+    section: str | None = None,
+    boardCourseId: str | None = None,
+    params: PageParams = Depends(page_params),
+    viewer: Viewer = Depends(_viewer),
+    db: Session = Depends(get_db),
+):
+    """Submitted attempts with working to read for method marks, oldest
+    submission first, for the assignments this viewer can act on (the same
+    rule as the review queue). answersToReview is how many answers in the
+    attempt await a review."""
+    # The count per attempt is worked out in a subquery, not by grouping the
+    # outer query: the eager loads below add their own columns to the outer
+    # SELECT, which Postgres refuses under a GROUP BY that doesn't name them
+    # (found in review, 22 Oct 2026; SQLite allowed it).
+    waiting = (
+        db.query(AttemptAnswer.attempt_id.label("attempt_id"), func.count(AttemptAnswer.id).label("to_review"))
+        .filter(_awaits_method_marks_clause())
+        .group_by(AttemptAnswer.attempt_id)
+        .subquery()
+    )
+    query = (
+        db.query(Attempt, Evaluation, AssignmentTarget, Assignment, Student, User, waiting.c.to_review)
+        .join(waiting, waiting.c.attempt_id == Attempt.id)
+        .join(Evaluation, Evaluation.attempt_id == Attempt.id)
+        .join(AssignmentTarget, AssignmentTarget.id == Attempt.assignment_target_id)
+        .join(Assignment, Assignment.id == AssignmentTarget.assignment_id)
+        .join(Student, Student.id == AssignmentTarget.student_id)
+        .join(User, User.id == Student.user_id)
+        .options(*_assignment_load_options())
+        .filter(
+            practice_access_service.actionable_assignments_clause(viewer),
+            _assignment_scope_clause(classLevelId, section, boardCourseId),
+        )
+        .order_by(Attempt.submitted_at.asc(), Attempt.id.asc())
+    )
+    rows, total = paginate(query, params)
+    items = []
+    for attempt, evaluation, target, assignment, student, _, count in rows:
+        activity = assignment.learning_activity
+        items.append(
+            {
+                "attemptId": attempt.id,
+                "attemptNumber": attempt.attempt_number,
+                "submittedAt": _iso(attempt.submitted_at),
+                "answersToReview": int(count or 0),
+                "evaluation": _evaluation_dict(evaluation),
+                "assignment": {
+                    "id": assignment.id,
+                    "title": activity.title if activity else None,
+                    "activityType": activity.activity_type if activity else None,
+                    **_section_label_parts(assignment),
+                },
+                **_student_basics(student),
+            }
+        )
+    return page_envelope(items, total, params)
+
+
 # --- one attempt: review + manual grading -----------------------------------------
 
 
@@ -819,6 +911,12 @@ def _attempt_review_payload(db: Session, viewer: Viewer, attempt: Attempt, assig
             "teacherNote": question.teacher_note,
             "gradedByName": answer.graded_by.full_name if answer.graded_by else None,
             "gradedAt": _iso(answer.graded_at),
+            # #163: the child's working, and the teacher's review of an
+            # auto-marked answer.
+            "workingText": answer.working_text,
+            "canReviewMarks": learning_service.can_review_marks(answer),
+            "awaitsMethodMarks": learning_service.awaits_method_marks(answer),
+            "reviewReason": answer.review_reason,
         }
         for answer, question in answer_rows
     ]
@@ -906,6 +1004,68 @@ def submit_manual_grades(
             "assignmentTargetId": attempt.assignment_target_id,
             "studentId": attempt.assignment_target.student_id,
             "grades": changes,
+            "autoScore": evaluation.auto_score,
+            "teacherScore": evaluation.teacher_score,
+            "finalScore": evaluation.final_score,
+            "maxScore": evaluation.max_score,
+            "reviewStatusBefore": previous_status,
+            "reviewStatusAfter": evaluation.review_status,
+        },
+    )
+    db.commit()
+    db.refresh(attempt)
+    return _attempt_review_payload(db, viewer, attempt, assignment)
+
+
+class MarkReviewItem(BaseModel):
+    questionId: str
+    # null restores the automatic mark.
+    score: int | None = None
+    reason: str | None = Field(default=None, max_length=learning_service.REVIEW_REASON_MAX_CHARS * 2)
+
+
+class SubmitMarkReviewsRequest(BaseModel):
+    reviews: list[MarkReviewItem] = Field(min_length=1, max_length=200)
+
+
+@router.post("/attempts/{attempt_id}/mark-reviews")
+@limiter.limit("60/minute")
+def submit_mark_reviews(
+    request: Request,
+    attempt_id: str,
+    payload: SubmitMarkReviewsRequest,
+    viewer: Viewer = Depends(_viewer),
+    db: Session = Depends(get_db),
+):
+    """Part and method marks (#163): a teacher reviews auto-marked answers
+    worth 2 or more marks, changing or keeping the machine's mark, with a
+    reason the student reads. Same permission as marking written answers:
+    only the section's current teacher, or an admin. See
+    learning_service.apply_mark_reviews for the rules."""
+    attempt, assignment = _load_attempt_for_viewer(db, viewer, attempt_id)
+    practice_access_service.require_actionable_assignment(db, viewer, assignment)
+
+    reviews: dict[str, learning_service.MarkReview] = {}
+    for item in payload.reviews:
+        if item.questionId in reviews:
+            api_error(422, "VALIDATION_ERROR", "Each answer can only be reviewed once at a time.")
+        reviews[item.questionId] = learning_service.MarkReview(score=item.score, reason=item.reason)
+
+    previous_status = db.query(Evaluation.review_status).filter(Evaluation.attempt_id == attempt.id).scalar()
+    evaluation, changes = learning_service.apply_mark_reviews(
+        db, attempt=attempt, reviews=reviews, grader_user_id=viewer.user.id
+    )
+    log_audit_event(
+        db,
+        "learning.attempt.marks_reviewed",
+        user_id=viewer.user.id,
+        request=request,
+        details={
+            "attemptId": attempt.id,
+            "assignmentId": assignment.id,
+            "assignmentTargetId": attempt.assignment_target_id,
+            "studentId": attempt.assignment_target.student_id,
+            "reviews": changes,
             "autoScore": evaluation.auto_score,
             "teacherScore": evaluation.teacher_score,
             "finalScore": evaluation.final_score,

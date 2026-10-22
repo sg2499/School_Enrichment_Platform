@@ -429,14 +429,24 @@ export function scorePercent(finalScore: number, maxScore: number): number | nul
  * Never "final", and never "it can only go up": a teacher can change a mark
  * they have given (see the note at the top of this file).
  */
-export function resultSentence(result: Pick<AttemptResult, "reviewStatus" | "finalScore" | "maxScore">): string {
+export function resultSentence(
+  result: Pick<AttemptResult, "reviewStatus" | "finalScore" | "maxScore"> & {
+    answers?: readonly Pick<AttemptAnswerResult, "autoScore">[];
+  },
+): string {
   if (result.reviewStatus === "PENDING_REVIEW") {
     return "Your written answers are waiting for your teacher's marks, so this is your score so far.";
   }
   const full = result.maxScore > 0 && result.finalScore === result.maxScore;
   if (full) return "Full marks. Every answer right.";
   if (result.reviewStatus === "FINALISED") {
-    return "Your teacher has marked your written answers. Each answer below shows what it earned.";
+    // #163: a teacher may also have reviewed an automatic mark (part or
+    // method marks) on a set with no written answers at all. Without the
+    // answers to tell, the written-answer wording stays, as before.
+    const written = result.answers ? result.answers.some((a) => a.autoScore === null) : true;
+    return written
+      ? "Your teacher has marked your written answers. Each answer below shows what it earned."
+      : "Your teacher has checked your marks. Each answer below shows what it earned.";
   }
   return "Look through what you missed below. Each one shows the correct answer.";
 }

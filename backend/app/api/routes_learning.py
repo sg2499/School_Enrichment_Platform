@@ -40,7 +40,7 @@ Authorization model:
   views and manual grading live in routes_practice_tracker.py.
 """
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.errors import api_error
@@ -119,6 +119,9 @@ def _question_public_dict(question: Question) -> dict:
         # unit." Says how to answer, never what the answer is.
         "answerInstruction": learning_service.answer_instruction(question),
         "answerNeedsUnit": learning_service.answer_needs_unit(question),
+        # #163 (22 Oct 2026): a "Your working" box goes under the answer on
+        # a Numeric Entry question worth 2 or more marks, for method marks.
+        "acceptsWorking": learning_service.accepts_working(question),
     }
 
 
@@ -604,10 +607,9 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
     # untouched (it stays unchanged -- this is its only caller, so the extra
     # field is added here rather than widening its shape). A fresh attempt
     # has no AttemptAnswer rows, so every responseText is None.
-    saved = {
-        answer.question_id: answer.response_text
-        for answer in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()
-    }
+    saved_rows = db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()
+    saved = {answer.question_id: answer.response_text for answer in saved_rows}
+    saved_working = {answer.question_id: answer.working_text for answer in saved_rows}
     return {
         "id": attempt.id,
         "assignmentTargetId": attempt.assignment_target_id,
@@ -615,7 +617,10 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
         "status": attempt.status,
         "startedAt": attempt.started_at.isoformat() if attempt.started_at else None,
         "activity": _activity_dict(activity),
-        "questions": [{**_question_public_dict(q), "responseText": saved.get(q.id)} for q in questions],
+        "questions": [
+            {**_question_public_dict(q), "responseText": saved.get(q.id), "workingText": saved_working.get(q.id)}
+            for q in questions
+        ],
     }
 
 
@@ -634,6 +639,9 @@ def start_attempt(
 class SaveAnswerRequest(BaseModel):
     questionId: str
     responseText: str | None = None
+    # #163: the child's working. Leave the field out to keep whatever was
+    # saved before; send null or "" to clear it.
+    workingText: str | None = Field(default=None, max_length=learning_service.WORKING_MAX_CHARS * 2)
 
 
 @router.put("/attempts/{attempt_id}/answers")
@@ -645,7 +653,15 @@ def save_answer(
     student: Student = Depends(get_current_student),
     db: Session = Depends(get_db),
 ):
-    answer = learning_service.save_answer(db, student, attempt_id, payload.questionId, payload.responseText)
+    answer = learning_service.save_answer(
+        db,
+        student,
+        attempt_id,
+        payload.questionId,
+        payload.responseText,
+        payload.workingText,
+        working_sent="workingText" in payload.model_fields_set,
+    )
     return {"questionId": answer.question_id, "savedAt": answer.answered_at.isoformat() if answer.answered_at else None}
 
 
@@ -772,6 +788,13 @@ def get_attempt_result(
                 "answerUnitLabel": None if withhold_key else learning_service.answer_unit_label(question),
                 "gradingNote": answer.grading_note,
                 "gradingNoteText": _grading_note_text(answer),
+                # #163: the child's working, and a teacher's review of an
+                # auto-marked answer (part or method marks). reviewedByTeacher
+                # is true only for such a review; a written answer's mark has
+                # always been the teacher's.
+                "workingText": answer.working_text,
+                "reviewedByTeacher": answer.auto_score is not None and answer.manual_score is not None,
+                "reviewReason": answer.review_reason,
             }
         )
 

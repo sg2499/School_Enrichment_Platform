@@ -305,6 +305,15 @@ describe("attemptsLeft, scorePercent, resultSentence, setWord", () => {
 
   test("a score a teacher has marked says who marked it", () => {
     assert.match(resultSentence({ reviewStatus: "FINALISED", finalScore: 4, maxScore: 5 }), /^Your teacher has marked your written answers\./);
+    // #163: reviewed automatic marks on a set with no written answers.
+    assert.match(
+      resultSentence({ reviewStatus: "FINALISED", finalScore: 5, maxScore: 6, answers: [{ autoScore: 0 }, { autoScore: 3 }] }),
+      /^Your teacher has checked your marks\./,
+    );
+    assert.match(
+      resultSentence({ reviewStatus: "FINALISED", finalScore: 5, maxScore: 6, answers: [{ autoScore: null }, { autoScore: 3 }] }),
+      /^Your teacher has marked your written answers\./,
+    );
   });
 
   test("no result is called final, or said to be unable to go down: a teacher can change a mark", () => {

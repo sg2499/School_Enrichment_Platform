@@ -42,6 +42,9 @@ export type TrackerOverview = {
     assignments: number;
     activeAssignments: number;
     needsReview: number;
+    // #163: attempts with working to read for method marks. Optional: an
+    // older server does not send it.
+    methodMarks?: number;
     studentsOnRoster: number | null;
   };
 };
@@ -196,6 +199,24 @@ export type ReviewAnswer = {
   teacherNote: string | null;
   gradedByName: string | null;
   gradedAt: string | null;
+  // #163 (22 Oct 2026), part and method marks. The student's working; true
+  // when the automatic mark may be reviewed (marked automatically, 2+
+  // marks); true when it is listed under Method Marks (working typed, short
+  // of full marks, not reviewed yet); the reviewer's reason. Optional: an
+  // older server does not send them.
+  workingText?: string | null;
+  canReviewMarks?: boolean;
+  awaitsMethodMarks?: boolean;
+  reviewReason?: string | null;
+};
+
+export type MethodMarksRow = StudentBasics & {
+  attemptId: string;
+  attemptNumber: number;
+  submittedAt: string | null;
+  answersToReview: number;
+  evaluation: TrackerEvaluation;
+  assignment: SectionScope & { id: string; title: string | null; activityType: ActivityType | null };
 };
 
 export type AttemptReview = {

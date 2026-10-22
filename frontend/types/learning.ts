@@ -71,7 +71,9 @@ export type ReviewStatus = "AUTO_FINALISED" | "PENDING_REVIEW" | "FINALISED";
 export type EvaluationResult = {
   attemptId: string;
   autoScore: number;
-  // Marks a teacher has awarded so far; null until they award any.
+  // The net marks teachers changed so far: a written answer's mark, plus
+  // or minus any change to an automatic mark (part and method marks, #163,
+  // so it can be negative). Null until a teacher marks anything.
   // finalScore = autoScore + (teacherScore ?? 0).
   teacherScore?: number | null;
   maxScore: number;
@@ -158,6 +160,11 @@ export type AttemptQuestion = {
   // attempt can show back what autosave already stored, instead of a blank
   // form. Their answer, never the key.
   responseText: string | null;
+  // #163 (22 Oct 2026): a "Your Working" box goes under the answer (a
+  // Numeric Entry question worth 2+ marks), and the working already saved
+  // on this attempt. Optional: an older server does not send them.
+  acceptsWorking?: boolean;
+  workingText?: string | null;
 };
 
 export type AttemptDetail = {
@@ -200,6 +207,12 @@ export type AttemptAnswerResult = {
   answerUnitLabel?: string | null;
   gradingNote?: string | null;
   gradingNoteText?: string | null;
+  // #163: the student's working, and a teacher's review of an automatic
+  // mark (reviewedByTeacher; manualScore is then the mark that counts and
+  // reviewReason says why). Optional: an older server does not send them.
+  workingText?: string | null;
+  reviewedByTeacher?: boolean;
+  reviewReason?: string | null;
 };
 
 export type AttemptResult = EvaluationResult & {

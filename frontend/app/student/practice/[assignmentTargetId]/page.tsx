@@ -349,6 +349,55 @@ function QuestionInput({
   );
 }
 
+/** Long enough for a Class 10 calculation set out step by step; the server
+ *  holds the same limit (learning_service.WORKING_MAX_CHARS). */
+const WORKING_MAX = 2000;
+
+/**
+ * "Your Working" (#163, 22 Oct 2026), under the answer on a question worth
+ * 2 or more marks that is marked automatically. Optional. The answer is
+ * still marked at once; the working is what a teacher reads to give marks
+ * for a correct method when the answer itself lost marks.
+ */
+function WorkingBox({
+  question,
+  value,
+  disabled,
+  onChange,
+}: {
+  question: AttemptQuestion;
+  value: string;
+  disabled: boolean;
+  onChange: (next: string) => void;
+}) {
+  const id = `working-${question.id}`;
+  const hintId = `working-hint-${question.id}`;
+  const nearLimit = value.length > WORKING_MAX - 200;
+  return (
+    <div className="space-y-1.5 border-t border-line pt-4">
+      <label htmlFor={id} className="text-sm font-semibold text-content">
+        Your Working <span className="font-normal text-content-subtle">(optional)</span>
+      </label>
+      <textarea
+        id={id}
+        value={value}
+        disabled={disabled}
+        maxLength={WORKING_MAX}
+        rows={3}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Show your steps, one per line"
+        aria-describedby={hintId}
+        className="w-full rounded-2xl border border-line-field bg-surface px-4 py-3 font-mono text-[0.875rem] leading-relaxed text-content shadow-xs outline-none transition placeholder:font-sans placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field disabled:opacity-60"
+      />
+      {/* content-subtle on white: 6.4:1. */}
+      <p id={hintId} className="flex flex-wrap justify-between gap-x-3 text-xs text-content-subtle">
+        <span>Your teacher can give marks for correct working, even if the final answer is wrong.</span>
+        {nearLimit ? <span className="tabular">{value.length} / {WORKING_MAX}</span> : null}
+      </p>
+    </div>
+  );
+}
+
 /** How each kind of marked answer is shown: a badge in words with an icon,
  *  and an edge rail that only echoes it. */
 const ANSWER_CHROME = {
@@ -558,8 +607,30 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                     missing or wrong unit -- said in words, so "1 of 2"
                     is not left to explain itself. content-muted on
                     surface-muted: 7.4:1. */}
-                {state !== "pending" && state !== "correct" && answer.gradingNoteText ? (
+                {state !== "pending" && state !== "correct" && answer.gradingNoteText && !answer.reviewedByTeacher ? (
                   <p className="rounded-2xl bg-surface-muted p-3.5 text-sm leading-relaxed text-content-muted">{answer.gradingNoteText}</p>
+                ) : null}
+                {answer.workingText ? (
+                  // #163. content-subtle on surface-muted 6.0:1; the
+                  // working itself content 16:1, as the student typed it.
+                  <div className="rounded-2xl border border-line bg-surface-muted px-3.5 py-3">
+                    <p className={cn(PANEL_LABEL, "text-content-subtle")}>Your Working</p>
+                    <p className="mt-1 whitespace-pre-wrap break-words font-mono text-[0.8125rem] leading-relaxed text-content">
+                      {answer.workingText}
+                    </p>
+                  </div>
+                ) : null}
+                {answer.reviewedByTeacher && typeof answer.manualScore === "number" ? (
+                  // #163: a teacher reviewed the automatic mark. Said in
+                  // words with both marks, so a changed score is never a
+                  // mystery. content-muted on surface-brand: 7.8:1.
+                  <p className="rounded-2xl bg-surface-brand p-3.5 text-sm leading-relaxed text-content-muted">
+                    <span className="font-semibold text-content-brand">Marked by your teacher: </span>
+                    {answer.manualScore === answer.autoScore
+                      ? `${answer.manualScore} of ${answer.maxScore}, the same as the automatic mark.`
+                      : `${answer.manualScore} of ${answer.maxScore} (the automatic mark was ${answer.autoScore ?? 0}).`}
+                    {answer.reviewReason ? <> {answer.reviewReason}</> : null}
+                  </p>
                 ) : null}
                 {/* Never for an answer still waiting for its marks: the
                     explanation gives the answer away as surely as the
@@ -625,6 +696,10 @@ export default function StudentAttemptPage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [attempt, setAttempt] = useState<AttemptDetail | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // #163: the student's working, per question that takes it. Saved with the
+  // answer (the same request, the same debounce and retry), so the two can
+  // never be half-saved against each other.
+  const [workings, setWorkings] = useState<Record<string, string>>({});
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [blocked, setBlocked] = useState<Blocked | null>(null);
@@ -640,6 +715,7 @@ export default function StudentAttemptPage() {
   // What is on screen for each question right now, readable from the save
   // chain and from event handlers without waiting for a render.
   const answersRef = useRef<Record<string, string>>({});
+  const workingsRef = useRef<Record<string, string>>({});
   // The value carried by the most recent save issued for each question.
   // Saves for one question run in order, so the last one issued is the last
   // to finish -- and only it may say whether the question is saved. Without
@@ -760,6 +836,9 @@ export default function StudentAttemptPage() {
       const seeded = Object.fromEntries(data.questions.map((q) => [q.id, q.responseText ?? ""]));
       answersRef.current = seeded;
       setAnswers(seeded);
+      const seededWorking = Object.fromEntries(data.questions.map((q) => [q.id, q.workingText ?? ""]));
+      workingsRef.current = seededWorking;
+      setWorkings(seededWorking);
       setPhase("answering");
     } catch (err) {
       const problem = describeApiError(err);
@@ -795,8 +874,12 @@ export default function StudentAttemptPage() {
       if (!attempt) return Promise.resolve();
       setSavingIds((prev) => new Set(prev).add(question.id));
       const attemptId = attempt.id;
-      issuedRef.current[question.id] = value;
-      const isNewest = () => issuedRef.current[question.id] === value;
+      // The working on screen goes with the answer (#163). What was sent is
+      // the pair, so "newest" compares the pair.
+      const working = question.acceptsWorking ? (workingsRef.current[question.id] ?? "") : null;
+      const sent = working === null ? value : `${value}\u0000${working}`;
+      issuedRef.current[question.id] = sent;
+      const isNewest = () => issuedRef.current[question.id] === sent;
       const previous = saveQueueRef.current[question.id] ?? Promise.resolve();
       // Chain onto the previous save for this question rather than firing
       // concurrently, so network responses can't land out of order and
@@ -806,7 +889,9 @@ export default function StudentAttemptPage() {
         .then(() =>
           api.put(
             `/learning/attempts/${attemptId}/answers`,
-            { questionId: question.id, responseText: value },
+            working === null
+              ? { questionId: question.id, responseText: value }
+              : { questionId: question.id, responseText: value, workingText: working },
             // If the session has ended, stay here: see SignInAgainBanner.
             { keepPageOnSessionEnd: true },
           ),
@@ -906,6 +991,19 @@ export default function StudentAttemptPage() {
     timers[question.id] = setTimeout(() => {
       delete timers[question.id];
       void persistAnswer(question, value);
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }
+
+  function handleWorkingChange(question: AttemptQuestion, text: string) {
+    if (locked) return;
+    workingsRef.current = { ...workingsRef.current, [question.id]: text };
+    setWorkings((prev) => ({ ...prev, [question.id]: text }));
+    if (!attempt) return;
+    const timers = answerTimersRef.current;
+    if (timers[question.id]) clearTimeout(timers[question.id]);
+    timers[question.id] = setTimeout(() => {
+      delete timers[question.id];
+      void persistAnswer(question, answersRef.current[question.id] ?? "");
     }, AUTOSAVE_DEBOUNCE_MS);
   }
 
@@ -1311,6 +1409,14 @@ export default function StudentAttemptPage() {
                       value={answers[question.id] ?? ""}
                       onChange={(value) => handleAnswerChange(question, value)}
                     />
+                    {question.acceptsWorking ? (
+                      <WorkingBox
+                        question={question}
+                        value={workings[question.id] ?? ""}
+                        disabled={locked}
+                        onChange={(text) => handleWorkingChange(question, text)}
+                      />
+                    ) : null}
                   </CardBody>
                 </Card>
               ))}
