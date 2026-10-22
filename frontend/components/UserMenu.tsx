@@ -257,6 +257,8 @@ function UserMenuBody({ user, role, hasSecuritySettings, onPhotoUpdated, onClose
       window.setTimeout(() => {
         clearSession();
         rememberSignedOut({ message: "Your password has been changed. Sign in with your new password." });
+        // A full page load on purpose, as the comment above says.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/login";
       }, 1800);
     } catch (err) {

@@ -112,7 +112,6 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
             </button>
             {/* A plain link, not next/link: with the layout broken, a full
                 page load is the point. */}
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/login"
               style={{
