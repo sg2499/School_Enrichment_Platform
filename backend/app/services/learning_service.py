@@ -413,7 +413,55 @@ def _activity_question_ids(db: Session, learning_activity_id: str) -> set[str]:
     return {r[0] for r in rows}
 
 
-def save_answer(db: Session, student: Student, attempt_id: str, question_id: str, response_text: str | None) -> AttemptAnswer:
+# --- The child's working (#163, 22 Oct 2026) ----------------------------------
+
+# Long enough for a Class 10 calculation set out step by step; short enough
+# that a pasted essay can't be stored against a maths answer.
+WORKING_MAX_CHARS = 2000
+
+
+def accepts_working(question: Question) -> bool:
+    """True when the child may type their working under the answer: a
+    Numeric Entry question worth 2 or more marks that is marked
+    automatically. Only these have a calculation behind the final answer
+    for a teacher to give method marks for (Ashalatha's clarification,
+    item 5: "For a longer answer, the teacher should still give marks for
+    correct working"). One-mark questions get no box: a one-mark answer is
+    right or wrong."""
+    return (
+        bool(question.auto_gradable)
+        and (question.question_type or "").strip() == "Numeric Entry"
+        and (question.marks or 0) >= 2
+    )
+
+
+def _clean_working(text: str | None) -> str | None:
+    if text is None:
+        return None
+    text = text.replace("\r\n", "\n").strip()
+    if not text:
+        return None
+    if len(text) > WORKING_MAX_CHARS:
+        api_error(422, "VALIDATION_ERROR", f"Your working can be up to {WORKING_MAX_CHARS} characters.")
+    return text
+
+
+def save_answer(
+    db: Session,
+    student: Student,
+    attempt_id: str,
+    question_id: str,
+    response_text: str | None,
+    working_text: str | None = None,
+    *,
+    working_sent: bool = False,
+) -> AttemptAnswer:
+    """Saves the child's answer and, for a question that accepts_working,
+    their working. working_sent says whether the request carried a working
+    field at all: an answer saved without one (the answer box on its own)
+    leaves any working already saved alone, so the two boxes can be saved
+    independently. Working sent for a question that takes none is
+    ignored."""
     attempt = _get_owned_attempt(db, student, attempt_id)
     if attempt.status != "IN_PROGRESS":
         api_error(409, "ATTEMPT_LOCKED", "This attempt has already been submitted and can no longer be changed.")
@@ -429,14 +477,19 @@ def save_answer(db: Session, student: Student, attempt_id: str, question_id: str
         .first()
     )
     now = datetime.now(timezone.utc)
+    store_working = working_sent and accepts_working(question)
+    working = _clean_working(working_text) if store_working else None
     if answer:
         answer.response_text = response_text
         answer.answered_at = now
+        if store_working:
+            answer.working_text = working
     else:
         answer = AttemptAnswer(
             attempt_id=attempt.id,
             question_id=question_id,
             response_text=response_text,
+            working_text=working,
             max_score=question.marks,
             answered_at=now,
         )
@@ -1102,16 +1155,189 @@ def apply_manual_grades(
         answer.graded_at = now
         changes.append({"questionId": question_id, "previousScore": previous, "score": score, "maxScore": answer.max_score})
 
-    manual_answers = [a for a in answers.values() if needs_manual_grade(a)]
-    teacher_score = sum(a.manual_score for a in manual_answers if a.manual_score is not None)
-    evaluation.teacher_score = teacher_score
+    recompute_evaluation(evaluation, attempt, list(answers.values()), grader_user_id=grader_user_id, now=now)
+    return evaluation, changes
+
+
+def recompute_evaluation(
+    evaluation: Evaluation,
+    attempt: Attempt,
+    answers: list[AttemptAnswer],
+    *,
+    grader_user_id: str,
+    now: datetime,
+) -> None:
+    """The attempt's totals and status from its answers, after any change a
+    teacher made (apply_manual_grades, apply_mark_reviews).
+
+    final_score = auto_score + teacher_score, where teacher_score is the net
+    change teachers made: each hand-marked answer counts its manual_score in
+    place of its auto_score (0 for a Constructed Response). Unmarked written
+    answers count 0, so final_score is provisional while any remain.
+
+    Status:
+      - an answer still needing a mark (a written answer not yet marked):
+        PENDING_REVIEW, the attempt stays SUBMITTED;
+      - otherwise, any answer marked or reviewed by a teacher: FINALISED,
+        the attempt EVALUATED; finalised_by/at are stamped the first time;
+      - otherwise (a teacher restored every automatic mark they had
+        changed): AUTO_FINALISED again, finalised_by/at cleared.
+    """
+    marked = [a for a in answers if a.manual_score is not None]
+    teacher_score = sum(a.manual_score - (a.auto_score or 0) for a in marked)
+    evaluation.teacher_score = teacher_score if marked else None
     evaluation.final_score = evaluation.auto_score + teacher_score
-    if all(a.manual_score is not None for a in manual_answers):
+
+    if any(needs_manual_grade(a) and a.manual_score is None for a in answers):
+        evaluation.review_status = "PENDING_REVIEW"
+        attempt.status = "SUBMITTED"
+        evaluation.finalised_by_user_id = None
+        evaluation.finalised_at = None
+    elif marked:
         if evaluation.review_status != "FINALISED":
             evaluation.review_status = "FINALISED"
             evaluation.finalised_by_user_id = grader_user_id
             evaluation.finalised_at = now
         attempt.status = "EVALUATED"
+    else:
+        evaluation.review_status = "AUTO_FINALISED"
+        evaluation.finalised_by_user_id = None
+        evaluation.finalised_at = None
+        attempt.status = "EVALUATED"
+
+
+# --- Part and method marks on auto-marked answers (#163, 22 Oct 2026) -------
+
+REVIEW_REASON_MAX_CHARS = 200
+
+
+def can_review_marks(answer: AttemptAnswer) -> bool:
+    """True for an answer a teacher may review: marked automatically and
+    worth 2 or more marks. A one-mark answer is right or wrong (Ashalatha's
+    item 5); a written answer is marked through apply_manual_grades."""
+    return answer.auto_score is not None and (answer.max_score or 0) >= 2
+
+
+def awaits_method_marks(answer: AttemptAnswer) -> bool:
+    """An answer the Practice Tracker lists under Method Marks: the child
+    typed working, the machine gave less than full marks, and no teacher
+    has reviewed it yet. Never blocks the result: the automatic mark stands
+    until a teacher changes it."""
+    return (
+        can_review_marks(answer)
+        and bool((answer.working_text or "").strip())
+        and answer.auto_score < answer.max_score
+        and answer.manual_score is None
+    )
+
+
+@dataclass(frozen=True)
+class MarkReview:
+    """One teacher decision on one auto-marked answer. score None restores
+    the automatic mark (the review is withdrawn); otherwise it is the mark
+    that counts from now on, with reason required when it differs from the
+    automatic mark."""
+
+    score: int | None
+    reason: str | None
+
+
+def apply_mark_reviews(
+    db: Session,
+    *,
+    attempt: Attempt,
+    reviews: dict[str, MarkReview],
+    grader_user_id: str,
+) -> tuple[Evaluation, list[dict]]:
+    """Records a teacher's review of some of an attempt's auto-marked
+    answers (part and method marks), then recomputes its totals.
+
+    Validation, all-or-nothing (nothing is written if any entry is bad):
+      - the attempt has been submitted;
+      - every question is an answer on this attempt that can_review_marks;
+      - a score is a whole number in 0..the answer's own max_score;
+      - a reason (trimmed, up to REVIEW_REASON_MAX_CHARS) is required when
+        the score differs from the automatic mark; it may be given when the
+        mark is kept ("Working checked; the final answer is wrong").
+
+    The automatic mark (auto_score, is_correct's basis, grading_note) is
+    never changed. is_correct follows the mark that counts: full marks or
+    not. Restoring (score None) clears manual_score, the reason and who
+    reviewed it, and is_correct goes back to the machine's verdict.
+
+    Returns {questionId, previousScore, score, autoScore, maxScore, reason}
+    per change for the audit row. Does not commit.
+    """
+    evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
+    if not evaluation:
+        api_error(422, "NOT_SUBMITTED", "This attempt hasn't been submitted yet.")
+    if not reviews:
+        api_error(422, "VALIDATION_ERROR", "Choose at least one answer to review.")
+
+    answers = {a.question_id: a for a in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()}
+    cleaned: dict[str, tuple[int | None, str | None]] = {}
+    for question_id, review in reviews.items():
+        answer = answers.get(question_id)
+        if answer is None:
+            api_error(422, "VALIDATION_ERROR", "One of these questions isn't part of this attempt.")
+        if not can_review_marks(answer):
+            api_error(
+                422,
+                "NOT_REVIEWABLE",
+                "Only answers worth 2 or more marks that were marked automatically can be reviewed.",
+            )
+        score = review.score
+        reason = (review.reason or "").strip() or None
+        if score is not None:
+            if isinstance(score, bool) or not isinstance(score, int):
+                api_error(422, "VALIDATION_ERROR", "Marks must be a whole number.")
+            if score < 0 or score > answer.max_score:
+                api_error(
+                    422,
+                    "SCORE_OUT_OF_RANGE",
+                    f"Marks for this question must be between 0 and {answer.max_score}.",
+                )
+            if score != answer.auto_score and not reason:
+                api_error(422, "REASON_REQUIRED", "Say why the mark is changed, so the student can read it.")
+            if reason and len(reason) > REVIEW_REASON_MAX_CHARS:
+                api_error(
+                    422,
+                    "VALIDATION_ERROR",
+                    f"The reason can be up to {REVIEW_REASON_MAX_CHARS} characters.",
+                )
+        else:
+            reason = None
+        cleaned[question_id] = (score, reason)
+
+    now = datetime.now(timezone.utc)
+    changes: list[dict] = []
+    for question_id, (score, reason) in cleaned.items():
+        answer = answers[question_id]
+        previous = answer.manual_score
+        if score is None:
+            answer.manual_score = None
+            answer.review_reason = None
+            answer.graded_by_user_id = None
+            answer.graded_at = None
+            answer.is_correct = answer.auto_score == answer.max_score
+        else:
+            answer.manual_score = score
+            answer.review_reason = reason
+            answer.graded_by_user_id = grader_user_id
+            answer.graded_at = now
+            answer.is_correct = score == answer.max_score
+        changes.append(
+            {
+                "questionId": question_id,
+                "previousScore": previous,
+                "score": score,
+                "autoScore": answer.auto_score,
+                "maxScore": answer.max_score,
+                "reason": reason,
+            }
+        )
+
+    recompute_evaluation(evaluation, attempt, list(answers.values()), grader_user_id=grader_user_id, now=now)
     return evaluation, changes
 
 

@@ -10,6 +10,8 @@
  *   Assignments   every assignment the teacher can see, with progress
  *   Students      a section's students and their practice numbers
  *   Needs Review  submitted attempts waiting for the teacher's marks
+ *   Method Marks  working typed under answers that lost marks (#163,
+ *                 22 Oct 2026): part and method marks, nothing blocked
  *
  * The active tab, section, search, filters and page number all live in the
  * URL (lib/hooks/useUrlState), so Back/refresh/bookmarks behave. Drilling
@@ -43,7 +45,7 @@
  */
 
 import { Suspense } from "react";
-import { ClipboardList, Hourglass, Send, Users } from "lucide-react";
+import { ClipboardList, Hourglass, ListChecks, Send, Users } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { pageFromParam, useUrlState } from "@/lib/hooks/useUrlState";
@@ -59,10 +61,11 @@ import { SectionPicker } from "@/components/tracker/TrackerBits";
 import { AssignmentsPanel } from "@/components/tracker/AssignmentsPanel";
 import { StudentsPanel } from "@/components/tracker/StudentsPanel";
 import { ReviewQueuePanel } from "@/components/tracker/ReviewQueuePanel";
+import { MethodMarksPanel } from "@/components/tracker/MethodMarksPanel";
 import type { TrackerOverview } from "@/types/tracker";
 
-type TabKey = "assignments" | "students" | "review";
-const TABS: TabKey[] = ["assignments", "students", "review"];
+type TabKey = "assignments" | "students" | "review" | "method";
+const TABS: TabKey[] = ["assignments", "students", "review", "method"];
 
 function tabFromParam(value: string | null): TabKey {
   return TABS.includes(value as TabKey) ? (value as TabKey) : "assignments";
@@ -109,6 +112,13 @@ function TrackerWorkspace() {
       icon: <Hourglass className="h-4 w-4" />,
       count: counts?.needsReview,
       attention: true,
+    },
+    {
+      key: "method",
+      label: "Method Marks",
+      href: tabHref("method"),
+      icon: <ListChecks className="h-4 w-4" />,
+      count: counts?.methodMarks,
     },
   ];
 
@@ -190,8 +200,10 @@ function TrackerWorkspace() {
               <AssignmentsPanel {...panelProps} status={url.get("status") ?? ""} />
             ) : tab === "students" ? (
               <StudentsPanel {...panelProps} />
-            ) : (
+            ) : tab === "review" ? (
               <ReviewQueuePanel {...panelProps} />
+            ) : (
+              <MethodMarksPanel {...panelProps} />
             )}
           </div>
         </Card>

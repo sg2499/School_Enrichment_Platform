@@ -356,9 +356,21 @@ class AttemptAnswer(Base):
     # enforced in learning_service.apply_manual_grades. Who and when are
     # kept on the answer itself (not only in the audit log) so the review
     # screen can say "Marked by X on Y" without parsing audit JSON.
+    #
+    # Since 22 Oct 2026 (#163, part and method marks) manual_score is also
+    # set on an AUTO-scored answer worth 2 or more marks when a teacher
+    # reviews it: the teacher's mark then counts in place of auto_score,
+    # which is still kept, untouched, beside it. review_reason says why
+    # (required when the teacher's mark differs from the machine's). See
+    # learning_service.apply_mark_reviews.
     manual_score = Column(Integer, nullable=True)
     graded_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     graded_at = Column(DateTime(timezone=True), nullable=True)
+    review_reason = Column(String(200), nullable=True)
+    # The child's working, typed under the answer on a question worth 2 or
+    # more marks that is marked automatically (#163). Never marked by the
+    # machine; it is what a teacher reads to award method marks.
+    working_text = Column(Text, nullable=True)
 
     attempt = relationship("Attempt")
     question = relationship("Question")
@@ -380,19 +392,29 @@ class Evaluation(Base):
     once every unscored answer has a manual_score the row flips to
     FINALISED and finalised_by/finalised_at record who completed it.
 
-    Still deliberately NOT here: rubric_version_id and override_reason
-    (blueprint 8.1). There are no rubric tables (curriculum.py), and a
-    teacher can only mark answers the machine could not -- overriding an
-    auto-scored answer is not supported, so there is nothing to give a
-    reason for."""
+    Since 22 Oct 2026 (#163) a teacher may also review an auto-scored
+    answer worth 2 or more marks (part and method marks). The rule stays
+    final_score = auto_score + teacher_score: teacher_score is the net
+    change teachers made, i.e. the sum over every hand-marked answer of
+    (manual_score - (auto_score or 0)). For a Constructed Response that is
+    simply its manual mark, as before; for a reviewed auto-scored answer it
+    is the difference, so it can be negative when a teacher lowers a mark.
+    An attempt any teacher has marked or reviewed is FINALISED; one with no
+    human mark left is AUTO_FINALISED again (learning_service.
+    recompute_evaluation). The reason for a review is kept per answer
+    (AttemptAnswer.review_reason), not here.
+
+    Still deliberately NOT here: rubric_version_id (blueprint 8.1); there
+    are no rubric tables (curriculum.py)."""
     __tablename__ = "evaluations"
     id = Column(String, primary_key=True, default=uuid_str)
     attempt_id = Column(String, ForeignKey("attempts.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     auto_score = Column(Integer, nullable=False, default=0)
     max_score = Column(Integer, nullable=False, default=0)
     final_score = Column(Integer, nullable=False, default=0)
-    # Sum of manual marks awarded so far; NULL until a teacher marks
-    # anything (so an AUTO_FINALISED row is visibly "no human involved").
+    # Net marks changed by teachers so far (see the docstring); NULL until a
+    # teacher marks anything (so an AUTO_FINALISED row is visibly "no human
+    # involved").
     teacher_score = Column(Integer, nullable=True)
     # "AUTO_FINALISED" (every answer was auto-gradable) | "PENDING_REVIEW"
     # (at least one answer still needs a teacher's mark -- the Practice
