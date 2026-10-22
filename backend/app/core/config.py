@@ -13,6 +13,14 @@ load_dotenv()
 # MathPath's own in-flight testing scaffolding for a feature School
 # Enrichment doesn't have yet.
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./school_enrichment.db")
+# Name the driver the app installs (psycopg2-binary) instead of leaving it
+# to SQLAlchemy's default for a bare "postgresql://" URL, which is what
+# Render supplies. SQLAlchemy 2.1 changes that default to psycopg (v3),
+# which isn't installed, so the next upgrade would fail at the build's
+# `alembic upgrade head` (found testing the Dependabot batch, 22 Oct 2026).
+# Under 2.0 this names the driver it already uses, so nothing changes now.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = "postgresql+psycopg2://" + DATABASE_URL[len("postgresql://"):]
 
 # A14 fix (30 Sep 2026 review): distinguishes a real deployment from local
 # dev/CI so main.py can gate the localhost CORS origin and the SECRET_KEY
