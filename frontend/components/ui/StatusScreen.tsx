@@ -101,7 +101,7 @@ export function StatusScreen({
       <p className="mt-6 text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-brand">{eyebrow}</p>
       <div role={announce ? "alert" : undefined}>
         <h1 className="mt-2 font-display text-display-sm text-balance text-content sm:text-display-md">{title}</h1>
-        <p className="mx-auto mt-3 max-w-[27rem] text-[0.9375rem] leading-[1.6] text-content-muted text-pretty sm:text-base">
+        <p className="mx-auto mt-3 max-w-108 text-[0.9375rem] leading-6 text-content-muted text-pretty sm:text-base">
           <ErrorText>{message}</ErrorText>
         </p>
       </div>
@@ -118,7 +118,7 @@ export function StatusScreen({
       {actions ? <div className="mt-7 flex flex-wrap items-center justify-center gap-3">{actions}</div> : null}
 
       {footnote ? (
-        <p className="mx-auto mt-6 max-w-[26rem] border-t border-line pt-5 text-[0.8125rem] leading-[1.55] text-content-subtle text-pretty">
+        <p className="mx-auto mt-6 max-w-104 border-t border-line pt-5 text-[0.8125rem] leading-[1.55] text-content-subtle text-pretty">
           {footnote}
         </p>
       ) : null}
@@ -142,11 +142,11 @@ export function StatusScreen({
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
-        <div className="relative w-full max-w-[33rem] rounded-4xl border border-line bg-surface/95 p-7 text-center shadow-panel backdrop-blur-xl animate-fade-up sm:p-10">
+        <div className="relative w-full max-w-132 rounded-4xl border border-line bg-surface/95 p-7 text-center shadow-panel backdrop-blur-xl animate-fade-up sm:p-10">
           {/* A warm hairline along the card's top edge. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-saffron-300/80 to-transparent"
+            className="pointer-events-none absolute inset-x-12 top-0 h-px bg-linear-to-r/srgb from-transparent via-saffron-300/80 to-transparent"
           />
           {body}
         </div>

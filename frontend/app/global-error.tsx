@@ -18,7 +18,7 @@ import { PRODUCT_NAME } from "@/lib/brand";
  * stylesheet, the fonts or any shared component will either; this page must
  * still look like Krama when everything it would normally lean
  * on is the thing that broke. The colours are the brand tokens from
- * tailwind.config.ts, written out: ink #1C1B29 on paper #FAF8F4 (16:1),
+ * the @theme in app/globals.css, written out: ink #1C1B29 on paper #FAF8F4 (16:1),
  * muted #4B4962 on white (8.6:1), white on brand-700 #3C3489 (10.3:1).
  *
  * No role-specific wording: with the layout gone there is no dependable way

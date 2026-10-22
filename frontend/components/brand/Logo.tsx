@@ -66,14 +66,14 @@ const STEP_RIM = "M-7.5 0L0 5.3L7.5 0";
 // (32, 32.4). app/icon.svg carries the same transform.
 const STAIR_ENLARGED = "translate(32 32.4) scale(1.1) translate(-32 -32.4)";
 // The frame's width, in the 64-unit box. Drawn wholly inside the tile's
-// edge, so the mark's outline is still the tile's.
+// edge, so the mark's outline-solid is still the tile's.
 const FRAME = 2.2;
 
 /** On dark chrome the frame is given a little of its own light, and the
  *  tile a shadow to sit on: gold on indigo glows, and a glow is what stops
  *  a small mark from looking stuck on. Not on paper, where a gold haze
  *  reads as a smudge. */
-const ON_DARK = "[filter:drop-shadow(0_0_9px_rgba(249,171,43,0.35))_drop-shadow(0_6px_12px_rgba(0,0,0,0.4))]";
+const ON_DARK = "filter-[drop-shadow(0_0_9px_rgba(249,171,43,0.35))_drop-shadow(0_6px_12px_rgba(0,0,0,0.4))]";
 
 export function LogoMark({
   className,

@@ -194,7 +194,7 @@ function QuestionCard({
             {question.difficulty ? ` · Difficulty ${question.difficulty}` : ""} &middot; {question.marks} mark
             {question.marks === 1 ? "" : "s"}
           </p>
-          <p className="mt-1 text-sm font-medium leading-[1.5] text-content">{question.stem}</p>
+          <p className="mt-1 text-sm font-medium leading-normal text-content">{question.stem}</p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">
@@ -210,7 +210,7 @@ function QuestionCard({
         // coral-800 on coral-50: 8.7:1.
         <ul className="space-y-1 rounded-xl border border-coral-200 bg-coral-50 px-3 py-2">
           {question.qualityFlags.map((flag, i) => (
-            <li key={i} className="flex gap-1.5 text-xs leading-[1.5] text-coral-800">
+            <li key={i} className="flex gap-1.5 text-xs leading-normal text-coral-800">
               <span aria-hidden>&bull;</span>
               <span>{flag}</span>
             </li>
@@ -865,7 +865,7 @@ function ChapterStudio({ onChanged }: { onChanged: () => void }) {
         }
       >
         {!selected ? null : (
-          <div className="mx-auto max-w-[96rem] space-y-6">
+          <div className="mx-auto max-w-384 space-y-6">
             {detailError ? <ErrorBanner message={detailError} /> : null}
 
             {/* Two decks side by side on wide screens: the chapter's own
@@ -1061,7 +1061,7 @@ function ChapterStudio({ onChanged }: { onChanged: () => void }) {
                   </span>
                   {[0, 1, 2, 3].map((i) => (
                     <div key={i} aria-hidden className="flex items-center gap-3 rounded-2xl border border-line px-3.5 py-3.5">
-                      <span className="h-4 w-4 animate-pulse rounded bg-ink-100" />
+                      <span className="h-4 w-4 animate-pulse rounded-sm bg-ink-100" />
                       <span className="h-3.5 w-1/3 animate-pulse rounded-full bg-ink-100" />
                       <span className="ml-auto h-6 w-20 animate-pulse rounded-full bg-ink-100" />
                     </div>
@@ -1591,7 +1591,7 @@ function CurriculumMapPanel({ isPlatformAdmin, onChanged }: { isPlatformAdmin: b
         </PanelStack>
       </StretchCard>
 
-      <StretchCard className="animate-fade-up delay-70">
+      <StretchCard className="animate-fade-up animation-delay-70">
         <PanelStack gap="gap-5">
           <div className="flex items-start gap-3">
             <CardIcon tone="jade">

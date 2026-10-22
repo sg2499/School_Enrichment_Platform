@@ -109,7 +109,7 @@ export function SegmentedControl<K extends string>({
             onClick={() => onChange(segment.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "relative z-10 flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-[0.875rem] font-semibold outline-none",
+              "relative z-10 flex h-10 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-[0.875rem] font-semibold outline-hidden",
               "transition-colors duration-200 focus-visible:shadow-focus-ring disabled:cursor-not-allowed",
               // brand-800 on white 12:1; content-muted on surface-sunken 7.6:1.
               selected ? "text-brand-800" : "text-content-muted hover:text-content",

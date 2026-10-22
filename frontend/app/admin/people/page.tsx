@@ -396,7 +396,7 @@ function PeopleScreen({ user }: { user: CurrentUser }) {
         ) : null}
 
         {!schoolContextReady ? (
-          <Card className="animate-fade-up delay-70">
+          <Card className="animate-fade-up animation-delay-70">
             <CardBody className="sm:p-8">
               <EmptyState
                 illustration={<RosterIllustration />}
@@ -617,7 +617,7 @@ function RosterWorkspace({
         ) : null}
       </Modal>
 
-      <Card className="animate-fade-up delay-70">
+      <Card className="animate-fade-up animation-delay-70">
         {/* Primary dimension: which role. Each role has its own columns, its
             own code scheme (STU-/TCH-), and its own create form, so it's the
             top-level switch rather than a filter chip buried in the table.
@@ -646,7 +646,7 @@ function RosterWorkspace({
                       brand-700 is 5.8:1; ink-700 on ink-100 is 8.6:1. */}
                   <span
                     className={cn(
-                      "min-w-[1.5rem] rounded-full px-2 py-0.5 text-center text-[0.6875rem] font-bold tabular",
+                      "min-w-6 rounded-full px-2 py-0.5 text-center text-[0.6875rem] font-bold tabular",
                       pressed ? "bg-white/20" : "bg-ink-100 text-ink-700",
                     )}
                   >
@@ -829,7 +829,7 @@ function RosterTable({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[14rem] flex-1">
+        <div className="relative min-w-56 flex-1">
           <Search
             aria-hidden
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-faint"
@@ -853,7 +853,7 @@ function RosterTable({
                 ? "Search school admins by name or email"
                 : `Search ${ROLE_LABEL[role].toLowerCase()} by name, ${LOGIN_LABEL[role].toLowerCase()} or email`
             }
-            className="h-10 w-full rounded-xl border border-line-field bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
+            className="h-10 w-full rounded-xl border border-line-field bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-hidden transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
           />
           {search ? (
             <button
@@ -915,7 +915,7 @@ function RosterTable({
       ) : (
         <>
           <div className="overflow-x-auto rounded-2xl border border-line">
-            <table className="w-full min-w-[48rem] border-collapse text-left text-[0.8125rem]">
+            <table className="w-full min-w-3xl border-collapse text-left text-[0.8125rem]">
               <caption className="sr-only">
                 {ROLE_LABEL[role]}, page {pageSafe} of {totalPages}
               </caption>
@@ -1642,7 +1642,7 @@ function BulkImportForm({
               <div
                 aria-hidden
                 className={cn(
-                  "sticky top-0 z-[1] hidden border-b border-line bg-surface-muted px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle",
+                  "sticky top-0 z-1 hidden border-b border-line bg-surface-muted px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle",
                   BULK_RESULT_GRID,
                 )}
               >
@@ -1664,7 +1664,7 @@ function BulkImportForm({
                   <span className="w-12 shrink-0 font-semibold text-content-subtle tabular sm:w-auto">Row {r.row}</span>
                   <span className="min-w-0 flex-1 truncate text-content">{r.fullName || "(no name)"}</span>
                   {r.status === "created" ? (
-                    <dl className="flex basis-full flex-wrap gap-x-4 gap-y-0.5 pl-[5.125rem] font-mono sm:col-span-2 sm:grid sm:grid-cols-[14rem_7.5rem] sm:gap-x-2.5 sm:pl-0">
+                    <dl className="flex basis-full flex-wrap gap-x-4 gap-y-0.5 pl-20.5 font-mono sm:col-span-2 sm:grid sm:grid-cols-[14rem_7.5rem] sm:gap-x-2.5 sm:pl-0">
                       <div className="flex min-w-0 items-baseline gap-2">
                         <dt className="shrink-0 font-sans text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle sm:sr-only">
                           {LOGIN_LABEL[result.role]}
@@ -1695,7 +1695,7 @@ function BulkImportForm({
               <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>
                 {result.unrecognisedColumns.length === 1 ? "This column was not used" : "These columns were not used"}:{" "}
-                <strong className="break-words">{result.unrecognisedColumns.join(", ")}</strong>. The import reads
+                <strong className="wrap-break-word">{result.unrecognisedColumns.join(", ")}</strong>. The import reads
                 Full Name, Email, Class Name, Section, Designation, Subject Specialization, Qualification and Password.
               </span>
             </p>

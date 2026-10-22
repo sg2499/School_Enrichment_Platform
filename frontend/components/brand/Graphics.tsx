@@ -29,13 +29,13 @@ interface BackdropProps {
 export function AuroraBackdrop({ className }: BackdropProps) {
   return (
     <div aria-hidden className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}>
-      <div className="absolute -left-32 -top-40 h-[26rem] w-[26rem]">
+      <div className="absolute -left-32 -top-40 h-104 w-104">
         <div className="h-full w-full rounded-full bg-brand-300/35 blur-3xl animate-drift-wide" />
       </div>
       <div className="absolute -right-24 top-10 h-80 w-80">
         <div className="h-full w-full rounded-full bg-saffron-200/55 blur-3xl animate-drift-alt [animation-delay:-11s]" />
       </div>
-      <div className="absolute bottom-[-12rem] left-1/3 h-96 w-96">
+      <div className="absolute -bottom-48 left-1/3 h-96 w-96">
         <div className="h-full w-full rounded-full bg-jade-200/45 blur-3xl animate-drift [animation-duration:53s]" />
       </div>
       <div className="absolute inset-0 bg-grid opacity-40 mask-fade-b" />
@@ -47,19 +47,19 @@ export function AuroraBackdrop({ className }: BackdropProps) {
 export function AuroraBackdropInverse({ className, grain = false }: BackdropProps) {
   return (
     <div aria-hidden className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}>
-      <div className="absolute -left-28 top-[-8rem] h-[34rem] w-[34rem]">
+      <div className="absolute -left-28 -top-32 h-136 w-136">
         <div className="h-full w-full rounded-full bg-brand-500/50 blur-[120px] animate-drift-wide" />
       </div>
-      <div className="absolute right-[-9rem] top-[28%] h-[26rem] w-[26rem]">
+      <div className="absolute -right-36 top-[28%] h-104 w-104">
         <div className="h-full w-full rounded-full bg-saffron-500/[0.28] blur-[120px] animate-drift-alt [animation-delay:-13s]" />
       </div>
-      <div className="absolute bottom-[-11rem] left-[18%] h-[22rem] w-[22rem]">
-        <div className="h-full w-full rounded-full bg-jade-500/[0.24] blur-[110px] animate-drift [animation-duration:53s]" />
+      <div className="absolute -bottom-44 left-[18%] h-88 w-88">
+        <div className="h-full w-full rounded-full bg-jade-500/24 blur-[110px] animate-drift [animation-duration:53s]" />
       </div>
       {/* A fourth, slower wash that only breathes in opacity -- it is what
           stops the composite from ever settling into an obvious cycle. */}
-      <div className="absolute left-[38%] top-[-4rem] h-[28rem] w-[28rem]">
-        <div className="h-full w-full rounded-full bg-brand-400/[0.22] blur-[130px] animate-aurora-breathe" />
+      <div className="absolute left-[38%] -top-16 h-112 w-md">
+        <div className="h-full w-full rounded-full bg-brand-400/22 blur-[130px] animate-aurora-breathe" />
       </div>
       <div className="absolute inset-0 bg-grid-inverse opacity-70" />
       {/* Last in the stack so it textures the blobs too, but still inside

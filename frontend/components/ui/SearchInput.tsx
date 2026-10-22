@@ -49,7 +49,7 @@ export function SearchInput({
   }, [draft, delayMs]);
 
   return (
-    <div className={cn("relative min-w-[14rem] flex-1", className)}>
+    <div className={cn("relative min-w-56 flex-1", className)}>
       <Search
         aria-hidden
         className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-faint"
@@ -66,7 +66,7 @@ export function SearchInput({
         }}
         aria-label={label}
         placeholder={placeholder ?? label}
-        className="h-10 w-full rounded-xl border border-line-field bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full rounded-xl border border-line-field bg-surface pl-10 pr-10 text-[0.875rem] text-content shadow-xs outline-hidden transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus [&::-webkit-search-cancel-button]:hidden"
       />
       {draft ? (
         <button

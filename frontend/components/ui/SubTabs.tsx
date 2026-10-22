@@ -61,7 +61,7 @@ export function SubTabs<K extends string>({
               // ink-700 on ink-100 8.6:1; saffron-900 on saffron-100 8.1:1.
               <span
                 className={cn(
-                  "min-w-[1.5rem] rounded-full px-2 py-0.5 text-center text-[0.6875rem] font-bold tabular",
+                  "min-w-6 rounded-full px-2 py-0.5 text-center text-[0.6875rem] font-bold tabular",
                   current
                     ? "bg-white/20"
                     : tab.attention && tab.count > 0

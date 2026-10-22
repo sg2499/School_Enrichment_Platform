@@ -158,7 +158,7 @@ export function PageHeader(props: PageHeaderProps) {
             1.4.11 asks of a graphic. */}
         {factList.length > 0 ? (
           <div className="pt-1.5">
-            <div className="inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2.5 rounded-2xl border border-line bg-surface/70 px-4 py-2.5 shadow-xs backdrop-blur">
+            <div className="inline-flex max-w-full flex-wrap items-center gap-x-5 gap-y-2.5 rounded-2xl border border-line bg-surface/70 px-4 py-2.5 shadow-xs backdrop-blur-sm">
               {meta ? <div className="flex flex-wrap items-center gap-2">{meta}</div> : null}
               <dl className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
                 {factList.map((fact) => (
@@ -231,7 +231,7 @@ export function PageHeader(props: PageHeaderProps) {
  *
  * Contrast. Measured, not estimated, and at the worst pixel rather than a
  * typical one -- the same standard as the inverse ramp in
- * tailwind.config.ts ("measured against the lightest point of that chrome,
+ * the @theme in app/globals.css ("measured against the lightest point of that chrome,
  * not its average"). The production build was rendered in Chromium with the
  * masthead's contents hidden, and every pixel of the bare panel read back
  * (less a 3px rim and the rounded corners, whose antialiasing against the
@@ -378,7 +378,7 @@ const MASTHEAD_SHELL =
   // made for paper (shadow-focus-ring: a white gap and an indigo ring), and
   // on this panel the indigo sinks into the indigo beside it. So the
   // masthead swaps the ring for shadow-focus-inverse
-  // (tailwind.config.ts: a brand-950 gap and a solid saffron-200 ring,
+  // (the @theme in app/globals.css: a brand-950 gap and a solid saffron-200 ring,
   // 5.4:1 on the lightest pixel, against the 3:1 WCAG 1.4.11 asks of a
   // focus indicator) on any link or button inside it. A
   // descendant selector, deliberately: it out-ranks the variant's own
@@ -393,15 +393,15 @@ function MastheadBackdrop({ drift }: { drift: boolean }) {
       {/* `grain`: this is a large dark gradient, which is what the film
           grain is for (Graphics.tsx), and it is the same grain the rail
           beside it carries -- the two indigo surfaces on screen read as one
-          material. [&_*]:animate-none is how the workspace ambience freezes
+          material. **:animate-none is how the workspace ambience freezes
           the same family of graphic from the outside. */}
-      <AuroraBackdropInverse grain className={cn(MASTHEAD_AURORA, !drift && "[&_*]:animate-none")} />
+      <AuroraBackdropInverse grain className={cn(MASTHEAD_AURORA, !drift && "**:animate-none")} />
       {/* Warm light on the top edge -- the saffron rule every page eyebrow
           carries, at the scale of the panel, so it reads as a lit object
           rather than a flat fill. Decorative. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-12 top-0 z-[1] h-px bg-gradient-to-r from-transparent via-saffron-300/70 to-transparent"
+        className="pointer-events-none absolute inset-x-12 top-0 z-1 h-px bg-linear-to-r/srgb from-transparent via-saffron-300/70 to-transparent"
       />
     </>
   );

@@ -1,6 +1,759 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+ * School Enrichment design tokens -- "Ink & Amber".
+ *
+ * (Moved here from tailwind.config.ts with the Tailwind 4 upgrade; the values
+ * are unchanged.) The identity is intentionally unlike typical SaaS-blue
+ * edtech: a deep indigo "scholar's ink" primary, a warm saffron/amber accent
+ * for energy and calls to action, jade for positive/success states, coral for
+ * problems, all sitting on warm paper neutrals rather than cold grey.
+ *
+ * Rules of use:
+ *  - Reach for the semantic roles (surface/content/line) for chrome and
+ *    text, and the named scales (brand/saffron/jade/coral) for expressive
+ *    moments. Avoid raw hex in components.
+ *  - Contrast targets: content and content-muted both clear WCAG AA on
+ *    surface and surface-muted; saffron is used as a *surface* or with ink
+ *    text, never as small text on white.
+ */
+@theme {
+  /* Primary -- deep indigo "ink". 700/900 are the brand anchors. */
+  --color-brand-50: #f3f2fc;
+  --color-brand-100: #e7e5f8;
+  --color-brand-200: #cfcbf0;
+  --color-brand-300: #ada5e4;
+  --color-brand-400: #8579d2;
+  --color-brand-500: #6355bc;
+  --color-brand-600: #4e42a0;
+  --color-brand-700: #3c3489;
+  --color-brand-800: #2e2870;
+  --color-brand-900: #26215c;
+  --color-brand-950: #171338;
+
+  /* Accent -- warm saffron/amber. Energy, progress, primary CTAs. */
+  --color-saffron-50: #fff9ec;
+  --color-saffron-100: #feefcb;
+  --color-saffron-200: #fddc92;
+  --color-saffron-300: #fbc559;
+  --color-saffron-400: #f9ab2b;
+  --color-saffron-500: #f08d0c;
+  --color-saffron-600: #d06b06;
+  --color-saffron-700: #a84c0a;
+  --color-saffron-800: #883c10;
+  --color-saffron-900: #70320f;
+
+  /* Support -- jade. Mastery, completion, "all good" states. */
+  --color-jade-50: #ebfbf3;
+  --color-jade-100: #cff5e2;
+  --color-jade-200: #a1e9c7;
+  --color-jade-300: #68d5a8;
+  --color-jade-400: #37bb8c;
+  --color-jade-500: #169d74;
+  --color-jade-600: #0a7d5c;
+  --color-jade-700: #08634a;
+  --color-jade-800: #094f3d;
+  --color-jade-900: #093f33;
+
+  /* Support -- coral. Errors, overdue, destructive. */
+  --color-coral-50: #fff4f1;
+  --color-coral-100: #ffe3db;
+  --color-coral-200: #ffc6b6;
+  --color-coral-300: #ffa087;
+  --color-coral-400: #f87557;
+  --color-coral-500: #e55130;
+  --color-coral-600: #c43c1f;
+  --color-coral-700: #9e301a;
+  --color-coral-800: #7f2a19;
+  --color-coral-900: #682518;
+
+  /* Neutral -- violet-tinted ink greys for text and dark chrome. */
+  --color-ink-50: #f7f7fa;
+  --color-ink-100: #efeff4;
+  --color-ink-200: #e2e1eb;
+  --color-ink-300: #cac8d8;
+  --color-ink-400: #9e9cb2;
+  --color-ink-500: #75738c;
+  --color-ink-600: #57556d;
+  --color-ink-700: #434157;
+  --color-ink-800: #2d2c3d;
+  --color-ink-900: #1c1b29;
+  --color-ink-950: #111019;
+
+  /* Neutral -- warm paper for surfaces and page canvas. */
+  --color-paper-50: #ffffff;
+  --color-paper-100: #fdfcfa;
+  --color-paper-200: #faf8f4;
+  --color-paper-300: #f4f1ea;
+  --color-paper-400: #ebe7dd;
+  --color-paper-500: #ded9cc;
+
+  /* ---- Semantic roles (prefer these in components) ---- */
+  --color-canvas: #faf8f4;
+  --color-canvas-deep: #f4f1ea;
+  --color-canvas-dark: #1c1b29;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #faf8f4;
+  --color-surface-sunken: #f4f1ea;
+  --color-surface-brand: #f3f2fc;
+  --color-surface-accent: #fff9ec;
+  --color-surface-inverse: #26215c;
+
+  --color-line: #e8e4db;
+  --color-line-strong: #d7d2c6;
+  /* The resting outline of anything typed into or chosen from: text boxes,
+     dropdowns, search boxes, the two-factor boxes (4 Oct 2026). 3.2:1 on
+     white and 3.0:1 on surface-muted, which is the 3:1 the guideline asks of
+     a control's edge (WCAG 1.4.11). It was `strong`, 1.5:1: a white box on a
+     white card with an outline that a projector or a sunlit monitor loses.
+     `strong` stays for what is not a field -- buttons, tabs, chips, dashed
+     empty panels -- where the label or the fill says what it is, and for a
+     row that holds a radio or a tick box, where the control inside has its
+     own edge. */
+  --color-line-field: #8f8da6;
+  --color-line-brand: #cfcbf0;
+  --color-line-inverse: rgba(255, 255, 255, 0.14);
+
+  /* Text ramp. Every step below is measured against surface (#FFFFFF):
+     muted 8.6:1, subtle 6.4:1, faint 4.6:1. `faint` is the floor -- it is
+     the placeholder/decorative-icon step and still clears WCAG AA for body
+     text, because "quiet" must never mean "unreadable on a classroom
+     projector or a cheap school laptop". */
+  --color-content: #1c1b29;
+  --color-content-muted: #4b4962;
+  --color-content-subtle: #5e5c77;
+  --color-content-faint: #74728d;
+  --color-content-brand: #3c3489;
+  --color-content-inverse: #ffffff;
+  /* Inverse ramp, for text on the indigo chrome (sidebar rail, login brand
+     panel, inverse cards). Measured against the *lightest* point of that
+     chrome, not its average: brand-700 (#3C3489) with the sidebar's
+     brand-500/40 glow composited on top (~#4A40A0).
+       inverse-muted  0.78 -> 5.7:1 (6.9:1 on plain brand-700)
+       inverse-subtle 0.70 -> 5.0:1 (5.9:1)
+       inverse-faint  0.66 -> 4.6:1 (5.5:1) -- the floor, same role as
+                             `faint` on the light side.
+     subtle/faint were added 30 Sep 2026: the rail had been using raw
+     text-white/40 and /55 for section labels, "Soon" rows and the help line,
+     which measured 2.7-4.3:1 -- under AA on exactly the cheap, washed-out
+     classroom displays this product is used on. The login panel's aurora is
+     brighter still where its blobs overlap, so text there should stay at
+     inverse-muted or above. */
+  --color-content-inverse-muted: rgba(255, 255, 255, 0.78);
+  --color-content-inverse-subtle: rgba(255, 255, 255, 0.7);
+  --color-content-inverse-faint: rgba(255, 255, 255, 0.66);
+
+  /* next/font (app/layout.tsx) sets --font-plus-jakarta-sans and
+     --font-fraunces on <html>; system fallbacks cover the moment before the
+     self-hosted @font-face paints. */
+  --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+
+  /* Tailwind 3's line heights for the stock sizes, as lengths. Tailwind 4
+     writes them as ratios (text-sm: 1.25rem / 0.875rem), and a ratio is
+     inherited as a ratio, so a child with its own smaller arbitrary size
+     (the rail's "Soon" chip at text-[0.5625rem]) got a shorter line than it
+     had. A length is inherited as the length, which is what the screens
+     were drawn with. */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+
+  /* Editorial display scale for hero moments and page titles. */
+  --text-display-2xl: 4.25rem;
+  --text-display-2xl--line-height: 1.02;
+  --text-display-2xl--letter-spacing: -0.032em;
+  --text-display-xl: 3.25rem;
+  --text-display-xl--line-height: 1.05;
+  --text-display-xl--letter-spacing: -0.028em;
+  --text-display-lg: 2.5rem;
+  --text-display-lg--line-height: 1.1;
+  --text-display-lg--letter-spacing: -0.024em;
+  --text-display-md: 2rem;
+  --text-display-md--line-height: 1.15;
+  --text-display-md--letter-spacing: -0.02em;
+  --text-display-sm: 1.5rem;
+  --text-display-sm--line-height: 1.25;
+  --text-display-sm--letter-spacing: -0.015em;
+  /* Small, wide labels for eyebrows and chips. */
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1rem;
+  --text-eyebrow--letter-spacing: 0.14em;
+
+  --tracking-eyebrow: 0.14em;
+
+  /* Tailwind 3's breakpoints, in px. Tailwind 4's defaults are the same
+     sizes in rem, which move for anyone whose browser text size is not 16px. */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  --spacing-sidebar: 17.5rem;
+  /* Icon-only rail width when a user collapses the sidebar (18 Aug 2026) --
+     wide enough for a comfortable tap target, narrow enough to give a
+     review modal or any wide content real room back. */
+  --spacing-sidebar-collapsed: 5.25rem;
+
+  --container-shell: 84rem;
+  --container-prose: 68ch;
+
+  /* Tailwind 3's rounded-full. Tailwind 4 writes calc(infinity * 1px),
+     which Chromium antialiases a pixel differently round every pill and
+     circle. */
+  --radius-full: 9999px;
+  --radius-xs: 0.25rem;
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.75rem;
+
+  --shadow-xs: 0 1px 2px rgba(28, 27, 41, 0.06);
+  --shadow-card:
+    0 1px 2px rgba(28, 27, 41, 0.04), 0 10px 30px -18px rgba(28, 27, 41, 0.35);
+  --shadow-card-hover:
+    0 2px 4px rgba(28, 27, 41, 0.05), 0 22px 44px -20px rgba(38, 33, 92, 0.38);
+  --shadow-panel:
+    0 1px 2px rgba(28, 27, 41, 0.05), 0 30px 60px -30px rgba(28, 27, 41, 0.45);
+  --shadow-brand: 0 12px 30px -14px rgba(60, 52, 137, 0.75);
+  --shadow-accent: 0 12px 28px -14px rgba(208, 107, 6, 0.7);
+  /* The soft halo: for a row that lights up when something inside it has
+     focus (an answer option, the upload well, a search box), where it shows
+     on a mouse click too and must not shout. It is NOT enough for keyboard
+     focus on a control -- see focus-ring below. */
+  --shadow-focus: 0 0 0 4px rgba(99, 85, 188, 0.24);
+  /* Keyboard focus on a control, on paper or on white (4 Oct 2026): a white
+     gap, then a solid brand-500 ring -- 5.9:1 on white, 5.2:1 on the sunken
+     trough. Buttons, links and the segmented control used the halo above for
+     this (and a saffron one like it), and those measure 1.2 to 1.5:1 against
+     what is behind them, far under the 3:1 a focus indicator needs (WCAG
+     1.4.11): on the sign-in page nobody using a keyboard could see which of
+     the three choices, or which button, they were on. Only ever drawn on
+     :focus-visible, so a mouse click never shows it. The white gap is what
+     the ring is read against, so it works round a saffron button as well as
+     an indigo one. */
+  --shadow-focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px #6355bc;
+  /* Focus on indigo chrome (2 Oct 2026, with PageHeader's masthead). The
+     rings above are made to sit on paper, and their indigo disappears into
+     brand-gradient. This one is a brand-950 gap, then a saffron-200 ring --
+     so it does not depend on what is behind it, and the dark gap keeps the
+     ring distinct from a saffron button it surrounds. The masthead applies
+     it to every link and button placed inside it; nothing else uses it yet. */
+  --shadow-focus-inverse: 0 0 0 2px #171338, 0 0 0 4px #fddc92;
+  /* Input focus: a ring *and* a cast shadow, so a focused field reads as
+     physically lifted off the card rather than just re-bordered. */
+  --shadow-focus-field:
+    0 0 0 4px rgba(99, 85, 188, 0.18), 0 14px 28px -16px rgba(60, 52, 137, 0.85);
+  --shadow-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  /* hairline, tuned for filled dark/warm surfaces (gradient buttons): a
+     single lit top edge, so a button reads as a pressed shape catching light
+     from above rather than a flat sticker. */
+  --shadow-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  /* The rail's right edge. A hairline of light plus a long, very soft cast
+     onto the paper canvas, so the sidebar sits *on* the page instead of
+     ending in a hard vertical cut. */
+  --shadow-rail:
+    1px 0 0 rgba(255, 255, 255, 0.06), 18px 0 40px -28px rgba(23, 19, 56, 0.55);
+
+  --background-image-brand-gradient: linear-gradient(
+    135deg,
+    #3c3489 0%,
+    #26215c 55%,
+    #171338 100%
+  );
+  --background-image-brand-sheen: linear-gradient(
+    140deg,
+    #6355bc 0%,
+    #3c3489 45%,
+    #26215c 100%
+  );
+  --background-image-accent-gradient: linear-gradient(
+    135deg,
+    #fbc559 0%,
+    #f08d0c 60%,
+    #d06b06 100%
+  );
+  --background-image-jade-gradient: linear-gradient(
+    135deg,
+    #37bb8c 0%,
+    #0a7d5c 100%
+  );
+  --background-image-canvas-glow:
+    radial-gradient(
+      1100px 520px at 8% -10%,
+      rgba(99, 85, 188, 0.13),
+      transparent 62%
+    ),
+    radial-gradient(
+      820px 460px at 96% 4%,
+      rgba(249, 171, 43, 0.16),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 620px at 60% 108%,
+      rgba(23, 155, 116, 0.1),
+      transparent 62%
+    );
+
+  --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-scale-in: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-drift: drift 18s ease-in-out infinite;
+  --animate-drift-alt: drift-alt 31s ease-in-out infinite;
+  --animate-drift-wide: drift-wide 43s ease-in-out infinite;
+  --animate-aurora-breathe: aurora-breathe 23s ease-in-out infinite;
+  --animate-sweep: sweep 1.7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --animate-shimmer: shimmer 2.2s ease-in-out infinite;
+  --animate-spin-slow: spin-slow 32s linear infinite;
+  --animate-pulse-ring: pulse-ring 2.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  --animate-dash-draw: dash-draw 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-sheet-in: sheet-in 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-dialog-in: dialog-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-12px);
+    }
+  }
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(18px, -22px, 0) scale(1.06);
+    }
+  }
+  /* Three drift paths of different shapes, run at co-prime-ish durations
+     (23s/31s/43s/53s). The composite never visibly repeats, which is the
+     difference between "atmosphere" and "template animation on a 6-second
+     loop". */
+  @keyframes drift-alt {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    30% {
+      transform: translate3d(-28px, 20px, 0) scale(1.09);
+    }
+    65% {
+      transform: translate3d(16px, 30px, 0) scale(0.94);
+    }
+  }
+  @keyframes drift-wide {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1.02);
+    }
+    25% {
+      transform: translate3d(36px, 14px, 0) scale(0.93);
+    }
+    55% {
+      transform: translate3d(8px, -34px, 0) scale(1.12);
+    }
+    80% {
+      transform: translate3d(-26px, -10px, 0) scale(0.99);
+    }
+  }
+  @keyframes aurora-breathe {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  /* Light sweeping across a button while it works. */
+  @keyframes sweep {
+    from {
+      transform: translateX(-140%);
+    }
+    to {
+      transform: translateX(360%);
+    }
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes spin-slow {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.65;
+    }
+    70% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+  @keyframes dash-draw {
+    from {
+      stroke-dashoffset: 620;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  /* Side sheets (the mobile nav drawer) arrive from the edge they are
+     anchored to. A plain fade reads as the panel materialising in place,
+     which is not how a drawer physically behaves. */
+  @keyframes sheet-in {
+    from {
+      transform: translate3d(-100%, 0, 0);
+    }
+    to {
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  /* Dialogs rise a few pixels as they scale in -- the same settle as
+     fade-up, compressed, so every surface that appears in this product
+     arrives with one shared physical feel. */
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+}
+
+/*
+  Tailwind 3 behaviour that Tailwind 4 changed, kept so the product looks and
+  behaves exactly as it did (upgrade guide, "Changes from v3"):
+   - a border with no colour class was gray-200 (#e5e7eb; v4: currentColor);
+   - placeholders were gray-400 (#9ca3af; v4: the text colour at 50%);
+   - buttons showed a pointer (v4: the default arrow);
+   - hover: applied on every device (v4: only where the device can hover);
+   - form controls kept the browser's own opacity, so a disabled select
+     dims (v4's preflight pins every control at opacity 1);
+   - a search box was drawn as a plain text field (v3 preflight);
+   - the keyboard focus ring appeared at once. Tailwind 4's transition and
+     transition-colors also animate outline-color, so on anything with a
+     transition the ring faded in from the text colour; it now starts in
+     the ring's own colour, so there is nothing to fade.
+  The hex values are Tailwind 3's own, not v4's oklch palette, which is a
+  shade different. Dropping any of these is a design change, not part of
+  the upgrade.
+*/
+@custom-variant hover (&:hover);
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: #e5e7eb;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    opacity: revert;
+  }
+
+  [type="search"] {
+    -webkit-appearance: textfield;
+    outline-offset: -2px;
+  }
+
+  *,
+  ::after,
+  ::before {
+    outline-color: var(--brand-500);
+  }
+}
+
+@utility glass-panel {
+  /* Frosted panel used on dark brand surfaces (login artwork, sidebar). */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.06)
+  );
+  /* Prefixed first: with the unprefixed line first, Tailwind 4's minifier
+     kept only the -webkit- one, which Chromium ignores, and the panel lost
+     its frost. */
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+@utility bg-grid {
+  /* Fine graph-paper texture -- a quiet nod to squared exercise books.
+     Used at low opacity behind hero and empty-state areas. */
+  background-image:
+    linear-gradient(to right, rgba(28, 27, 41, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 27, 41, 0.055) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+@utility bg-grid-inverse {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+@utility bg-dots {
+  background-image: radial-gradient(
+    rgba(28, 27, 41, 0.09) 1px,
+    transparent 1px
+  );
+  background-size: 18px 18px;
+}
+
+@utility bg-grain {
+  /* A whisper of film grain for the dark indigo chrome (login brand panel,
+     sidebar rail). It is the difference between a flat CSS gradient and a
+     surface that reads as art-directed: large gradients on cheap panels
+     band visibly, and a few percent of noise dithers that banding away
+     while giving the ink a paper-like tooth.
+
+     Applied to its own aria-hidden decorative layer (see
+     AuroraBackdropInverse's `grain` prop and RoleShell's rail), never as an
+     ::after on a content container -- a pseudo-element on the container
+     would paint *over* the text inside it and soften every glyph.
+
+     The tile is an inline SVG feTurbulence data: URI: no asset request, no
+     third party, and CSP-clean (img-src already allows data:, see
+     next.config.mjs). 168px tiles with stitchTiles so the repeat seam never
+     shows. */
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-size: 168px 168px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='168'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@utility mask-fade-b {
+  /* Masks a decorative background so it fades out instead of ending on a
+     hard edge. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 45%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+}
+
+@utility mask-fade-radial {
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    #000 40%,
+    transparent 78%
+  );
+  mask-image: radial-gradient(ellipse at center, #000 40%, transparent 78%);
+}
+
+@utility mask-fade-l {
+  /* Fades artwork out towards the left so it can sit *behind* a column of
+     text without ever competing with it (login brand panel). */
+  -webkit-mask-image: linear-gradient(
+    to left,
+    #000 0%,
+    #000 44%,
+    transparent 92%
+  );
+  mask-image: linear-gradient(to left, #000 0%, #000 44%, transparent 92%);
+}
+
+@utility text-gradient-brand {
+  background-image: linear-gradient(
+    120deg,
+    #26215c 0%,
+    #4e42a0 45%,
+    #6355bc 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility text-gradient-warm {
+  background-image: linear-gradient(
+    120deg,
+    #ffffff 0%,
+    #fddc92 55%,
+    #f9ab2b 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility stage-in {
+  /* ------------------------------------------------------------------
+   * Entrance choreography.
+   *
+   * Elements start settled-but-hidden and are released when the page
+   * declares itself ready (fonts loaded / first frame painted) by flipping
+   * data-stage on an ancestor -- so the sequence is tied to load
+   * completion, not to a timer that fires while text is still swapping
+   * fonts. Delays come from the .stage-d* classes below.
+   * ------------------------------------------------------------------ */
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity 680ms var(--ease-out-expo),
+    transform 680ms var(--ease-out-expo);
+  transition-delay: var(--stage-delay, 0ms);
+
+  [data-stage='ready'] & {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Without JS the stage never flips, so show everything immediately. */
+  @media (scripting: none) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animation-delay-70 {
+  /* Entrance stagger helpers, so a group of cards doesn't all pop at once.
+     Named animation-delay-*, not delay-* as under Tailwind 3: Tailwind 4
+     reads delay-<any number> as transition-delay, so delay-70 would also
+     have held back every hover transition on these cards by 70ms. */
+  animation-delay: 70ms;
+}
+
+@utility animation-delay-105 {
+  /* The half-step. admin/security staggers four cards at 0/70/105/140 and
+     had been referencing this class before it existed, so its third card
+     silently popped in with the first. */
+  animation-delay: 105ms;
+}
+
+@utility animation-delay-140 {
+  animation-delay: 140ms;
+}
+
+@utility animation-delay-210 {
+  animation-delay: 210ms;
+}
+
+@utility animation-delay-280 {
+  animation-delay: 280ms;
+}
+
+@utility animation-delay-350 {
+  animation-delay: 350ms;
+}
+
+@utility animation-delay-420 {
+  animation-delay: 420ms;
+}
+
+@utility stage-d0 {
+  /* Stagger steps for .stage-in. Deliberately tight at the
+     front (the eye reads the lockup and headline as one move) and looser
+     towards the supporting detail. */
+  --stage-delay: 0ms;
+}
+
+@utility stage-d1 {
+  --stage-delay: 60ms;
+}
+
+@utility stage-d2 {
+  --stage-delay: 110ms;
+}
+
+@utility stage-d3 {
+  --stage-delay: 170ms;
+}
+
+@utility stage-d4 {
+  --stage-delay: 240ms;
+}
+
+@utility stage-d5 {
+  --stage-delay: 310ms;
+}
+
+@utility stage-d6 {
+  --stage-delay: 380ms;
+}
+
+@utility stage-d7 {
+  --stage-delay: 450ms;
+}
+
+@utility stage-d8 {
+  --stage-delay: 520ms;
+}
 
 /*
  * School Enrichment base layer.
@@ -14,14 +767,12 @@
  * fonts.gstatic.com fetch on every page load; now downloaded once at build
  * time and served from this app's own origin, no third-party request at
  * all). --font-plus-jakarta-sans/--font-fraunces are the CSS variables that
- * loader generates; system fallbacks below still cover the rare case the
- * self-hosted @font-face hasn't painted yet.
+ * loader generates; --font-sans/--font-display are defined from them in
+ * @theme above, with system fallbacks for the rare case the self-hosted
+ * @font-face hasn't painted yet.
  */
 :root {
-  --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
-
-  /* Mirrors tailwind.config.ts semantic roles for the few places raw CSS
+  /* Mirrors the @theme semantic roles for the few places raw CSS
      needs them (scrollbars, selection, form autofill). */
   --canvas: #faf8f4;
   --content: #1c1b29;
@@ -142,190 +893,6 @@
 
   ::-webkit-scrollbar-thumb:hover {
     background-color: #9e9cb2;
-  }
-}
-
-@layer components {
-  /* Frosted panel used on dark brand surfaces (login artwork, sidebar). */
-  .glass-panel {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-  }
-
-  /* Fine graph-paper texture -- a quiet nod to squared exercise books.
-     Used at low opacity behind hero and empty-state areas. */
-  .bg-grid {
-    background-image: linear-gradient(to right, rgba(28, 27, 41, 0.055) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(28, 27, 41, 0.055) 1px, transparent 1px);
-    background-size: 26px 26px;
-  }
-
-  .bg-grid-inverse {
-    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-    background-size: 30px 30px;
-  }
-
-  .bg-dots {
-    background-image: radial-gradient(rgba(28, 27, 41, 0.09) 1px, transparent 1px);
-    background-size: 18px 18px;
-  }
-
-  /* A whisper of film grain for the dark indigo chrome (login brand panel,
-     sidebar rail). It is the difference between a flat CSS gradient and a
-     surface that reads as art-directed: large gradients on cheap panels
-     band visibly, and a few percent of noise dithers that banding away
-     while giving the ink a paper-like tooth.
-
-     Applied to its own aria-hidden decorative layer (see
-     AuroraBackdropInverse's `grain` prop and RoleShell's rail), never as an
-     ::after on a content container -- a pseudo-element on the container
-     would paint *over* the text inside it and soften every glyph.
-
-     The tile is an inline SVG feTurbulence data: URI: no asset request, no
-     third party, and CSP-clean (img-src already allows data:, see
-     next.config.mjs). 168px tiles with stitchTiles so the repeat seam never
-     shows. */
-  .bg-grain {
-    pointer-events: none;
-    opacity: 0.06;
-    mix-blend-mode: overlay;
-    background-repeat: repeat;
-    background-size: 168px 168px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='168'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
-  /* Masks a decorative background so it fades out instead of ending on a
-     hard edge. */
-  .mask-fade-b {
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
-  }
-
-  .mask-fade-radial {
-    -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 78%);
-    mask-image: radial-gradient(ellipse at center, #000 40%, transparent 78%);
-  }
-
-  /* Fades artwork out towards the left so it can sit *behind* a column of
-     text without ever competing with it (login brand panel). */
-  .mask-fade-l {
-    -webkit-mask-image: linear-gradient(to left, #000 0%, #000 44%, transparent 92%);
-    mask-image: linear-gradient(to left, #000 0%, #000 44%, transparent 92%);
-  }
-
-  .text-gradient-brand {
-    background-image: linear-gradient(120deg, #26215c 0%, #4e42a0 45%, #6355bc 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .text-gradient-warm {
-    background-image: linear-gradient(120deg, #ffffff 0%, #fddc92 55%, #f9ab2b 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  /* ------------------------------------------------------------------
-   * Entrance choreography.
-   *
-   * Elements start settled-but-hidden and are released when the page
-   * declares itself ready (fonts loaded / first frame painted) by flipping
-   * data-stage on an ancestor -- so the sequence is tied to load
-   * completion, not to a timer that fires while text is still swapping
-   * fonts. Delays come from the .stage-d* classes below.
-   * ------------------------------------------------------------------ */
-  .stage-in {
-    opacity: 0;
-    transform: translate3d(0, 22px, 0);
-    transition:
-      opacity 680ms var(--ease-out-expo),
-      transform 680ms var(--ease-out-expo);
-    transition-delay: var(--stage-delay, 0ms);
-  }
-
-  [data-stage="ready"] .stage-in {
-    opacity: 1;
-    transform: none;
-  }
-
-  /* Without JS the stage never flips, so show everything immediately. */
-  @media (scripting: none) {
-    .stage-in {
-      opacity: 1;
-      transform: none;
-    }
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .text-pretty {
-    text-wrap: pretty;
-  }
-
-  /* Entrance stagger helpers, so a group of cards doesn't all pop at once. */
-  .delay-70 {
-    animation-delay: 70ms;
-  }
-  /* The half-step. admin/security staggers four cards at 0/70/105/140 and
-     had been referencing this class before it existed, so its third card
-     silently popped in with the first. */
-  .delay-105 {
-    animation-delay: 105ms;
-  }
-  .delay-140 {
-    animation-delay: 140ms;
-  }
-  .delay-210 {
-    animation-delay: 210ms;
-  }
-  .delay-280 {
-    animation-delay: 280ms;
-  }
-  .delay-350 {
-    animation-delay: 350ms;
-  }
-  .delay-420 {
-    animation-delay: 420ms;
-  }
-
-  /* Stagger steps for .stage-in. Deliberately tight at the
-     front (the eye reads the lockup and headline as one move) and looser
-     towards the supporting detail. */
-  .stage-d0 {
-    --stage-delay: 0ms;
-  }
-  .stage-d1 {
-    --stage-delay: 60ms;
-  }
-  .stage-d2 {
-    --stage-delay: 110ms;
-  }
-  .stage-d3 {
-    --stage-delay: 170ms;
-  }
-  .stage-d4 {
-    --stage-delay: 240ms;
-  }
-  .stage-d5 {
-    --stage-delay: 310ms;
-  }
-  .stage-d6 {
-    --stage-delay: 380ms;
-  }
-  .stage-d7 {
-    --stage-delay: 450ms;
-  }
-  .stage-d8 {
-    --stage-delay: 520ms;
   }
 }
 

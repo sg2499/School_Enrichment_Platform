@@ -1,4 +1,5 @@
-import { withSentryConfig } from "@sentry/nextjs";
+// Sentry 11 (22 Oct 2026): the build wrapper lives in its own entry point.
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // Retained from MathPath's next.config.mjs (Phase 0 audit, "Retain as-is"
 // bucket). httpOnly session cookies only work as first-party cookies. The
@@ -134,7 +135,9 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG || "zetta-metrics",
   project: process.env.SENTRY_PROJECT || "school-enrichment-frontend",
   widenClientFileUpload: true,
-  disableLogger: true,
+  // Sentry 11 (22 Oct 2026): `disableLogger` became this option, which
+  // works for both webpack and Turbopack builds.
+  bundleSizeOptimizations: { excludeDebugStatements: true },
   errorHandler: (error) => {
     console.warn("[sentry] build-time step failed, continuing anyway:", error);
   },

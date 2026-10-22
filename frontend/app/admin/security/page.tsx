@@ -213,7 +213,7 @@ function SetupSteps({ current }: { current: number }) {
           <li
             key={step}
             aria-current={active ? "step" : undefined}
-            className="flex min-w-0 items-center gap-2 last:flex-none [&:not(:last-child)]:flex-1"
+            className="flex min-w-0 items-center gap-2 last:flex-none not-last:flex-1"
           >
             {/* Discs: white on jade-500 3.4:1; white on brand-700 10.3:1;
                 ink-600 on ink-100 6.3:1. */}
@@ -675,7 +675,7 @@ function SecuritySettingsPageInner() {
     confirmPassword !== newPassword &&
     (passwordAttempted || confirmPassword.length >= newPassword.length);
   const passwordCard = showPasswordCard ? (
-    <Card className={cn("animate-fade-up", passwordFirst ? "" : "delay-140")}>
+    <Card className={cn("animate-fade-up", passwordFirst ? "" : "animation-delay-140")}>
       <CardBody className="space-y-5">
         <div className="flex items-center gap-3">
           <CardIcon tone={mustChangePassword ? "accent" : passwordSaved === "kept" ? "jade" : "coral"}>
@@ -703,7 +703,7 @@ function SecuritySettingsPageInner() {
             ref={passwordSavedRef}
             tabIndex={-1}
             role="status"
-            className="flex items-start gap-3 rounded-2xl border border-jade-200 bg-jade-50 p-4 outline-none animate-scale-in focus-visible:shadow-focus-ring"
+            className="flex items-start gap-3 rounded-2xl border border-jade-200 bg-jade-50 p-4 outline-hidden animate-scale-in focus-visible:shadow-focus-ring"
           >
             <Check className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-700" aria-hidden />
             <p className="text-[0.875rem] font-medium leading-[1.55] text-jade-800">
@@ -894,7 +894,7 @@ function SecuritySettingsPageInner() {
         {passwordFirst ? passwordCard : null}
 
         {/* --- Two-factor authentication --- */}
-        <Card className={cn("animate-fade-up", passwordFirst ? "delay-70" : "")}>
+        <Card className={cn("animate-fade-up", passwordFirst ? "animation-delay-70" : "")}>
           <CardBody className="space-y-6">
             <div className="flex items-center gap-3">
               <CardIcon tone={twoFactorEnabled ? "jade" : "accent"}>
@@ -1099,7 +1099,7 @@ function SecuritySettingsPageInner() {
         {/* --- Signed-in devices --- (not while the password gate is up:
             the server would refuse the list, and every button on it) */}
         {twoFactorEnabled && !mustChangePassword ? (
-          <Card className="animate-fade-up delay-70">
+          <Card className="animate-fade-up animation-delay-70">
             <CardBody className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1257,7 +1257,7 @@ function SecuritySettingsPageInner() {
 
         {/* --- Your data --- */}
         {twoFactorEnabled && !mustChangePassword ? (
-          <Card className="animate-fade-up delay-105">
+          <Card className="animate-fade-up animation-delay-105">
             <CardBody className="space-y-5">
               <div className="flex items-center gap-3">
                 <CardIcon tone="accent">

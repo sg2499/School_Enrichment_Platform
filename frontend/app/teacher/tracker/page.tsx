@@ -190,7 +190,7 @@ function TrackerWorkspace() {
 
         {overview.problem ? <LoadError problem={overview.problem} onRetry={overview.reload} /> : null}
 
-        <Card className="animate-fade-up delay-70">
+        <Card className="animate-fade-up animation-delay-70">
           <div className="flex flex-col gap-3 border-b border-line bg-surface-muted/60 px-5 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
             <SubTabs label="Practice Tracker views" tabs={tabs} active={tab} />
             <SectionPicker sections={sections} value={scopeKey} onChange={setScope} disabled={!overview.data} />

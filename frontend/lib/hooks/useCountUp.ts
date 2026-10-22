@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * How long a number takes to settle. A little longer than the 600ms
- * fade-up its tile arrives on (tailwind.config.ts), so the figure is still
+ * fade-up its tile arrives on (the @theme in app/globals.css), so the figure is still
  * landing for a beat after the tile has: that overlap is what makes it read
  * as counted rather than as text that faded in. On the expo curve below it
  * is within 1% of the final value by 530ms, so nobody waits for it.

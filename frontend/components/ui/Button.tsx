@@ -10,13 +10,13 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const BASE =
   "group relative inline-flex select-none items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full font-semibold " +
-  "transition duration-200 ease-spring focus-visible:outline-none focus-visible:ring-0 " +
+  "transition duration-200 ease-spring focus-visible:outline-hidden focus-visible:ring-0 " +
   // Press reads as a real press: it snaps down fast (75ms) and eases back.
   "active:duration-75 " +
   "disabled:pointer-events-none disabled:opacity-55 " +
   // While loading the button is disabled but must not look greyed out --
   // it is working, not unavailable.
-  "[&[aria-busy='true']]:opacity-100 [&[aria-busy='true']]:cursor-progress";
+  "aria-busy:opacity-100 aria-busy:cursor-progress";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   // Deep ink -- the confident default for form submits and key actions.
@@ -63,7 +63,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
     "border border-transparent text-content-muted hover:bg-surface-brand hover:text-content-brand focus-visible:shadow-focus-ring",
   // For dark chrome (sidebar, brand panels).
   quiet:
-    "border border-line-inverse bg-white/10 text-content-inverse backdrop-blur hover:bg-white/20 focus-visible:shadow-focus-ring",
+    "border border-line-inverse bg-white/10 text-content-inverse backdrop-blur-sm hover:bg-white/20 focus-visible:shadow-focus-ring",
   danger:
     "bg-coral-600 text-content-inverse shadow-xs hover:bg-coral-700 focus-visible:shadow-focus-ring",
 };
@@ -130,7 +130,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
           colour. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/[0.09] group-active:bg-black/[0.07]"
+        className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/9 group-active:bg-black/[0.07]"
       />
       {/* rounded-[inherit] so the inset highlight follows the pill's curve
           instead of being clipped into a flat line at the ends. */}
@@ -198,7 +198,7 @@ export function ButtonLink({
     <Link href={href} className={cn(BASE, VARIANTS[variant], SIZES[size], fullWidth && "w-full", className)} {...props}>
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/[0.09] group-active:bg-black/[0.07]"
+        className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-200 group-hover:bg-white/9 group-active:bg-black/[0.07]"
       />
       {HAS_SHEEN[variant] ? (
         <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-sheen" />

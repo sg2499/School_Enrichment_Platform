@@ -203,7 +203,7 @@ export function SetPasswordScreen({ role }: { role: ChoosePasswordRole }) {
                 {/* content-muted on white: 8.6:1. Below `lg` the left
                     column's sentence is not shown, so the card says why
                     they are here; from `lg` it says only what to type. */}
-                <p className="mt-2 text-[0.9375rem] leading-[1.5] text-content-muted text-pretty lg:mt-[clamp(0.25rem,calc(var(--u)*0.7),0.5rem)] lg:text-[clamp(0.84375rem,calc(var(--u)*1.55),1.03125rem)] lg:leading-[1.4]">
+                <p className="mt-2 text-[0.9375rem] leading-normal text-content-muted text-pretty lg:mt-[clamp(0.25rem,calc(var(--u)*0.7),0.5rem)] lg:text-[clamp(0.84375rem,calc(var(--u)*1.55),1.03125rem)] lg:leading-[1.4]">
                   <span className="lg:hidden">{copy.message}</span>
                   <span className="hidden lg:inline">{copy.intro}</span>
                 </p>
@@ -230,7 +230,7 @@ export function SetPasswordScreen({ role }: { role: ChoosePasswordRole }) {
                 type="button"
                 onClick={handleSignOut}
                 disabled={leaving || finishing}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-subtle transition hover:text-content-brand focus-visible:shadow-focus-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-60"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl py-2 text-[0.8125rem] font-semibold text-content-subtle transition hover:text-content-brand focus-visible:shadow-focus-ring focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-60"
               >
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
                 {name ? `Not ${name}? Sign out` : "Sign Out"}

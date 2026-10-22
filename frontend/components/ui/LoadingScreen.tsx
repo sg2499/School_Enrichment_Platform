@@ -46,7 +46,7 @@ export function LoadingScreen({ label = "Checking your session", surface = "pape
         </span>
         <div className="space-y-1.5">
           <p className={cn("font-display text-lg font-semibold", night ? "text-content-inverse" : "text-content")}>{label}</p>
-          <p className={cn("text-sm", night ? "text-white/[0.84]" : "text-content-muted")}>One moment&hellip;</p>
+          <p className={cn("text-sm", night ? "text-white/84" : "text-content-muted")}>One moment&hellip;</p>
         </div>
         <span aria-hidden className={cn("relative h-1 w-40 overflow-hidden rounded-full", night ? "bg-white/15" : "bg-line")}>
           <span className={cn("absolute inset-y-0 -left-1/2 w-1/2 rounded-full animate-shimmer", night ? "bg-accent-gradient" : "bg-brand-gradient")} />
@@ -61,7 +61,7 @@ export function LoadingScreen({ label = "Checking your session", surface = "pape
           aria-hidden
           className={cn(
             "absolute left-1/2 top-full mt-5 w-[18rem] -translate-x-1/2 text-[0.8125rem] leading-relaxed text-balance animate-fade-in [animation-delay:4.5s]",
-            night ? "text-white/[0.84]" : "text-content-muted",
+            night ? "text-white/84" : "text-content-muted",
           )}
         >
           Still connecting. School networks can be slow. There&rsquo;s no need to refresh.

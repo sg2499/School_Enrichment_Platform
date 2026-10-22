@@ -19,7 +19,9 @@
  * The card is ordinary utility classes (app/login/page.tsx): it holds the product's
  * own form controls, and those are sized in rem like everywhere else.
  *
- * Colours come from the design tokens (tailwind.config.ts) through theme().
+ * Colours come from the design tokens (@theme in app/globals.css) through
+ * theme(); the @reference below is what lets this file, which is compiled on
+ * its own, see them.
  * The whites are written as rgba because a hairline at 14% is not a token.
  *
  * Text contrast is measured, not estimated: each piece of text is hidden,
@@ -40,6 +42,8 @@
  *     workspace, and the session check or the "can't reach" screen in front
  *     of the password page (components/brand/NightStage.tsx, .solo).
  */
+
+@reference "../../app/globals.css";
 
 .page {
   --u: clamp(6.6px, min(1.111vh, 0.6944vw), 12px);

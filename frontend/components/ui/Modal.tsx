@@ -148,7 +148,7 @@ export function Modal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-[100] flex",
+        "fixed inset-0 z-100 flex",
         isFullscreen ? "items-stretch justify-stretch" : "items-center justify-center p-3 sm:p-6",
       )}
     >
@@ -157,7 +157,7 @@ export function Modal({
           type="button"
           aria-label="Close dialog"
           onClick={onClose}
-          className="absolute inset-0 bg-brand-950/55 backdrop-blur-sm animate-fade-in"
+          className="absolute inset-0 bg-brand-950/55 backdrop-blur-xs animate-fade-in"
         />
       ) : null}
       <div
@@ -167,10 +167,10 @@ export function Modal({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          // outline-none on the frame only: it receives programmatic focus
+          // outline-hidden on the frame only: it receives programmatic focus
           // so Tab starts inside, but a ring around the whole dialog would
           // read as an error state. Every control inside keeps its ring.
-          "relative flex w-full flex-col overflow-hidden bg-surface outline-none animate-dialog-in",
+          "relative flex w-full flex-col overflow-hidden bg-surface outline-hidden animate-dialog-in",
           isFullscreen
             ? "h-full max-h-none rounded-none border-0 shadow-none"
             : cn("max-h-[92vh] rounded-4xl border border-line shadow-panel", SIZES[size]),

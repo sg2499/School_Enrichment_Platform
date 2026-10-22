@@ -673,7 +673,7 @@ function SectionsPanel({ sections, maps }: Pick<Signals, "sections" | "maps">) {
               key={section.id}
               className={cn(
                 "flex items-center gap-3.5 rounded-2xl border border-line bg-surface-muted/70 px-3.5 py-3 animate-fade-up",
-                ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"][index] ?? "delay-420",
+                ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280", "animation-delay-350", "animation-delay-420"][index] ?? "animation-delay-420",
               )}
             >
               {/* Monogram tile: brand-700 on brand-50, 9.3:1. */}
@@ -938,7 +938,7 @@ const MODULES: Module[] = [
   },
 ];
 
-const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280"];
+const STAGGER = ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280"];
 
 // --- page --------------------------------------------------------------------
 
@@ -1067,21 +1067,21 @@ export default function TeacherDashboardPage() {
             Order on a phone: sections, practice, checklist, profile. */}
         <SplitLayout columns="lg:grid-cols-[1.1fr_0.9fr]">
           <SplitColumn fill="last">
-            <StretchCard className="animate-fade-up delay-70" bodyClassName="sm:p-8">
+            <StretchCard className="animate-fade-up animation-delay-70" bodyClassName="sm:p-8">
               <SectionsPanel sections={signals.sections} maps={signals.maps} />
             </StretchCard>
 
-            <StretchCard className="animate-fade-up delay-210">
+            <StretchCard className="animate-fade-up animation-delay-210">
               <RecentPractice assignments={signals.assignments} />
             </StretchCard>
           </SplitColumn>
 
           <SplitColumn fill="first">
-            <StretchCard className="animate-fade-up delay-140">
+            <StretchCard className="animate-fade-up animation-delay-140">
               <ReadinessCard checks={checks} />
             </StretchCard>
 
-            <Card tone="brand" className="animate-fade-up delay-280">
+            <Card tone="brand" className="animate-fade-up animation-delay-280">
               <CardBody className="space-y-4">
                 <div className="flex items-center gap-3">
                   <CardIcon tone="brand">
@@ -1089,7 +1089,7 @@ export default function TeacherDashboardPage() {
                   </CardIcon>
                   <CardTitle>Your Profile</CardTitle>
                 </div>
-                <dl className="-mt-1">
+                <dl>
                   <DetailRow label="Name" value={user?.fullName ?? "—"} />
                   <DetailRow label="Teacher Code" value={teacher?.teacherCode ?? "—"} />
                   <DetailRow label="Designation" value={teacher?.designation ?? "Not set"} />

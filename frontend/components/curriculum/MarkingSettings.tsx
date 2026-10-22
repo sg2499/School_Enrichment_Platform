@@ -145,7 +145,7 @@ export function MarkingSettings({
         // not stop approval.
         <ul className="space-y-1 rounded-lg bg-surface-accent px-2.5 py-2 ring-1 ring-inset ring-saffron-200">
           {notes.map((note) => (
-            <li key={note} className="flex items-start gap-1.5 text-xs leading-[1.5] text-saffron-900">
+            <li key={note} className="flex items-start gap-1.5 text-xs leading-normal text-saffron-900">
               <Info aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>{note}</span>
             </li>

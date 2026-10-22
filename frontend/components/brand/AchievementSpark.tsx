@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
  *    gradient ids are per document and each graphic there owns its own;
  *  - the halo is rgba(249,171,43,0.16), saffron-400 at 16%, the halo the
  *    lit milestone dots have always had;
- *  - the motion is two keyframes already in tailwind.config.ts.
+ *  - the motion is two keyframes already in the @theme of app/globals.css.
  *
  * What plays, once, in about a second: a halo and a ring expand out of the
  * star and fade (pulse-ring, run a single time instead of looping), eight
@@ -79,7 +79,7 @@ const DOTS: { cx: number; cy: number; r: number }[] = [
 export function AchievementSpark({ className }: { className?: string }) {
   return (
     <span aria-hidden className={cn("pointer-events-none relative inline-flex h-7 w-7 shrink-0", className)}>
-      <span className={cn("absolute -inset-1 rounded-full bg-saffron-400/[0.16]", BURST, BURST_DELAY)} />
+      <span className={cn("absolute -inset-1 rounded-full bg-saffron-400/16", BURST, BURST_DELAY)} />
       <span className={cn("absolute -inset-1 rounded-full border border-saffron-300", BURST, RING_DELAY)} />
       <svg viewBox="0 0 64 64" role="presentation" className={cn("absolute -inset-2.5", BURST, BURST_DELAY)}>
         {DOTS.map((dot) => (
