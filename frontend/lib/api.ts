@@ -139,6 +139,9 @@ api.interceptors.response.use(
       typeof window !== "undefined" &&
       !window.location.pathname.startsWith("/admin/security")
     ) {
+      // A full page load on purpose: this runs inside the API client, outside
+      // React, where there is no router to push with.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/admin/security?setup=required";
     }
     // The same defense in depth for the forced password change, which
@@ -260,6 +263,9 @@ function handleSessionEnded(error: unknown): void {
   window.setTimeout(() => {
     leavingForSignIn = false;
   }, 5000);
+  // A full page load on purpose: this runs outside React (no router here),
+  // and a fresh load drops everything this tab held for the ended session.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   window.location.assign("/login");
 }
 

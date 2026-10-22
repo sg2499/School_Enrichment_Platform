@@ -438,7 +438,6 @@ function SecuritySettingsPageInner() {
   // lifts, which is why both flags are watched.
   useEffect(() => {
     if (twoFactorEnabled && !mustChangePassword) loadSessions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [twoFactorEnabled, mustChangePassword]);
 
   async function handleRevokeSession(sessionId: string) {
