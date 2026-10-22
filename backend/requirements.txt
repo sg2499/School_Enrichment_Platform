@@ -1,6 +1,6 @@
 fastapi==0.148.0
 uvicorn[standard]==0.54.0
-sqlalchemy==2.0.52
+sqlalchemy==2.1.5
 pydantic==2.14.1
 PyJWT==2.15.1
 passlib==1.7.4
