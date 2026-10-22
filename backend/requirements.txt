@@ -26,7 +26,7 @@ qrcode[pil]==8.2
 # (2026-08-19 profile-photo content-sniffing) -- a transitive dependency can
 # be dropped or re-ranged by an unrelated package update, silently breaking
 # a direct import; pinning what you actually import is the correct pattern.
-pillow==12.3.0
+pillow==13.0.0
 # Fernet encryption of TOTP secrets at rest (app/core/totp_crypto.py and
 # alembic f7c2a9d4e1b8, 1 Oct 2026). It used to arrive with
 # python-jose[cryptography]; that is gone (PyJWT replaced it, 13 Oct 2026),
