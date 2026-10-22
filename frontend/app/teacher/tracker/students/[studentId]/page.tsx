@@ -52,7 +52,7 @@ import { formatDateTime, formatDay, FOUNDATION_REPAIR_LABEL, isFoundationRepair,
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentHistoryItem, StudentHistoryPage, TrackerOverview } from "@/types/tracker";
 
-const STAGGER = ["", "delay-70", "delay-140", "delay-210"];
+const STAGGER = ["", "animation-delay-70", "animation-delay-140", "animation-delay-210"];
 
 function HistoryCard({
   item,

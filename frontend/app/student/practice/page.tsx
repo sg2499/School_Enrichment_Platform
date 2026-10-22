@@ -105,7 +105,7 @@ const STATUS_CHROME: Record<StudentAssignmentSummary["status"], { disc: string; 
   },
 };
 
-const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"];
+const STAGGER = ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280", "animation-delay-350", "animation-delay-420"];
 
 /** "2026-09-14" -> "14 Sep 2026", parsed as a *local* date (30 Sep 2026).
  *  This used to be new Date(value), which reads a plain "YYYY-MM-DD" as UTC
@@ -132,7 +132,7 @@ function GroupLabel({ id, count, children }: { id: string; count: number; childr
     // a small tracked label, like every other eyebrow in the product.
     <h2
       id={id}
-      className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 px-3.5 py-1.5 font-sans text-eyebrow font-bold uppercase text-content-subtle shadow-xs backdrop-blur"
+      className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 px-3.5 py-1.5 font-sans text-eyebrow font-bold uppercase text-content-subtle shadow-xs backdrop-blur-sm"
     >
       {children}
       <span className="tabular text-content">{count}</span>

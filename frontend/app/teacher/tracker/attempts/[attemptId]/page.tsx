@@ -193,7 +193,7 @@ function MarksPicker({
             const n = Math.round(Number(raw));
             onChange(Number.isFinite(n) ? Math.min(Math.max(n, 0), answer.maxScore) : null);
           }}
-          className="h-10 w-20 rounded-xl border border-line-field bg-surface px-3 text-base tabular text-content shadow-xs outline-none transition hover:border-ink-500 focus:border-brand-500 focus:shadow-focus disabled:opacity-60"
+          className="h-10 w-20 rounded-xl border border-line-field bg-surface px-3 text-base tabular text-content shadow-xs outline-hidden transition hover:border-ink-500 focus:border-brand-500 focus:shadow-focus disabled:opacity-60"
         />
         <span className="font-medium text-content-subtle">out of {answer.maxScore}</span>
       </label>
@@ -215,7 +215,7 @@ function MarksPicker({
               disabled={disabled}
               onClick={() => onChange(mark)}
               className={cn(
-                "inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-xl px-3 text-sm font-bold tabular transition duration-200 ease-spring disabled:cursor-not-allowed disabled:opacity-60",
+                "inline-flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-sm font-bold tabular transition duration-200 ease-spring disabled:cursor-not-allowed disabled:opacity-60",
                 pressed
                   ? "bg-brand-gradient text-content-inverse shadow-brand"
                   : "border border-line-strong bg-surface text-content-muted hover:border-brand-300 hover:text-content-brand",
@@ -234,7 +234,7 @@ function MarksPicker({
 // The first few answers arrive in sequence behind the header, the way the
 // student page's history cards do; from the fifth on they share the last
 // step, so a 20-question attempt never keeps a teacher waiting on a cascade.
-const ANSWER_STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280"];
+const ANSWER_STAGGER = ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280"];
 
 /**
  * Part and method marks on an automatic mark (#163). Closed, it is one line
@@ -873,7 +873,7 @@ function AttemptWorkspace() {
                 ))}
               </ol>
 
-              <aside className="space-y-4 animate-fade-up delay-70 xl:sticky xl:top-6" aria-label="Score and marking">
+              <aside className="space-y-4 animate-fade-up animation-delay-70 xl:sticky xl:top-6" aria-label="Score and marking">
                 <Card tone={pending ? "accent" : "default"}>
                   <CardBody className="space-y-4 sm:p-6">
                     <div>
@@ -1046,7 +1046,7 @@ function AttemptWorkspace() {
             {review.canGrade && dirty ? (
               // fade-up: it rises from the edge it is pinned to, on the
               // first mark picked, rather than snapping into place.
-              <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 shadow-panel backdrop-blur animate-fade-up xl:hidden">
+              <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 px-4 py-3 shadow-panel backdrop-blur-sm animate-fade-up xl:hidden">
                 <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
                   <p className="text-sm text-content-muted">
                     <span className="font-display text-lg font-semibold text-content tabular">

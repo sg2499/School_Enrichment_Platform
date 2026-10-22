@@ -199,7 +199,7 @@ export const CodeInput = forwardRef<CodeInputHandle, CodeInputProps>(function Co
           // `code-input` exempts it from the page-wide autofill styling
           // (globals.css), which would paint an opaque white field with
           // small text straight over the boxes.
-          className="code-input absolute inset-0 h-full w-full cursor-text rounded-2xl bg-transparent text-base text-transparent caret-transparent outline-none selection:bg-transparent disabled:cursor-not-allowed"
+          className="code-input absolute inset-0 h-full w-full cursor-text rounded-2xl bg-transparent text-base text-transparent caret-transparent outline-hidden selection:bg-transparent disabled:cursor-not-allowed"
         />
       </div>
     </div>

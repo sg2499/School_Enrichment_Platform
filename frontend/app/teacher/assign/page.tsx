@@ -585,7 +585,7 @@ export default function AssignPracticePage() {
             </PanelStack>
           </StretchCard>
 
-          <SplitColumn as="aside" fill="last" className="animate-fade-up delay-70" aria-label="Your sections">
+          <SplitColumn as="aside" fill="last" className="animate-fade-up animation-delay-70" aria-label="Your sections">
             <Card tone="muted">
               <CardBody className="space-y-4 sm:p-6">
                 <div className="flex items-center gap-3">

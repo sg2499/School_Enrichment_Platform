@@ -116,7 +116,7 @@ export function AssignmentsPanel({
                 const p = row.progress;
                 return (
                   <TR key={row.id} onClick={() => router.push(href)}>
-                    <TD className="max-w-[22rem]">
+                    <TD className="max-w-88">
                       <Link
                         href={href}
                         onClick={(event) => event.stopPropagation()}

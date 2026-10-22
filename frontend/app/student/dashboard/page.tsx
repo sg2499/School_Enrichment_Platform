@@ -242,7 +242,7 @@ const GOOD_TO_KNOW = [
   "Nothing is marked until you press Submit",
 ];
 
-const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"];
+const STAGGER = ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280", "animation-delay-350", "animation-delay-420"];
 
 /** Local YYYY-MM-DD, so "due today" is the student's calendar day, not
  *  UTC's -- at 4am IST, UTC is still on yesterday. */
@@ -501,7 +501,7 @@ function PracticePanel({ state, onRetry }: { state: LoadState; onRetry: () => vo
  */
 function HowPracticeWorks() {
   return (
-    <Card className="animate-fade-up delay-210">
+    <Card className="animate-fade-up animation-delay-210">
       <CardBody className="space-y-6 sm:p-8">
         <div className="flex items-start gap-3">
           <CardIcon tone="brand">
@@ -702,13 +702,13 @@ export default function StudentDashboardPage() {
             one line, and each pins its closing element to the bottom. */}
         <SplitLayout columns="lg:grid-cols-[1.35fr_0.65fr]">
           <StretchCard
-            className="animate-fade-up delay-70"
+            className="animate-fade-up animation-delay-70"
             bodyClassName={cn(state.kind === "ready" && state.summary.countable === 0 && "sm:p-9")}
           >
             <PracticePanel state={state} onRetry={load} />
           </StretchCard>
 
-          <StretchCard className="animate-fade-up delay-140">
+          <StretchCard className="animate-fade-up animation-delay-140">
             <PanelStack gap="gap-5">
               <div className="flex items-center gap-3">
                 <CardIcon tone="brand">

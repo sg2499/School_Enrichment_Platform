@@ -275,7 +275,7 @@ function AssignmentWorkspace() {
         ) : null}
 
         {!header.error ? (
-          <Card className="animate-fade-up delay-70">
+          <Card className="animate-fade-up animation-delay-70">
             <div className="flex flex-col gap-3 border-b border-line bg-surface-muted/60 px-5 py-3.5 sm:px-6 xl:flex-row xl:items-center">
               <FilterChips
                 label="Filter students"

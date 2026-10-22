@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
-// This project's own type sizes (tailwind.config.ts, fontSize). tailwind-merge
+// This project's own type sizes (the @theme in app/globals.css, --text-*). tailwind-merge
 // only knows Tailwind's stock sizes, so it read `text-eyebrow` and
 // `text-display-sm` as text COLOURS and dropped them whenever a real colour
 // came later in the same call: cn("text-eyebrow ... text-content-brand") came

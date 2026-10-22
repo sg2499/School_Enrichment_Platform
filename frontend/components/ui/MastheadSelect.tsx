@@ -44,7 +44,7 @@ export function MastheadSelect({
   return (
     <div className={cn("rounded-2xl p-4 ring-1 ring-inset sm:p-5", MASTHEAD_WELL.default.cell, className)}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
-        <div className="min-w-0 lg:w-[19rem] lg:shrink-0">
+        <div className="min-w-0 lg:w-76 lg:shrink-0">
           <label htmlFor={selectId} className="block text-eyebrow font-bold uppercase text-saffron-200">
             {label}
           </label>
@@ -60,7 +60,7 @@ export function MastheadSelect({
             aria-invalid={error ? true : undefined}
             aria-describedby={[error ? errorId : null, helper ? helperId : null].filter(Boolean).join(" ") || undefined}
             className={cn(
-              "peer h-12 w-full appearance-none rounded-2xl border bg-surface px-4 pr-11 text-base text-content shadow-xs outline-none",
+              "peer h-12 w-full appearance-none rounded-2xl border bg-surface px-4 pr-11 text-base text-content shadow-xs outline-hidden",
               "transition duration-200 ease-spring focus:shadow-focus-inverse disabled:cursor-progress disabled:opacity-80",
               error ? "border-coral-300" : "border-white/20",
             )}

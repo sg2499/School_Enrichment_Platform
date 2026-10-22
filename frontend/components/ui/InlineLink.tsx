@@ -30,7 +30,7 @@ export type InlineLinkSize = "sm" | "md";
  */
 const BASE =
   "group inline-flex max-w-full select-none items-center gap-1.5 rounded-full border font-semibold " +
-  "transition duration-200 ease-spring focus-visible:outline-none focus-visible:shadow-focus-ring";
+  "transition duration-200 ease-spring focus-visible:outline-hidden focus-visible:shadow-focus-ring";
 
 // The chrome is a translucent ink tint rather than a named surface, on
 // purpose. This link has to sit on three different grounds -- the paper
@@ -54,7 +54,7 @@ const BASE =
 // there is no masthead to put the way back in.
 const CHROME =
   "border-brand-500/15 bg-brand-500/10 text-content-brand " +
-  "hover:border-brand-500/30 hover:bg-brand-500/[0.16] hover:text-brand-900 active:bg-brand-500/20";
+  "hover:border-brand-500/30 hover:bg-brand-500/16 hover:text-brand-900 active:bg-brand-500/20";
 
 // On indigo chrome (PageHeader's masthead) the tint is turned round: a
 // brand-950 well rather than a lighter wash, for the reason MASTHEAD_WELL

@@ -282,10 +282,10 @@ function NavRow({
           // Inactive live rows sit at inverse-muted (5.7:1 at the rail's
           // lightest point; was raw white/70). The active row's white/12
           // fill only started rendering once `12` joined the opacity scale
-          // in tailwind.config.ts -- it had been ring-only until then.
+          // in the @theme of app/globals.css -- it had been ring-only until then.
           active
             ? "bg-white/12 font-semibold text-content-inverse shadow-hairline ring-1 ring-inset ring-white/15"
-            : "text-content-inverse-muted hover:bg-white/[0.08] hover:text-content-inverse",
+            : "text-content-inverse-muted hover:bg-white/8 hover:text-content-inverse",
         )}
       >
         <span
@@ -293,7 +293,7 @@ function NavRow({
             "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition duration-200 ease-spring",
             active
               ? "bg-accent-gradient text-brand-950 shadow-accent"
-              : "bg-white/[0.08] ring-1 ring-inset ring-white/10 group-hover:bg-white/[0.14] group-hover:ring-white/20",
+              : "bg-white/8 ring-1 ring-inset ring-white/10 group-hover:bg-white/[0.14] group-hover:ring-white/20",
           )}
         >
           {/* A hair of lift on hover, on the icon only -- the row stays
@@ -313,9 +313,9 @@ function NavRow({
       // Quieter than a live row, but only down to the inverse-faint floor
       // (4.6:1; was white/55 at ~3.7:1). The hierarchy now comes from the
       // dimmed icon plate and the Soon pill, not from unreadable text.
-      className={cn(base, "cursor-default text-content-inverse-faint hover:bg-white/[0.05] hover:text-content-inverse-muted")}
+      className={cn(base, "cursor-default text-content-inverse-faint hover:bg-white/5 hover:text-content-inverse-muted")}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] opacity-80 ring-1 ring-inset ring-white/[0.08]">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/5 opacity-80 ring-1 ring-inset ring-white/8">
         <Icon className="h-4 w-4" />
       </span>
       {!collapsed ? (
@@ -324,7 +324,7 @@ function NavRow({
               room for about fourteen characters, and "Classes & Sections"
               was being cut to "Classes & Secti..." -- a name nobody can
               read is worse than a row one line taller. */}
-          <span className="min-w-0 leading-[1.25] text-pretty">{item.label}</span>
+          <span className="min-w-0 leading-tight text-pretty">{item.label}</span>
           {/* inverse-muted on the white/10 pill: 4.6:1 (was white/60, ~3.4:1). */}
           <span className="ml-auto shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-eyebrow text-content-inverse-muted">
             Soon
@@ -374,7 +374,7 @@ function SidebarContent({
           for a whole school day, where ambient motion is a distraction. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -left-16 -top-16 h-64 w-64 rounded-full bg-brand-500/40 blur-3xl" />
-        <div className="absolute bottom-10 right-[-4rem] h-56 w-56 rounded-full bg-saffron-500/20 blur-3xl" />
+        <div className="absolute bottom-10 -right-16 h-56 w-56 rounded-full bg-saffron-500/20 blur-3xl" />
         <div className="absolute inset-0 bg-grid-inverse opacity-60" />
         {/* Film grain, the same as the mastheads carry, so the dark
             surfaces a user sees read as one material. */}
@@ -395,7 +395,7 @@ function SidebarContent({
             onClick={onToggleCollapse}
             aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
             title={collapsed ? "Expand navigation" : "Collapse navigation"}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-white/70 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.16] hover:text-white"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/8 text-white/70 ring-1 ring-inset ring-white/10 transition hover:bg-white/16 hover:text-white"
           >
             {collapsed ? (
               <PanelLeftOpen className="h-4 w-4" aria-hidden />
@@ -479,7 +479,7 @@ function SidebarContent({
             disabled={signingOut}
             aria-label="Sign Out"
             title="Sign Out"
-            className="inline-flex h-10 w-full items-center justify-center rounded-2xl border border-line-inverse bg-white/10 text-content-inverse backdrop-blur transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-55"
+            className="inline-flex h-10 w-full items-center justify-center rounded-2xl border border-line-inverse bg-white/10 text-content-inverse backdrop-blur-sm transition hover:bg-white/20 disabled:pointer-events-none disabled:opacity-55"
           >
             <LogOut className="h-4 w-4" aria-hidden />
           </button>
@@ -531,7 +531,7 @@ const SIDEBAR_COLLAPSED_KEY = "se_sidebar_collapsed";
  * calendar glyph, content-faint and decorative, 4.0:1.
  * components/brand/Ambience.tsx has the sweep those figures come from.
  */
-const SURFACED = "border border-line bg-surface/70 shadow-xs backdrop-blur";
+const SURFACED = "border border-line bg-surface/70 shadow-xs backdrop-blur-sm";
 
 export function RoleShell({
   role,
@@ -702,7 +702,7 @@ export function RoleShell({
           focused. */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-surface focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-content-brand focus:shadow-panel"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-60 focus:rounded-full focus:bg-surface focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-content-brand focus:shadow-panel"
       >
         Skip to content
       </a>
@@ -768,7 +768,7 @@ export function RoleShell({
             tabIndex={-1}
             aria-label="Close navigation menu"
             onClick={() => setMenuOpen(false)}
-            className="absolute inset-0 bg-brand-950/55 backdrop-blur-sm animate-fade-in"
+            className="absolute inset-0 bg-brand-950/55 backdrop-blur-xs animate-fade-in"
           />
           {/* Slides in from the edge it is anchored to (sheet-in), rather
               than fading up in place. */}
@@ -807,7 +807,7 @@ export function RoleShell({
         {/* mask-fade-b: the glow used to stop dead at 26rem, leaving a faint
             horizontal seam across the page right behind the first row of
             cards. It now dissolves into the canvas instead. */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[26rem] bg-canvas-glow mask-fade-b" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-104 bg-canvas-glow mask-fade-b" />
 
         {/* The workspace wash, when a page asks for one. Pinned to the
             viewport (Ambience is `fixed`) but starting at the rail's right
@@ -852,7 +852,7 @@ export function RoleShell({
               timetable and the day is the first thing anyone orients by. */}
           <span className="flex min-w-0 items-center gap-4">
             <nav aria-label="Breadcrumb" className="min-w-0">
-              <ol className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface/70 py-1.5 pl-3 pr-3.5 text-xs font-medium text-content-muted shadow-xs backdrop-blur">
+              <ol className="flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface/70 py-1.5 pl-3 pr-3.5 text-xs font-medium text-content-muted shadow-xs backdrop-blur-sm">
                 <li className="flex shrink-0 items-center gap-2">
                   <Sparkles className="h-3.5 w-3.5 text-saffron-500" aria-hidden />
                   {ROLE_TAGLINE[role]}
@@ -903,13 +903,13 @@ export function RoleShell({
         </div>
 
         {/* tabIndex -1 so the skip link can actually move focus here, not
-            just scroll; outline-none because a ring round the whole page on
+            just scroll; outline-hidden because a ring round the whole page on
             arrival would look like an error. */}
         <main
           id="main-content"
           tabIndex={-1}
           className={cn(
-            "relative z-10 mx-auto w-full px-4 py-8 outline-none sm:px-6 lg:px-8 lg:py-10",
+            "relative z-10 mx-auto w-full px-4 py-8 outline-hidden sm:px-6 lg:px-8 lg:py-10",
             focusRoute ? "max-w-none 2xl:px-12" : "max-w-shell",
           )}
         >
@@ -955,7 +955,7 @@ export function RoleShell({
           Sign out was pressed (rail, drawer or profile menu), this is where
           the answer appears if it did not work. */}
       {signOutError ? (
-        <div className="fixed inset-x-4 bottom-4 z-[70] mx-auto max-w-xl">
+        <div className="fixed inset-x-4 bottom-4 z-70 mx-auto max-w-xl">
           <AlertBanner
             tone="error"
             message={signOutError}

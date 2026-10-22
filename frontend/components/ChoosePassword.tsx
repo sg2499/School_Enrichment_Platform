@@ -291,7 +291,7 @@ export function ChoosePassword({
         Save Password &amp; Continue
       </Button>
 
-      <p className={cn("flex items-start gap-2.5 text-[0.875rem] leading-[1.5] text-content-muted", keepClassName)}>
+      <p className={cn("flex items-start gap-2.5 text-[0.875rem] leading-normal text-content-muted", keepClassName)}>
         <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />
         <span>{copy.keep}</span>
       </p>

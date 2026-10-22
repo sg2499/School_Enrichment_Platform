@@ -90,7 +90,7 @@ function firstName(fullName: string | null | undefined): string {
  * media queries on the classes themselves, so the rule sits beside the
  * spacing it overrides.
  */
-const SHORT_BODY = "lg:[@media(max-height:680px)]:pb-3.5 lg:[@media(max-height:680px)]:pt-[1.125rem]";
+const SHORT_BODY = "lg:[@media(max-height:680px)]:pb-3.5 lg:[@media(max-height:680px)]:pt-4.5";
 const SHORT_FORM = "lg:[@media(max-height:680px)]:space-y-2.5";
 
 /**
@@ -691,7 +691,7 @@ export default function LoginPage() {
                 as a lit object rather than a flat white box. */}
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-12 top-0 z-10 h-0.5 bg-gradient-to-r from-transparent via-saffron-300 to-transparent"
+              className="pointer-events-none absolute inset-x-12 top-0 z-10 h-0.5 bg-linear-to-r/srgb from-transparent via-saffron-300 to-transparent"
             />
 
             {/* The `short` rules below are for laptops under about 680px of
@@ -732,7 +732,7 @@ export default function LoginPage() {
                   // two lines. brand-800 on surface-brand: 10.6:1.
                   <p
                     role="status"
-                    className="mt-3 flex items-start gap-2.5 rounded-2xl border border-line-brand bg-surface-brand px-3.5 py-2.5 text-[0.9375rem] font-medium leading-[1.5] text-brand-800 text-pretty animate-fade-in lg:mt-[clamp(0.375rem,calc(var(--u)*1),0.75rem)] lg:py-[clamp(0.3125rem,calc(var(--u)*0.8),0.625rem)] lg:text-[clamp(0.8125rem,calc(var(--u)*1.5),0.9375rem)] lg:leading-[1.45]"
+                    className="mt-3 flex items-start gap-2.5 rounded-2xl border border-line-brand bg-surface-brand px-3.5 py-2.5 text-[0.9375rem] font-medium leading-normal text-brand-800 text-pretty animate-fade-in lg:mt-[clamp(0.375rem,calc(var(--u)*1),0.75rem)] lg:py-[clamp(0.3125rem,calc(var(--u)*0.8),0.625rem)] lg:text-[clamp(0.8125rem,calc(var(--u)*1.5),0.9375rem)] lg:leading-[1.45]"
                   >
                     <Info className="mt-[0.15em] h-[1.05em] w-[1.05em] shrink-0 text-brand-600" aria-hidden />
                     <span>{notice}</span>
@@ -744,7 +744,7 @@ export default function LoginPage() {
                   <p
                     key={`${step}-${signInRole}-${useBackupCode}`}
                     className={cn(
-                      "mt-2 text-[0.9375rem] leading-[1.5] text-content-muted animate-fade-in lg:mt-[clamp(0.25rem,calc(var(--u)*0.7),0.5rem)] lg:text-[clamp(0.84375rem,calc(var(--u)*1.55),1.03125rem)] lg:leading-[1.4]",
+                      "mt-2 text-[0.9375rem] leading-normal text-content-muted animate-fade-in lg:mt-[clamp(0.25rem,calc(var(--u)*0.7),0.5rem)] lg:text-[clamp(0.84375rem,calc(var(--u)*1.55),1.03125rem)] lg:leading-[1.4]",
                       // The sign-in instruction is one line on every choice
                       // at every laptop size (lib/signInCopy.ts keeps it
                       // short enough), so the form does not shift as the
@@ -979,7 +979,7 @@ export default function LoginPage() {
                           <button
                             type="button"
                             onClick={() => goToRightWayIn(rightWayIn)}
-                            className="-mx-1.5 mt-1 inline-flex min-h-[1.75rem] items-center gap-1.5 rounded-lg px-1.5 text-[0.875rem] font-bold text-coral-800 underline decoration-coral-300 decoration-2 underline-offset-[3px] transition hover:decoration-coral-600 focus-visible:shadow-focus-ring focus-visible:outline-none"
+                            className="-mx-1.5 mt-1 inline-flex min-h-7 items-center gap-1.5 rounded-lg px-1.5 text-[0.875rem] font-bold text-coral-800 underline decoration-coral-300 decoration-2 underline-offset-[3px] transition hover:decoration-coral-600 focus-visible:shadow-focus-ring focus-visible:outline-hidden"
                           >
                             Switch to {SIGN_IN_COPY[rightWayIn].tab}
                             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -1033,7 +1033,7 @@ export default function LoginPage() {
                           just refused. */}
                       <p
                         className={cn(
-                          "flex items-start gap-2.5 text-[0.875rem] leading-[1.5] text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)] lg:leading-[1.45]",
+                          "flex items-start gap-2.5 text-[0.875rem] leading-normal text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)] lg:leading-[1.45]",
                           // "Right details, wrong way in" is a line taller
                           // still, so it needs this line's room on windows
                           // up to 840px tall (measured: without it the page
@@ -1044,7 +1044,7 @@ export default function LoginPage() {
                         <ShieldCheck className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-jade-600" aria-hidden />
                         <span>{copy.safe}</span>
                       </p>
-                      <p className="flex items-start gap-2.5 text-[0.875rem] leading-[1.5] text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)] lg:leading-[1.45]">
+                      <p className="flex items-start gap-2.5 text-[0.875rem] leading-normal text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)] lg:leading-[1.45]">
                         <KeyRound className="mt-0.5 h-[1.05rem] w-[1.05rem] shrink-0 text-brand-600" aria-hidden />
                         <span>{copy.forgotten}</span>
                       </p>
@@ -1067,10 +1067,10 @@ export default function LoginPage() {
               >
                 {(copy) => (
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-[0.5625rem] bg-surface-brand text-content-brand">
+                    <span className="inline-flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-[0.5625rem] bg-surface-brand text-content-brand">
                       <IdCard className="h-4 w-4" aria-hidden />
                     </span>
-                    <p className="text-[0.8125rem] leading-[1.5] text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)]">
+                    <p className="text-[0.8125rem] leading-normal text-content-muted text-pretty lg:text-[clamp(0.78125rem,calc(var(--u)*1.32),0.875rem)]">
                       <strong className="font-bold text-content">{copy.issuedBy}</strong> {copy.newHere}
                     </p>
                   </div>

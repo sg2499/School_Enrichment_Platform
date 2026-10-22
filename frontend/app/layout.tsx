@@ -3,6 +3,7 @@ import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { PRODUCT_CREDIT, PRODUCT_NAME } from "@/lib/brand";
+import { OLD_BROWSER_CHECK } from "@/lib/browserSupport";
 
 // B9 fix (30 Sep 2026 security/DPDP review): previously loaded from a
 // fonts.googleapis.com/fonts.gstatic.com <link> in <head> below -- every
@@ -45,11 +46,22 @@ export const metadata: Metadata = {
   // this folder (icon.svg, favicon.ico, apple-icon.png, opengraph-image.png)
   // and Next links them by itself. They replaced an inline data: URI here
   // on 4 Oct 2026, when the mark became the Forged Stair: see brand/README.md.
-  // No metadataBase on purpose: on Vercel, Next already gives the share
-  // image the production address in production and the preview's own
-  // address on a preview. Setting one here would point every preview at
+  // The address the share image is resolved against, worked out the way Next
+  // does it when none is set (22 Oct 2026): production's own domain in
+  // production, the preview's own address on a preview, localhost otherwise.
+  // Left unset, Next did exactly this but printed a warning on every build;
+  // stating it keeps the build output clean without pointing previews at
   // production.
+  metadataBase: new URL(siteOrigin()),
 };
+
+function siteOrigin(): string {
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const preview = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+  if (process.env.VERCEL_ENV === "production" && production) return `https://${production}`;
+  if (preview) return `https://${preview}`;
+  return `http://localhost:${process.env.PORT || 3000}`;
+}
 
 export const viewport: Viewport = {
   themeColor: "#26215C",
@@ -66,6 +78,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           React hydrates. It does not suppress real hydration bugs elsewhere
           in the tree. */}
       <body className="min-h-full bg-canvas font-sans text-content antialiased" suppressHydrationWarning>
+        {/* First thing in the page: a browser too old for the styling goes to
+            a plain page asking for an update (lib/browserSupport.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: OLD_BROWSER_CHECK }} />
         <Providers>{children}</Providers>
       </body>
     </html>

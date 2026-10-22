@@ -306,7 +306,7 @@ const MODULES: Module[] = [
   },
 ];
 
-const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"];
+const STAGGER = ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280", "animation-delay-350", "animation-delay-420"];
 
 /** Local YYYY-MM-DD, so "is this chapter running now" compares against the
  *  viewer's own calendar day rather than UTC's -- at 4am IST, UTC is still
@@ -1098,7 +1098,7 @@ export default function AdminDashboardPage() {
                             stage.state === "done"
                               ? "bg-jade-300"
                               : stage.state === "partial"
-                                ? "bg-gradient-to-b from-jade-300 to-line"
+                                ? "bg-linear-to-b/srgb from-jade-300 to-line"
                                 : "bg-line",
                           )}
                         />
@@ -1170,7 +1170,7 @@ export default function AdminDashboardPage() {
           </StretchCard>
 
           <SplitColumn fill="first">
-            <StretchCard className="animate-fade-up delay-70" bodyClassName="sm:p-8">
+            <StretchCard className="animate-fade-up animation-delay-70" bodyClassName="sm:p-8">
               <CurriculumPanel
                 isPlatformAdmin={isPlatformAdmin}
                 chapters={chapters}
@@ -1179,7 +1179,7 @@ export default function AdminDashboardPage() {
               />
             </StretchCard>
 
-            <Card tone="brand" className="animate-fade-up delay-140">
+            <Card tone="brand" className="animate-fade-up animation-delay-140">
               <CardBody className="space-y-4">
                 <div className="flex items-center gap-3">
                   <CardIcon tone="brand">
@@ -1187,7 +1187,7 @@ export default function AdminDashboardPage() {
                   </CardIcon>
                   <CardTitle>{isPlatformAdmin ? "Your Access" : "Your School"}</CardTitle>
                 </div>
-                <dl className="-mt-1">
+                <dl>
                   <DetailRow label="Administrator" value={user?.fullName ?? "—"} />
                   {/* The KIND of access, so the plain role name
                       (lib/pageTitle.ts ROLE_LABEL) and not the label the

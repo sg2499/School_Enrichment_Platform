@@ -84,7 +84,7 @@ export function NightCard({ className, children }: { className?: string; childre
     <div className={cn("relative overflow-hidden rounded-4xl bg-surface text-content", styles.card, className)}>
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-12 top-0 z-10 h-0.5 bg-gradient-to-r from-transparent via-saffron-300 to-transparent"
+        className="pointer-events-none absolute inset-x-12 top-0 z-10 h-0.5 bg-linear-to-r/srgb from-transparent via-saffron-300 to-transparent"
       />
       {children}
     </div>
@@ -97,8 +97,8 @@ export function NightCard({ className, children }: { className?: string; childre
  *  needs it. */
 export function GoArrow() {
   return (
-    <span className="inline-flex h-[1.625rem] w-[1.625rem] items-center justify-center rounded-full bg-saffron-400 text-brand-950 max-[339px]:hidden">
-      <ArrowRight className="h-[0.9375rem] w-[0.9375rem]" strokeWidth={2.6} />
+    <span className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-full bg-saffron-400 text-brand-950 max-[339px]:hidden">
+      <ArrowRight className="h-3.75 w-3.75" strokeWidth={2.6} />
     </span>
   );
 }

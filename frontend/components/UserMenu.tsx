@@ -488,10 +488,10 @@ export function UserMenu({
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2.5 rounded-full border border-line bg-surface/80 py-1.5 pl-1.5 pr-3.5 shadow-xs backdrop-blur transition hover:border-brand-300 hover:bg-surface"
+        className="flex items-center gap-2.5 rounded-full border border-line bg-surface/80 py-1.5 pl-1.5 pr-3.5 shadow-xs backdrop-blur-sm transition hover:border-brand-300 hover:bg-surface"
       >
         <Avatar photoUrl={user?.profilePhotoUrl} fullName={user?.fullName} />
-        <span className="max-w-[9rem] truncate text-sm font-semibold text-content sm:max-w-[14rem]">
+        <span className="max-w-36 truncate text-sm font-semibold text-content sm:max-w-56">
           {user?.fullName ?? "Signed in"}
         </span>
         <ChevronDown
@@ -566,7 +566,7 @@ export function SidebarUserMenu({
         aria-expanded={open}
         title={collapsed ? `${user?.fullName ?? "Signed in"} · ${who}` : undefined}
         className={cn(
-          "glass-panel flex w-full items-center gap-3 rounded-2xl transition hover:bg-white/[0.1]",
+          "glass-panel flex w-full items-center gap-3 rounded-2xl transition hover:bg-white/10",
           collapsed ? "justify-center px-2 py-2" : "px-3.5 py-3",
         )}
       >
@@ -581,7 +581,7 @@ export function SidebarUserMenu({
                 capitals to a line: "RIVERSIDE ACADEMY ADMIN" was being cut
                 to "RIVERSIDE ACADEMY A...". The longest label there can be
                 (lib/pageTitle.ts) fits in two. */}
-            <span className="mt-0.5 block text-[0.6875rem] font-semibold uppercase leading-[1.3] tracking-eyebrow text-saffron-300 text-pretty break-words line-clamp-2">
+            <span className="mt-0.5 block text-[0.6875rem] font-semibold uppercase leading-[1.3] tracking-eyebrow text-saffron-300 text-pretty wrap-break-word line-clamp-2">
               {who}
             </span>
           </span>

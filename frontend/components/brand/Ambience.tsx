@@ -59,7 +59,7 @@ import { cn } from "@/lib/utils";
  * with everything hidden except the canvas, RoleShell's canvas-glow and
  * this backdrop, then every pixel of the content column read back. The
  * figure quoted is the single darkest pixel, in the spirit of the inverse
- * ramp in tailwind.config.ts ("measured against the lightest point of that
+ * ramp in the @theme of app/globals.css ("measured against the lightest point of that
  * chrome, not its average"). Three sweeps:
  *   still     twelve widths from 320 to 2560px, each at five heights from
  *             568 to 1440px (the bottom blob rides the viewport's foot, so
@@ -89,7 +89,7 @@ import { cn } from "@/lib/utils";
  *      phone top bar (85%)  content 15.9:1, brand-700 9.6:1
  *      InlineLink pill      brand-700 5.7:1 (7.5:1 hovered)
  *
- * The chip figures take no credit for the chip's backdrop-blur: they are
+ * The chip figures take no credit for the chip's backdrop-blur-sm: they are
  * surface at 70% laid over the single darkest pixel, which the blur can
  * only soften. The chips' decorative glyphs (content-faint) are 4.0:1 on
  * that basis, past the 3:1 WCAG 1.4.11 asks of a graphic.
@@ -145,9 +145,9 @@ export type AmbienceLevel = keyof typeof AMBIENCE;
 
 const AMBIENCE = {
   dashboard: "opacity-100",
-  // [&_*]:animate-none freezes AuroraBackdrop's drift from the outside; the
+  // **:animate-none freezes AuroraBackdrop's drift from the outside; the
   // graphic has no "still" option of its own.
-  working: "opacity-80 [&_*]:animate-none",
+  working: "opacity-80 **:animate-none",
 } as const;
 
 export function Ambience({ level, className }: { level: AmbienceLevel; className?: string }) {

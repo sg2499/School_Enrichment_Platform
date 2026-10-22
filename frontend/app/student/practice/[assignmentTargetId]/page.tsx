@@ -122,7 +122,7 @@ import type { ActivityType, AttemptAnswerResult, AttemptDetail, AttemptQuestion,
  *  - "Today's Practice" is "Daily Practice", the screen's one name.
  */
 
-const STAGGER = ["delay-70", "delay-140", "delay-210", "delay-280", "delay-350", "delay-420"];
+const STAGGER = ["animation-delay-70", "animation-delay-140", "animation-delay-210", "animation-delay-280", "animation-delay-350", "animation-delay-420"];
 
 /** A chosen option: brand-400 border (3.7:1 on white, past 1.4.11's 3:1),
  *  brand fill, and the letter chip turns solid -- three cues, so "which
@@ -326,7 +326,7 @@ function QuestionInput({
           onChange={(event) => onChange(event.target.value)}
           placeholder="Type your answer"
           aria-describedby={instruction ? instructionId : undefined}
-          className="h-12 w-full max-w-xs rounded-2xl border border-line-field bg-surface px-4 text-base tabular text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
+          className="h-12 w-full max-w-xs rounded-2xl border border-line-field bg-surface px-4 text-base tabular text-content shadow-xs outline-hidden transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
         />
         {instruction ? (
           // content-subtle on white: 6.4:1.
@@ -344,7 +344,7 @@ function QuestionInput({
       onChange={(event) => onChange(event.target.value)}
       rows={question.questionType === "Constructed Response" ? 5 : 2}
       placeholder="Type your answer"
-      className="w-full rounded-2xl border border-line-field bg-surface px-4 py-3 text-base leading-relaxed text-content shadow-xs outline-none transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
+      className="w-full rounded-2xl border border-line-field bg-surface px-4 py-3 text-base leading-relaxed text-content shadow-xs outline-hidden transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
     />
   );
 }
@@ -470,7 +470,7 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
                 >
                   {option.letter}
                 </span>
-                <span className="min-w-0 flex-1 break-words pt-0.5 font-medium">
+                <span className="min-w-0 flex-1 wrap-break-word pt-0.5 font-medium">
                   <span className="sr-only">Option {option.letter}: </span>
                   {option.text}
                 </span>
@@ -504,26 +504,26 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
     shown.kind === "sequence" && shown.yours ? (
       <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm font-medium text-content marker:font-semibold marker:text-content-subtle">
         {shown.yours.map((item, position) => (
-          <li key={position} className="break-words">
+          <li key={position} className="wrap-break-word">
             {item}
           </li>
         ))}
       </ol>
     ) : (
-      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-content">{answer.responseText || <NotAnswered />}</p>
+      <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-content">{answer.responseText || <NotAnswered />}</p>
     );
 
   const right =
     shown.kind === "sequence" && shown.right ? (
       <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-sm font-medium text-jade-800 marker:font-semibold">
         {shown.right.map((item, position) => (
-          <li key={position} className="break-words">
+          <li key={position} className="wrap-break-word">
             {item}
           </li>
         ))}
       </ol>
     ) : (
-      <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium text-jade-800">{correctAnswerText(answer)}</p>
+      <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-jade-800">{correctAnswerText(answer)}</p>
     );
 
   return (
@@ -1387,7 +1387,7 @@ export default function StudentAttemptPage() {
                       {/* Polite, so the save is announced without cutting off
                           whatever is being read. content-faint on white:
                           4.6:1. */}
-                      <span aria-live="polite" className="min-h-[1rem] shrink-0 text-xs text-content-faint">
+                      <span aria-live="polite" className="min-h-4 shrink-0 text-xs text-content-faint">
                         {savingIds.has(question.id) ? (
                           <span className="inline-flex items-center gap-1.5 animate-fade-in">
                             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />

@@ -112,7 +112,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute -inset-[3px] rounded-[1.15rem] opacity-0 blur-md transition-opacity duration-300",
+            "pointer-events-none absolute inset-[-3px] rounded-[1.15rem] opacity-0 blur-md transition-opacity duration-300",
             error ? "bg-coral-400/35" : "bg-brand-400/35",
             "group-focus-within/field:opacity-100",
           )}
@@ -144,7 +144,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           }}
           className={cn(
             // The outline. At rest line-field, 3.2:1 on the white of the
-            // box (it was line-strong, 1.5:1: see tailwind.config.ts);
+            // box (it was line-strong, 1.5:1: see the @theme in app/globals.css);
             // hovered ink-500, 4.6:1; focused brand-500, 5.9:1 (it was
             // brand-400, 3.7:1, which against the new resting outline was
             // barely a change, and lighter than the hover it follows); in
@@ -154,7 +154,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             // 1rem text is deliberate: it is the legibility floor the product
             // owner asked for, and it also stops iOS Safari zooming the page
             // whenever a student taps into a field.
-            "peer relative h-12 w-full rounded-2xl border bg-surface px-4 text-base text-content shadow-xs outline-none",
+            "peer relative h-12 w-full rounded-2xl border bg-surface px-4 text-base text-content shadow-xs outline-hidden",
             "placeholder:text-content-faint",
             "transition duration-200 ease-spring",
             "focus:border-brand-500 focus:shadow-focus-field",
@@ -164,7 +164,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             // A caller that shows the message itself, somewhere else (the
             // sign-in card's one message for two boxes), marks the box with
             // aria-invalid and no `error`: the box still turns coral.
-            "aria-[invalid=true]:border-coral-500 aria-[invalid=true]:focus:border-coral-600",
+            "aria-invalid:border-coral-500 aria-invalid:focus:border-coral-600",
             className,
           )}
           {...props}
@@ -260,7 +260,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute -inset-[3px] rounded-[1.15rem] opacity-0 blur-md transition-opacity duration-300",
+            "pointer-events-none absolute inset-[-3px] rounded-[1.15rem] opacity-0 blur-md transition-opacity duration-300",
             error ? "bg-coral-400/35" : "bg-brand-400/35",
             "group-focus-within/field:opacity-100",
           )}
@@ -271,7 +271,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(callerDescribedBy, error && describedById, hint && hintId)}
           className={cn(
-            "peer relative h-12 w-full appearance-none rounded-2xl border bg-surface px-4 pr-11 text-base text-content shadow-xs outline-none",
+            "peer relative h-12 w-full appearance-none rounded-2xl border bg-surface px-4 pr-11 text-base text-content shadow-xs outline-hidden",
             "transition duration-200 ease-spring",
             "focus:border-brand-500 focus:shadow-focus-field",
             error ? "border-coral-500 focus:border-coral-600" : "border-line-field hover:border-ink-500",
