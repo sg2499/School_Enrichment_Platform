@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   BarChart3,
   BookOpen,
+  Calculator,
   CalendarDays,
   ChevronRight,
   ClipboardCheck,
@@ -17,6 +18,7 @@ import {
   LayoutDashboard,
   Library,
   LifeBuoy,
+  ListChecks,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -144,6 +146,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         // longer gets a row of its own.
         { label: "Assign Practice", icon: ClipboardList, href: "/teacher/assign" },
         { label: "Practice Tracker", icon: ClipboardCheck, href: "/teacher/tracker" },
+        // #165: marks for the school's Assessment Schemes, and the results.
+        { label: "Marks & Results", icon: Calculator, href: "/teacher/marks" },
       ],
     },
     {
@@ -167,6 +171,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Content",
       items: [
         { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
+        { label: "Assessment Schemes", icon: ListChecks, href: "/admin/assessment" },
         { label: "Question Bank", icon: Database, soon: true },
         { label: "Papers & Mocks", icon: FileSpreadsheet, soon: true },
       ],
@@ -198,6 +203,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Content",
       items: [
         { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
+        { label: "Assessment Schemes", icon: ListChecks, href: "/admin/assessment" },
         { label: "Question Bank", icon: Database, soon: true },
         { label: "Papers & Mocks", icon: FileSpreadsheet, soon: true },
       ],
@@ -238,7 +244,12 @@ function isActiveHref(href: string | undefined, pathname: string) {
  * shell. The user's own saved collapse preference is untouched: leaving a
  * focus route restores whatever they had.
  */
-const FOCUS_ROUTES: RegExp[] = [/^\/teacher\/tracker\/(assignments|students|attempts)\/[^/]+\/?$/];
+const FOCUS_ROUTES: RegExp[] = [
+  /^\/teacher\/tracker\/(assignments|students|attempts)\/[^/]+\/?$/,
+  // A scheme's marks sheet and results are wide tables (#165).
+  /^\/teacher\/marks\/[^/]+\/?$/,
+  /^\/admin\/assessment\/[^/]+\/?$/,
+];
 
 function isFocusRoute(pathname: string) {
   return FOCUS_ROUTES.some((pattern) => pattern.test(pathname));
