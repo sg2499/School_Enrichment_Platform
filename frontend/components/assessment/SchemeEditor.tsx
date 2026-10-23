@@ -256,7 +256,7 @@ export function SchemeEditor({
                   <div className="flex gap-1">
                     <Button
                       size="sm"
-                      variant="quiet"
+                      variant="tinted"
                       aria-label={`Move ${component.name || "component"} up`}
                       disabled={index === 0}
                       onClick={() => moveComponent(index, -1)}
@@ -265,7 +265,7 @@ export function SchemeEditor({
                     </Button>
                     <Button
                       size="sm"
-                      variant="quiet"
+                      variant="tinted"
                       aria-label={`Move ${component.name || "component"} down`}
                       disabled={index === form.components.length - 1}
                       onClick={() => moveComponent(index, 1)}
@@ -274,7 +274,7 @@ export function SchemeEditor({
                     </Button>
                     <Button
                       size="sm"
-                      variant="quiet"
+                      variant="tinted"
                       leadingIcon={<Trash className="h-4 w-4" aria-hidden="true" />}
                       onClick={() => removeComponent(index)}
                     >
@@ -357,7 +357,7 @@ export function SchemeEditor({
                           {component.activityIds.length === 0
                             ? "No practice sets linked yet."
                             : `${component.activityIds.length} practice ${component.activityIds.length === 1 ? "set" : "sets"} linked.`}{" "}
-                          Each student&apos;s score is the average of their percentage on each set.
+                          Each student&apos;s score is their total marks across these sets, as a percentage. A set given and never done counts 0 once it closes.
                         </span>
                         <Button size="sm" variant="secondary" onClick={() => setPickingFor(index)}>
                           Choose Practice Sets
@@ -416,7 +416,7 @@ export function SchemeEditor({
                   }
                 />
                 <Button
-                  variant="quiet"
+                  variant="tinted"
                   aria-label={`Remove grade ${band.label || index + 1}`}
                   onClick={() => update({ gradeBands: form.gradeBands.filter((_, i) => i !== index) })}
                 >

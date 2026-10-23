@@ -287,10 +287,14 @@ def test_platform_marks_best_first_latest_and_who_has_none(db_session):
         db_session.commit()
         assert _result(db_session, scheme, a1).shown == expected
     # A2 was given the set and has not done it: missing, so Provisional and
-    # no result yet. B1 (section B) was never given it.
+    # no result yet. B1 (section B) was never given it: left out, as Exempt
+    # is, so it does not hold up a report card (#188 review).
     r = _result(db_session, scheme, a2)
     assert (r.components[0].status, r.provisional, r.shown) == ("MISSING", True, None)
-    assert _result(db_session, scheme, b1).components[0].status == "MISSING"
+    r = _result(db_session, scheme, b1)
+    assert (r.components[0].status, r.provisional, r.notes) == (
+        "EXEMPT", False, ['No practice sets for "Practice" were given; it is left out.', "No result: every component is left out."]
+    )
 
 
 def test_a_set_still_being_marked_makes_the_result_provisional(db_session):
@@ -552,12 +556,12 @@ def test_school_admin_builds_publishes_and_teacher_enters_marks(client, db_sessi
 
     results = teacher.get(f"/api/assessment/schemes/{draft['id']}/results", params={"section": "A"}).json()
     row = results["rows"][0]
-    # Half-yearly 60.5/80 = 75.625%; practice not done yet: Provisional on
-    # what there is, 75.625 -> 76, B1 (71 to 80).
+    # Half-yearly 60.5/80 = 75.625%; the practice set was never given to A1,
+    # so it is left out (#188 review): 75.625 -> 76, B1 (71 to 80).
     assert (row["result"], row["unrounded"], row["grade"], row["outcomeLabel"], row["provisional"]) == (
-        "76", "75.625", "B1", "Pass", True
+        "76", "75.625", "B1", "Pass", False
     )
-    assert [c["status"] for c in row["components"]] == ["MARKS", "MISSING"]
+    assert [c["status"] for c in row["components"]] == ["MARKS", "EXEMPT"]
     assert results["rows"][1]["result"] == "0" and results["rows"][1]["outcome"] == "BELOW_PASS"
 
     # A new version, made by the admin, starts as a draft the teacher cannot see.
@@ -728,10 +732,9 @@ def test_an_excused_student_and_a_fully_exempt_one(db_session):
     ])
     _enter(db_session, scheme, "Annual", {a1: "40", a2: "EXEMPT"})
     _enter(db_session, scheme, "Practice", {a2: "EXEMPT"})
-    # A1 was excused from the set: it is left out like a set never given
-    # (still MISSING, so Provisional, but not "assigned and not done").
+    # A1 was excused from the set: it is left out like a set never given.
     r = _result(db_session, scheme, a1)
-    assert r.components[0].status == "MISSING" and r.shown == Decimal(50)
+    assert (r.components[0].status, r.provisional, r.shown) == ("EXEMPT", False, Decimal(50))
     r = _result(db_session, scheme, a2)
     assert (r.shown, r.grade, r.notes) == (None, None, ["No result: exempt from every component."])
 

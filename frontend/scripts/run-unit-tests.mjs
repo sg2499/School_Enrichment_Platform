@@ -54,6 +54,7 @@ const UNITS = [
   "lib/studentPractice.ts",
   "lib/tracker.ts",
   "lib/assessment.ts",
+  "lib/reportCards.ts",
 ];
 
 /**
