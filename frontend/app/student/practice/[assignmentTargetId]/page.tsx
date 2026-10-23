@@ -42,6 +42,11 @@ import {
   answerState,
   attemptsLeft,
   correctAnswerText,
+  hasParts,
+  joinParts,
+  partsComplete,
+  partsText,
+  splitParts,
   partMarksHint,
   resultSentence,
   resultTally,
@@ -310,6 +315,38 @@ function QuestionInput({
     );
   }
 
+  // #160: an answer in parts gets a box per part, saved joined with ";".
+  if ((question.questionType === "Numeric Entry" || question.questionType === "Text Entry") && (question.answerBlanks ?? 1) > 1) {
+    const count = question.answerBlanks ?? 1;
+    const parts = splitParts(value, count);
+    const labels = question.answerBlankLabels && question.answerBlankLabels.length === count ? question.answerBlankLabels : null;
+    return (
+      <fieldset className="space-y-2">
+        <legend className="text-xs text-content-subtle">
+          {labels ? "Fill in each box." : `This answer has ${count} parts. Fill in each box, in order.`}
+        </legend>
+        <div className="flex flex-wrap gap-3">
+          {parts.map((part, index) => (
+            <label key={index} className="flex flex-col gap-1 text-sm font-semibold text-content">
+              {labels ? labels[index] : `Part ${index + 1}`}
+              <input
+                type="text"
+                inputMode={question.questionType === "Numeric Entry" ? "decimal" : "text"}
+                value={part}
+                onChange={(event) => {
+                  const next = [...parts];
+                  next[index] = event.target.value;
+                  onChange(joinParts(next));
+                }}
+                className="h-12 w-40 rounded-2xl border border-line-field bg-surface px-4 text-base font-normal tabular text-content shadow-xs outline-hidden transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
+              />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    );
+  }
+
   if (question.questionType === "Numeric Entry") {
     // Phase 4 (#164): how a measured answer is to be written, from the
     // server ("Answer in grams." / "Write the number and the unit."). It
@@ -510,7 +547,9 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
         ))}
       </ol>
     ) : (
-      <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-content">{answer.responseText || <NotAnswered />}</p>
+      <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-content">
+        {partsText(answer.responseText, answer.questionType ?? "") || <NotAnswered />}
+      </p>
     );
 
   const right =
@@ -864,9 +903,16 @@ export default function StudentAttemptPage() {
   }, [status]);
 
   const totalQuestions = attempt?.questions.length ?? 0;
+  // An answer in parts counts once every box is filled (#160 review).
   const answeredCount = useMemo(
-    () => Object.values(answers).filter((v) => v && v.trim().length > 0).length,
-    [answers],
+    () =>
+      (attempt?.questions ?? []).filter((q) => {
+        const v = answers[q.id];
+        if (!v || v.trim().length === 0) return false;
+        const count = q.answerBlanks ?? 1;
+        return count > 1 && hasParts(q.questionType) ? partsComplete(v, count) : true;
+      }).length,
+    [answers, attempt],
   );
 
   const persistAnswer = useCallback(

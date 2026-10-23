@@ -53,7 +53,7 @@ question_quality_service.py's math verifiers already established.
 """
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import func
@@ -476,7 +476,7 @@ def save_answer(
         .filter(AttemptAnswer.attempt_id == attempt.id, AttemptAnswer.question_id == question_id)
         .first()
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     store_working = working_sent and accepts_working(question)
     working = _clean_working(working_text) if store_working else None
     if answer:
@@ -792,6 +792,41 @@ def answer_instruction(question: Question) -> str | None:
     return None
 
 
+# --- Answers in more than one box (#160, 23 Oct 2026) ----------------------
+#
+# A Numeric or Text Entry answer with several parts is written in the
+# content as "21310;22410" (30 such questions in Class 5: the next two terms
+# of a pattern, groups and remainder, fractions in order). The student used
+# to get one box and had to know to type the ";". Now they get one box per
+# part, and the screen joins them with ";" exactly as before, so marking is
+# unchanged. How many parts is safe to show: it says nothing of the answer.
+
+_BLANK_LABELS = re.compile(r"\bEnter\s+([A-Za-z][A-Za-z ]{0,30}(?:;\s*[A-Za-z][A-Za-z ]{0,30})+)", re.IGNORECASE)
+
+
+def answer_blanks(question: Question) -> int:
+    """How many boxes the answer goes in: the parts of the answer key."""
+    if (question.question_type or "").strip() not in ("Numeric Entry", "Text Entry"):
+        return 1
+    parts = [p for p in (question.correct_answer or "").split(";") if p.strip()]
+    return max(1, min(len(parts), 20))
+
+
+def answer_blank_labels(question: Question) -> list[str] | None:
+    """Names for the boxes when the question gives them ("Enter
+    groups;remainder." -> ["Groups", "Remainder"]), else None."""
+    count = answer_blanks(question)
+    if count < 2:
+        return None
+    match = _BLANK_LABELS.search(question.stem or "")
+    if not match:
+        return None
+    labels = [part.strip().rstrip(".").strip() for part in match.group(1).split(";")]
+    if len(labels) != count or not all(labels):
+        return None
+    return [label[:1].upper() + label[1:] for label in labels]
+
+
 def answer_needs_unit(question: Question) -> bool:
     """True when the child must write the unit (a REQUIRED unit that is
     recorded), so the answer box should offer letters, not a number pad."""
@@ -1054,7 +1089,7 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
         else:
             auto_score += score
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     attempt.status = "EVALUATED" if not any_unscored else "SUBMITTED"
     attempt.submitted_at = now
     attempt.assignment_target.status = "COMPLETED"
@@ -1144,7 +1179,7 @@ def apply_manual_grades(
                 f"Marks for this question must be between 0 and {answer.max_score}.",
             )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     changes: list[dict] = []
     for question_id, score in grades.items():
         answer = answers[question_id]
@@ -1309,7 +1344,7 @@ def apply_mark_reviews(
             reason = None
         cleaned[question_id] = (score, reason)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     changes: list[dict] = []
     for question_id, (score, reason) in cleaned.items():
         answer = answers[question_id]

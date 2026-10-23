@@ -41,7 +41,7 @@ import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { recordAttemptFinalised } from "@/lib/hooks/useMarkingMilestone";
 import { api, describeApiError, errorMessage } from "@/lib/api";
-import { correctAnswerText } from "@/lib/studentPractice";
+import { correctAnswerText, partsText } from "@/lib/studentPractice";
 import { cn } from "@/lib/utils";
 import { MastheadSkeleton, PageHeader, type PageHeaderFact } from "@/components/ui/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
@@ -483,7 +483,7 @@ function AnswerCard({
           <div className="rounded-2xl border border-line bg-surface-muted px-3.5 py-3">
             <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">Student&rsquo;s Answer</p>
             <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-content">
-              {answer.responseText || <span className="font-normal italic text-content-subtle">Not answered</span>}
+              {partsText(answer.responseText, answer.questionType ?? "") || <span className="font-normal italic text-content-subtle">Not answered</span>}
             </p>
           </div>
           <div className="rounded-2xl border border-jade-200 bg-jade-50 px-3.5 py-3">

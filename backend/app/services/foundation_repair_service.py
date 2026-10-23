@@ -142,6 +142,12 @@ def get_recommendation(db: Session, student: Student, concept_lesson: ConceptLes
         if prereq_score is not None and prereq_score >= threshold:
             continue  # this prerequisite is secure -- not the gap
         rescue_activity = _find_rescue_activity(db, link.prerequisite_concept_lesson_id)
+        if rescue_activity is None:
+            # Nothing published to practise there (an earlier class's skill
+            # not on the platform yet, say): try the next link, and in the
+            # end reteach this skill, rather than a recommendation no
+            # teacher can approve (#159 review, 23 Oct 2026).
+            continue
         return FoundationRepairRecommendation(
             recommendation="PREREQUISITE_GAP",
             concept_lesson_id=concept_lesson.id,

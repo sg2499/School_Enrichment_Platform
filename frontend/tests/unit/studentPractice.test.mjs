@@ -11,6 +11,10 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  joinParts,
+  partsComplete,
+  partsText,
+  splitParts,
   PRACTICE_LIST_HREF,
   PRACTICE_LIST_NAME,
   STATUS_LABEL,
@@ -421,5 +425,27 @@ describe("answerPresentation", () => {
       answerPresentation({ questionType: "Ordering", options: { A: "12", B: "15" }, responseText: "A;B", correctAnswer: "12;15" }, true),
       { kind: "text" },
     );
+  });
+});
+
+describe("an answer in parts (#160)", () => {
+  test("boxes from what is saved, and back", () => {
+    assert.deepEqual(splitParts("", 2), ["", ""]);
+    assert.deepEqual(splitParts("94;", 2), ["94", ""]);
+    assert.deepEqual(splitParts("94;385", 2), ["94", "385"]);
+    assert.equal(joinParts(["94", "385"]), "94;385");
+    assert.equal(joinParts(["1 ", "38;5"]), "1 ;385");
+    assert.equal(joinParts(["", " "]), "");
+    assert.equal(joinParts(["", "385"]), ";385");
+  });
+
+  test("shown with a space, a blank box as a dash", () => {
+    assert.equal(partsText("21310;22410"), "21310; 22410");
+    assert.equal(partsText(";385"), "—; 385");
+    assert.equal(partsText("East"), "East");
+    assert.equal(correctAnswerText({ correctAnswer: "94;385", questionType: "Text Entry" }), "94; 385");
+    assert.equal(partsText("add;\nthen;", "Constructed Response"), "add;\nthen;");
+    assert.equal(partsComplete("94;", 2), false);
+    assert.equal(partsComplete("94;385", 2), true);
   });
 });

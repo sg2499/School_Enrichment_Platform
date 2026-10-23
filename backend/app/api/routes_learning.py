@@ -65,6 +65,7 @@ from app.models import (
     SchoolAdmin,
     Student,
     Teacher,
+    TeacherSectionAssignment,
     User,
 )
 from app.services import (
@@ -122,6 +123,10 @@ def _question_public_dict(question: Question) -> dict:
         # #163 (22 Oct 2026): a "Your working" box goes under the answer on
         # a Numeric Entry question worth 2 or more marks, for method marks.
         "acceptsWorking": learning_service.accepts_working(question),
+        # #160 (23 Oct 2026): how many boxes the answer goes in, and their
+        # names when the question gives them. Never the answer itself.
+        "answerBlanks": learning_service.answer_blanks(question),
+        "answerBlankLabels": learning_service.answer_blank_labels(question),
     }
 
 
@@ -280,17 +285,10 @@ def create_assignment(
         api_error(404, "NOT_FOUND", "That activity couldn't be found. It may have been removed.")
 
     if user.role == "TEACHER":
-        # 30 Sep 2026: studentIds bypasses class_name/section entirely
-        # (learning_service.create_assignment only reads class_name/section
-        # when student_ids is empty), so a TEACHER naming one of their own
-        # owned sections below while also sending studentIds would pass the
-        # section-ownership check just added and still land on whichever
-        # students they named -- any active student at the school, not just
-        # their own section. No frontend page ever sends studentIds (grep),
-        # so closing it here costs nothing real today. ADMIN/SUPER_ADMIN are
-        # untouched -- targeted-student assignment stays available to them.
-        if payload.studentIds:
-            api_error(422, "VALIDATION_ERROR", "Assign by class and section, not by naming students directly.")
+        # #161 (23 Oct 2026): a teacher may now set practice for chosen
+        # students -- but only students of a section they own, checked
+        # below (the 30 Sep 2026 refusal existed because studentIds once
+        # bypassed the section entirely and could name anyone at the school).
         # Section ownership (30 Sep 2026). Until now a TEACHER could POST any
         # className/section at their school -- the only check above is
         # Teacher.school_id -- and the "only your own sections" rule lived
@@ -336,6 +334,38 @@ def create_assignment(
         ):
             api_error(403, "FORBIDDEN", "You're not the current teacher for this class, section and subject.")
 
+    # #161: chosen students of one section. Every one must be an active
+    # student of that class and section, and the assignment is recorded as
+    # that section's (so the tracker, read access and the scheme's practice
+    # marks treat it like the section's other practice).
+    section_scope = None
+    student_ids = [sid for sid in (payload.studentIds or []) if sid] or None
+    if payload.studentIds is not None and not student_ids:
+        # An empty or blank list must not quietly become "the whole section" (review).
+        api_error(422, "VALIDATION_ERROR", "Choose at least one student.")
+    if student_ids:
+        if len(set(student_ids)) != len(student_ids) or len(student_ids) > 200:
+            api_error(422, "VALIDATION_ERROR", "Choose up to 200 different students.")
+        chosen_section = (payload.section or "").strip()
+        if user.role == "TEACHER" or chosen_section:
+            class_level = db.query(ClassLevel).filter(ClassLevel.code == payload.className).first()
+            if not class_level or not chosen_section:
+                api_error(422, "VALIDATION_ERROR", "Choose the section these students are in.")
+            in_section = {
+                sid
+                for (sid,) in db.query(Student.id).filter(
+                    Student.id.in_(student_ids),
+                    Student.school_id == school.id,
+                    Student.is_active.is_(True),
+                    Student.class_name == class_level.code,
+                    Student.section == chosen_section,
+                )
+            }
+            if in_section != set(student_ids):
+                api_error(422, "VALIDATION_ERROR", "Some of those students aren't in this section.")
+            chapter_for_scope = db.get(Chapter, activity.chapter_id)
+            section_scope = (class_level.id, chosen_section, chapter_for_scope.board_course_id if chapter_for_scope else None)
+
     assignment = learning_service.create_assignment(
         db,
         school=school,
@@ -343,7 +373,8 @@ def create_assignment(
         assigned_by_user_id=assigned_by,
         class_name=payload.className,
         section=payload.section,
-        student_ids=payload.studentIds,
+        student_ids=student_ids,
+        section_scope=section_scope,
         reason=payload.reason,
         pacing_mode=payload.pacingMode,
         due_date=payload.dueDate,
@@ -352,6 +383,61 @@ def create_assignment(
     )
     target_count = db.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).count()
     return _assignment_dict(assignment, target_count)
+
+
+@router.get("/section-students")
+@limiter.limit("60/minute")
+def section_students(
+    request: Request,
+    className: str,
+    section: str,
+    schoolId: str | None = None,
+    user: User = Depends(require_roles("TEACHER", "ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """The active students of one class and section, for choosing who gets a
+    practice set (#161, 23 Oct 2026). A teacher only for a section they teach
+    now (any subject); an admin for their own school."""
+    section = (section or "").strip()
+    class_level = db.query(ClassLevel).filter(ClassLevel.code == className).first()
+    if not class_level or not section:
+        api_error(422, "VALIDATION_ERROR", "Choose a class and section.")
+    if user.role == "TEACHER":
+        teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
+        if not teacher or not teacher.is_active:
+            api_error(403, "FORBIDDEN", "Your teacher profile isn't active. Please ask your school admin.")
+        teaches = (
+            db.query(TeacherSectionAssignment.id)
+            .filter(
+                TeacherSectionAssignment.teacher_id == teacher.id,
+                TeacherSectionAssignment.class_level_id == class_level.id,
+                TeacherSectionAssignment.section == section,
+                TeacherSectionAssignment.end_date.is_(None),
+            )
+            .first()
+        )
+        if teaches is None:
+            api_error(403, "FORBIDDEN", "You're not the current teacher for this section.")
+        school_id = teacher.school_id
+    else:
+        school_id = _resolve_school(db, user, schoolId).id
+    rows = (
+        db.query(Student)
+        .options(joinedload(Student.user))
+        .filter(
+            Student.school_id == school_id,
+            Student.is_active.is_(True),
+            Student.class_name == class_level.code,
+            Student.section == section,
+        )
+        .order_by(Student.student_code)
+        .all()
+    )
+    return {
+        "students": [
+            {"id": s.id, "studentCode": s.student_code, "name": s.user.full_name if s.user else None} for s in rows
+        ]
+    }
 
 
 def _latest_attempt_summary(db: Session, assignment_target_id: str) -> dict | None:

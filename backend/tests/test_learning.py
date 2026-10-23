@@ -1292,8 +1292,9 @@ def test_teacher_cannot_bypass_section_ownership_with_student_ids(client, db_ses
     section they genuinely own while also sending studentIds would pass the
     ownership check above and still land on whichever students they named --
     any active student at the school, not just their own section. Closed by
-    rejecting studentIds from a TEACHER outright (no frontend page ever
-    sends it). ADMIN keeps the capability, unaffected."""
+    rejecting studentIds from a TEACHER outright. #161 (23 Oct 2026): a
+    teacher may now choose students, but only students of the section they
+    own and name; anyone else is still refused, all or nothing."""
     activity = _published_single_activity(db_session, "API8B")
     school = _make_school(db_session, "api8b")
     teacher = _make_teacher(db_session, school, "api8b")
@@ -1315,7 +1316,7 @@ def test_teacher_cannot_bypass_section_ownership_with_student_ids(client, db_ses
         headers=headers,
     )
     assert response.status_code == 422
-    assert response.json()["detail"]["message"] == "Assign by class and section, not by naming students directly."
+    assert response.json()["detail"]["message"] == "Some of those students aren't in this section."
     assert db_session.query(Assignment).filter(Assignment.assigned_by_user_id == teacher.user_id).count() == 0
 
 

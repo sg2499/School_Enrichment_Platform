@@ -264,12 +264,53 @@ export function answerState(
  * ("250 grams"), and as it is when the key already says one or none is
  * sent.
  */
-export function correctAnswerText(answer: Pick<AttemptAnswerResult, "correctAnswer"> & Partial<Pick<AttemptAnswerResult, "answerUnitLabel">>): string | null {
+export function correctAnswerText(
+  answer: Pick<AttemptAnswerResult, "correctAnswer"> & Partial<Pick<AttemptAnswerResult, "answerUnitLabel" | "questionType">>,
+): string | null {
   const key = answer.correctAnswer;
   if (key === null || key === undefined) return null;
+  if (key.includes(";") && hasParts(answer.questionType)) return partsText(key);
   const unit = answer.answerUnitLabel;
   if (!unit || !/^\s*[-+]?[\d,]*\.?\d+\s*$/.test(key)) return key;
   return `${key.trim()} ${unit}`;
+}
+
+/**
+ * An answer in parts as a person reads it (#160): "21310;22410" is shown
+ * "21310; 22410", and a box left empty as "—". Anything else as it is.
+ */
+/** Question types whose answer can come in parts joined by ";". */
+export function hasParts(questionType: string | null | undefined): boolean {
+  return ["numeric entry", "text entry"].includes((questionType ?? "").trim().toLowerCase());
+}
+
+export function partsText(text: string | null | undefined, questionType?: string | null): string {
+  if (!text) return "";
+  // A written answer keeps its own semicolons and line breaks (review).
+  if (!text.includes(";") || (questionType !== undefined && !hasParts(questionType))) return text;
+  return text
+    .split(";")
+    .map((part) => part.trim() || "—")
+    .join("; ");
+}
+
+/** The boxes of an answer in parts, from what is saved ("94;" -> ["94", ""]). */
+export function splitParts(value: string, count: number): string[] {
+  const parts = value === "" ? [] : value.split(";");
+  return Array.from({ length: count }, (_, i) => parts[i] ?? "");
+}
+
+/** What is saved from the boxes: joined with ";" (a ";" typed in a box is
+ *  dropped, as it would split the box), or "" when all are empty. Not
+ *  trimmed: this runs on every keystroke, and "1 1/2" must survive its
+ *  space; marking ignores the spaces around each part. */
+export function joinParts(parts: string[]): string {
+  return parts.every((part) => part.trim() === "") ? "" : parts.map((part) => part.replace(/;/g, "")).join(";");
+}
+
+/** Whether every box of an answer in parts has something in it. */
+export function partsComplete(value: string, count: number): boolean {
+  return splitParts(value, count).every((part) => part.trim() !== "");
 }
 
 /**
