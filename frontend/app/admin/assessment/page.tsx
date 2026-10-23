@@ -93,8 +93,11 @@ function AssessmentSchemesPage() {
   const schemeList = schemes.problem ? null : (schemes.data?.schemes ?? null);
   const templateList = templates.problem ? null : (templates.data?.templates ?? null);
   const publishedTemplates = (templateList ?? []).filter((t) => t.status === "PUBLISHED");
+  // With no school year yet there are no schemes to load: 0, not a
+  // placeholder that never resolves.
+  const noYear = Boolean(yearList && !year);
   const figure = (value: number | undefined, query: { problem: unknown; data: unknown }) =>
-    query.problem ? "—" : query.data ? (value ?? 0) : null;
+    noYear ? 0 : query.problem ? "—" : query.data ? (value ?? 0) : null;
 
   async function makeCurrent(target: AcademicYear) {
     setBusy(true);
