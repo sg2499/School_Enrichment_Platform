@@ -13,6 +13,9 @@ frontend/.next/
 frontend/out/
 frontend/.test-build/
 frontend/.env.local
+# TypeScript's incremental-build cache (23 Oct 2026): rewritten by every
+# typecheck, so ship.ps1's `git add -A` swept it into PR #119.
+*.tsbuildinfo
 
 # Env files (never commit real secrets -- .env.example files are fine)
 .env
