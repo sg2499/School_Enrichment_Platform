@@ -54,6 +54,7 @@ def _q(answer="250", *, marks=1, variants=None, response_format=None, **fields) 
         ("rupees", "rupee"), ("₹", "rupee"), ("paise", "paise"), ("°", "degree"),
         ("degrees", "degree"), ("cm²", "cm2"), ("sq cm", "cm2"), ("square centimetres", "cm2"),
         ("sq. m", "m2"), ("%", "percent"), ("per cent", "percent"),
+        ("inch", "inch"), ("Inches", "inch"),
     ],
 )
 def test_common_spellings_are_one_unit(text, code):
@@ -209,6 +210,23 @@ def test_a_key_that_carries_its_own_unit_is_respected():
     q = _q("1.5 m", response_format=STATED_FORMAT, answer_unit="cm", allow_unit_conversion=True)
     assert grade_answer(q, "150 cm") == (True, 1)
     assert grade_answer(q, "1.5 m") == (True, 1)
+
+
+def test_inches_added_for_ashalathas_review():
+    # Her Unit List (23 Oct 2026) adds inches, for Chapter 5's "2 feet equal
+    # how many inches?". Only "inch" and "inches": "in" is an ordinary word.
+    q = _q("24", response_format=STATED_FORMAT, answer_unit="inch")
+    for given in ("24", "24 inches", "24 inch", "24 Inches"):
+        assert grade_answer_detail(q, given) == GradeResult(True, 1), given
+    assert grade_answer_detail(q, "24 cm") == GradeResult(False, 0, WRONG_UNIT)
+    assert grade_answer_detail(q, "24 feet") == GradeResult(False, 0)  # not a unit marking knows
+    assert units.unit_code("in") is None
+    assert units.unit_label("inch") == "inches"
+    assert units.unit_label("inch", plural=False) == "inch"
+    # A length like any other: converts to centimetres only when allowed.
+    assert units.convert(Decimal(1), "inch", "cm") == Decimal("2.54")
+    yes = _q("254", response_format=STATED_FORMAT, answer_unit="cm", allow_unit_conversion=True)
+    assert grade_answer(yes, "100 inches") == (True, 1)
 
 
 def test_rupees_and_area():
