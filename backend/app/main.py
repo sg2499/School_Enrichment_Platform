@@ -22,6 +22,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.api.routes_assessment import router as assessment_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_curriculum_admin import router as curriculum_admin_router
 from app.api.routes_health import router as health_router
@@ -184,3 +185,4 @@ app.include_router(roster_router)
 app.include_router(learning_router)
 app.include_router(practice_tracker_router)
 app.include_router(teacher_assignments_router)
+app.include_router(assessment_router)
