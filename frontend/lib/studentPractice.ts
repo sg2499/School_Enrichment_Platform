@@ -60,13 +60,23 @@ export const STATUS_ORDER: Record<AssignmentStatus, number> = {
 
 export type PracticeActionLabel = "Start" | "Continue" | "View Result";
 
+/**
+ * The address of one attempt's stored result. Opening it only shows the
+ * result; the attempt page without these parameters starts (or carries on)
+ * an attempt, so a result must always be shown at this address -- the list's
+ * View Result, and the page itself straight after Submit (#201).
+ */
+export function resultHref(assignmentTargetId: string, attemptId: string): string {
+  return `${PRACTICE_LIST_HREF}/${assignmentTargetId}?attemptId=${attemptId}&view=result`;
+}
+
 /** What opening a set does, and where it goes. */
 export function practiceAction(item: StudentAssignmentSummary): { label: PracticeActionLabel; href: string } {
   const base = `${PRACTICE_LIST_HREF}/${item.assignmentTargetId}`;
   if (item.status === "COMPLETED" && item.latestAttempt) {
     // Straight to the stored result. The attempt page must not start an
     // attempt for this, or looking at a result would use up a re-attempt.
-    return { label: "View Result", href: `${base}?attemptId=${item.latestAttempt.id}&view=result` };
+    return { label: "View Result", href: resultHref(item.assignmentTargetId, item.latestAttempt.id) };
   }
   if (item.status === "IN_PROGRESS") return { label: "Continue", href: base };
   return { label: "Start", href: base };

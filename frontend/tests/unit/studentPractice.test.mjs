@@ -27,6 +27,7 @@ import {
   latestScore,
   partMarksHint,
   practiceAction,
+  resultHref,
   resultSentence,
   resultTally,
   scorePercent,
@@ -113,6 +114,14 @@ describe("practiceAction", () => {
   test("a set marked finished with no attempt on record does not point at a result that is not there", () => {
     const odd = set("COMPLETED");
     assert.equal(practiceAction(odd).label, "Start");
+  });
+});
+
+describe("resultHref (#201)", () => {
+  test("is the address that only shows a result, the same one View Result uses", () => {
+    const item = done(1, 3, "2026-10-23T13:20:00Z");
+    assert.equal(resultHref(item.assignmentTargetId, item.latestAttempt.id), practiceAction(item).href);
+    assert.equal(resultHref("t-1", "a-1"), `${PRACTICE_LIST_HREF}/t-1?attemptId=a-1&view=result`);
   });
 });
 

@@ -48,6 +48,7 @@ import {
   partsText,
   splitParts,
   partMarksHint,
+  resultHref,
   resultSentence,
   resultTally,
   scorePercent,
@@ -1136,8 +1137,12 @@ export default function StudentAttemptPage() {
       return;
     }
 
-    // 3. It is handed in. Showing the result is a separate request, and its
-    // failing must not read as the hand-in failing.
+    // 3. It is handed in. From here this page shows a result, so its address
+    // says so (#201): without it, a reload -- or opening the page again from
+    // the browser's history -- would start the next attempt and use one of
+    // the student's attempts up. Showing the result is a separate request,
+    // and its failing must not read as the hand-in failing.
+    router.replace(resultHref(params.assignmentTargetId, attempt.id), { scroll: false });
     await loadResult(attempt.id, true);
   }
 
