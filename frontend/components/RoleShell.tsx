@@ -23,6 +23,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  ScrollText,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -128,7 +129,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Track",
       items: [
         { label: "My Progress", icon: TrendingUp, soon: true },
-        { label: "Report Card", icon: BarChart3, soon: true },
+        { label: "Report Card", icon: ScrollText, href: "/student/report-card" },
       ],
     },
   ],
@@ -148,6 +149,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         { label: "Practice Tracker", icon: ClipboardCheck, href: "/teacher/tracker" },
         // #165: marks for the school's Assessment Schemes, and the results.
         { label: "Marks & Results", icon: Calculator, href: "/teacher/marks" },
+        // #188: attendance, co-scholastic grades and remarks, and the cards.
+        { label: "Report Cards", icon: ScrollText, href: "/teacher/report-cards" },
       ],
     },
     {
@@ -179,6 +182,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Operations",
       items: [
+        { label: "Report Cards", icon: ScrollText, href: "/admin/report-cards" },
         { label: "Reports", icon: BarChart3, soon: true },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },
         { label: "Settings", icon: Settings, soon: true },
@@ -211,6 +215,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Operations",
       items: [
+        { label: "Report Cards", icon: ScrollText, href: "/admin/report-cards" },
         { label: "Reports", icon: BarChart3, soon: true },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },
         { label: "Settings", icon: Settings, soon: true },
@@ -249,6 +254,8 @@ const FOCUS_ROUTES: RegExp[] = [
   // A scheme's marks sheet and results are wide tables (#165).
   /^\/teacher\/marks\/[^/]+\/?$/,
   /^\/admin\/assessment\/[^/]+\/?$/,
+  // A section's attendance sheet is a wide table (#188).
+  /^\/(admin|teacher)\/report-cards\/section\/?$/,
 ];
 
 function isFocusRoute(pathname: string) {

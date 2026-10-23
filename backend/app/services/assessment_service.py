@@ -54,6 +54,8 @@ from app.models import (
     Evaluation,
     GradeBand,
     LearningActivity,
+    LearningActivityQuestion,
+    Question,
     Student,
 )
 from app.models.assessment import (
@@ -777,7 +779,13 @@ def _platform_scores(
     if not activity_to_components or not student_ids:
         return {}
     query = (
-        db.query(Assignment.learning_activity_id, AssignmentTarget.student_id, AssignmentTarget.id)
+        db.query(
+            Assignment.learning_activity_id,
+            AssignmentTarget.student_id,
+            AssignmentTarget.id,
+            Assignment.status,
+            Assignment.due_date,
+        )
         .join(AssignmentTarget, AssignmentTarget.assignment_id == Assignment.id)
         .filter(
             Assignment.school_id == scheme.school_id,
@@ -810,18 +818,33 @@ def _platform_scores(
     # assignment of that set the student was given this year.
     per_set: dict[tuple[str, str], list[tuple[Attempt, Evaluation | None]]] = {}
     assigned: set[tuple[str, str]] = set()
-    for activity_id, student_id, target_id in targets:
+    # A set given and never done counts as 0 once it has closed (closed by a
+    # teacher, or past its due date in India): Shailesh, 23 Oct 2026 (#188).
+    # Only when every assignment of the set to that student has closed: a
+    # set closed once and given again with a new date is still open (review).
+    still_open: set[tuple[str, str]] = set()
+    today = datetime.now(SCHOOL_TIMEZONE).date()
+    for activity_id, student_id, target_id, status, due_date in targets:
         assigned.add((activity_id, student_id))
         per_set.setdefault((activity_id, student_id), []).extend(attempts.get(target_id, []))
+        if not (status == "CLOSED" or _is_past(due_date, today)):
+            still_open.add((activity_id, student_id))
+    closed = assigned - still_open
+    set_marks = _set_total_marks(db, {activity_id for activity_id, _ in closed})
 
     totals: dict[tuple[str, str], list] = {}
     for activity_id, student_id in assigned:
         tried = per_set.get((activity_id, student_id), [])
         counted = _counted_attempt(tried, scheme.attempt_rule)
         for component_id in activity_to_components[activity_id]:
+            if counted is None and (activity_id, student_id) in closed and not set_marks.get(activity_id):
+                continue  # a closed set with no marks to count: as if never given
             entry = totals.setdefault((component_id, student_id), [Decimal(0), Decimal(0), False, False])
             if counted is None:
-                entry[3] = True  # a set assigned and not yet done
+                if (activity_id, student_id) in closed:
+                    entry[1] += Decimal(set_marks[activity_id])  # 0 out of the set's marks
+                else:
+                    entry[3] = True  # a set assigned and not yet done, still open
                 continue
             attempt, evaluation = counted
             entry[0] += Decimal(evaluation.final_score if evaluation else 0)
@@ -836,6 +859,34 @@ def _platform_scores(
         key: (earned, possible if not undone else Decimal(0), pending)
         for key, (earned, possible, pending, undone) in totals.items()
     }
+
+
+def _is_past(due_date: str | None, today: date) -> bool:
+    """Whether a due date ("2026-10-03", or an ISO timestamp) has gone by:
+    the day after it, in India. An unreadable one never closes a set."""
+    if not due_date:
+        return False
+    try:
+        return date.fromisoformat(str(due_date).strip()[:10]) < today
+    except ValueError:
+        return False
+
+
+def _set_total_marks(db: Session, activity_ids: set[str]) -> dict[str, int]:
+    """Each practice set's total marks (its questions' marks), for counting a
+    closed set that was never done as 0 out of that total."""
+    if not activity_ids:
+        return {}
+    rows = (
+        db.query(LearningActivityQuestion.learning_activity_id, Question.marks)
+        .join(Question, Question.id == LearningActivityQuestion.question_id)
+        .filter(LearningActivityQuestion.learning_activity_id.in_(list(activity_ids)))
+        .all()
+    )
+    totals: dict[str, int] = {}
+    for activity_id, marks in rows:
+        totals[activity_id] = totals.get(activity_id, 0) + int(marks or 0)
+    return totals
 
 
 def _counted_attempt(tried: list[tuple[Attempt, Evaluation | None]], rule: str):
@@ -866,8 +917,13 @@ def grade_for(scheme: AssessmentScheme, shown: Decimal) -> str | None:
     return None
 
 
-def results(db: Session, scheme: AssessmentScheme, student_ids: list[str]) -> list[StudentResult]:
-    """Each student's result on a scheme (see the module docstring)."""
+def results(
+    db: Session, scheme: AssessmentScheme, student_ids: list[str], *, term: str | None = None
+) -> list[StudentResult]:
+    """Each student's result on a scheme (see the module docstring). With
+    `term` ("TERM_1" or "TERM_2"), only that term's components count, their
+    weights in proportion: a term's own result, for its report card (#188)."""
+    counted_components = [c for c in scheme.components if term is None or c.term == term]
     marks = {
         (m.component_id, m.student_id): m
         for m in db.query(ComponentMark)
@@ -887,7 +943,8 @@ def results(db: Session, scheme: AssessmentScheme, student_ids: list[str]) -> li
         provisional = False
         exempt = 0
         own_minimum_failed = False
-        for component in scheme.components:
+        not_given: list[str] = []
+        for component in counted_components:
             maximum = to_decimal(component.max_marks)
             weight = to_decimal(component.weight_percent)
             mark = marks.get((component.id, student_id))
@@ -903,8 +960,14 @@ def results(db: Session, scheme: AssessmentScheme, student_ids: list[str]) -> li
                     result.status = "MARKS"
                     result.marks = to_decimal(mark.marks)
                     result.percent = result.marks / maximum * HUNDRED
+            elif (component.id, student_id) not in platform:
+                # None of the component's sets was given to this student (or
+                # they were excused from all): left out, as Exempt is, so a
+                # card is not held up by a set that will never come (review).
+                result.status = "EXEMPT"
+                not_given.append(component.name)
             else:
-                earned, possible, pending = platform.get((component.id, student_id), (Decimal(0), Decimal(0), False))
+                earned, possible, pending = platform[(component.id, student_id)]
                 if possible > 0:
                     result.status = "MARKS"
                     result.percent = earned / possible * HUNDRED
@@ -930,11 +993,14 @@ def results(db: Session, scheme: AssessmentScheme, student_ids: list[str]) -> li
             shown = round_half_up(unrounded, scheme.decimal_places)
             grade = grade_for(scheme, shown)
             passed = shown >= pass_percent and not own_minimum_failed
-        if exempt and exempt == len(scheme.components):
-            notes.append("No result: exempt from every component.")
-        elif exempt:
+        for name in not_given:
+            notes.append(f"No practice sets for \"{name}\" were given; it is left out.")
+        marked_exempt = exempt - len(not_given)
+        if exempt and exempt == len(counted_components):
+            notes.append("No result: every component is left out." if not_given else "No result: exempt from every component.")
+        elif marked_exempt:
             notes.append(
-                "Exempt from " + ("one component" if exempt == 1 else f"{exempt} components")
+                "Exempt from " + ("one component" if marked_exempt == 1 else f"{marked_exempt} components")
                 + "; the others count in proportion."
             )
         out.append(
