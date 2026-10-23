@@ -1,3 +1,11 @@
+from app.models.assessment import (  # noqa: F401
+    AcademicYear,
+    AssessmentComponent,
+    AssessmentComponentActivity,
+    AssessmentScheme,
+    ComponentMark,
+    GradeBand,
+)
 from app.models.curriculum import (  # noqa: F401
     Board,
     BoardCourse,
