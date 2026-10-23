@@ -54,6 +54,8 @@ import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { SelectField, TextField } from "@/components/ui/Field";
 import { PanelFooter, PanelStack, SplitColumn, SplitLayout, StretchCard } from "@/components/ui/SplitLayout";
 import { RosterIllustration } from "@/components/brand/Graphics";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { StudentPicker } from "@/components/assign/StudentPicker";
 import { cn } from "@/lib/utils";
 import { api, describeApiError, errorMessage } from "@/lib/api";
 import type { DescribedError } from "@/lib/errors";
@@ -211,6 +213,9 @@ export default function AssignPracticePage() {
   // own guess without ever discarding a section the teacher chose.
   const [sectionAutoFilled, setSectionAutoFilled] = useState(false);
 
+  // #161 (23 Oct 2026): the whole section, or chosen students of it.
+  const [who, setWho] = useState<"SECTION" | "CHOSEN">("SECTION");
+  const [chosenStudents, setChosenStudents] = useState<Set<string>>(new Set());
   const [reason, setReason] = useState<AssignmentReason>("SCHEDULED");
   const [dueDate, setDueDate] = useState("");
   const [maxAttempts, setMaxAttempts] = useState(3);
@@ -292,11 +297,13 @@ export default function AssignPracticePage() {
       sections,
     );
     if (candidates.length === 1) {
+      if (candidates[0].id !== selectedSectionId) setChosenStudents(new Set());
       setSelectedSectionId(candidates[0].id);
       setSectionAutoFilled(true);
     } else if (sectionAutoFilled) {
       setSelectedSectionId("");
       setSectionAutoFilled(false);
+      setChosenStudents(new Set());
     }
   }
 
@@ -313,12 +320,17 @@ export default function AssignPracticePage() {
       setAssignError("Choose which of your sections to assign this to.");
       return;
     }
+    if (who === "CHOSEN" && chosenStudents.size === 0) {
+      setAssignError("Choose at least one student, or assign it to the whole section.");
+      return;
+    }
     setAssigning(true);
     try {
       const { data } = await api.post<Assignment>("/learning/assignments", {
         learningActivityId: selectedActivityId,
         className: target.classLevelCode,
         section: target.section,
+        studentIds: who === "CHOSEN" ? [...chosenStudents] : undefined,
         reason,
         dueDate: dueDate || null,
         maxAttempts,
@@ -474,6 +486,7 @@ export default function AssignPracticePage() {
                       onChange={(event) => {
                         setSelectedSectionId(event.target.value);
                         setSectionAutoFilled(false);
+                        setChosenStudents(new Set());
                       }}
                       disabled={sectionsLoading || Boolean(sectionsError)}
                     >
@@ -505,6 +518,33 @@ export default function AssignPracticePage() {
                         meant.
                       </span>
                     </p>
+                  ) : null}
+
+                  {/* #161: everyone in the section, or chosen students. */}
+                  {selectedSection?.classLevelCode ? (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <p className="text-[0.875rem] font-semibold text-content">Students</p>
+                        <SegmentedControl
+                          label="Who gets this practice"
+                          segments={[
+                            { key: "SECTION", label: "Whole Section" },
+                            { key: "CHOSEN", label: "Chosen Students" },
+                          ]}
+                          value={who}
+                          onChange={(next) => setWho(next)}
+                        />
+                      </div>
+                      {who === "CHOSEN" ? (
+                        <StudentPicker
+                          key={selectedSection.id}
+                          className={selectedSection.classLevelCode}
+                          section={selectedSection.section}
+                          chosen={chosenStudents}
+                          onChange={setChosenStudents}
+                        />
+                      ) : null}
+                    </div>
                   ) : null}
 
                   {/* The limits. */}
@@ -566,7 +606,9 @@ export default function AssignPracticePage() {
 
                   <PanelFooter>
                     <Button type="submit" variant="primary" loading={assigning} loadingLabel="Assigning" leadingIcon={<Send className="h-4 w-4" />}>
-                      Assign to Section
+                      {who === "CHOSEN"
+                        ? `Assign to ${chosenStudents.size} ${chosenStudents.size === 1 ? "Student" : "Students"}`
+                        : "Assign to Section"}
                     </Button>
                     {/* The target, restated beside the button that commits
                         it: the section is chosen three rows up and is
@@ -576,7 +618,13 @@ export default function AssignPracticePage() {
                         on white 6.4:1, content-muted 8.6:1. */}
                     {selectedSection ? (
                       <p className="text-xs text-content-subtle">
-                        Goes to <span className="font-semibold text-content-muted">{sectionLabel(selectedSection)}</span>
+                        Goes to{" "}
+                        {who === "CHOSEN" ? (
+                          <>
+                            {chosenStudents.size} chosen {chosenStudents.size === 1 ? "student" : "students"} of{" "}
+                          </>
+                        ) : null}
+                        <span className="font-semibold text-content-muted">{sectionLabel(selectedSection)}</span>
                       </p>
                     ) : null}
                   </PanelFooter>

@@ -165,6 +165,11 @@ export type AttemptQuestion = {
   // on this attempt. Optional: an older server does not send them.
   acceptsWorking?: boolean;
   workingText?: string | null;
+  // #160 (23 Oct 2026): how many boxes the answer goes in (2 or more for an
+  // answer in parts, joined with ";" when saved), and their names when the
+  // question gives them ("Groups", "Remainder"). Optional for an older server.
+  answerBlanks?: number;
+  answerBlankLabels?: string[] | null;
 };
 
 export type AttemptDetail = {
