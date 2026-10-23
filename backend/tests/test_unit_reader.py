@@ -24,6 +24,7 @@ from app.services.unit_reader import answer_unit_from_question as read
         # "how many <unit>"
         ("2 km equals how many metres?", "m"),
         ("2 m 20 cm equals how many centimetres?", "cm"),
+        ("2 feet equal how many inches?", "inch"),  # inches added 23 Oct 2026
         ("A timer shows 132 seconds. How many complete minutes does it contain?", "min"),
         ("How many more hours are spent sleeping than studying?", "h"),
         ("How many fewer kilograms were wasted for Khichdi than Paratha?", "kg"),

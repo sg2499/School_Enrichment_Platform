@@ -42,6 +42,9 @@ UNITS: dict[str, Unit] = {
         _u("cm", "length", "0.01", "centimetre", "centimetres"),
         _u("m", "length", "1", "metre", "metres"),
         _u("km", "length", "1000", "kilometre", "kilometres"),
+        # Added 23 Oct 2026 for Ashalatha's unit review (Chapter 5: "2 feet
+        # equal how many inches?"); 1 inch is exactly 0.0254 m.
+        _u("inch", "length", "0.0254", "inch", "inches"),
         _u("mg", "mass", "0.001", "milligram", "milligrams"),
         _u("g", "mass", "1", "gram", "grams"),
         _u("kg", "mass", "1000", "kilogram", "kilograms"),
@@ -75,6 +78,9 @@ _add("mm", "mm", "millimetre", "millimetres", "millimeter", "millimeters")
 _add("cm", "cm", "centimetre", "centimetres", "centimeter", "centimeters", "cms")
 _add("m", "m", "metre", "metres", "meter", "meters", "mtr", "mtrs")
 _add("km", "km", "kilometre", "kilometres", "kilometer", "kilometers", "kms")
+# Only the spellings on her Unit List. Not "in", which is an ordinary word
+# ("24 in all"), nor the " sign.
+_add("inch", "inch", "inches")
 _add("mg", "mg", "milligram", "milligrams", "milligramme", "milligrammes")
 _add("g", "g", "gm", "gms", "gram", "grams", "gramme", "grammes", "gr")
 _add("kg", "kg", "kgs", "kilogram", "kilograms", "kilogramme", "kilogrammes", "kilo", "kilos")
