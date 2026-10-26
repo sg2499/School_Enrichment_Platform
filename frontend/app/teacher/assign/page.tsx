@@ -41,7 +41,7 @@
  * level (RoleShell's `ambience` prop; components/brand/Ambience.tsx).
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, ArrowRight, Check, ClipboardCheck, Send, Users } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
@@ -57,6 +57,7 @@ import { RosterIllustration } from "@/components/brand/Graphics";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { StudentPicker } from "@/components/assign/StudentPicker";
 import { cn } from "@/lib/utils";
+import { readAssignPrefill, type AssignPrefill } from "@/lib/analytics";
 import { api, describeApiError, errorMessage } from "@/lib/api";
 import type { DescribedError } from "@/lib/errors";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
@@ -223,6 +224,14 @@ export default function AssignPracticePage() {
   const [assignError, setAssignError] = useState<string | null>(null);
   const [assigned, setAssigned] = useState<Assigned | null>(null);
 
+  // #186: opened from Class Analytics ("Set Practice for These Students"):
+  // the chapter, set, section and students are filled in once, for the
+  // teacher to check and assign. Read from the address after the page's
+  // own lists have loaded, and never again.
+  const prefillRef = useRef<AssignPrefill | null | undefined>(undefined);
+  const [prefillNote, setPrefillNote] = useState<{ tone: "info" | "error"; message: string } | null>(null);
+  const [pendingActivityId, setPendingActivityId] = useState<string | null>(null);
+
   const loadMappings = useCallback(async () => {
     setMappingsLoading(true);
     setMappingsError(null);
@@ -256,6 +265,52 @@ export default function AssignPracticePage() {
     loadMappings();
     loadSections();
   }, [status, loadMappings, loadSections]);
+
+  useEffect(() => {
+    if (status !== "ready" || mappingsLoading || sectionsLoading || prefillRef.current !== undefined) return;
+    const prefill = readAssignPrefill(window.location.search);
+    prefillRef.current = prefill;
+    if (!prefill) return;
+    // Read once: a reload after assigning must not fill it all in again.
+    window.history.replaceState(window.history.state, "", window.location.pathname);
+    const mapping = mappings.find((m) => m.chapterId === prefill.chapterId);
+    const target = sections.find(
+      (s) => s.classLevelCode === prefill.classLevel && s.section === prefill.section && s.boardCourseId === prefill.courseId,
+    );
+    if (!mapping || !target) {
+      setPrefillNote({
+        tone: "error",
+        message: "We couldn't fill this in from Class Analytics: that chapter or section isn't one you can assign to now. Choose them below.",
+      });
+      return;
+    }
+    setSelectedChapterId(prefill.chapterId);
+    setSelectedSectionId(target.id);
+    setSectionAutoFilled(false);
+    setWho("CHOSEN");
+    setChosenStudents(new Set(prefill.studentIds));
+    setReason("TEACHER_SELECTED");
+    setPendingActivityId(prefill.activityId);
+    setPrefillNote({
+      tone: "info",
+      message: `Filled in from Class Analytics: ${prefill.studentIds.length} ${prefill.studentIds.length === 1 ? "student" : "students"} and the practice set for their mistake. Check the details, then assign.`,
+    });
+  }, [status, mappingsLoading, sectionsLoading, mappings, sections]);
+
+  // The set is chosen once the chapter's sets have loaded.
+  useEffect(() => {
+    if (!pendingActivityId || activitiesLoading) return;
+    if (activities.some((a) => a.id === pendingActivityId)) {
+      setSelectedActivityId(pendingActivityId);
+    } else if (activitiesError) {
+      setPrefillNote({ tone: "error", message: "We couldn't load this chapter's practice sets, so the set isn't chosen yet. Choose it below." });
+    } else if (activities.length > 0) {
+      setPrefillNote({ tone: "error", message: "That practice set isn't published any more. Choose another below." });
+    } else {
+      return;
+    }
+    setPendingActivityId(null);
+  }, [pendingActivityId, activities, activitiesLoading, activitiesError]);
 
   useEffect(() => {
     if (!selectedChapterId) {
@@ -413,6 +468,7 @@ export default function AssignPracticePage() {
                 </div>
               </div>
 
+              {prefillNote ? <AlertBanner tone={prefillNote.tone} message={prefillNote.message} /> : null}
               {mappingsError ? <LoadError problem={mappingsError} onRetry={loadMappings} /> : null}
               {sectionsError ? <LoadError problem={sectionsError} onRetry={loadSections} /> : null}
 

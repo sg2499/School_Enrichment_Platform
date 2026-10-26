@@ -156,7 +156,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Insight",
       items: [
-        { label: "Class Analytics", icon: BarChart3, soon: true },
+        // #186: the question-by-student grid and the misconception report.
+        { label: "Class Analytics", icon: BarChart3, href: "/teacher/analytics" },
         { label: "Curriculum Map", icon: Compass, soon: true },
       ],
     },
@@ -183,7 +184,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Operations",
       items: [
         { label: "Report Cards", icon: ScrollText, href: "/admin/report-cards" },
-        { label: "Reports", icon: BarChart3, soon: true },
+        // #186: any section's grid and misconception report.
+        { label: "Class Analytics", icon: BarChart3, href: "/admin/analytics" },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },
         { label: "Settings", icon: Settings, soon: true },
       ],
