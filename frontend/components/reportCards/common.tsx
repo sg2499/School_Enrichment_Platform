@@ -33,10 +33,13 @@ export function PdfButton({
   label = "Download PDF",
   variant = "secondary",
   size = "sm",
+  action = "download the report card",
 }: {
   path: string;
   name: string;
   label?: string;
+  /** Completes "We couldn't ..." if the download fails. */
+  action?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
 }) {
@@ -56,7 +59,7 @@ export function PdfButton({
           try {
             await downloadPdf(path, name);
           } catch (err) {
-            setProblem(describeApiError(err, "download the report card").message);
+            setProblem(describeApiError(err, action).message);
           } finally {
             setBusy(false);
           }
