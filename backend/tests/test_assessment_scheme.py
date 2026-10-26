@@ -644,9 +644,28 @@ def test_years_and_templates(client, db_session):
     # a School Admin sees only published ones and cannot change them.
     assert admin.post("/api/assessment/templates/standard").status_code == 403
     made = sa.post("/api/assessment/templates/standard").json()["created"]
-    assert {t["name"] for t in made} >= {"CBSE-Style, Classes 6 to 8", "CBSE-Style, Classes 9 and 10", "ICSE-Style, Classes 9 and 10"}
+    assert {t["name"] for t in made} == {
+        "CBSE-Style, Classes 6 to 8", "CBSE-Style, Classes 9 and 10", "ICSE-Style, Classes 9 and 10, Groups I and II",
+        "ICSE-Style, Classes 9 and 10, Group III", "Class 5 Standard",
+    }
     assert all(t["status"] == "DRAFT" for t in made)
     assert sa.post("/api/assessment/templates/standard").json() == {"created": []}
+    # Made before her review (#203): the old ICSE draft is removed and a
+    # standard draft's description brought up to date; never a published one.
+    from app.models import AssessmentScheme as _S
+    from app.services.assessment_templates import refresh_standard_templates
+
+    old_icse = _S(name="ICSE-Style, Classes 9 and 10", is_template=True, status="DRAFT", version=1, attempt_rule="BEST", lineage_id="old-icse",
+                  pass_percent="33", decimal_places=0)
+    db_session.add(old_icse)
+    cbse68 = db_session.query(_S).filter(_S.name == "CBSE-Style, Classes 6 to 8").one()
+    cbse68.description = "Check with Ashalatha before publishing."
+    db_session.commit()
+    done = refresh_standard_templates(db_session)
+    db_session.commit()
+    assert done["removed"] == [old_icse.id] and done["updated"] == [cbse68.id]
+    assert "Approved by Ashalatha" in db_session.get(_S, cbse68.id).description
+    assert db_session.query(_S).filter(_S.name == "ICSE-Style, Classes 9 and 10").count() == 0
     assert admin.get("/api/assessment/templates").json() == {"templates": []}
     cbse = next(t for t in made if t["name"] == "CBSE-Style, Classes 6 to 8")
     assert admin.get(f"/api/assessment/schemes/{cbse['id']}").status_code == 404
@@ -668,6 +687,20 @@ def test_years_and_templates(client, db_session):
     template_keys = {c.component_key for c in db_session.get(AssessmentScheme, cbse["id"]).components}
     assert not template_keys & {c["componentKey"] for c in body["components"]}
     assert admin.delete(f"/api/assessment/schemes/{body['id']}").json() == {"deleted": True}
+
+    # Ashalatha's Class 5 template (26 Oct 2026): it publishes with its
+    # platform practice still open; the school's copy asks for the sets.
+    class5 = next(t for t in made if t["name"] == "Class 5 Standard")
+    assert sa.post(f"/api/assessment/schemes/{class5['id']}/publish").status_code == 200
+    copy5 = admin.post("/api/assessment/schemes", json={
+        "academicYearId": years[1]["id"], "boardCourseId": course_id, "templateId": class5["id"],
+    }).json()
+    platform = [c for c in copy5["components"] if c["source"] == "PLATFORM"]
+    assert [(c["name"], c["maxMarks"]) for c in platform] == [("Platform Practice, Term 1", "10"), ("Platform Practice, Term 2", "10")]
+    assert copy5["publishProblems"], "a school copy needs its practice sets chosen before it publishes"
+    icse = next(t for t in made if t["name"] == "ICSE-Style, Classes 9 and 10, Group III")
+    detail = sa.get(f"/api/assessment/schemes/{icse['id']}").json()
+    assert [b["label"] for b in detail["gradeBands"]] == [str(n) for n in range(1, 10)]
 
 
 # --- found in review (23 Oct 2026) ---------------------------------------------------------

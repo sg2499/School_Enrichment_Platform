@@ -43,11 +43,15 @@ from app.services import assessment_service
 from app.services.assessment_service import SchemeError, as_text, round_half_up
 
 DEFAULT_AREAS = ["Work Education", "Art Education", "Health and Physical Education", "Discipline"]
-# CBSE's three-point scale for co-scholastic areas, Classes 6 to 8.
+# The co-scholastic scale schools commonly print, best first (Shailesh and
+# Ashalatha, 26 Oct 2026). These grades never affect the pass result.
 DEFAULT_SCALE = [
-    {"label": "A", "meaning": "Outstanding"},
-    {"label": "B", "meaning": "Very Good"},
-    {"label": "C", "meaning": "Fair"},
+    {"label": "O", "meaning": "Outstanding"},
+    {"label": "A", "meaning": "Very Good"},
+    {"label": "B", "meaning": "Good"},
+    {"label": "C", "meaning": "Satisfactory"},
+    {"label": "D", "meaning": "Needs Improvement"},
+    {"label": "E", "meaning": "Unsatisfactory"},
 ]
 MAX_AREAS = 10
 MAX_SCALE = 6

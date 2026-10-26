@@ -232,6 +232,11 @@ function MisconceptionCard({
               {flaggedText(item.students.length, item.studentsAnswered)}
             </p>
             <p className="text-sm text-content">{item.misconception}</p>
+            {item.nextStep ? (
+              <p className="mt-1 text-sm text-content-muted">
+                <span className="font-semibold text-content">Next Step:</span> {item.nextStep}
+              </p>
+            ) : null}
             <p className="mt-1 text-xs text-content-subtle">
               {item.skill.title} · {item.questionsAsked}{" "}
               {item.questionsAsked === 1 ? "question" : "questions"} that test it
@@ -306,14 +311,30 @@ function Misconceptions({
 }) {
   const flagged = report.misconceptions.filter((m) => m.students.length > 0);
   const clear = report.misconceptions.filter((m) => m.students.length === 0);
+  const waiting = report.awaitingReview ?? 0;
+  const waitingNote =
+    waiting > 0 ? (
+      <p className="text-xs text-content-subtle">
+        {waiting} more {waiting === 1 ? "mistake" : "mistakes"} made by students here{" "}
+        {waiting === 1 ? "is" : "are"} waiting for our subject expert&apos;s review and will show once approved.
+      </p>
+    ) : null;
   if (report.misconceptions.length === 0) {
     return (
-      <Card className="p-6">
-        <EmptyState
-          title="Nothing Answered Yet"
-          description="Once this section hands in practice from this chapter, the mistakes it makes most appear here."
-        />
-      </Card>
+      <div className="space-y-4">
+        <Card className="p-6">
+          <EmptyState
+            title={waiting > 0 ? "Notes Being Reviewed" : (report.heldForReview ?? 0) > 0 ? "No Pattern Yet" : "Nothing Answered Yet"}
+            description={
+              waiting === 0 && (report.heldForReview ?? 0) > 0
+                ? `No student has missed ${report.missedThreshold} or more questions testing the same mistake in this chapter.`
+                : waiting > 0
+                ? `Students here show ${waiting} ${waiting === 1 ? "mistake" : "mistakes"} in this chapter whose ${waiting === 1 ? "note is" : "notes are"} still being checked by our subject expert. They appear here once approved.`
+                : "Once this section hands in practice from this chapter, the mistakes it makes most appear here."
+            }
+          />
+        </Card>
+      </div>
     );
   }
   return (
@@ -345,6 +366,7 @@ function Misconceptions({
           {report.missedThreshold} or more.
         </p>
       ) : null}
+      {waitingNote}
     </div>
   );
 }

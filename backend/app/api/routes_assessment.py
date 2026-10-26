@@ -45,7 +45,7 @@ from app.models import (
 from app.services import assessment_service as service
 from app.services import practice_access_service
 from app.services.assessment_service import SchemeError
-from app.services.assessment_templates import create_standard_templates
+from app.services.assessment_templates import create_standard_templates, refresh_standard_templates
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
 
@@ -824,6 +824,11 @@ def create_standard(request: Request, viewer: Viewer = Depends(_viewer), db: Ses
     exist yet, as drafts for Ashalatha to check before they are published."""
     if viewer.role != "SUPER_ADMIN":
         api_error(403, "FORBIDDEN", "Only a Super Admin can make templates.")
+    refreshed = refresh_standard_templates(db)
+    if refreshed["removed"] or refreshed["updated"]:
+        log_audit_event(
+            db, "assessment.template.refreshed", user_id=viewer.user.id, request=request, details=refreshed,
+        )
     created = create_standard_templates(db, viewer.user.id)
     if created:
         log_audit_event(

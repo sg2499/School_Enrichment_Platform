@@ -84,7 +84,9 @@ export interface FlaggedStudent {
 }
 
 export interface MisconceptionItem {
+  // In Ashalatha's approved wording, with her suggested next step.
   misconception: string;
+  nextStep: string | null;
   skill: { id: string; code: string; title: string };
   studentsAnswered: number;
   questionsAsked: number;
@@ -99,4 +101,7 @@ export interface MisconceptionReport {
   missedThreshold: number;
   studentsInSection: number;
   misconceptions: MisconceptionItem[];
+  // Misconceptions the practice shows whose notes are still being reviewed.
+  awaitingReview: number;
+  heldForReview: number;
 }

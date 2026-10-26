@@ -15,6 +15,7 @@ from app.models.curriculum import (  # noqa: F401
     CourseDisciplineMap,
     CurriculumVersion,
     Discipline,
+    MisconceptionReview,
     PrerequisiteLink,
     Question,
     SchoolCurriculumMap,

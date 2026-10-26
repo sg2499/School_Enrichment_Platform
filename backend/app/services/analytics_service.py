@@ -16,6 +16,9 @@ Decisions (Shailesh, 26 Oct 2026; PHASE6_CLASS_ANALYTICS_DESIGN.md):
 - The report leads to action: the skill's Remediation set (else its Extra
   Practice set), for the teacher to set for those students from Assign
   Practice. Nothing is assigned from here.
+- A misconception note is shown only once Ashalatha has approved it, in her
+  wording with her next step (Q14, 26 Oct 2026; MisconceptionReview). Until
+  then it is only counted, as waiting for review.
 
 What counts: practice the teacher (or the school) set for that section --
 assignments recorded with that section, course and class, that the viewer
@@ -41,6 +44,7 @@ from app.models import (
     ConceptLesson,
     LearningActivity,
     LearningActivityQuestion,
+    MisconceptionReview,
     Question,
     Student,
     TeacherSectionAssignment,
@@ -269,6 +273,24 @@ def tag_key(tag: str | None) -> str:
     return " ".join((tag or "").split()).rstrip(" .;:").casefold()
 
 
+def reviewed_notes(db: Session, skill_ids) -> dict[tuple[str, str], MisconceptionReview]:
+    """Every review of these skills' notes, by (skill id, tag key). Only an
+    APPROVED one is shown to teachers (Ashalatha, Q14, 26 Oct 2026): a
+    misconception note is checked for accuracy, neutral language and a next
+    step before it reaches a dashboard."""
+    ids = list(skill_ids)
+    if not ids:
+        return {}
+    return {
+        (r.concept_lesson_id, r.tag_key): r
+        for r in db.query(MisconceptionReview).filter(MisconceptionReview.concept_lesson_id.in_(ids))
+    }
+
+
+def _approved(review: MisconceptionReview | None) -> MisconceptionReview | None:
+    return review if review is not None and review.status == "APPROVED" and (review.shown_note or "").strip() else None
+
+
 def _short(text: str | None, limit: int = 140) -> str:
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
@@ -372,6 +394,7 @@ def set_grid(db: Session, viewer: Viewer, scope: Scope, activity_id: str, which:
     students_rows = [
         (s, u) for s, u in _section_students(db, viewer, scope, assignment_ids) if s.id in targeted
     ]
+    reviews = reviewed_notes(db, {skill.id for _q, _s, skill in question_rows})
     questions = []
     for n, (q, _seq, skill) in enumerate(question_rows, start=1):
         # The share of students who got it fully right (part marks are not
@@ -392,7 +415,8 @@ def set_grid(db: Session, viewer: Viewer, scope: Scope, activity_id: str, which:
                 "questionType": q.question_type,
                 "marks": q.marks,
                 "skillTitle": skill.title,
-                "misconception": _short(q.misconception_tag, 200) if q.misconception_tag else None,
+                # Only a note Ashalatha has approved, in her wording (Q14).
+                "misconception": _short(note.shown_note, 200) if (note := _approved(reviews.get((skill.id, tag_key(q.misconception_tag))))) else None,
                 "answered": answered,
                 "percentCorrect": round(100.0 * right / answered, 1) if answered else None,
             }
@@ -489,13 +513,17 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
             if current is None or (current.activity_type != "REMEDIATION" and activity.activity_type == "REMEDIATION"):
                 rescue[activity.concept_lesson_id] = activity
 
+    reviews = reviewed_notes(db, skill_ids)
     items = []
-    for group in groups.values():
+    waiting = held = 0
+    for (skill_id, key), group in groups.items():
         # Only students who answered 2+ of its questions could show the
         # pattern, so they are the "of N" (#186 review); a mistake tested by
         # one question so far can't be judged yet and is left out.
         if len(group["questions"]) < MISSED_FOR_MISCONCEPTION:
             continue
+        review = reviews.get((skill_id, key))
+        approved = _approved(review)
         flagged = []
         judged = 0
         for student_id, (answered, missed) in group["per_student"].items():
@@ -504,12 +532,21 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
             if missed >= MISSED_FOR_MISCONCEPTION:
                 s, u = students[student_id]
                 flagged.append({**_student_dict(s, u, in_section), "missed": missed, "answered": answered})
+        if approved is None:
+            # Not reviewed yet: never shown; counted when a student shows
+            # the mistake (review). One she turned down is neither shown nor
+            # counted.
+            if review is None or review.status != "REJECTED":
+                held += 1
+                waiting += 1 if flagged else 0
+            continue
         flagged.sort(key=lambda f: (-f["missed"], f["name"] or "", f["studentCode"]))
         skill = group["skill"]
         set_ = rescue.get(skill.id)
         items.append(
             {
-                "misconception": group["tag"],
+                "misconception": " ".join(approved.shown_note.split()),
+                "nextStep": " ".join(approved.next_step.split()) if approved.next_step else None,
                 "skill": {"id": skill.id, "code": skill.code, "title": skill.title},
                 "studentsAnswered": judged,
                 "questionsAsked": len(group["questions"]),
@@ -532,4 +569,9 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
         "missedThreshold": MISSED_FOR_MISCONCEPTION,
         "studentsInSection": len(students),
         "misconceptions": items,
+        # Mistakes students in this section show (2+ missed) that are not on
+        # screen because their note is still waiting for Ashalatha's review.
+        "awaitingReview": waiting,
+        # Every tested mistake held back for review, shown by a student or not.
+        "heldForReview": held,
     }
