@@ -8,7 +8,7 @@
  */
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, PlayCircle, Sparkles } from "lucide-react";
+import { ClipboardList, PlayCircle, Sparkles, Trophy } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
@@ -16,6 +16,9 @@ import {
   BAND_LABEL,
   BAND_TONE,
   bandMeaning,
+  chaptersWithStanding,
+  STANDING_LABEL,
+  standingText,
   percentText,
   selfPracticeAction,
   selfPracticeHref,
@@ -128,6 +131,54 @@ function PractiseNextCard({
   );
 }
 
+/**
+ * #185: the student's place in their class, said only as Top 10%, Top 25%
+ * or Top Half, overall and per chapter. Shown only when there is one to
+ * show; a student in the lower half, or in a class too small to compare,
+ * simply doesn't see this section.
+ */
+function WhereYouStand({ data }: { data: ProgressPayload }) {
+  const standing = data.standing;
+  const chapters = chaptersWithStanding(data.chapters);
+  if (!standing || (!standing.overall && chapters.length === 0)) return null;
+  const where = standing.classLabel ? `${standing.classLabel} at your school` : "your class at your school";
+  return (
+    <section aria-labelledby="stand-heading" className="space-y-4">
+      <div>
+        <h2 id="stand-heading" className="font-display text-display-sm text-content">
+          Where You Stand
+        </h2>
+        <p className="mt-1 text-sm text-content-muted">
+          Compared with everyone in {where} who has practised the same chapters. Practice you do on your own isn&apos;t counted here.
+        </p>
+      </div>
+      <Card>
+        <CardBody className="space-y-4 sm:p-6">
+          {standing.overall ? (
+            <p className="flex flex-wrap items-center gap-3">
+              <Trophy className="h-5 w-5 text-saffron-600" aria-hidden="true" />
+              <span className="font-display text-lg font-semibold text-content">
+                {standingText(standing.overall, standing.classLabel)}
+              </span>
+              <span className="text-sm text-content-muted">across all your chapters</span>
+            </p>
+          ) : null}
+          {chapters.length > 0 ? (
+            <ul className="flex flex-wrap gap-2" aria-label="Your chapter standings">
+              {chapters.map((chapter) => (
+                <li key={chapter.id} className="rounded-2xl border border-line px-3 py-2 text-sm">
+                  <span className="font-semibold text-content">{chapter.title}</span>
+                  <span className="text-content-muted"> · {STANDING_LABEL[chapter.standing]}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </CardBody>
+      </Card>
+    </section>
+  );
+}
+
 function MyProgressPage() {
   const session = useProtectedPage("STUDENT");
   const { user, status } = session;
@@ -228,6 +279,8 @@ function MyProgressPage() {
               )}
             </section>
 
+            <WhereYouStand data={data} />
+
             {data.selfPractice && data.selfPractice.length > 0 ? (
               <section aria-labelledby="own-heading" className="space-y-4">
                 <div>
@@ -280,6 +333,7 @@ function MyProgressPage() {
                 chapters={data.chapters}
                 summary={data.summary}
                 emptyText="Your skills appear here once your school sets up your chapters."
+                classLabel={data.standing?.classLabel}
               />
             </section>
           </>

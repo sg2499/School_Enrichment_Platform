@@ -14,12 +14,17 @@ export interface SkillProgress {
   lastPractisedAt: string | null;
 }
 
+// #185: the student's place in their class, as a band only.
+export type StandingBand = "TOP_10" | "TOP_25" | "TOP_HALF";
+
 export interface ChapterProgress {
   id: string;
   code: string;
   chapterNo: number;
   title: string;
   skills: SkillProgress[];
+  // The student's own view only; null when nothing is said.
+  standing?: StandingBand | null;
 }
 
 export interface SelfPracticeSet {
@@ -89,4 +94,8 @@ export interface ProgressPayload {
   practiseNext: PractiseNextItem[];
   // The student's own view only.
   selfPractice?: SelfPracticeHistoryItem[];
+  standing?: {
+    overall: StandingBand | null;
+    classLabel: string | null;
+  };
 }

@@ -454,6 +454,18 @@ def progress_payload(db: Session, student: Student, *, assignment_clause=None, f
     }
     if for_student:
         payload["selfPractice"] = _self_practice_history(db, own_pairs, counts)
+        # #185: the student's own standing in their class, as a band only.
+        from app.services import standing_service
+
+        # Over the class's own chapters, so every classmate is ranked on the
+        # same ones; only the band and the class's name are sent (#185 review).
+        standing = standing_service.class_standing(db, student, [c.id for c in _mapped_chapters(db, student)])
+        for chapter in chapters:
+            chapter["standing"] = standing["chapters"].get(chapter["id"])
+        payload["standing"] = {
+            "overall": standing["overall"],
+            "classLabel": standing_service.class_label(student),
+        }
     return payload
 
 
