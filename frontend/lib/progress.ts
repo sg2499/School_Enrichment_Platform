@@ -5,7 +5,7 @@
  */
 import type { BadgeTone } from "@/components/ui/Badge";
 import { PRACTICE_LIST_HREF, resultHref } from "@/lib/studentPractice";
-import type { ChapterProgress, SelfPracticeHistoryItem, SkillBand, SkillProgress } from "@/types/progress";
+import type { ChapterProgress, SelfPracticeHistoryItem, SkillBand, SkillProgress, StandingBand } from "@/types/progress";
 
 export const MY_PROGRESS_HREF = "/student/progress";
 export const MY_PROGRESS_NAME = "My Progress";
@@ -118,4 +118,22 @@ export function selfPracticeHref(item: SelfPracticeHistoryItem): { label: "Conti
   if (latest && latest.status === "IN_PROGRESS") return { label: "Continue", href: `${PRACTICE_LIST_HREF}/${item.assignmentTargetId}` };
   if (latest) return { label: "View Result", href: resultHref(item.assignmentTargetId, latest.id) };
   return { label: "Start", href: `${PRACTICE_LIST_HREF}/${item.assignmentTargetId}` };
+}
+
+// --- Class standing (#185) ---------------------------------------------------
+
+export const STANDING_LABEL: Record<StandingBand, string> = {
+  TOP_10: "Top 10%",
+  TOP_25: "Top 25%",
+  TOP_HALF: "Top Half",
+};
+
+/** "Top 25% of Class 5", or just the band when the class isn't known. */
+export function standingText(band: StandingBand, classLabel: string | null | undefined): string {
+  return classLabel ? `${STANDING_LABEL[band]} of ${classLabel}` : STANDING_LABEL[band];
+}
+
+/** The chapters the student has a standing in, in the map's order. */
+export function chaptersWithStanding(chapters: ChapterProgress[]): (ChapterProgress & { standing: StandingBand })[] {
+  return chapters.filter((c): c is ChapterProgress & { standing: StandingBand } => Boolean(c.standing));
 }

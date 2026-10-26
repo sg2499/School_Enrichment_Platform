@@ -23,6 +23,7 @@ import {
   chapterStarted,
   filterChapters,
   percentText,
+  standingText,
 } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 import type { ChapterProgress, ProgressSummary, SkillBand, SkillProgress } from "@/types/progress";
@@ -54,7 +55,17 @@ function SkillRow({ skill }: { skill: SkillProgress }) {
   );
 }
 
-function ChapterCard({ chapter, open, onToggle }: { chapter: ChapterProgress; open: boolean; onToggle: () => void }) {
+function ChapterCard({
+  chapter,
+  open,
+  onToggle,
+  classLabel,
+}: {
+  chapter: ChapterProgress;
+  open: boolean;
+  onToggle: () => void;
+  classLabel?: string | null;
+}) {
   const counts = chapterCounts(chapter);
   const id = `chapter-${chapter.id}`;
   return (
@@ -74,6 +85,11 @@ function ChapterCard({ chapter, open, onToggle }: { chapter: ChapterProgress; op
             <span className="block font-display text-base font-semibold text-content">{chapter.title}</span>
           </span>
           <span className="flex flex-wrap items-center gap-1.5">
+            {chapter.standing ? (
+              <Badge tone="brand" size="sm">
+                {standingText(chapter.standing, classLabel)}
+              </Badge>
+            ) : null}
             {counts.map(({ band, count }) => (
               <Badge key={band} tone={BAND_TONE[band]} size="sm">
                 {count} {BAND_LABEL[band]}
@@ -98,10 +114,13 @@ export function SkillMap({
   chapters,
   summary,
   emptyText,
+  classLabel,
 }: {
   chapters: ChapterProgress[];
   summary: ProgressSummary;
   emptyText: string;
+  /** #185: names the class in a chapter's standing ("Top 25% of Class 5"). */
+  classLabel?: string | null;
 }) {
   const [band, setBand] = useState<BandFilter>("ALL");
   const [search, setSearch] = useState("");
@@ -150,6 +169,7 @@ export function SkillMap({
                 key={chapter.id}
                 chapter={chapter}
                 open={open}
+                classLabel={classLabel}
                 onToggle={() => setToggled((prev) => ({ ...prev, [chapter.id]: !open }))}
               />
             );

@@ -16,6 +16,9 @@ import {
   selfPracticeAction,
   selfPracticeHref,
   selfPracticeStatus,
+  STANDING_LABEL,
+  standingText,
+  chaptersWithStanding,
 } from "../../.test-build/lib/progress.mjs";
 
 const skill = (id, band, extra = {}) => ({
@@ -96,5 +99,22 @@ describe("self-practice", () => {
     assert.equal(selfPracticeAction("t1", "IN_PROGRESS"), "Continue");
     assert.equal(selfPracticeAction("t1", "COMPLETED"), "Try Again");
     assert.equal(selfPracticeAction("t1", "PENDING"), "Start");
+  });
+});
+
+describe("class standing (#185)", () => {
+  test("only the top bands have words, and the class is named", () => {
+    assert.deepEqual(Object.keys(STANDING_LABEL), ["TOP_10", "TOP_25", "TOP_HALF"]);
+    assert.equal(standingText("TOP_25", "Class 5"), "Top 25% of Class 5");
+    assert.equal(standingText("TOP_HALF", null), "Top Half");
+  });
+
+  test("chapters with a standing, in order", () => {
+    const chapters = [
+      { ...CHAPTERS[0], standing: "TOP_10" },
+      { ...CHAPTERS[1], standing: null },
+      { ...CHAPTERS[1], id: "c3", standing: "TOP_HALF" },
+    ];
+    assert.deepEqual(chaptersWithStanding(chapters).map((c) => c.id), ["c1", "c3"]);
   });
 });
