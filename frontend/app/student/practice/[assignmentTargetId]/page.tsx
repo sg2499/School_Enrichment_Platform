@@ -54,6 +54,7 @@ import {
   scorePercent,
   type AnswerState,
 } from "@/lib/studentPractice";
+import { MY_PROGRESS_HREF, MY_PROGRESS_NAME } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { ActivityType, AttemptAnswerResult, AttemptDetail, AttemptQuestion, AttemptResult, StudentAssignmentSummary } from "@/types/learning";
@@ -787,6 +788,8 @@ export default function StudentAttemptPage() {
   const AUTOSAVE_DEBOUNCE_MS = 400;
 
   const viewOnlyAttemptId = searchParams.get("view") === "result" ? searchParams.get("attemptId") : null;
+  // #184: read by loadResult's message, which is made outside a render.
+  const selfPracticeRef = useRef(false);
 
   // Which set a result opened from the list belongs to. The result names
   // its own set (`activity`, 4 Oct 2026). A server that has not been updated
@@ -837,7 +840,7 @@ export default function StudentAttemptPage() {
         const problem = describeApiError(err, "load your result");
         setBlocked({
           title: "Your practice is handed in",
-          message: `${problem.message} Your answers are safe, and your result will be in ${PRACTICE_LIST_NAME}.`,
+          message: `${problem.message} Your answers are safe, and your result will be in ${selfPracticeRef.current ? MY_PROGRESS_NAME : PRACTICE_LIST_NAME}.`,
           tone: "done",
           retry: retryWith(problem),
         });
@@ -1158,6 +1161,11 @@ export default function StudentAttemptPage() {
   const showingResult = phase === "result" && result !== null;
   const setTitle = attempt?.activity.title ?? result?.activity?.title ?? listedSet?.title ?? null;
   const setType = attempt?.activity.activityType ?? result?.activity?.activityType ?? listedSet?.activityType ?? null;
+  // #184: practice the student opened from My Progress leads back there.
+  const selfPractice = Boolean(attempt?.selfPractice ?? result?.selfPractice);
+  const backHref = selfPractice ? MY_PROGRESS_HREF : PRACTICE_LIST_HREF;
+  const backName = selfPractice ? MY_PROGRESS_NAME : PRACTICE_LIST_NAME;
+  selfPracticeRef.current = selfPractice;
   // A placeholder for the title while there is nothing certain to put
   // there: the set or its result is still loading, or the result is here
   // but its set's name is one request behind (an older server, above).
@@ -1165,7 +1173,7 @@ export default function StudentAttemptPage() {
   const title = showingResult ? (setTitle ?? "Your Result") : (setTitle ?? "Practice");
   // On a result the set's name is the title, so the line above it says what
   // this is of it; with no name to show, "Your Result" is the title itself.
-  const eyebrow = showingResult ? (setTitle ? "Your Result" : PRACTICE_LIST_NAME) : setType ? ACTIVITY_TYPE_LABEL[setType] : PRACTICE_LIST_NAME;
+  const eyebrow = showingResult ? (setTitle ? "Your Result" : backName) : setType ? ACTIVITY_TYPE_LABEL[setType] : backName;
 
   // Taking a set: its details, as the panel's one well.
   const totalMarks = attempt ? attempt.questions.reduce((sum, question) => sum + question.marks, 0) : 0;
@@ -1261,7 +1269,7 @@ export default function StudentAttemptPage() {
       role="STUDENT"
       user={user}
       ambience="working"
-      title={[setTitle ?? (result ? "Your Result" : null), PRACTICE_LIST_NAME]}
+      title={[setTitle ?? (result ? "Your Result" : null), backName]}
     >
       {/* space-y-8, the working-page rhythm shared with Daily Practice
           itself (was 6, the only page on that step). */}
@@ -1269,8 +1277,8 @@ export default function StudentAttemptPage() {
         <PageHeader
           surface="masthead"
           back={
-            <InlineLink href={PRACTICE_LIST_HREF} direction="back" size="sm" tone="inverse">
-              {PRACTICE_LIST_NAME}
+            <InlineLink href={backHref} direction="back" size="sm" tone="inverse">
+              {backName}
             </InlineLink>
           }
           eyebrow={stillLoading ? undefined : eyebrow}
@@ -1356,8 +1364,8 @@ export default function StudentAttemptPage() {
                     Try Again
                   </Button>
                 ) : null}
-                <ButtonLink href={PRACTICE_LIST_HREF} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
-                  Back to {PRACTICE_LIST_NAME}
+                <ButtonLink href={backHref} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
+                  Back to {backName}
                 </ButtonLink>
               </div>
             </CardBody>
@@ -1502,8 +1510,8 @@ export default function StudentAttemptPage() {
         {phase === "result" && result ? (
           <ResultView result={result}>
             <div className="flex flex-wrap items-center gap-3">
-              <ButtonLink href={PRACTICE_LIST_HREF} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
-                Back to {PRACTICE_LIST_NAME}
+              <ButtonLink href={backHref} variant="secondary" leadingIcon={<ArrowLeft className="h-4 w-4" />}>
+                Back to {backName}
               </ButtonLink>
               {/* Only offered while an attempt is actually left (30 Sep
                   2026). It used to show unconditionally, so a student out of
@@ -1532,7 +1540,9 @@ export default function StudentAttemptPage() {
                 // content-muted, not content-subtle: this sits on the
                 // canvas, over the wash (5.4:1 at the working level).
                 <p className="text-[0.8125rem] leading-relaxed text-content-muted">
-                  You&rsquo;ve used all your attempts for this practice. Ask your teacher if you need another one.
+                  {selfPractice
+                    ? "You\u2019ve used all three attempts on this set. To practise more, open it again from My Progress."
+                    : "You\u2019ve used all your attempts for this practice. Ask your teacher if you need another one."}
                 </p>
               )}
             </div>

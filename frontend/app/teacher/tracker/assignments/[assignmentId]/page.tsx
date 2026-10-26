@@ -70,7 +70,16 @@ import {
   ScoreBadge,
   TargetStatusBadge,
 } from "@/components/tracker/TrackerBits";
-import { FOUNDATION_REPAIR_LABEL, formatDay, isFoundationRepair, plural, scopeLabel, studentClassLabel } from "@/lib/tracker";
+import {
+  FOUNDATION_REPAIR_LABEL,
+  formatDay,
+  isFoundationRepair,
+  isSelfPractice,
+  plural,
+  scopeLabel,
+  SELF_PRACTICE_LABEL,
+  studentClassLabel,
+} from "@/lib/tracker";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { AssignmentStudentRow, AssignmentStudentsPage, StudentFilter, TrackerAssignmentDetail } from "@/types/tracker";
 
@@ -155,11 +164,16 @@ function AssignmentWorkspace() {
   // 20 Aug · Due 25 Aug · 8 questions · Up to 3 attempts each"), as the
   // separate facts it always was. Same information, same conditions: Due is
   // left out when no due date was set, exactly as the sentence left it out.
+  // #184: a student's own practice from My Progress was started by them,
+  // not set by anyone.
   const setBy = a ? (a.isMine ? "You" : (a.assignedByName ?? "Your school")) : "";
+  const selfPractice = Boolean(a && isSelfPractice(a.reason));
   const setOn = a ? formatDay(a.createdAt) : null;
   const facts: PageHeaderFact[] = a
     ? [
-        { label: "Set By", value: setOn ? `${setBy} on ${setOn}` : setBy, icon: <UserRound className="h-3.5 w-3.5" /> },
+        selfPractice
+          ? { label: "Started By", value: setOn ? `${setBy} on ${setOn}` : setBy, icon: <UserRound className="h-3.5 w-3.5" /> }
+          : { label: "Set By", value: setOn ? `${setBy} on ${setOn}` : setBy, icon: <UserRound className="h-3.5 w-3.5" /> },
         ...(a.dueDate
           ? [{ label: "Due", value: formatDay(a.dueDate), icon: <CalendarClock className="h-3.5 w-3.5" /> }]
           : []),
@@ -218,6 +232,7 @@ function AssignmentWorkspace() {
                   <AssignmentStatusBadge status={a.status} onDark />
                   {a.activityType ? <Badge tone="inverse">{ACTIVITY_TYPE_LABEL[a.activityType]}</Badge> : null}
                   {isFoundationRepair(a.reason) ? <Badge tone="inverse">{FOUNDATION_REPAIR_LABEL}</Badge> : null}
+                  {isSelfPractice(a.reason) ? <Badge tone="inverse">{SELF_PRACTICE_LABEL}</Badge> : null}
                   {!a.canAct ? <ReadOnlyBadge onDark /> : null}
                 </>
               ) : undefined

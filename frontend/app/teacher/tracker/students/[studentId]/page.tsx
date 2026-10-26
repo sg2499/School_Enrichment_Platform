@@ -40,6 +40,7 @@ import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { SessionGate } from "@/components/SessionGate";
 import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { Pagination } from "@/components/ui/Pagination";
+import { TableSkeleton } from "@/components/ui/Table";
 import {
   AssignmentStatusBadge,
   PercentText,
@@ -48,7 +49,21 @@ import {
   TargetStatusBadge,
   scopeParams,
 } from "@/components/tracker/TrackerBits";
-import { formatDateTime, formatDay, FOUNDATION_REPAIR_LABEL, isFoundationRepair, plural, scopeLabel, scopeShort, studentClassLabel } from "@/lib/tracker";
+import {
+  formatDateTime,
+  formatDay,
+  FOUNDATION_REPAIR_LABEL,
+  isFoundationRepair,
+  isSelfPractice,
+  plural,
+  scopeLabel,
+  scopeShort,
+  SELF_PRACTICE_LABEL,
+  studentClassLabel,
+} from "@/lib/tracker";
+import { SkillMap } from "@/components/progress/SkillMap";
+import { percentText } from "@/lib/progress";
+import type { ProgressPayload } from "@/types/progress";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { StudentHistoryItem, StudentHistoryPage, TrackerOverview } from "@/types/tracker";
 
@@ -83,8 +98,9 @@ function HistoryCard({
               {[
                 scopeShort(a),
                 isFoundationRepair(a.reason) ? FOUNDATION_REPAIR_LABEL : null,
+                isSelfPractice(a.reason) ? SELF_PRACTICE_LABEL : null,
                 a.activityType ? ACTIVITY_TYPE_LABEL[a.activityType] : null,
-                a.createdAt ? `Set ${formatDay(a.createdAt)}` : null,
+                a.createdAt ? `${isSelfPractice(a.reason) ? "Started by the student" : "Set"} ${formatDay(a.createdAt)}` : null,
                 a.dueDate ? `Due ${formatDay(a.dueDate)}` : null,
               ]
                 .filter(Boolean)
@@ -189,6 +205,12 @@ function StudentWorkspace() {
     { action: "load your sections", enabled: ready && Boolean(scope) },
   );
   const scopeSection = overview.data?.sections.find((s) => s.key === scope) ?? null;
+  // #184: the student's skill map, from the practice this teacher can read.
+  const skills = useApiQuery<ProgressPayload>(
+    `/learning/tracker/students/${studentId}/skills`,
+    {},
+    { action: "load this student's skills", enabled: ready },
+  );
 
   const [grantingId, setGrantingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: "error" | "success"; message: string } | null>(null);
@@ -333,6 +355,32 @@ function StudentWorkspace() {
         ) : null}
 
         {notice ? <AlertBanner tone={notice.tone} message={notice.message} /> : null}
+
+        <section aria-labelledby="skills-heading" className="space-y-4">
+          <div>
+            <h2 id="skills-heading" className="font-display text-display-sm text-content">
+              Skills
+            </h2>
+            <p className="mt-1 text-sm text-content-muted">
+              {skills.data
+                ? skills.data.summary.overallPercent === null
+                  ? "Each question's latest marked answer counts. Nothing marked yet."
+                  : `Each question's latest marked answer counts. Overall ${percentText(skills.data.summary.overallPercent)}; ${skills.data.summary.needsWork} needing work, ${skills.data.summary.gettingThere} getting there, ${skills.data.summary.strong} strong.`
+                : "Each question's latest marked answer counts."}
+            </p>
+          </div>
+          {skills.problem ? (
+            <LoadError problem={skills.problem} onRetry={skills.reload} />
+          ) : skills.data && skills.data.student.id === studentId ? (
+            <SkillMap
+              chapters={skills.data.chapters}
+              summary={skills.data.summary}
+              emptyText="This student's skills appear here once their school's chapters are set up."
+            />
+          ) : (
+            <TableSkeleton label="Loading this student's skills" rows={3} />
+          )}
+        </section>
 
         {data ? (
           data.total === 0 ? (

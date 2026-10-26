@@ -64,7 +64,7 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
-from app.services import learning_service, practice_access_service
+from app.services import learning_service, practice_access_service, progress_service
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
 
@@ -294,6 +294,12 @@ def _student_basics(student: Student) -> dict:
     }
 
 
+# #184: practice a student started themselves from My Progress. It shows in
+# that student's history (marked), Needs Review and Method Marks, never in the
+# assignment list, the headline counts or the per-student numbers.
+_TEACHER_SET = Assignment.reason != progress_service.SELF_PRACTICE
+
+
 # --- overview -----------------------------------------------------------------
 
 
@@ -337,7 +343,8 @@ def tracker_overview(viewer: Viewer = Depends(_viewer), db: Session = Depends(ge
 
         sections = sorted(grouped.values(), key=sort_key)
 
-    readable = practice_access_service.readable_assignments_clause(viewer)
+    # #184: a student's own practice is not an assignment the teacher set.
+    readable = and_(practice_access_service.readable_assignments_clause(viewer), _TEACHER_SET)
     assignment_count = db.query(func.count(Assignment.id)).filter(readable).scalar() or 0
     active_count = (
         db.query(func.count(Assignment.id)).filter(readable, Assignment.status == "ACTIVE").scalar() or 0
@@ -398,7 +405,7 @@ def list_tracker_assignments(
         db.query(Assignment)
         .join(LearningActivity, LearningActivity.id == Assignment.learning_activity_id)
         .options(*_assignment_load_options())
-        .filter(practice_access_service.readable_assignments_clause(viewer))
+        .filter(practice_access_service.readable_assignments_clause(viewer), _TEACHER_SET)
     )
     query = _apply_scope_filters(query, classLevelId, section, boardCourseId)
     if status:
@@ -526,7 +533,7 @@ def _student_stats(db: Session, viewer: Viewer, student_ids: list[str], scope_cl
     }
     if not student_ids:
         return stats
-    visible_targets = (
+    every_visible_target = (
         db.query(AssignmentTarget.id)
         .join(Assignment, Assignment.id == AssignmentTarget.assignment_id)
         .filter(
@@ -535,6 +542,10 @@ def _student_stats(db: Session, viewer: Viewer, student_ids: list[str], scope_cl
             scope_clause,
         )
     )
+    # #184: assigned, completed and the average are about practice the
+    # teacher set; what is waiting for marks (and when something was last
+    # handed in) includes the student's own practice, as Needs Review does.
+    visible_targets = every_visible_target.filter(_TEACHER_SET)
     target_in_scope = AssignmentTarget.id.in_(visible_targets)
 
     for student_id, assigned, completed in (
@@ -558,7 +569,7 @@ def _student_stats(db: Session, viewer: Viewer, student_ids: list[str], scope_cl
         )
         .join(Attempt, Attempt.assignment_target_id == AssignmentTarget.id)
         .outerjoin(Evaluation, Evaluation.attempt_id == Attempt.id)
-        .filter(target_in_scope)
+        .filter(AssignmentTarget.id.in_(every_visible_target))
         .group_by(AssignmentTarget.student_id)
         .all()
     ):
@@ -688,6 +699,19 @@ def get_tracker_student(
         )
     stats = _student_stats(db, viewer, [student.id], scope_clause)[student.id]
     return page_envelope(items, total, params, student={**_student_basics(student), "stats": stats})
+
+
+@router.get("/students/{student_id}/skills")
+def get_tracker_student_skills(student_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    """#184: the student's skill map, as on their My Progress page, from the
+    answers on assignments this viewer can read."""
+    student = practice_access_service.require_visible_student(db, viewer, student_id)
+    return progress_service.progress_payload(
+        db,
+        student,
+        assignment_clause=practice_access_service.readable_assignments_clause(viewer),
+        for_student=False,
+    )
 
 
 # --- review queue -----------------------------------------------------------------

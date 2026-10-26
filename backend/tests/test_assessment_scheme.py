@@ -756,3 +756,23 @@ def test_a_teacher_from_an_earlier_year_sees_nothing_of_this_one(client, db_sess
     window.end_date = w["year"].start_date + timedelta(days=30)
     db_session.commit()
     assert teacher.get(f"/api/assessment/schemes/{scheme.id}/results", params={"section": "A"}).status_code == 200
+
+
+_CH["AS40"] = 140
+
+
+def test_self_practice_never_counts_in_platform_marks(db_session):
+    """#184: a set a student opened themselves from My Progress is not one a
+    teacher gave, so it neither counts nor makes a component missing."""
+    w = _world(db_session, "AS40")
+    b1 = w["students"]["B1"]
+    own = learning_service.create_assignment(
+        db_session, school=w["school"], learning_activity=w["activity"], assigned_by_user_id=b1.user_id,
+        student_ids=[b1.id], reason="SELF_PRACTICE",
+    )
+    _submit(db_session, w, b1, own, q1="A", q2="5")
+    scheme = _published(
+        db_session, w, [_component("Practice", "10", "100", source="PLATFORM", activity_ids=[w["activity"].id])]
+    )
+    r = _result(db_session, scheme, b1)
+    assert (r.components[0].status, r.provisional, r.shown) == ("EXEMPT", False, None)
