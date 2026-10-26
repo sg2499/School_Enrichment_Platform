@@ -7,6 +7,7 @@ import {
   BarChart3,
   BookOpen,
   Calculator,
+  CalendarCheck,
   CalendarDays,
   ChevronRight,
   ClipboardCheck,
@@ -130,6 +131,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "My Progress", icon: TrendingUp, href: "/student/progress" },
         { label: "Report Card", icon: ScrollText, href: "/student/report-card" },
+        // #187: the weekly pages the school has issued.
+        { label: "Weekly Report", icon: CalendarCheck, href: "/student/weekly-report" },
       ],
     },
   ],
@@ -151,6 +154,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         { label: "Marks & Results", icon: Calculator, href: "/teacher/marks" },
         // #188: attendance, co-scholastic grades and remarks, and the cards.
         { label: "Report Cards", icon: ScrollText, href: "/teacher/report-cards" },
+        // #187: each child's week for the parents, issued per section.
+        { label: "Weekly Reports", icon: CalendarCheck, href: "/teacher/weekly-reports" },
       ],
     },
     {
@@ -184,6 +189,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Operations",
       items: [
         { label: "Report Cards", icon: ScrollText, href: "/admin/report-cards" },
+        // #187: any section's weekly parent reports.
+        { label: "Weekly Reports", icon: CalendarCheck, href: "/admin/weekly-reports" },
         // #186: any section's grid and misconception report.
         { label: "Class Analytics", icon: BarChart3, href: "/admin/analytics" },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },

@@ -35,4 +35,5 @@ from app.models.learning import (  # noqa: F401
 )
 from app.models.models import AuditLog, School, SchoolAdmin, Student, Teacher, User, UserSession  # noqa: F401
 from app.models.report_card import ReportCard, ReportCardIssue, ReportSettings, StudentTermRecord  # noqa: F401
+from app.models.weekly_report import WeeklyReport, WeeklyReportIssue, WeeklyReportNote  # noqa: F401
 from app.models.teacher_assignment import TeacherSectionAssignment  # noqa: F401

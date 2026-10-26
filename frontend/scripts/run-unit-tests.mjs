@@ -57,6 +57,7 @@ const UNITS = [
   "lib/reportCards.ts",
   "lib/progress.ts",
   "lib/analytics.ts",
+  "lib/weeklyReports.ts",
 ];
 
 /**

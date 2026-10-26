@@ -31,6 +31,7 @@ from app.api.routes_platform import router as platform_router
 from app.api.routes_practice_tracker import router as practice_tracker_router
 from app.api.routes_analytics import router as analytics_router
 from app.api.routes_report_cards import router as report_cards_router
+from app.api.routes_weekly_reports import router as weekly_reports_router
 from app.api.routes_roster import router as roster_router
 from app.api.routes_teacher_assignments import router as teacher_assignments_router
 from app.core.brand import PRODUCT_NAME
@@ -189,4 +190,5 @@ app.include_router(practice_tracker_router)
 app.include_router(teacher_assignments_router)
 app.include_router(assessment_router)
 app.include_router(report_cards_router)
+app.include_router(weekly_reports_router)
 app.include_router(analytics_router)
