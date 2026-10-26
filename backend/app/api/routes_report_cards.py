@@ -45,6 +45,7 @@ from app.services.assessment_service import SCHOOL_TIMEZONE, SchemeError
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
 from app.services.report_card_service import IssueBlocked
+from app.services.school_logo_service import logo_bytes, with_logo
 
 router = APIRouter(prefix="/api/report-cards", tags=["report-cards"])
 
@@ -506,7 +507,7 @@ def issue_pdf(issue_id: str, viewer: Viewer = Depends(_viewer), db: Session = De
         issued.class_level.display_name, issued.section, service.TERM_LABEL[issued.card_term], "Report-Cards",
         issued.academic_year.label if issued.academic_year else "",
     )
-    return _pdf(report_card_pdf.render(cards), name)
+    return _pdf(report_card_pdf.render(cards, logo_bytes(db, issued.school_id)), name)
 
 
 def _load_card_for_staff(db: Session, viewer: Viewer, card_id: str) -> ReportCard:
@@ -520,14 +521,17 @@ def _load_card_for_staff(db: Session, viewer: Viewer, card_id: str) -> ReportCar
 @router.get("/cards/{card_id}")
 def get_card(card_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
     card = _load_card_for_staff(db, viewer, card_id)
-    return {"id": card.id, "issueStatus": card.issue.status, "card": service.card_data(card)}
+    return {"id": card.id, "issueStatus": card.issue.status, "card": with_logo(db, service.card_data(card), card.school_id)}
 
 
 @router.get("/cards/{card_id}/pdf")
 def card_pdf(card_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
     card = _load_card_for_staff(db, viewer, card_id)
     data = service.card_data(card)
-    return _pdf(report_card_pdf.render([data]), _file_name(data["student"]["code"], data["title"], data["year"]))
+    return _pdf(
+        report_card_pdf.render([data], logo_bytes(db, card.school_id)),
+        _file_name(data["student"]["code"], data["title"], data["year"]),
+    )
 
 
 # --- the student's own -------------------------------------------------------------------
@@ -559,11 +563,14 @@ def my_cards(student: Student = Depends(get_current_student), db: Session = Depe
 @router.get("/mine/{card_id}")
 def my_card(card_id: str, student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
     card = _student_card(db, student, card_id)
-    return {"id": card.id, "issueStatus": card.issue.status, "card": service.card_data(card)}
+    return {"id": card.id, "issueStatus": card.issue.status, "card": with_logo(db, service.card_data(card), card.school_id)}
 
 
 @router.get("/mine/{card_id}/pdf")
 def my_card_pdf(card_id: str, student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
     card = _student_card(db, student, card_id)
     data = service.card_data(card)
-    return _pdf(report_card_pdf.render([data]), _file_name(data["student"]["code"], data["title"], data["year"]))
+    return _pdf(
+        report_card_pdf.render([data], logo_bytes(db, card.school_id)),
+        _file_name(data["student"]["code"], data["title"], data["year"]),
+    )

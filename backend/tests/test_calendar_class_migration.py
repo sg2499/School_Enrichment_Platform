@@ -6,7 +6,9 @@ way test_totp_encryption.py tests its own data migration: the rows are put
 in as the old map form stored them, at the revision before, and the
 migration is then applied.
 """
+import uuid
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from alembic.config import Config
@@ -22,7 +24,6 @@ from app.models import (
     ClassLevel,
     CurriculumVersion,
     Discipline,
-    School,
     SchoolCurriculumMap,
     SubjectGroup,
 )
@@ -69,9 +70,14 @@ def _seed(engine) -> dict[str, str]:
             )
             db.add(chapter)
             chapters.append(chapter)
-        school_a = School(name="School A", board="CBSE", city="Bengaluru")
-        school_b = School(name="School B", board="CBSE", city="Pune")
-        db.add_all([school_a, school_b])
+        # Written with the columns the schools table had at that revision: the
+        # model has grown since (the logo, #202), and this database hasn't.
+        school_a, school_b = SimpleNamespace(id=str(uuid.uuid4())), SimpleNamespace(id=str(uuid.uuid4()))
+        for school, name, city in ((school_a, "School A", "Bengaluru"), (school_b, "School B", "Pune")):
+            db.execute(
+                text("INSERT INTO schools (id, name, board, city, is_active) VALUES (:id, :name, 'CBSE', :city, :active)"),
+                {"id": school.id, "name": name, "city": city, "active": True},
+            )
         db.flush()
 
         def entry(school, chapter, class_name, start=None):

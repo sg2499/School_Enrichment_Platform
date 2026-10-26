@@ -24,6 +24,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
@@ -41,6 +42,7 @@ from reportlab.platypus import (
 
 from app.core.brand import PRODUCT_NAME
 from app.services.report_card_pdf import _day
+from app.services.school_logo_service import readable_logo
 
 # --- type ----------------------------------------------------------------------------------
 
@@ -123,7 +125,7 @@ S_SET = _style("wr-set", fontName=SANS_SEMI, fontSize=9, leading=12, textColor=I
 S_SET_SUB = _style("wr-setsub", fontSize=7.5, leading=10, textColor=MUTED)
 S_CELL = _style("wr-cell", fontSize=8.5, leading=11, textColor=BODY)
 S_CELL_R = _style("wr-cellr", fontName=SANS_SEMI, fontSize=9, leading=11, textColor=INK, alignment=TA_RIGHT)
-S_VALUE = _style("wr-value", fontName=SANS_SEMI, fontSize=10, leading=13, textColor=INK)
+S_NAME = _style("wr-name", fontName=SANS_SEMI, fontSize=10, leading=12.5, textColor=INK)
 S_NOTE = _style("wr-note", fontName=SERIF_ITALIC, fontSize=10.2, leading=14, textColor=INK)
 S_EMPTY = _style("wr-empty", fontSize=8.5, leading=12, textColor=MUTED, alignment=TA_CENTER)
 S_SMALL = _style("wr-small", fontSize=7.2, leading=10, textColor=MUTED)
@@ -234,6 +236,40 @@ class Label(Flowable):
             _spaced(self.canv, self.width, 1.4, self.text, SANS_BOLD, self.size, self.spacing, right=True)
         else:
             _spaced(self.canv, 0, 1.4, self.text, SANS_BOLD, self.size, self.spacing)
+
+
+class FitText(Flowable):
+    """One line of text that shrinks to fit its box, so a long code never
+    breaks mid-way. One too long even at the floor size goes on two lines,
+    split after the hyphen nearest the middle (codes are hyphenated)."""
+
+    def __init__(self, text: str, *, font: str, size: float, color=INK, smallest: float = 8.5):
+        super().__init__()
+        self.text = str(text if text is not None else "")
+        self.font = font
+        self.size = size
+        self.color = color
+        self.smallest = smallest
+
+    def wrap(self, aw, ah):
+        self.width = aw
+        self.lines = [self.text]
+        self.font_size = _fit(self.text, self.font, self.size, aw, self.smallest)
+        if pdfmetrics.stringWidth(self.text, self.font, self.font_size) > aw and "-" in self.text:
+            cuts = [i for i, ch in enumerate(self.text) if ch == "-"]
+            cut = min(cuts, key=lambda i: abs(i - len(self.text) / 2))
+            self.lines = [self.text[: cut + 1], self.text[cut + 1 :]]
+            self.font_size = _fit(max(self.lines, key=len), self.font, self.size, aw, self.smallest)
+        self.leading = self.font_size * 1.25
+        self.height = self.leading * len(self.lines) + 1
+        return aw, self.height
+
+    def draw(self):
+        self.canv.setFillColor(self.color)
+        self.canv.setFont(self.font, self.font_size)
+        for i, line in enumerate(self.lines):
+            y = self.height - (i + 1) * self.leading + self.font_size * 0.25 + 1
+            self.canv.drawString(0, y, _clip(line, self.font, self.font_size, self.width))
 
 
 class Card(Flowable):
@@ -456,15 +492,17 @@ class Signatures(Flowable):
 class PageMark(Flowable):
     """Zero-size: tells the page decorations whose page this is."""
 
-    def __init__(self, page: dict):
+    def __init__(self, page: dict, logo=None):
         super().__init__()
         self.page = page
+        self.logo = logo
 
     def wrap(self, aw, ah):
         return 0, 0
 
     def draw(self):
         self.canv._wr_page = self.page
+        self.canv._wr_logo = self.logo
         self.canv._wr_index = 1
 
 
@@ -516,6 +554,30 @@ def _score(row: dict) -> str:
 # --- the page decorations -----------------------------------------------------------------
 
 
+def _draw_logo(c, logo: ImageReader, left: float, mid: float) -> float:
+    """Draws the school's logo on a white tile with a gold edge, vertically
+    centred on `mid`: square for a square or round logo, wider for a wide
+    one. Returns the tile's right edge."""
+    width, height = logo.getSize()
+    aspect = width / height if height else 1
+    tile_h = 23 * mm
+    pad = 2.4 * mm
+    tile_w = min(max(tile_h, (tile_h - 2 * pad) * aspect + 2 * pad), 54 * mm)
+    c.saveState()
+    c.setFillColor(WHITE)
+    c.setStrokeColor(GOLD)
+    c.setLineWidth(1.2)
+    c.roundRect(left, mid - tile_h / 2, tile_w, tile_h, 8, stroke=1, fill=1)
+    box_w, box_h = tile_w - 2 * pad, tile_h - 2 * pad
+    if box_w / box_h > aspect:
+        box_w = box_h * aspect
+    else:
+        box_h = box_w / aspect
+    c.drawImage(logo, left + (tile_w - box_w) / 2, mid - box_h / 2, box_w, box_h, mask="auto")
+    c.restoreState()
+    return left + tile_w
+
+
 def _band(c, page: dict) -> None:
     top = PAGE_H
     y0 = top - BAND_H
@@ -539,20 +601,27 @@ def _band(c, page: dict) -> None:
 
     school = page["school"]
     mid = y0 + BAND_H / 2 + 0.8
-    # The crest: the school's initials in a gold-ringed seal.
-    r = 11.5 * mm
-    cx = MARGIN + r
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(1.4)
-    c.setFillColor(BRAND)
-    c.circle(cx, mid, r, stroke=1, fill=1)
-    c.setLineWidth(0.5)
-    c.circle(cx, mid, r - 2.4, stroke=1, fill=0)
-    initials = _initials(school["name"])
-    size = _fit(initials, SERIF, 17, 2 * r - 10, 10)
-    c.setFillColor(WHITE)
-    c.setFont(SERIF, size)
-    c.drawCentredString(cx, mid - size * 0.34, initials)
+    logo = getattr(c, "_wr_logo", None)
+    if logo is not None:
+        # The school's own logo (#202) on a white tile: round for a square
+        # logo, a rounded panel for a wide one.
+        crest_right = _draw_logo(c, logo, MARGIN, mid)
+    else:
+        # No logo yet: the school's initials in a gold-ringed seal.
+        r = 11.5 * mm
+        cx = MARGIN + r
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(1.4)
+        c.setFillColor(BRAND)
+        c.circle(cx, mid, r, stroke=1, fill=1)
+        c.setLineWidth(0.5)
+        c.circle(cx, mid, r - 2.4, stroke=1, fill=0)
+        initials = _initials(school["name"])
+        size = _fit(initials, SERIF, 17, 2 * r - 10, 10)
+        c.setFillColor(WHITE)
+        c.setFont(SERIF, size)
+        c.drawCentredString(cx, mid - size * 0.34, initials)
+        crest_right = cx + r
 
     # Right: what the page is, and the week.
     right = PAGE_W - MARGIN
@@ -568,17 +637,34 @@ def _band(c, page: dict) -> None:
     right_w = max(label_w, pdfmetrics.stringWidth(week, SERIF, 15))
 
     # Left: the school's name and place.
-    x = cx + r + 5 * mm
+    x = crest_right + 5 * mm
     room = right - right_w - 10 * mm - x
     name = school["name"]
-    size = _fit(name, SERIF, 19, room, 12)
+    size = _fit(name, SERIF, 19, room, 13)
+    lines = [name]
+    if pdfmetrics.stringWidth(name, SERIF, size) > room:
+        # A long name goes on two lines, split where the halves are most even.
+        words = name.split()
+        best = None
+        for i in range(1, len(words)):
+            a, b = " ".join(words[:i]), " ".join(words[i:])
+            widest = max(pdfmetrics.stringWidth(a, SERIF, 15), pdfmetrics.stringWidth(b, SERIF, 15))
+            if best is None or widest < best[0]:
+                best = (widest, [a, b])
+        lines = best[1] if best else [name]
+        size = _fit(max(lines, key=lambda s: pdfmetrics.stringWidth(s, SERIF, 15)), SERIF, 15, room, 11)
+    leading = size * 1.15
+    city = school.get("city")
+    block = leading * (len(lines) - 1) + size * 0.7 + (13 if city else 0)
+    top_line = mid + block / 2 - size * 0.7
     c.setFillColor(WHITE)
     c.setFont(SERIF, size)
-    c.drawString(x, mid + 1, _clip(name, SERIF, size, room))
-    if school.get("city"):
+    for i, line in enumerate(lines):
+        c.drawString(x, top_line - i * leading, _clip(line, SERIF, size, room))
+    if city:
         c.setFillColor(BRAND_SOFT)
         c.setFont(SANS_MEDIUM, 8.4)
-        c.drawString(x, mid - 12, _clip(school["city"], SANS_MEDIUM, 8.4, room))
+        c.drawString(x, top_line - (len(lines) - 1) * leading - 13, _clip(city, SANS_MEDIUM, 8.4, room))
     c.restoreState()
 
 
@@ -651,7 +737,11 @@ def _details(page: dict) -> Table:
         ("Issued On", _day(page.get("issuedAt")) if page.get("issuedAt") else "Not yet issued"),
     ]
     widths = [CONTENT_W * f for f in (0.32, 0.21, 0.24, 0.23)]
-    row = [[Label(label), Spacer(1, 3), _p(value, S_VALUE)] for label, value in cells]
+    # A name wraps between words, never cut short; a code (no spaces) shrinks to fit.
+    row = [
+        [Label(label), Spacer(1, 3), _p(value, S_NAME) if label == "Student" else FitText(value, font=SANS_SEMI, size=10)]
+        for label, value in cells
+    ]
     table = Table([row], colWidths=widths, cornerRadii=[7, 7, 7, 7])
     table.setStyle(
         TableStyle(
@@ -780,8 +870,8 @@ def _notes(page: dict) -> list:
     return [Card(items, background=TINT, border=None, accent=GOLD, gap=1.6 * mm, pad=4.2 * mm)]
 
 
-def _page_story(page: dict) -> list:
-    story: list = [PageMark(page), _details(page)]
+def _page_story(page: dict, logo=None) -> list:
+    story: list = [PageMark(page, logo), _details(page)]
     story += [SectionHeading("The Week at a Glance")] + _glance(page)
     story += [SectionHeading("This Week's Practice")] + _practice(page)
     story += [KeepTogether([SectionHeading("Skills")] + _skills(page))]
@@ -789,24 +879,37 @@ def _page_story(page: dict) -> list:
     return story
 
 
-def _pages_needed(page: dict) -> int:
+def _pages_needed(page: dict, logo: ImageReader | None = None) -> int:
     """How many sheets one child's page takes (a long week runs over), so
     the signatures go on the last and the footer can say "Page 1 of 2"."""
     probe = {**page, "_pages": 1}
-    _build([probe], BytesIO())
+    _build([probe], BytesIO(), logo)
     return max(1, probe.get("_counted", 1))
 
 
-def render(pages: list[dict]) -> bytes:
+def _logo_reader(logo: bytes | None) -> ImageReader | None:
+    """The logo, fully decoded first: a damaged one is left out, never a
+    failed PDF (#202 review)."""
+    logo = readable_logo(logo)
+    if not logo:
+        return None
+    try:
+        return ImageReader(BytesIO(logo))
+    except Exception:  # noqa: BLE001 - a bad logo must not stop the report
+        return None
+
+
+def render(pages: list[dict], logo: bytes | None = None) -> bytes:
     """One PDF holding the given pages, one child per sheet (or more, for a
     long week)."""
-    pages = [{**p, "_pages": _pages_needed(p)} for p in pages]
+    reader = _logo_reader(logo)
+    pages = [{**p, "_pages": _pages_needed(p, reader)} for p in pages]
     buffer = BytesIO()
-    _build(pages, buffer)
+    _build(pages, buffer, reader)
     return buffer.getvalue()
 
 
-def _build(pages: list[dict], buffer: BytesIO) -> None:
+def _build(pages: list[dict], buffer: BytesIO, logo: ImageReader | None = None) -> None:
     doc = BaseDocTemplate(
         buffer,
         pagesize=A4,
@@ -826,7 +929,7 @@ def _build(pages: list[dict], buffer: BytesIO) -> None:
     for index, page in enumerate(pages):
         if index:
             story.append(PageBreak())
-        story += _page_story(page)
+        story += _page_story(page, logo)
     if not story:
         story.append(_p("No reports.", S_BODY))
     doc.build(story)

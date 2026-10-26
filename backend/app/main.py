@@ -20,8 +20,10 @@ import logging
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.api.routes_analytics import router as analytics_router
 from app.api.routes_assessment import router as assessment_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_curriculum_admin import router as curriculum_admin_router
@@ -29,11 +31,11 @@ from app.api.routes_health import router as health_router
 from app.api.routes_learning import router as learning_router
 from app.api.routes_platform import router as platform_router
 from app.api.routes_practice_tracker import router as practice_tracker_router
-from app.api.routes_analytics import router as analytics_router
 from app.api.routes_report_cards import router as report_cards_router
-from app.api.routes_weekly_reports import router as weekly_reports_router
 from app.api.routes_roster import router as roster_router
+from app.api.routes_school_logo import router as school_logo_router
 from app.api.routes_teacher_assignments import router as teacher_assignments_router
+from app.api.routes_weekly_reports import router as weekly_reports_router
 from app.core.brand import PRODUCT_NAME
 from app.core.config import FRONTEND_URL, IS_PRODUCTION, SENTRY_DSN
 from app.core.error_handling import (
@@ -173,6 +175,27 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
+# Uploads (#202 review): a request body is read in full before any route,
+# sign-in check or rate limit runs, so an oversized one is refused here from
+# its declared length, before it is read. The routes' own limits are lower.
+# (The profile-photo upload keeps its own answer for now: its tests and
+# its copy expect the route's 2 MB message.)
+_UPLOAD_PATHS = ("/api/school-settings/logo",)
+_UPLOAD_MAX_BYTES = 4_000_000
+
+
+@app.middleware("http")
+async def refuse_oversized_uploads(request: Request, call_next):
+    if request.method in ("POST", "PUT") and request.url.path in _UPLOAD_PATHS:
+        declared = request.headers.get("content-length")
+        if declared is not None and (not declared.isdigit() or int(declared) > _UPLOAD_MAX_BYTES):
+            return JSONResponse(
+                status_code=413,
+                content={"detail": {"code": "PAYLOAD_TOO_LARGE", "message": "That file is too large to upload. Please choose one under 3 MB.", "details": {}}},
+            )
+    return await call_next(request)
+
+
 # Added last so it is the outermost of this app's middleware: a response
 # produced by any layer inside it -- a CORS preflight, a rate limit answered
 # by SlowAPIMiddleware before the route ever runs -- still leaves with its
@@ -191,4 +214,5 @@ app.include_router(teacher_assignments_router)
 app.include_router(assessment_router)
 app.include_router(report_cards_router)
 app.include_router(weekly_reports_router)
+app.include_router(school_logo_router)
 app.include_router(analytics_router)
