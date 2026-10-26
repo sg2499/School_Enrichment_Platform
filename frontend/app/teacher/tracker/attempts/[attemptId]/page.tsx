@@ -512,7 +512,8 @@ function AnswerCard({
         ) : null}
 
         {answer.teacherNote ? (
-          <p className="rounded-2xl bg-surface-accent px-3.5 py-3 text-sm leading-relaxed text-content-muted ring-1 ring-inset ring-saffron-200">
+          // whitespace-pre-line: the written-answer guides give one mark per line.
+          <p className="whitespace-pre-line rounded-2xl bg-surface-accent px-3.5 py-3 text-sm leading-relaxed text-content-muted ring-1 ring-inset ring-saffron-200">
             <span className="font-semibold text-saffron-900">Marking Guidance: </span>
             {answer.teacherNote}
           </p>

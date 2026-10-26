@@ -419,3 +419,36 @@ class Question(Base):
     concept_lesson = relationship("ConceptLesson")
 
     __table_args__ = (UniqueConstraint("code", name="uq_question_code"),)
+
+
+MISCONCEPTION_REVIEW_STATUSES = ("APPROVED", "REJECTED")
+
+
+class MisconceptionReview(Base):
+    """Ashalatha's review of one skill's misconception note (Q14, 26 Oct 2026).
+
+    The chapter workbooks give every question a misconception note in their
+    own words. Before a note appears on a teacher's Class Analytics it must
+    be reviewed for accuracy, neutral language and a next step: a note with
+    no APPROVED review here is not shown, only counted as waiting for review.
+
+    tag_key is the reviewed note's key (analytics_service.tag_key), so the
+    review stays tied to the note she read: if a re-import ever changes a
+    question's note, the new note waits for review again. shown_note is the
+    wording teachers see (hers, which may differ from the workbook's), and
+    next_step what she suggests the teacher does. Written by
+    scripts/apply_misconception_reviews.py from her reviewed sheet.
+    """
+    __tablename__ = "misconception_reviews"
+    id = Column(String, primary_key=True, default=uuid_str)
+    concept_lesson_id = Column(String, ForeignKey("concept_lessons.id", ondelete="CASCADE"), nullable=False, index=True)
+    tag_key = Column(Text, nullable=False)
+    status = Column(String(20), nullable=False)  # MISCONCEPTION_REVIEW_STATUSES
+    shown_note = Column(Text, nullable=True)
+    next_step = Column(Text, nullable=True)
+    reviewed_by = Column(String(120), nullable=True)
+    workbook_sha256 = Column(String(64), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint("concept_lesson_id", "tag_key", name="uq_misconception_review"),)
