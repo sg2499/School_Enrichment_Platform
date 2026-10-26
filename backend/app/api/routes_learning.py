@@ -72,6 +72,7 @@ from app.services import (
     foundation_repair_service,
     learning_service,
     practice_access_service,
+    progress_service,
     teacher_assignment_service,
 )
 from app.services.audit_service import log_audit_event
@@ -269,6 +270,9 @@ def create_assignment(
     # isn't. The Assign form never offers them.
     if payload.reason in FOUNDATION_REPAIR_REASONS:
         api_error(422, "VALIDATION_ERROR", "Foundation Repair practice is set from a student's recommendation, not from here.")
+    # #184: a student starts their own practice from My Progress.
+    if payload.reason == "SELF_PRACTICE":
+        api_error(422, "VALIDATION_ERROR", "Self-practice is started by a student from My Progress, not from here.")
 
     if user.role == "TEACHER":
         teacher = db.query(Teacher).filter(Teacher.user_id == user.id).first()
@@ -512,6 +516,10 @@ def list_assignments(
             # attempt on any non-ACTIVE assignment (ASSIGNMENT_CLOSED).
             if assignment.status == "CANCELLED":
                 continue
+            # #184: a student's own practice lives on My Progress, not in the
+            # list of sets their teacher assigned.
+            if assignment.reason == "SELF_PRACTICE":
+                continue
             activity = assignment.learning_activity
             results.append(
                 {
@@ -541,7 +549,8 @@ def list_assignments(
         assignments = db.query(Assignment).filter(Assignment.assigned_by_user_id == user.id).all()
     else:
         school = _resolve_school(db, user, None) if user.role == "ADMIN" else None
-        q = db.query(Assignment)
+        # #184: a student's own practice is not an assignment anyone set.
+        q = db.query(Assignment).filter(Assignment.reason != "SELF_PRACTICE")
         if school is not None:
             q = q.filter(Assignment.school_id == school.id)
         assignments = q.all()
@@ -703,6 +712,7 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
         "status": attempt.status,
         "startedAt": attempt.started_at.isoformat() if attempt.started_at else None,
         "activity": _activity_dict(activity),
+        "selfPractice": attempt.assignment_target.assignment.reason == "SELF_PRACTICE",
         "questions": [
             {**_question_public_dict(q), "responseText": saved.get(q.id), "workingText": saved_working.get(q.id)}
             for q in questions
@@ -890,6 +900,9 @@ def get_attempt_result(
     # titled with it; opened from the list, it had only "Your Result" until
     # a second request (the whole list) had come back.
     result["activity"] = _activity_dict(attempt.assignment_target.assignment.learning_activity)
+    # #184: practice the student chose themselves; the page leads back to My
+    # Progress instead of Daily Practice.
+    result["selfPractice"] = attempt.assignment_target.assignment.reason == "SELF_PRACTICE"
     # 30 Sep 2026: the result page decides whether to offer "Try Again" and
     # shows "attempt X of Y", but had nothing to compute that from except
     # attemptNumber -- so it guessed against max_attempts alone, ignoring
@@ -1007,6 +1020,39 @@ def _recommendation_dict(rec) -> dict:
         "recommendedActivity": _activity_dict(rec.recommended_activity) if rec.recommended_activity else None,
         "explanation": rec.explanation,
     }
+
+
+# --- My Progress (#184, 26 Oct 2026) -----------------------------------------
+
+
+@router.get("/my-progress")
+@limiter.limit("60/minute")
+def my_progress(
+    request: Request,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """The student's own skill map, what to practise next, and the practice
+    they started themselves (progress_service)."""
+    return progress_service.progress_payload(db, student, for_student=True)
+
+
+class SelfPracticeRequest(BaseModel):
+    learningActivityId: str = Field(min_length=1, max_length=64)
+
+
+@router.post("/self-practice")
+@limiter.limit("20/minute")
+def start_self_practice(
+    request: Request,
+    payload: SelfPracticeRequest,
+    student: Student = Depends(get_current_student),
+    db: Session = Depends(get_db),
+):
+    """Opens (or reuses) the student's own practice of a weak skill's Extra
+    Practice or Remediation set. The page then opens it like any set."""
+    target = progress_service.start_self_practice(db, student, payload.learningActivityId)
+    return {"assignmentTargetId": target.id}
 
 
 @router.get("/foundation-repair")

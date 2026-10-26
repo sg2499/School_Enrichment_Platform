@@ -128,7 +128,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
     {
       section: "Track",
       items: [
-        { label: "My Progress", icon: TrendingUp, soon: true },
+        { label: "My Progress", icon: TrendingUp, href: "/student/progress" },
         { label: "Report Card", icon: ScrollText, href: "/student/report-card" },
       ],
     },

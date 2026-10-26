@@ -118,6 +118,9 @@ ASSIGNMENT_REASONS = (
     "TEACHER_SELECTED",
     "RE_ATTEMPT",
     "ADMIN_APPROVED",
+    "SELF_PRACTICE",      # #184: a student's own practice on a weak skill
+                           # (progress_service.start_self_practice); never
+                           # counted in term marks
 )
 
 # The reasons only Foundation Repair sets (foundation_repair_service.

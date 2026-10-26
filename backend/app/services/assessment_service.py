@@ -791,6 +791,8 @@ def _platform_scores(
             Assignment.school_id == scheme.school_id,
             Assignment.learning_activity_id.in_(list(activity_to_components)),
             Assignment.status != "CANCELLED",
+            # #184: practice a student chose themselves never counts.
+            Assignment.reason != "SELF_PRACTICE",
             AssignmentTarget.student_id.in_(student_ids),
             # A student a teacher excused from a set (SKIPPED) is not
             # expected to do it, so it is left out like a set never given.

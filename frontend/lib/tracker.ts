@@ -15,6 +15,13 @@ export function isFoundationRepair(reason: AssignmentReason | null | undefined):
 
 export const FOUNDATION_REPAIR_LABEL = "Foundation Repair";
 
+/** #184: practice the student opened themselves from My Progress. */
+export function isSelfPractice(reason: AssignmentReason | null | undefined): boolean {
+  return reason === "SELF_PRACTICE";
+}
+
+export const SELF_PRACTICE_LABEL = "Self-Practice";
+
 /** "Class 5 · Section A · Mathematics", leaving out whatever isn't known.
  *  A whole-class assignment (no section) reads "Class 5 · All Sections". */
 export function scopeLabel(scope: Pick<SectionScope, "classLevelCode" | "section" | "boardCourseName" | "className">): string {

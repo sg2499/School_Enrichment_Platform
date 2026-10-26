@@ -38,7 +38,9 @@ export type AssignmentReason =
   | "MISSED_PRACTICE"
   | "TEACHER_SELECTED"
   | "RE_ATTEMPT"
-  | "ADMIN_APPROVED";
+  | "ADMIN_APPROVED"
+  // #184: a student's own practice from My Progress.
+  | "SELF_PRACTICE";
 
 export type Assignment = {
   id: string;
@@ -179,6 +181,9 @@ export type AttemptDetail = {
   status: AttemptStatus;
   startedAt: string | null;
   activity: LearningActivity;
+  // #184: practice the student opened themselves from My Progress; the
+  // page then leads back there. Optional for an older server.
+  selfPractice?: boolean;
   questions: AttemptQuestion[];
 };
 
@@ -233,6 +238,7 @@ export type AttemptResult = EvaluationResult & {
   // The set this is the result of (4 Oct 2026). Optional for the same
   // reason as the two fields above: an older server does not send it.
   activity?: LearningActivity;
+  selfPractice?: boolean;
   answers: AttemptAnswerResult[];
 };
 
