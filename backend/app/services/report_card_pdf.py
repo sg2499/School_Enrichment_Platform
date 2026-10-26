@@ -21,6 +21,8 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image as PdfImage
 from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.core.brand import PRODUCT_NAME
@@ -127,11 +129,33 @@ def _subject_block(subject: dict, width: float, year_end: bool) -> list:
     return [KeepTogether(block)]
 
 
-def _card_story(card: dict, width: float) -> list:
+def _logo_flowable(logo: bytes | None):
+    """The school's logo (#202), centred above its name: 16 mm tall, at most
+    55 mm wide. None when there is no logo or it can't be read."""
+    from app.services.school_logo_service import readable_logo  # decoded in full: a damaged logo is left out
+
+    logo = readable_logo(logo)
+    if not logo:
+        return None
+    try:
+        width, height = ImageReader(BytesIO(logo)).getSize()
+    except Exception:  # noqa: BLE001 - a bad logo must not stop the card
+        return None
+    h = 16 * mm
+    w = h * width / height if height else h
+    if w > 55 * mm:
+        w, h = 55 * mm, 55 * mm * height / width
+    image = PdfImage(BytesIO(logo), width=w, height=h, mask="auto")
+    image.hAlign = "CENTER"
+    return image
+
+
+def _card_story(card: dict, width: float, logo: bytes | None = None) -> list:
     year_end = card["cardTerm"] == "YEAR_END"
     student = card["student"]
     school = card["school"]
-    story: list = [
+    mark = _logo_flowable(logo)
+    story: list = ([mark, Spacer(1, 2.5 * mm)] if mark else []) + [
         Paragraph(escape(school["name"]), _SCHOOL),
         _p(school.get("city") or "", _CENTER),
         Spacer(1, 2 * mm),
@@ -207,7 +231,7 @@ def _card_story(card: dict, width: float) -> list:
     return story
 
 
-def render(cards: list[dict]) -> bytes:
+def render(cards: list[dict], logo: bytes | None = None) -> bytes:
     """One PDF holding the given cards, one per page (all the same term)."""
     year_end = bool(cards) and cards[0]["cardTerm"] == "YEAR_END"
     page = landscape(A4) if year_end else A4
@@ -228,7 +252,7 @@ def render(cards: list[dict]) -> bytes:
     for index, card in enumerate(cards):
         if index:
             story.append(PageBreak())
-        story += _card_story(card, width)
+        story += _card_story(card, width, logo)
     if not story:
         story.append(_p("No cards."))
     doc.build(story)

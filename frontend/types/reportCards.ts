@@ -110,7 +110,7 @@ export interface CardSubject {
 export interface ReportCardData {
   cardTerm: CardTerm;
   title: string;
-  school: { name: string; city: string | null };
+  school: { name: string; city: string | null; logoUrl?: string | null };
   year: string;
   student: { id: string; name: string; code: string; classLevel: string; section: string; dob: string | null };
   subjects: CardSubject[];

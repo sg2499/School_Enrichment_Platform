@@ -14,6 +14,9 @@ export type CurrentUser = {
   // A1 fix (30 Sep 2026 security/DPDP review) -- see useProtectedPage.ts's
   // allowWithoutPasswordChange for the redirect this drives.
   mustChangePassword?: boolean;
+  // #202: the address of the school's logo, for anyone who belongs to a
+  // school that has uploaded one (auth_service.user_payload).
+  schoolLogoUrl?: string | null;
   student?: {
     id: string;
     schoolId: string;

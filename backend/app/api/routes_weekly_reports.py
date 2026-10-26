@@ -30,6 +30,7 @@ from app.services import practice_access_service, report_card_service, weekly_re
 from app.services import weekly_report_service as service
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
+from app.services.school_logo_service import logo_bytes, with_logo
 from app.services.weekly_report_service import WeeklyError
 
 router = APIRouter(prefix="/api/weekly-reports", tags=["weekly-reports"])
@@ -214,7 +215,7 @@ def preview(
     if not students:
         _not_found("student")
     page = service.build(db, school=school, class_level=acc.class_level, section=acc.section, week_start=start, students=students)[0]
-    return {"report": page}
+    return {"report": with_logo(db, page, school.id)}
 
 
 class IssueBody(BaseModel):
@@ -312,7 +313,7 @@ def issue_pdf(issue_id: str, viewer: Viewer = Depends(_viewer), db: Session = De
         issued.class_level.display_name if issued.class_level else "", issued.section, "Weekly-Reports",
         issued.week_start.isoformat(),
     )
-    return _pdf(weekly_report_pdf.render(pages), name)
+    return _pdf(weekly_report_pdf.render(pages, logo_bytes(db, issued.school_id)), name)
 
 
 def _staff_report(db: Session, viewer: Viewer, report_id: str) -> WeeklyReport:
@@ -327,14 +328,17 @@ def _staff_report(db: Session, viewer: Viewer, report_id: str) -> WeeklyReport:
 @router.get("/reports/{report_id}")
 def get_report(report_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
     report = _staff_report(db, viewer, report_id)
-    return {"id": report.id, "issueStatus": report.issue.status, "report": service.page_data(report)}
+    return {"id": report.id, "issueStatus": report.issue.status, "report": with_logo(db, service.page_data(report), report.school_id)}
 
 
 @router.get("/reports/{report_id}/pdf")
 def report_pdf(report_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
     report = _staff_report(db, viewer, report_id)
     page = service.page_data(report)
-    return _pdf(weekly_report_pdf.render([page]), _file_name(page["student"]["code"], "Weekly-Report", page["week"]["start"]))
+    return _pdf(
+        weekly_report_pdf.render([page], logo_bytes(db, report.school_id)),
+        _file_name(page["student"]["code"], "Weekly-Report", page["week"]["start"]),
+    )
 
 
 # --- the student's own -------------------------------------------------------------------
@@ -373,11 +377,14 @@ def mine(student: Student = Depends(get_current_student), db: Session = Depends(
 @router.get("/mine/{report_id}")
 def my_report(report_id: str, student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
     report = _student_report(db, student, report_id)
-    return {"id": report.id, "report": service.page_data(report)}
+    return {"id": report.id, "report": with_logo(db, service.page_data(report), report.school_id)}
 
 
 @router.get("/mine/{report_id}/pdf")
 def my_report_pdf(report_id: str, student: Student = Depends(get_current_student), db: Session = Depends(get_db)):
     report = _student_report(db, student, report_id)
     page = service.page_data(report)
-    return _pdf(weekly_report_pdf.render([page]), _file_name(page["student"]["code"], "Weekly-Report", page["week"]["start"]))
+    return _pdf(
+        weekly_report_pdf.render([page], logo_bytes(db, report.school_id)),
+        _file_name(page["student"]["code"], "Weekly-Report", page["week"]["start"]),
+    )

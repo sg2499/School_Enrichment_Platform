@@ -35,7 +35,7 @@ Provenance against PHASE_0_CODE_AUDIT.md:
 import uuid
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import deferred, relationship
 
 from app.core.totp_crypto import decrypt_totp_secret, encrypt_totp_secret
 from app.database import Base
@@ -53,6 +53,12 @@ class School(Base):
     city = Column(String(150), nullable=True)
     state = Column(String(150), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    # The school's logo (#202, 26 Oct 2026): uploaded by its admin, kept as a
+    # PNG data URL like profile photos are, and served by
+    # /api/schools/{id}/logo to the school's own people. Deferred, so the
+    # many queries that load a school for its name don't carry the image.
+    logo_data = deferred(Column(Text, nullable=True))
+    logo_updated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

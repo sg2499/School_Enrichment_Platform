@@ -214,6 +214,12 @@ def user_payload(db: Session, user: User) -> dict:
             "schoolName": school_admin.school.name if school_admin.school else None,
         }
 
+    # The school's logo (#202), for every role that belongs to a school.
+    from app.services.school_logo_service import logo_url
+
+    school = (student or teacher or school_admin).school if (student or teacher or school_admin) else None
+    data["schoolLogoUrl"] = logo_url(school)
+
     return data
 
 

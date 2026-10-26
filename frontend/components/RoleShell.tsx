@@ -38,6 +38,7 @@ import { wasRefused } from "@/lib/errors";
 import { clearSession } from "@/lib/auth";
 import { PRODUCT_CREDIT, PRODUCT_NAME } from "@/lib/brand";
 import { usePageTitle } from "@/lib/hooks/usePageTitle";
+import { SchoolLogo, useSchoolLogoUrl } from "@/components/school/SchoolLogo";
 import { ROLE_LABEL, roleLabel } from "@/lib/pageTitle";
 import type { CurrentUser, UserRole } from "@/types/auth";
 import { cn } from "@/lib/utils";
@@ -194,7 +195,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         // #186: any section's grid and misconception report.
         { label: "Class Analytics", icon: BarChart3, href: "/admin/analytics" },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },
-        { label: "Settings", icon: Settings, soon: true },
+        // #202: the school's logo, for now.
+        { label: "Settings", icon: Settings, href: "/admin/settings" },
       ],
     },
   ],
@@ -362,6 +364,26 @@ function NavRow({
   );
 }
 
+/** The school's own logo and name (#202), under the product's, once the
+ *  school has uploaded a logo. */
+function RailSchool({ user, role, collapsed }: { user: CurrentUser | null; role: UserRole; collapsed: boolean }) {
+  const url = useSchoolLogoUrl(user ? (user.schoolLogoUrl ?? null) : undefined);
+  const name = user?.student?.schoolName || user?.teacher?.schoolName || user?.admin?.schoolName || null;
+  if (role === "SUPER_ADMIN" || !url) return null;
+  return (
+    <div className={cn("relative -mt-2 mb-5", collapsed ? "flex justify-center px-3" : "px-5")}>
+      {collapsed ? (
+        <SchoolLogo url={url} schoolName={name} className="h-7 max-w-[2.5rem]" tileClassName="rounded-lg p-1" />
+      ) : (
+        <div className="flex items-center gap-3 rounded-2xl bg-white/6 p-2.5 ring-1 ring-inset ring-white/10">
+          <SchoolLogo url={url} schoolName={name} decorative={Boolean(name)} className="h-9 max-w-[5.5rem]" />
+          {name ? <span className="min-w-0 text-[0.8125rem] font-semibold leading-snug text-white text-pretty">{name}</span> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SidebarContent({
   role,
   user,
@@ -442,6 +464,8 @@ function SidebarContent({
       >
         {collapsed ? <LogoMark variant="inverse" className="h-9 w-9" /> : <Lockup tone="light" showTagline />}
       </div>
+
+      <RailSchool user={user} role={role} collapsed={collapsed} />
 
       <div className={cn("relative", collapsed ? "px-3" : "px-5")}>
         <SidebarUserMenu

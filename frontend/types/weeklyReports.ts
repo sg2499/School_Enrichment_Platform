@@ -109,7 +109,7 @@ export interface WeeklySkill {
 
 export interface WeeklyReportData {
   title: string;
-  school: { name: string; city: string | null };
+  school: { name: string; city: string | null; logoUrl?: string | null };
   student: { id: string; name: string; code: string; classLevel: string; section: string };
   week: { start: string; end: string; label: string };
   sets: WeeklySetRow[];
