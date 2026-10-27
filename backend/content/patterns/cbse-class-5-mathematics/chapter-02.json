@@ -1,0 +1,6484 @@
+{
+ "engine": {
+  "board": "CBSE",
+  "classLevel": "5",
+  "course": "MATHEMATICS"
+ },
+ "about": "Chapter 2, Fractions: 63 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "patterns": [
+  {
+   "code": "C5-FR2-S01-P1",
+   "skill": "C5-FR2-S01",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "obj",
+     "choice": [
+      "roti",
+      "paratha",
+      "chikki bar",
+      "paper strip",
+      "ribbon",
+      "watermelon",
+      "cake",
+      "pizza",
+      "chapati",
+      "chocolate bar",
+      "dosa",
+      "sheet of paper"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 3,
+      "max": 16
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      -1,
+      1
+     ]
+    }
+   ],
+   "text": "A {obj} is cut into {n} equal parts. What fraction of the whole {obj} is one part?",
+   "options": {
+    "correct": "frac(1, n)",
+    "format": "fraction",
+    "wrong": [
+     {
+      "expr": "n",
+      "mistake": "writes the number of parts as the fraction"
+     },
+     {
+      "expr": "frac(n - 1, n)",
+      "mistake": "counts the parts that are not taken"
+     },
+     {
+      "expr": "frac(1, n + v)",
+      "mistake": "counts the cuts (or the cuts and both ends) instead of the equal parts"
+     }
+    ]
+   },
+   "hint": "The denominator tells how many equal parts make the whole.",
+   "explanation": "The whole {obj} has {n} equal parts, so one part is 1/{n} of it.",
+   "misconception": "Treats unequal pieces as valid fractional parts or compares pieces from different-sized wholes directly.",
+   "notes": "12 everyday things (roti, paratha, chikki bar, ribbon...); 3 to 16 equal parts.",
+   "sources": [
+    "CBSE-C5-CH02-Q001",
+    "CBSE-C5-CH02-Q002",
+    "CBSE-C5-CH02-Q006",
+    "CBSE-C5-CH02-Q007",
+    "CBSE-C5-CH02-Q008",
+    "CBSE-C5-CH02-Q009"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S01-P2",
+   "skill": "C5-FR2-S01",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "obj",
+     "choice": [
+      "roti",
+      "paratha",
+      "chikki bar",
+      "paper strip",
+      "ribbon",
+      "watermelon",
+      "cake",
+      "pizza",
+      "chapati",
+      "chocolate bar",
+      "dosa",
+      "sheet of paper"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 2,
+      "max": 20
+     }
+    },
+    {
+     "name": "w",
+     "choice": [
+      1,
+      1,
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "text": "Each piece is 1/{n} of a {obj}, and all the {obj}s are the same size. How many such pieces make {w} whole {obj}{'' if w == 1 else 's'}?",
+   "answer": "n * w",
+   "hint": "1/{n} means {n} equal pieces make one whole.",
+   "explanation": "{n} pieces of 1/{n} make one whole {obj}, so {w} whole {obj}{'' if w == 1 else 's'} need {n} × {w} = {n * w} pieces.",
+   "misconception": "Treats unequal pieces as valid fractional parts or compares pieces from different-sized wholes directly.",
+   "notes": "2 to 20 pieces in a whole; usually one whole, sometimes 2 or 3 wholes of the same size.",
+   "sources": [
+    "CBSE-C5-CH02-Q024",
+    "CBSE-C5-CH02-Q025",
+    "CBSE-C5-CH02-Q026",
+    "CBSE-C5-CH02-Q027",
+    "CBSE-C5-CH02-Q028"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S01-P3",
+   "skill": "C5-FR2-S01",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "obj",
+     "choice": [
+      "roti",
+      "paratha",
+      "chikki bar",
+      "paper strip",
+      "ribbon",
+      "watermelon",
+      "cake",
+      "pizza",
+      "chapati",
+      "chocolate bar",
+      "dosa",
+      "sheet of paper"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 3,
+      "max": 10
+     }
+    },
+    {
+     "name": "c",
+     "choice": [
+      {
+       "desc": "all exactly the same size",
+       "right": "Yes, because all the parts are equal",
+       "w1": "No, because the parts must be coloured first",
+       "w2": "No, because there are too many parts",
+       "w3": "Only if the parts have different shapes"
+      },
+      {
+       "desc": "of different sizes",
+       "right": "No, because the parts are not equal",
+       "w1": "Yes, because there are that many pieces",
+       "w2": "Yes, if the largest piece is chosen",
+       "w3": "Yes, because all the pieces come from one whole"
+      }
+     ]
+    }
+   ],
+   "text": "{who.name} cuts a {obj} into {n} pieces that are {c.desc}. Can one piece be called 1/{n} of the {obj}?",
+   "options": {
+    "correct": "c.right",
+    "wrong": [
+     {
+      "expr": "c.w1",
+      "mistake": "adds a condition that has nothing to do with equal parts"
+     },
+     {
+      "expr": "c.w2",
+      "mistake": "judges by the number of pieces instead of whether they are equal"
+     },
+     {
+      "expr": "c.w3",
+      "mistake": "forgets that the parts of a fraction must be equal"
+     }
+    ]
+   },
+   "hint": "A fraction like 1/{n} needs {n} equal parts of one whole.",
+   "explanation": "1/{n} means one of {n} equal parts of the same whole. Here the pieces are {c.desc}, so the answer is: {c.right}.",
+   "misconception": "Treats unequal pieces as valid fractional parts or compares pieces from different-sized wholes directly.",
+   "notes": "3 to 10 pieces; the pieces are equal or of different sizes, so the answer is sometimes Yes and sometimes No.",
+   "sources": [
+    "CBSE-C5-CH02-Q016",
+    "CBSE-C5-CH02-Q017",
+    "CBSE-C5-CH02-Q018",
+    "CBSE-C5-CH02-Q019",
+    "CBSE-C5-CH02-Q020"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S01-P4",
+   "skill": "C5-FR2-S01",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "cm",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 4,
+      "max": 12
+     }
+    },
+    {
+     "name": "t",
+     "int": {
+      "min": "s + 2",
+      "max": "s + 10"
+     }
+    }
+   ],
+   "text": "A ribbon {s * n} cm long and another ribbon {t * n} cm long are each cut into {n} equal pieces. One piece of each is called 1/{n} of its ribbon. How many centimetres longer is the piece from the longer ribbon?",
+   "answer": "t - s",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds each piece: {s * n} ÷ {n} = {s} cm and {t * n} ÷ {n} = {t} cm."
+    },
+    {
+     "marks": 1,
+     "text": "Finds the difference: {t} − {s} = {t - s} cm. (Both pieces are 1/{n}, but of different wholes.)"
+    }
+   ],
+   "hint": "1/{n} of a longer ribbon is a longer piece. Find each piece first.",
+   "explanation": "{s * n} ÷ {n} = {s} cm and {t * n} ÷ {n} = {t} cm. The pieces have the same fraction name but different wholes, so they differ by {t} − {s} = {t - s} cm.",
+   "misconception": "Treats unequal pieces as valid fractional parts or compares pieces from different-sized wholes directly.",
+   "notes": "2 to 6 pieces each; pieces of the shorter ribbon 4 to 12 cm, of the longer 2 to 10 cm more; lengths are whole multiples.",
+   "sources": [
+    "CBSE-C5-CH02-Q023",
+    "CBSE-C5-CH02-Q029",
+    "CBSE-C5-CH02-Q030",
+    "CBSE-C5-CH02-Q031",
+    "CBSE-C5-CH02-Q033"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S02-P1",
+   "skill": "C5-FR2-S02",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 20
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "part",
+     "choice": [
+      {
+       "w": "numerator",
+       "top": 1
+      },
+      {
+       "w": "denominator",
+       "top": 0
+      }
+     ]
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "What is the {part.w} of the fraction {a}/{b}?",
+   "answer": "a if part.top == 1 else b",
+   "hint": "The numerator is the top number; the denominator, below the line, tells how many equal parts make the whole.",
+   "explanation": "In {a}/{b}, the numerator is {a} and the denominator is {b}. So the {part.w} is {a if part.top == 1 else b}.",
+   "misconception": "Interchanges numerator and denominator or counts unselected parts as the numerator.",
+   "notes": "Proper fractions in simplest form with denominators 3 to 20; asks for the numerator or the denominator.",
+   "sources": [
+    "CBSE-C5-CH02-Q034",
+    "CBSE-C5-CH02-Q035",
+    "CBSE-C5-CH02-Q039",
+    "CBSE-C5-CH02-Q044",
+    "CBSE-C5-CH02-Q049",
+    "CBSE-C5-CH02-Q050"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S02-P2",
+   "skill": "C5-FR2-S02",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "set",
+     "choice": [
+      {
+       "thing": "tiles",
+       "whole": "floor design",
+       "col": "blue"
+      },
+      {
+       "thing": "squares",
+       "whole": "rangoli",
+       "col": "red"
+      },
+      {
+       "thing": "beads",
+       "whole": "necklace",
+       "col": "green"
+      },
+      {
+       "thing": "slices",
+       "whole": "pizza",
+       "col": "eaten"
+      },
+      {
+       "thing": "pieces",
+       "whole": "chikki bar",
+       "col": "eaten"
+      },
+      {
+       "thing": "boxes",
+       "whole": "grid",
+       "col": "shaded"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 4,
+      "max": 16
+     }
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 1,
+      "max": "n - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(s, n) == 1"
+   ],
+   "text": "A {set.whole} has {n} equal {set.thing}, and {s} of them {'is' if s == 1 else 'are'} {set.col}. What fraction of the {set.whole} is {set.col}? Write it as a/b.",
+   "answer": "frac(s, n)",
+   "hint": "The numerator counts the {set.col} {set.thing}; the denominator counts all the equal {set.thing}.",
+   "explanation": "{s} of the {n} equal {set.thing} are {set.col}, so the fraction is {s}/{n}.",
+   "misconception": "Interchanges numerator and denominator or counts unselected parts as the numerator.",
+   "notes": "4 to 16 equal parts; the count chosen shares no factor with the total, so the fraction is already in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q057",
+    "CBSE-C5-CH02-Q058",
+    "CBSE-C5-CH02-Q059",
+    "CBSE-C5-CH02-Q060",
+    "CBSE-C5-CH02-Q061"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S02-P3",
+   "skill": "C5-FR2-S02",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "set",
+     "choice": [
+      {
+       "thing": "tiles",
+       "whole": "wall",
+       "col": "painted"
+      },
+      {
+       "thing": "squares",
+       "whole": "chart",
+       "col": "coloured"
+      },
+      {
+       "thing": "beds",
+       "whole": "garden",
+       "col": "planted"
+      },
+      {
+       "thing": "boxes",
+       "whole": "grid",
+       "col": "shaded"
+      },
+      {
+       "thing": "pages",
+       "whole": "booklet",
+       "col": "read"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 5,
+      "max": 18
+     }
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 1,
+      "max": "n - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(n - s, n) == 1",
+    "s != n - s"
+   ],
+   "text": "A {set.whole} has {n} equal {set.thing}. {s} of them {'is' if s == 1 else 'are'} {set.col}. What fraction of the {set.whole} is NOT {set.col}? Write it as a/b.",
+   "answer": "frac(n - s, n)",
+   "hint": "First count the {set.thing} that are not {set.col}.",
+   "explanation": "{n} − {s} = {n - s} of the {set.thing} {'is' if n - s == 1 else 'are'} not {set.col}, so the fraction is {n - s}/{n}.",
+   "misconception": "Interchanges numerator and denominator or counts unselected parts as the numerator.",
+   "notes": "5 to 18 equal parts; the answer is in simplest form and differs from the fraction that IS coloured (a trap for counting the wrong parts).",
+   "sources": [
+    "CBSE-C5-CH02-Q054",
+    "CBSE-C5-CH02-Q055",
+    "CBSE-C5-CH02-Q056",
+    "CBSE-C5-CH02-Q064"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S02-P4",
+   "skill": "C5-FR2-S02",
+   "questionType": "Text Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 8,
+      "max": 20
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 2,
+      "max": "n // 3"
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": 2,
+      "max": "n // 3"
+     }
+    },
+    {
+     "name": "e",
+     "expr": "n - x - y"
+    }
+   ],
+   "require": [
+    "x != y",
+    "gcd(e, n) == 1"
+   ],
+   "text": "A school garden has {n} equal beds. {x} beds have marigolds and {y} beds have roses. The other beds are empty. What fraction of the beds are empty? Write it as a/b.",
+   "answer": "frac(e, n)",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Counts the empty beds: {n} − {x} − {y} = {e}."
+    },
+    {
+     "marks": 1,
+     "text": "Writes the fraction with the whole garden as the denominator: {e}/{n}."
+    }
+   ],
+   "hint": "Find how many beds are empty, then compare with all {n} beds.",
+   "explanation": "Empty beds = {n} − {x} − {y} = {e}. There are {n} equal beds in all, so {e}/{n} of the beds are empty.",
+   "misconception": "Interchanges numerator and denominator or counts unselected parts as the numerator.",
+   "notes": "8 to 20 beds; marigolds and roses each up to a third of the beds; the empty fraction is in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q054",
+    "CBSE-C5-CH02-Q055",
+    "CBSE-C5-CH02-Q062",
+    "CBSE-C5-CH02-Q063",
+    "CBSE-C5-CH02-Q065",
+    "CBSE-C5-CH02-Q066"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S03-P1",
+   "skill": "C5-FR2-S03",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "obj",
+     "choice": [
+      "roti",
+      "paratha",
+      "chikki bar",
+      "paper strip",
+      "ribbon",
+      "watermelon",
+      "cake",
+      "pizza",
+      "chapati",
+      "chocolate bar",
+      "dosa",
+      "sheet of paper"
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 20
+     }
+    }
+   ],
+   "require": [
+    "a < b"
+   ],
+   "text": "Two {obj}s are the same size. One is cut into {a} equal pieces and the other into {b} equal pieces. Which piece is larger?",
+   "options": {
+    "correct": "frac(1, a)",
+    "format": "fraction",
+    "wrong": [
+     {
+      "expr": "frac(1, b)",
+      "mistake": "thinks a larger denominator makes a larger piece"
+     },
+     {
+      "expr": "'Both are the same size'",
+      "mistake": "thinks every piece of a same-sized whole is the same"
+     },
+     {
+      "expr": "'It cannot be told'",
+      "mistake": "doesn't use the number of equal pieces to judge size"
+     }
+    ]
+   },
+   "hint": "The more equal pieces a whole is cut into, the smaller each piece.",
+   "explanation": "The same {obj} shared into {a} pieces gives bigger pieces than shared into {b}. So 1/{a} is larger than 1/{b}.",
+   "misconception": "Assumes a larger denominator means a larger unit-fraction piece.",
+   "notes": "Two same-sized wholes cut into 2 to 12 and up to 20 pieces; the options show 1/a, 1/b and two others.",
+   "sources": [
+    "CBSE-C5-CH02-Q067",
+    "CBSE-C5-CH02-Q068",
+    "CBSE-C5-CH02-Q072",
+    "CBSE-C5-CH02-Q073",
+    "CBSE-C5-CH02-Q077",
+    "CBSE-C5-CH02-Q082"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S03-P2",
+   "skill": "C5-FR2-S03",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "w",
+     "choice": [
+      1,
+      1,
+      2,
+      3
+     ]
+    }
+   ],
+   "text": "How many 1/{n} pieces make {w} whole{'' if w == 1 else 's'}?",
+   "answer": "n * w",
+   "hint": "{n} pieces of 1/{n} make one whole.",
+   "explanation": "One whole is {n} pieces of 1/{n}, so {w} whole{'' if w == 1 else 's'} need {n} × {w} = {n * w} pieces.",
+   "misconception": "Assumes a larger denominator means a larger unit-fraction piece.",
+   "notes": "Unit fractions 1/2 to 1/15; one, two or three wholes.",
+   "sources": [
+    "CBSE-C5-CH02-Q087",
+    "CBSE-C5-CH02-Q088",
+    "CBSE-C5-CH02-Q089",
+    "CBSE-C5-CH02-Q090",
+    "CBSE-C5-CH02-Q091",
+    "CBSE-C5-CH02-Q092"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S03-P3",
+   "skill": "C5-FR2-S03",
+   "questionType": "Text Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Fractions separated by semicolons",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "x",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "z",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "lo",
+     "expr": "min(x, y, z)"
+    },
+    {
+     "name": "hi",
+     "expr": "max(x, y, z)"
+    },
+    {
+     "name": "mid",
+     "expr": "x + y + z - lo - hi"
+    }
+   ],
+   "require": [
+    "x != y",
+    "y != z",
+    "x != z",
+    "not (x < y and y < z)"
+   ],
+   "text": "Order these unit fractions from greatest to least: 1/{x}, 1/{y}, 1/{z}. Enter greatest;middle;least.",
+   "answer": [
+    "frac(1, lo)",
+    "frac(1, mid)",
+    "frac(1, hi)"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Uses the idea that a smaller denominator means a larger piece (1/{lo} is the greatest)."
+    },
+    {
+     "marks": 1,
+     "text": "Gives the full order: 1/{lo}, 1/{mid}, 1/{hi}."
+    }
+   ],
+   "hint": "With 1 as the numerator, the fraction with the smallest denominator is the greatest.",
+   "explanation": "The fewer the equal pieces, the bigger each one: 1/{lo} > 1/{mid} > 1/{hi}.",
+   "misconception": "Assumes a larger denominator means a larger unit-fraction piece.",
+   "notes": "Three different unit fractions 1/2 to 1/15, never already listed in the order of their denominators.",
+   "sources": [
+    "CBSE-C5-CH02-Q095",
+    "CBSE-C5-CH02-Q096",
+    "CBSE-C5-CH02-Q097",
+    "CBSE-C5-CH02-Q098"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S03-P4",
+   "skill": "C5-FR2-S03",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "p",
+     "list": "names"
+    },
+    {
+     "name": "q",
+     "list": "names"
+    },
+    {
+     "name": "obj",
+     "choice": [
+      "roti",
+      "paratha",
+      "chikki bar",
+      "paper strip",
+      "ribbon",
+      "watermelon",
+      "cake",
+      "pizza",
+      "chapati",
+      "chocolate bar",
+      "dosa",
+      "sheet of paper"
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    }
+   ],
+   "require": [
+    "p.name != q.name",
+    "a != b"
+   ],
+   "text": "{p.name} gets 1/{a} of a {obj}. {q.name} gets 1/{b} of another {obj} of the same size. Who gets more?",
+   "options": {
+    "correct": "p.name if a < b else q.name",
+    "wrong": [
+     {
+      "expr": "q.name if a < b else p.name",
+      "mistake": "picks the share with the larger denominator"
+     },
+     {
+      "expr": "'Both get the same'",
+      "mistake": "thinks unit fractions of the same whole are all equal"
+     },
+     {
+      "expr": "'It depends on how the pieces are cut'",
+      "mistake": "forgets that the parts are equal parts of the same-sized whole"
+     }
+    ]
+   },
+   "hint": "Compare the denominators: fewer equal pieces means bigger pieces.",
+   "explanation": "1/{min(a, b)} is larger than 1/{max(a, b)} of the same-sized {obj}, so {p.name if a < b else q.name} gets more.",
+   "misconception": "Assumes a larger denominator means a larger unit-fraction piece.",
+   "notes": "Two different children; unit fractions 1/2 to 1/12 of same-sized wholes.",
+   "sources": [
+    "CBSE-C5-CH02-Q082",
+    "CBSE-C5-CH02-Q083",
+    "CBSE-C5-CH02-Q084",
+    "CBSE-C5-CH02-Q085",
+    "CBSE-C5-CH02-Q086"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S04-P1",
+   "skill": "C5-FR2-S04",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "g",
+     "choice": [
+      {
+       "many": "marbles"
+      },
+      {
+       "many": "beads"
+      },
+      {
+       "many": "mangoes"
+      },
+      {
+       "many": "stickers"
+      },
+      {
+       "many": "pencils"
+      },
+      {
+       "many": "flowers"
+      },
+      {
+       "many": "laddoos"
+      },
+      {
+       "many": "bangles"
+      },
+      {
+       "many": "books"
+      },
+      {
+       "many": "counters"
+      }
+     ]
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "t",
+     "expr": "b * k"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "t <= 120"
+   ],
+   "text": "{who.name} has {t} {g.many}. {who.name} gives away {a}/{b} of them. How many {g.many} does {who.name} give away?",
+   "answer": "a * k",
+   "hint": "First find 1/{b} of {t} by dividing by {b}.",
+   "explanation": "1/{b} of {t} is {t} ÷ {b} = {k}. So {a}/{b} of {t} is {k} × {a} = {a * k}.",
+   "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
+   "notes": "Fractions with denominators 2 to 12 in simplest form; the total is a multiple of the denominator, at most 120.",
+   "sources": [
+    "CBSE-C5-CH02-Q100",
+    "CBSE-C5-CH02-Q101",
+    "CBSE-C5-CH02-Q105",
+    "CBSE-C5-CH02-Q106",
+    "CBSE-C5-CH02-Q110"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S04-P2",
+   "skill": "C5-FR2-S04",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "g",
+     "choice": [
+      {
+       "many": "marbles"
+      },
+      {
+       "many": "beads"
+      },
+      {
+       "many": "mangoes"
+      },
+      {
+       "many": "stickers"
+      },
+      {
+       "many": "pencils"
+      },
+      {
+       "many": "flowers"
+      },
+      {
+       "many": "laddoos"
+      },
+      {
+       "many": "bangles"
+      },
+      {
+       "many": "books"
+      },
+      {
+       "many": "counters"
+      }
+     ]
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 10
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "{a}/{b} of the {g.many} in a box is {a * k} {g.many}. How many {g.many} are in the whole box?",
+   "answer": "b * k",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds 1/{b}: {a * k} ÷ {a} = {k}."
+    },
+    {
+     "marks": 1,
+     "text": "Finds the whole: {k} × {b} = {b * k}."
+    }
+   ],
+   "hint": "{a}/{b} is {a} equal groups out of {b}. Find one group first.",
+   "explanation": "{a} groups make {a * k}, so one group is {a * k} ÷ {a} = {k}. The whole box has {b} groups: {k} × {b} = {b * k}.",
+   "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
+   "notes": "Denominators 3 to 10; the part given is a whole number of equal groups of 2 to 12.",
+   "sources": [
+    "CBSE-C5-CH02-Q128",
+    "CBSE-C5-CH02-Q129",
+    "CBSE-C5-CH02-Q130",
+    "CBSE-C5-CH02-Q131"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S04-P3",
+   "skill": "C5-FR2-S04",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Fraction a/b in simplest form",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "g",
+     "choice": [
+      {
+       "many": "marbles"
+      },
+      {
+       "many": "beads"
+      },
+      {
+       "many": "mangoes"
+      },
+      {
+       "many": "stickers"
+      },
+      {
+       "many": "pencils"
+      },
+      {
+       "many": "flowers"
+      },
+      {
+       "many": "laddoos"
+      },
+      {
+       "many": "bangles"
+      },
+      {
+       "many": "books"
+      },
+      {
+       "many": "counters"
+      }
+     ]
+    },
+    {
+     "name": "col",
+     "choice": [
+      "red",
+      "blue",
+      "green",
+      "yellow"
+     ]
+    },
+    {
+     "name": "t",
+     "int": {
+      "min": 6,
+      "max": 40
+     }
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 2,
+      "max": "t - 2"
+     }
+    }
+   ],
+   "require": [
+    "gcd(s, t) > 1",
+    "gcd(s, t) != s"
+   ],
+   "text": "{s} of {t} {g.many} are {col}. What fraction of the {g.many} are {col}? Write it in simplest form.",
+   "answer": "frac(s, t)",
+   "hint": "Write {s}/{t}, then divide the numerator and denominator by the same number.",
+   "explanation": "{s}/{t} = {s // gcd(s, t)}/{t // gcd(s, t)} after dividing both by {gcd(s, t)}.",
+   "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
+   "notes": "6 to 40 things; the fraction always simplifies (and not to 1 over something, so it isn't trivial).",
+   "sources": [
+    "CBSE-C5-CH02-Q120",
+    "CBSE-C5-CH02-Q121",
+    "CBSE-C5-CH02-Q122",
+    "CBSE-C5-CH02-Q123",
+    "CBSE-C5-CH02-Q124",
+    "CBSE-C5-CH02-Q125"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S04-P4",
+   "skill": "C5-FR2-S04",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 10
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 5,
+      "max": 50,
+      "step": 5
+     }
+    },
+    {
+     "name": "t",
+     "expr": "b * k"
+    },
+    {
+     "name": "what",
+     "choice": [
+      "a book fair",
+      "a school trip",
+      "new shoes",
+      "a gift for Diwali",
+      "a cricket bat"
+     ]
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "Out of ₹{t:num} saved, {a}/{b} is spent on {what}. How much money is spent on {what}?",
+   "options": {
+    "correct": "a * k",
+    "format": "money",
+    "wrong": [
+     {
+      "expr": "k",
+      "mistake": "finds one equal share and stops"
+     },
+     {
+      "expr": "t - a * k",
+      "mistake": "finds the money left instead of the money spent"
+     },
+     {
+      "expr": "(a - 1) * k",
+      "mistake": "takes one equal share too few"
+     }
+    ]
+   },
+   "hint": "Find 1/{b} of ₹{t:num} first, then take {a} of those shares.",
+   "explanation": "1/{b} of ₹{t:num} is ₹{k}. So {a}/{b} is {a} × ₹{k} = ₹{a * k}.",
+   "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
+   "notes": "Denominators 3 to 10; amounts are the denominator times 5 to 50 (in fives). Wrong options: one share, one share too few, the money left (so the right answer is sometimes the largest option, sometimes not).",
+   "sources": [
+    "CBSE-C5-CH02-Q115",
+    "CBSE-C5-CH02-Q116",
+    "CBSE-C5-CH02-Q117",
+    "CBSE-C5-CH02-Q118",
+    "CBSE-C5-CH02-Q119",
+    "CBSE-C5-CH02-Q132"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S05-P1",
+   "skill": "C5-FR2-S05",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "obj",
+     "choice": [
+      "puzzle circle",
+      "fraction strip",
+      "paper square",
+      "tile pattern",
+      "clay disc"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 4,
+      "max": 16
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": "n - 1"
+     }
+    }
+   ],
+   "text": "A {obj} is made of {n} equal pieces, each 1/{n} of it. {k} {'piece is' if k == 1 else 'pieces are'} already in place. How many more pieces complete the whole?",
+   "answer": "n - k",
+   "hint": "The whole needs {n} pieces of 1/{n}.",
+   "explanation": "{n} pieces make the whole and {k} are in place, so {n} − {k} = {n - k} more are needed.",
+   "misconception": "Changes the denominator when combining equal-sized pieces.",
+   "notes": "4 to 16 pieces in the whole.",
+   "sources": [
+    "CBSE-C5-CH02-Q133",
+    "CBSE-C5-CH02-Q134",
+    "CBSE-C5-CH02-Q135",
+    "CBSE-C5-CH02-Q136",
+    "CBSE-C5-CH02-Q137",
+    "CBSE-C5-CH02-Q138"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S05-P2",
+   "skill": "C5-FR2-S05",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "job",
+     "choice": [
+      {
+       "what": "wall",
+       "done": "painted"
+      },
+      {
+       "what": "floor",
+       "done": "swept"
+      },
+      {
+       "what": "rangoli",
+       "done": "coloured"
+      },
+      {
+       "what": "chart",
+       "done": "filled in"
+      },
+      {
+       "what": "field",
+       "done": "ploughed"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 5,
+      "max": 16
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "n - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(n - a, n) == 1"
+   ],
+   "text": "{a}/{n} of a {job.what} is {job.done}. What fraction of the {job.what} is still left? Write it as a/b.",
+   "answer": "frac(n - a, n)",
+   "hint": "One whole is {n}/{n}.",
+   "explanation": "The whole is {n}/{n}. {n}/{n} − {a}/{n} = {n - a}/{n} is still left.",
+   "misconception": "Changes the denominator when combining equal-sized pieces.",
+   "notes": "Denominators 5 to 16; the part left is in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q148",
+    "CBSE-C5-CH02-Q149",
+    "CBSE-C5-CH02-Q150",
+    "CBSE-C5-CH02-Q151",
+    "CBSE-C5-CH02-Q152"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S05-P3",
+   "skill": "C5-FR2-S05",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "p",
+     "list": "names"
+    },
+    {
+     "name": "q",
+     "list": "names"
+    },
+    {
+     "name": "obj",
+     "choice": [
+      "roti",
+      "paratha",
+      "chikki bar",
+      "watermelon",
+      "cake",
+      "pizza",
+      "chapati",
+      "chocolate bar",
+      "dosa"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 5,
+      "max": 12
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "n - 2"
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1,
+      "max": "n - a - 1"
+     }
+    }
+   ],
+   "require": [
+    "p.name != q.name",
+    "gcd(n - a - b, n) == 1"
+   ],
+   "text": "A {obj} is cut into {n} equal pieces. {p.name} eats {a}/{n} of it and {q.name} eats {b}/{n} of it. What fraction of the {obj} is left? Write it as a/b.",
+   "answer": "frac(n - a - b, n)",
+   "hint": "The pieces are all 1/{n}, so the denominator stays {n}.",
+   "explanation": "Eaten: {a}/{n} + {b}/{n} = {a + b}/{n}. Left: {n}/{n} − {a + b}/{n} = {n - a - b}/{n}.",
+   "misconception": "Changes the denominator when combining equal-sized pieces.",
+   "notes": "5 to 12 equal pieces; at least one piece is left; the answer is in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q145",
+    "CBSE-C5-CH02-Q146",
+    "CBSE-C5-CH02-Q147",
+    "CBSE-C5-CH02-Q158"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S05-P4",
+   "skill": "C5-FR2-S05",
+   "questionType": "Text Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 6,
+      "max": 15
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": "n // 2"
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": "n - a - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(n - a - b, n) == 1"
+   ],
+   "text": "{who.name} is making one whole with pieces of 1/{n}. {who.name} puts down {a} pieces, then {b} more. How many more pieces are needed, and what fraction of the whole is still missing? Enter pieces;fraction missing.",
+   "answer": [
+    "n - a - b",
+    "frac(n - a - b, n)"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Pieces still needed: {n} − {a} − {b} = {n - a - b}."
+    },
+    {
+     "marks": 1,
+     "text": "Missing fraction: {n - a - b}/{n} (the denominator stays {n})."
+    }
+   ],
+   "hint": "One whole is {n} pieces of 1/{n}.",
+   "explanation": "{a} + {b} = {a + b} pieces are down, so {n} − {a + b} = {n - a - b} more are needed. They make {n - a - b}/{n} of the whole.",
+   "misconception": "Changes the denominator when combining equal-sized pieces.",
+   "notes": "6 to 15 pieces in the whole; the missing fraction is in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q153",
+    "CBSE-C5-CH02-Q154",
+    "CBSE-C5-CH02-Q155",
+    "CBSE-C5-CH02-Q158"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S06-P1",
+   "skill": "C5-FR2-S06",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "mode",
+     "choice": [
+      "eq",
+      "eq",
+      "add",
+      "den"
+     ]
+    },
+    {
+     "name": "c",
+     "expr": "a * k if mode != 'add' else a + k"
+    },
+    {
+     "name": "d",
+     "expr": "b * k if mode == 'eq' else (b + k if mode == 'add' else b * k + 1)"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "Are {a}/{b} and {c}/{d} equivalent fractions?",
+   "options": {
+    "correct": "'Yes, they show the same part of a whole' if mode == 'eq' else 'No, they show different amounts'",
+    "wrong": [
+     {
+      "expr": "'No, they show different amounts' if mode == 'eq' else 'Yes, they show the same part of a whole'",
+      "mistake": "checks the numbers' size instead of one scale factor"
+     },
+     {
+      "expr": "'Only if the wholes are different'",
+      "mistake": "brings in different wholes, which has nothing to do with it"
+     },
+     {
+      "expr": "'It cannot be checked without a picture'",
+      "mistake": "doesn't know how to check with a scale factor"
+     }
+    ]
+   },
+   "hint": "Equivalent fractions come from multiplying the numerator AND denominator by the same number.",
+   "explanation": "{a} × {k} = {a * k} and {b} × {k} = {b * k}, so {a}/{b} = {a * k}/{b * k}. The fraction {c}/{d} {'is' if mode == 'eq' else 'is not'} {a * k}/{b * k}, so the answer is {'Yes' if mode == 'eq' else 'No'}.",
+   "misconception": "Changes only the numerator or only the denominator and calls the result equivalent.",
+   "notes": "Fractions with denominators 3 to 9, scale factor 2 to 5. Half the time equivalent; otherwise the same number was added to both terms, or only the numerator was scaled with the denominator one more.",
+   "sources": [
+    "CBSE-C5-CH02-Q166",
+    "CBSE-C5-CH02-Q167",
+    "CBSE-C5-CH02-Q171",
+    "CBSE-C5-CH02-Q176",
+    "CBSE-C5-CH02-Q181",
+    "CBSE-C5-CH02-Q182"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S06-P2",
+   "skill": "C5-FR2-S06",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "f",
+     "choice": [
+      {
+       "q": "5/6",
+       "r": "10/12",
+       "w1": "7/8",
+       "w2": "5/12",
+       "w3": "10/6",
+       "k": 2
+      },
+      {
+       "q": "4/5",
+       "r": "8/10",
+       "w1": "6/7",
+       "w2": "4/10",
+       "w3": "8/5",
+       "k": 2
+      },
+      {
+       "q": "2/7",
+       "r": "4/14",
+       "w1": "4/9",
+       "w2": "2/14",
+       "w3": "4/7",
+       "k": 2
+      },
+      {
+       "q": "1/9",
+       "r": "4/36",
+       "w1": "5/13",
+       "w2": "1/36",
+       "w3": "4/9",
+       "k": 4
+      },
+      {
+       "q": "1/7",
+       "r": "3/21",
+       "w1": "4/10",
+       "w2": "1/21",
+       "w3": "3/7",
+       "k": 3
+      },
+      {
+       "q": "3/5",
+       "r": "12/20",
+       "w1": "7/9",
+       "w2": "3/20",
+       "w3": "12/5",
+       "k": 4
+      },
+      {
+       "q": "5/7",
+       "r": "15/21",
+       "w1": "8/10",
+       "w2": "5/21",
+       "w3": "15/7",
+       "k": 3
+      },
+      {
+       "q": "3/5",
+       "r": "15/25",
+       "w1": "8/10",
+       "w2": "3/25",
+       "w3": "15/5",
+       "k": 5
+      },
+      {
+       "q": "4/9",
+       "r": "16/36",
+       "w1": "8/13",
+       "w2": "4/36",
+       "w3": "16/9",
+       "k": 4
+      },
+      {
+       "q": "6/7",
+       "r": "18/21",
+       "w1": "9/10",
+       "w2": "6/21",
+       "w3": "18/7",
+       "k": 3
+      },
+      {
+       "q": "3/7",
+       "r": "12/28",
+       "w1": "7/11",
+       "w2": "3/28",
+       "w3": "12/7",
+       "k": 4
+      },
+      {
+       "q": "1/8",
+       "r": "5/40",
+       "w1": "6/13",
+       "w2": "1/40",
+       "w3": "5/8",
+       "k": 5
+      },
+      {
+       "q": "2/3",
+       "r": "8/12",
+       "w1": "6/7",
+       "w2": "2/12",
+       "w3": "8/3",
+       "k": 4
+      },
+      {
+       "q": "2/5",
+       "r": "4/10",
+       "w1": "4/7",
+       "w2": "2/10",
+       "w3": "4/5",
+       "k": 2
+      },
+      {
+       "q": "3/7",
+       "r": "9/21",
+       "w1": "6/10",
+       "w2": "3/21",
+       "w3": "9/7",
+       "k": 3
+      },
+      {
+       "q": "3/10",
+       "r": "12/40",
+       "w1": "7/14",
+       "w2": "3/40",
+       "w3": "12/10",
+       "k": 4
+      },
+      {
+       "q": "9/10",
+       "r": "45/50",
+       "w1": "14/15",
+       "w2": "9/50",
+       "w3": "45/10",
+       "k": 5
+      },
+      {
+       "q": "1/9",
+       "r": "2/18",
+       "w1": "3/11",
+       "w2": "1/18",
+       "w3": "2/9",
+       "k": 2
+      },
+      {
+       "q": "6/7",
+       "r": "30/35",
+       "w1": "11/12",
+       "w2": "6/35",
+       "w3": "30/7",
+       "k": 5
+      },
+      {
+       "q": "1/8",
+       "r": "4/32",
+       "w1": "5/12",
+       "w2": "1/32",
+       "w3": "4/8",
+       "k": 4
+      },
+      {
+       "q": "4/5",
+       "r": "12/15",
+       "w1": "7/8",
+       "w2": "4/15",
+       "w3": "12/5",
+       "k": 3
+      },
+      {
+       "q": "5/6",
+       "r": "25/30",
+       "w1": "10/11",
+       "w2": "5/30",
+       "w3": "25/6",
+       "k": 5
+      },
+      {
+       "q": "8/9",
+       "r": "40/45",
+       "w1": "13/14",
+       "w2": "8/45",
+       "w3": "40/9",
+       "k": 5
+      },
+      {
+       "q": "5/7",
+       "r": "20/28",
+       "w1": "9/11",
+       "w2": "5/28",
+       "w3": "20/7",
+       "k": 4
+      },
+      {
+       "q": "1/6",
+       "r": "5/30",
+       "w1": "6/11",
+       "w2": "1/30",
+       "w3": "5/6",
+       "k": 5
+      },
+      {
+       "q": "3/4",
+       "r": "15/20",
+       "w1": "8/9",
+       "w2": "3/20",
+       "w3": "15/4",
+       "k": 5
+      },
+      {
+       "q": "8/9",
+       "r": "16/18",
+       "w1": "10/11",
+       "w2": "8/18",
+       "w3": "16/9",
+       "k": 2
+      },
+      {
+       "q": "7/10",
+       "r": "14/20",
+       "w1": "9/12",
+       "w2": "7/20",
+       "w3": "14/10",
+       "k": 2
+      },
+      {
+       "q": "1/4",
+       "r": "3/12",
+       "w1": "4/7",
+       "w2": "1/12",
+       "w3": "3/4",
+       "k": 3
+      },
+      {
+       "q": "1/10",
+       "r": "5/50",
+       "w1": "6/15",
+       "w2": "1/50",
+       "w3": "5/10",
+       "k": 5
+      },
+      {
+       "q": "1/5",
+       "r": "2/10",
+       "w1": "3/7",
+       "w2": "1/10",
+       "w3": "2/5",
+       "k": 2
+      },
+      {
+       "q": "2/7",
+       "r": "6/21",
+       "w1": "5/10",
+       "w2": "2/21",
+       "w3": "6/7",
+       "k": 3
+      },
+      {
+       "q": "2/5",
+       "r": "10/25",
+       "w1": "7/10",
+       "w2": "2/25",
+       "w3": "10/5",
+       "k": 5
+      },
+      {
+       "q": "3/7",
+       "r": "6/14",
+       "w1": "5/9",
+       "w2": "3/14",
+       "w3": "6/7",
+       "k": 2
+      },
+      {
+       "q": "2/5",
+       "r": "6/15",
+       "w1": "5/8",
+       "w2": "2/15",
+       "w3": "6/5",
+       "k": 3
+      },
+      {
+       "q": "1/3",
+       "r": "3/9",
+       "w1": "4/6",
+       "w2": "1/9",
+       "w3": "3/3",
+       "k": 3
+      },
+      {
+       "q": "9/10",
+       "r": "18/20",
+       "w1": "11/12",
+       "w2": "9/20",
+       "w3": "18/10",
+       "k": 2
+      },
+      {
+       "q": "1/10",
+       "r": "2/20",
+       "w1": "3/12",
+       "w2": "1/20",
+       "w3": "2/10",
+       "k": 2
+      },
+      {
+       "q": "3/10",
+       "r": "15/50",
+       "w1": "8/15",
+       "w2": "3/50",
+       "w3": "15/10",
+       "k": 5
+      },
+      {
+       "q": "1/10",
+       "r": "4/40",
+       "w1": "5/14",
+       "w2": "1/40",
+       "w3": "4/10",
+       "k": 4
+      },
+      {
+       "q": "3/4",
+       "r": "9/12",
+       "w1": "6/7",
+       "w2": "3/12",
+       "w3": "9/4",
+       "k": 3
+      },
+      {
+       "q": "3/7",
+       "r": "15/35",
+       "w1": "8/12",
+       "w2": "3/35",
+       "w3": "15/7",
+       "k": 5
+      },
+      {
+       "q": "1/4",
+       "r": "2/8",
+       "w1": "3/6",
+       "w2": "1/8",
+       "w3": "2/4",
+       "k": 2
+      },
+      {
+       "q": "3/4",
+       "r": "12/16",
+       "w1": "7/8",
+       "w2": "3/16",
+       "w3": "12/4",
+       "k": 4
+      },
+      {
+       "q": "4/5",
+       "r": "16/20",
+       "w1": "8/9",
+       "w2": "4/20",
+       "w3": "16/5",
+       "k": 4
+      },
+      {
+       "q": "9/10",
+       "r": "27/30",
+       "w1": "12/13",
+       "w2": "9/30",
+       "w3": "27/10",
+       "k": 3
+      },
+      {
+       "q": "4/7",
+       "r": "12/21",
+       "w1": "7/10",
+       "w2": "4/21",
+       "w3": "12/7",
+       "k": 3
+      },
+      {
+       "q": "5/9",
+       "r": "25/45",
+       "w1": "10/14",
+       "w2": "5/45",
+       "w3": "25/9",
+       "k": 5
+      },
+      {
+       "q": "4/9",
+       "r": "12/27",
+       "w1": "7/12",
+       "w2": "4/27",
+       "w3": "12/9",
+       "k": 3
+      },
+      {
+       "q": "1/5",
+       "r": "3/15",
+       "w1": "4/8",
+       "w2": "1/15",
+       "w3": "3/5",
+       "k": 3
+      },
+      {
+       "q": "1/9",
+       "r": "5/45",
+       "w1": "6/14",
+       "w2": "1/45",
+       "w3": "5/9",
+       "k": 5
+      },
+      {
+       "q": "5/6",
+       "r": "20/24",
+       "w1": "9/10",
+       "w2": "5/24",
+       "w3": "20/6",
+       "k": 4
+      },
+      {
+       "q": "5/7",
+       "r": "25/35",
+       "w1": "10/12",
+       "w2": "5/35",
+       "w3": "25/7",
+       "k": 5
+      },
+      {
+       "q": "5/8",
+       "r": "20/32",
+       "w1": "9/12",
+       "w2": "5/32",
+       "w3": "20/8",
+       "k": 4
+      },
+      {
+       "q": "4/9",
+       "r": "8/18",
+       "w1": "6/11",
+       "w2": "4/18",
+       "w3": "8/9",
+       "k": 2
+      },
+      {
+       "q": "1/7",
+       "r": "5/35",
+       "w1": "6/12",
+       "w2": "1/35",
+       "w3": "5/7",
+       "k": 5
+      },
+      {
+       "q": "2/9",
+       "r": "8/36",
+       "w1": "6/13",
+       "w2": "2/36",
+       "w3": "8/9",
+       "k": 4
+      },
+      {
+       "q": "7/8",
+       "r": "35/40",
+       "w1": "12/13",
+       "w2": "7/40",
+       "w3": "35/8",
+       "k": 5
+      },
+      {
+       "q": "9/10",
+       "r": "36/40",
+       "w1": "13/14",
+       "w2": "9/40",
+       "w3": "36/10",
+       "k": 4
+      },
+      {
+       "q": "2/3",
+       "r": "10/15",
+       "w1": "7/8",
+       "w2": "2/15",
+       "w3": "10/3",
+       "k": 5
+      }
+     ]
+    }
+   ],
+   "text": "Which fraction is equivalent to {f.q}?",
+   "options": {
+    "correct": "f.r",
+    "wrong": [
+     {
+      "expr": "f.w1",
+      "mistake": "adds the same number to the numerator and denominator"
+     },
+     {
+      "expr": "f.w2",
+      "mistake": "multiplies only the denominator"
+     },
+     {
+      "expr": "f.w3",
+      "mistake": "multiplies only the numerator"
+     }
+    ]
+   },
+   "hint": "Multiply the numerator and the denominator by the same number.",
+   "explanation": "Multiplying both terms of {f.q} by {f.k} gives {f.r}, so {f.r} is equivalent to {f.q}.",
+   "misconception": "Changes only the numerator or only the denominator and calls the result equivalent.",
+   "notes": "60 fractions in simplest form with denominators 3 to 10 and scale factors 2 to 5 (listed in the pattern). Wrong options: the same number added to both terms, only the denominator scaled, only the numerator scaled.",
+   "sources": [
+    "CBSE-C5-CH02-Q186",
+    "CBSE-C5-CH02-Q187",
+    "CBSE-C5-CH02-Q191",
+    "CBSE-C5-CH02-Q196"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S06-P3",
+   "skill": "C5-FR2-S06",
+   "questionType": "Single Select",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 4
+     }
+    },
+    {
+     "name": "how",
+     "choice": [
+      {
+       "c": "plus",
+       "right": "No, adding the same number does not keep the fraction equal"
+      },
+      {
+       "c": "times",
+       "right": "Yes, multiplying both terms by the same number keeps it equal"
+      }
+     ]
+    },
+    {
+     "name": "c",
+     "expr": "a + k if how.c == 'plus' else a * k"
+    },
+    {
+     "name": "d",
+     "expr": "b + k if how.c == 'plus' else b * k"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "{who.name} changed {a}/{b} to {c}/{d} by {'adding ' if how.c == 'plus' else 'multiplying both the numerator and the denominator by '}{k}{' to both the numerator and the denominator' if how.c == 'plus' else ''}. {who.name} says {c}/{d} is equivalent to {a}/{b}. Is that right?",
+   "options": {
+    "correct": "how.right",
+    "wrong": [
+     {
+      "expr": "'Yes, adding the same number keeps the fraction equal' if how.c == 'plus' else 'No, multiplying changes the size of the fraction'",
+      "mistake": "uses the wrong rule for making equivalent fractions"
+     },
+     {
+      "expr": "'Yes, because both fractions are less than one'",
+      "mistake": "decides by a property both fractions share instead of their value"
+     },
+     {
+      "expr": "'No, equivalent fractions must have the same denominator'",
+      "mistake": "thinks equivalent fractions need the same denominator"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Checks with one scale factor: {a}/{b} = {a * k}/{b * k} (both terms × {k}), and {c}/{d} {'is' if how.c == 'times' else 'is not'} that fraction."
+    },
+    {
+     "marks": 1,
+     "text": "Concludes correctly: {how.right}."
+    }
+   ],
+   "hint": "Equivalent fractions come from multiplying (or dividing) both terms by the same number.",
+   "explanation": "{a}/{b} = {a * k}/{b * k} (both terms × {k}). {who.name} got {c}/{d}, so: {how.right}.",
+   "misconception": "Changes only the numerator or only the denominator and calls the result equivalent.",
+   "notes": "Fractions with denominators 3 to 9; 2 to 4 is added to both terms, or both terms are multiplied by it (so the answer is sometimes No, sometimes Yes).",
+   "sources": [
+    "CBSE-C5-CH02-Q186",
+    "CBSE-C5-CH02-Q194",
+    "CBSE-C5-CH02-Q195",
+    "CBSE-C5-CH02-Q197",
+    "CBSE-C5-CH02-Q198"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S07-P1",
+   "skill": "C5-FR2-S07",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 13
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "Complete the equivalent fraction: {a}/{b} = ___/{b * k}.",
+   "answer": "a * k",
+   "hint": "What was {b} multiplied by to get {b * k}? Multiply {a} by the same number.",
+   "explanation": "{b} × {k} = {b * k}, so the numerator is {a} × {k} = {a * k}: {a}/{b} = {a * k}/{b * k}.",
+   "misconception": "Adds the same number to numerator and denominator instead of multiplying both by one scale factor.",
+   "notes": "Fractions in simplest form with denominators 2 to 13; the new denominator is 2 to 6 times bigger.",
+   "sources": [
+    "CBSE-C5-CH02-Q199",
+    "CBSE-C5-CH02-Q200",
+    "CBSE-C5-CH02-Q204",
+    "CBSE-C5-CH02-Q205",
+    "CBSE-C5-CH02-Q209",
+    "CBSE-C5-CH02-Q214"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S07-P2",
+   "skill": "C5-FR2-S07",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "Complete the equivalent fraction: {a}/{b} = {a * k}/___.",
+   "answer": "b * k",
+   "hint": "{a} was multiplied by {k}. Multiply the denominator by {k} too.",
+   "explanation": "{a} × {k} = {a * k}, so the denominator is {b} × {k} = {b * k}.",
+   "misconception": "Adds the same number to numerator and denominator instead of multiplying both by one scale factor.",
+   "notes": "Denominators 3 to 12; scale factor 2 to 5.",
+   "sources": [
+    "CBSE-C5-CH02-Q215",
+    "CBSE-C5-CH02-Q216",
+    "CBSE-C5-CH02-Q217",
+    "CBSE-C5-CH02-Q218",
+    "CBSE-C5-CH02-Q219",
+    "CBSE-C5-CH02-Q224"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S07-P3",
+   "skill": "C5-FR2-S07",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; integer",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "k != m"
+   ],
+   "text": "Find the two missing numbers: {a}/{b} = {a * k}/___ = ___/{b * m}. Enter first;second.",
+   "answer": [
+    "b * k",
+    "a * m"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "First missing number: {a} × {k} = {a * k}, so the denominator is {b} × {k} = {b * k}."
+    },
+    {
+     "marks": 1,
+     "text": "Second missing number: {b} × {m} = {b * m}, so the numerator is {a} × {m} = {a * m}."
+    }
+   ],
+   "hint": "Each fraction is {a}/{b} with both terms multiplied by the same number.",
+   "explanation": "{a}/{b} = {a * k}/{b * k} (× {k}) = {a * m}/{b * m} (× {m}).",
+   "misconception": "Adds the same number to numerator and denominator instead of multiplying both by one scale factor.",
+   "notes": "Denominators 2 to 9; two different scale factors (2 to 5 and 2 to 6).",
+   "sources": [
+    "CBSE-C5-CH02-Q219",
+    "CBSE-C5-CH02-Q220",
+    "CBSE-C5-CH02-Q221",
+    "CBSE-C5-CH02-Q227",
+    "CBSE-C5-CH02-Q228",
+    "CBSE-C5-CH02-Q230"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S08-P1",
+   "skill": "C5-FR2-S08",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 20
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "x != y"
+   ],
+   "text": "Choose the correct symbol: {x}/{d} ___ {y}/{d}.",
+   "options": {
+    "correct": "'<' if x < y else '>'",
+    "wrong": [
+     {
+      "expr": "'>' if x < y else '<'",
+      "mistake": "reverses the order of the numerators"
+     },
+     {
+      "expr": "'='",
+      "mistake": "thinks the fractions are equal because they share a number"
+     },
+     {
+      "expr": "'Cannot be decided'",
+      "mistake": "thinks the fractions can't be compared without a picture"
+     }
+    ]
+   },
+   "hint": "The denominators are the same, so compare the numerators.",
+   "explanation": "Both fractions count pieces of size 1/{d}. {x} {'piece' if x == 1 else 'pieces'} {'<' if x < y else '>'} {y} {'piece' if y == 1 else 'pieces'}, so {x}/{d} {'<' if x < y else '>'} {y}/{d}.",
+   "misconception": "Compares denominators even when they are already equal.",
+   "notes": "Denominators 3 to 20; two different numerators below the denominator.",
+   "sources": [
+    "CBSE-C5-CH02-Q232",
+    "CBSE-C5-CH02-Q233",
+    "CBSE-C5-CH02-Q237",
+    "CBSE-C5-CH02-Q238",
+    "CBSE-C5-CH02-Q242",
+    "CBSE-C5-CH02-Q247"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S08-P2",
+   "skill": "C5-FR2-S08",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Fractions separated by semicolons",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "d",
+     "choice": [
+      5,
+      7,
+      8,
+      9,
+      11,
+      12,
+      13
+     ]
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "z",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "lo",
+     "expr": "min(x, y, z)"
+    },
+    {
+     "name": "hi",
+     "expr": "max(x, y, z)"
+    },
+    {
+     "name": "mid",
+     "expr": "x + y + z - lo - hi"
+    }
+   ],
+   "require": [
+    "x != y",
+    "y != z",
+    "x != z",
+    "gcd(x, d) == 1",
+    "gcd(y, d) == 1",
+    "gcd(z, d) == 1",
+    "not (x < y and y < z)"
+   ],
+   "text": "Order from least to greatest: {x}/{d}, {y}/{d}, {z}/{d}. Enter least;middle;greatest.",
+   "answer": [
+    "frac(lo, d)",
+    "frac(mid, d)",
+    "frac(hi, d)"
+   ],
+   "hint": "Same denominator: the fraction with the smallest numerator is the least.",
+   "explanation": "All three are counted in pieces of 1/{d}, so order the numerators: {lo} < {mid} < {hi}. The order is {lo}/{d}, {mid}/{d}, {hi}/{d}.",
+   "misconception": "Compares denominators even when they are already equal.",
+   "notes": "Three fractions with the same denominator (5, 7, 8, 9, 11, 12 or 13), each in simplest form, never already in order.",
+   "sources": [
+    "CBSE-C5-CH02-Q256",
+    "CBSE-C5-CH02-Q257",
+    "CBSE-C5-CH02-Q258",
+    "CBSE-C5-CH02-Q259",
+    "CBSE-C5-CH02-Q260",
+    "CBSE-C5-CH02-Q262"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S08-P3",
+   "skill": "C5-FR2-S08",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "p",
+     "list": "names"
+    },
+    {
+     "name": "q",
+     "list": "names"
+    },
+    {
+     "name": "obj",
+     "choice": [
+      "pizza",
+      "cake",
+      "watermelon",
+      "chikki bar",
+      "roti"
+     ]
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 4,
+      "max": 12
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "p.name != q.name",
+    "x != y"
+   ],
+   "text": "Two {obj}s of the same size are each cut into {d} equal pieces. {p.name} eats {x}/{d} of one and {q.name} eats {y}/{d} of the other. Who eats more?",
+   "options": {
+    "correct": "p.name if x > y else q.name",
+    "wrong": [
+     {
+      "expr": "q.name if x > y else p.name",
+      "mistake": "reverses the comparison of the numerators"
+     },
+     {
+      "expr": "'Both eat the same'",
+      "mistake": "sees the same denominator and thinks the amounts are equal"
+     },
+     {
+      "expr": "'It cannot be told'",
+      "mistake": "doesn't compare the numerators when the denominators match"
+     }
+    ]
+   },
+   "hint": "The pieces are the same size, so count the pieces.",
+   "explanation": "Both ate pieces of 1/{d}. {max(x, y)} pieces is more than {min(x, y)}, so {p.name if x > y else q.name} eats more.",
+   "misconception": "Compares denominators even when they are already equal.",
+   "notes": "4 to 12 equal pieces; two different children and amounts.",
+   "sources": [
+    "CBSE-C5-CH02-Q247",
+    "CBSE-C5-CH02-Q248",
+    "CBSE-C5-CH02-Q249",
+    "CBSE-C5-CH02-Q250",
+    "CBSE-C5-CH02-Q251"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S09-P1",
+   "skill": "C5-FR2-S09",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 1,
+      "max": 11
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": "n + 1",
+      "max": 20
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": "n + 1",
+      "max": 20
+     }
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "Choose the correct symbol: {n}/{a} ___ {n}/{b}.",
+   "options": {
+    "correct": "'<' if b < a else '>'",
+    "wrong": [
+     {
+      "expr": "'>' if b < a else '<'",
+      "mistake": "chooses the fraction with the larger denominator as greater"
+     },
+     {
+      "expr": "'='",
+      "mistake": "thinks the fractions are equal because they share a number"
+     },
+     {
+      "expr": "'Cannot be decided'",
+      "mistake": "thinks the fractions can't be compared without a picture"
+     }
+    ]
+   },
+   "hint": "The numerators are the same. Which has bigger pieces?",
+   "explanation": "Both have {n} {'piece' if n == 1 else 'pieces'}. Pieces of 1/{min(a, b)} are bigger than pieces of 1/{max(a, b)}, so {n}/{a} {'<' if b < a else '>'} {n}/{b}.",
+   "misconception": "Chooses the fraction with the larger denominator as greater.",
+   "notes": "Same numerator 1 to 11; two different denominators above it, up to 20.",
+   "sources": [
+    "CBSE-C5-CH02-Q265",
+    "CBSE-C5-CH02-Q266",
+    "CBSE-C5-CH02-Q270",
+    "CBSE-C5-CH02-Q271",
+    "CBSE-C5-CH02-Q275",
+    "CBSE-C5-CH02-Q280"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S09-P2",
+   "skill": "C5-FR2-S09",
+   "questionType": "Text Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Fractions separated by semicolons",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 1,
+      "max": 7
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": "n + 1",
+      "max": 16
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": "n + 1",
+      "max": 16
+     }
+    },
+    {
+     "name": "z",
+     "int": {
+      "min": "n + 1",
+      "max": 16
+     }
+    },
+    {
+     "name": "lo",
+     "expr": "min(x, y, z)"
+    },
+    {
+     "name": "hi",
+     "expr": "max(x, y, z)"
+    },
+    {
+     "name": "mid",
+     "expr": "x + y + z - lo - hi"
+    }
+   ],
+   "require": [
+    "x != y",
+    "y != z",
+    "x != z",
+    "gcd(n, x) == 1",
+    "gcd(n, y) == 1",
+    "gcd(n, z) == 1",
+    "not (x > y and y > z)"
+   ],
+   "text": "Order from least to greatest: {n}/{x}, {n}/{y}, {n}/{z}. Enter least;middle;greatest.",
+   "answer": [
+    "frac(n, hi)",
+    "frac(n, mid)",
+    "frac(n, lo)"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Uses the idea that with the same numerator, the larger denominator gives the smaller fraction ({n}/{hi} is the least)."
+    },
+    {
+     "marks": 1,
+     "text": "Gives the full order: {n}/{hi}, {n}/{mid}, {n}/{lo}."
+    }
+   ],
+   "hint": "Same numerator: more pieces in the whole means each piece is smaller.",
+   "explanation": "Each fraction has {n} {'piece' if n == 1 else 'pieces'}; the larger the denominator, the smaller the pieces. So {n}/{hi} < {n}/{mid} < {n}/{lo}.",
+   "misconception": "Chooses the fraction with the larger denominator as greater.",
+   "notes": "Same numerator 1 to 7; three different denominators up to 16, each fraction in simplest form, never already in order.",
+   "sources": [
+    "CBSE-C5-CH02-Q289",
+    "CBSE-C5-CH02-Q290",
+    "CBSE-C5-CH02-Q293",
+    "CBSE-C5-CH02-Q294",
+    "CBSE-C5-CH02-Q295",
+    "CBSE-C5-CH02-Q296"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S09-P3",
+   "skill": "C5-FR2-S09",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "c",
+     "choice": [
+      {
+       "many": "bottles",
+       "what": "water"
+      },
+      {
+       "many": "jugs",
+       "what": "milk"
+      },
+      {
+       "many": "jars",
+       "what": "juice"
+      },
+      {
+       "many": "buckets",
+       "what": "water"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 1,
+      "max": 5
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": "n + 1",
+      "max": 12
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": "n + 1",
+      "max": 12
+     }
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "Two identical {c.many}, P and Q, hold some {c.what}. P is {n}/{a} full and Q is {n}/{b} full. Which has more {c.what} in it?",
+   "options": {
+    "correct": "'P' if a < b else 'Q'",
+    "wrong": [
+     {
+      "expr": "'Q' if a < b else 'P'",
+      "mistake": "chooses the fraction with the larger denominator"
+     },
+     {
+      "expr": "'Both have the same'",
+      "mistake": "sees the same numerator and thinks the amounts are equal"
+     },
+     {
+      "expr": "'It depends on the size of the containers'",
+      "mistake": "forgets the containers are identical"
+     }
+    ]
+   },
+   "hint": "Same numerator: compare the size of the parts.",
+   "explanation": "1/{min(a, b)} of the container is bigger than 1/{max(a, b)}, so {n}/{min(a, b)} is more. {'P' if a < b else 'Q'} has more.",
+   "misconception": "Chooses the fraction with the larger denominator as greater.",
+   "notes": "Same numerator 1 to 5; denominators up to 12.",
+   "sources": [
+    "CBSE-C5-CH02-Q280",
+    "CBSE-C5-CH02-Q281",
+    "CBSE-C5-CH02-Q282",
+    "CBSE-C5-CH02-Q283",
+    "CBSE-C5-CH02-Q284"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S10-P1",
+   "skill": "C5-FR2-S10",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "rel",
+     "choice": [
+      "lt",
+      "lt",
+      "eq",
+      "gt",
+      "gt"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "1 if rel == 'lt' else (d if rel == 'eq' else d + 1)",
+      "max": "d - 1 if rel == 'lt' else (d if rel == 'eq' else 2 * d - 1)"
+     }
+    },
+    {
+     "name": "c",
+     "expr": "'Less than 1' if n < d else ('Equal to 1' if n == d else 'Greater than 1')"
+    }
+   ],
+   "text": "Is {n}/{d} less than 1, equal to 1 or greater than 1?",
+   "options": {
+    "correct": "c",
+    "wrong": [
+     {
+      "expr": "'Equal to 1' if c == 'Less than 1' else 'Less than 1'",
+      "mistake": "doesn't compare the numerator with the denominator"
+     },
+     {
+      "expr": "'Greater than 1' if c != 'Greater than 1' else 'Equal to 1'",
+      "mistake": "doesn't compare the numerator with the denominator"
+     },
+     {
+      "expr": "'It cannot be told without a picture'",
+      "mistake": "thinks a fraction can't be compared with one from its numbers"
+     }
+    ]
+   },
+   "hint": "One whole is {d}/{d}. Compare {n} with {d}.",
+   "explanation": "One whole is {d}/{d}. {n} is {'less than' if n < d else ('equal to' if n == d else 'greater than')} {d}, so {n}/{d} is {'less than' if n < d else ('equal to' if n == d else 'greater than')} 1.",
+   "misconception": "Assumes every fraction is less than one regardless of its numerator.",
+   "notes": "Denominators 2 to 15; the numerator is below, equal to or above the denominator (less than 2 wholes).",
+   "sources": [
+    "CBSE-C5-CH02-Q298",
+    "CBSE-C5-CH02-Q299",
+    "CBSE-C5-CH02-Q300",
+    "CBSE-C5-CH02-Q303",
+    "CBSE-C5-CH02-Q304",
+    "CBSE-C5-CH02-Q308"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S10-P2",
+   "skill": "C5-FR2-S10",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "d1",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "n1",
+     "int": {
+      "min": "d1 + 1",
+      "max": "2 * d1 - 1"
+     }
+    },
+    {
+     "name": "d2",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "n2",
+     "int": {
+      "min": "d2 - 2",
+      "max": "d2 - 1"
+     }
+    },
+    {
+     "name": "d3",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "n3",
+     "int": {
+      "min": 1,
+      "max": "d3 - 1"
+     }
+    },
+    {
+     "name": "d4",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "n4",
+     "int": {
+      "min": 1,
+      "max": "d4 - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(n1, d1) == 1",
+    "gcd(n2, d2) == 1",
+    "gcd(n3, d3) == 1",
+    "gcd(n4, d4) == 1",
+    "n3 > n1 or d3 > d1 or n4 > n1"
+   ],
+   "text": "Which of these fractions is greater than 1?",
+   "options": {
+    "correct": "frac(n1, d1)",
+    "format": "fraction",
+    "wrong": [
+     {
+      "expr": "frac(n2, d2)",
+      "mistake": "thinks a fraction close to its denominator is more than one"
+     },
+     {
+      "expr": "frac(n3, d3)",
+      "mistake": "looks at the size of the numbers, not the numerator against the denominator"
+     },
+     {
+      "expr": "frac(n4, d4)",
+      "mistake": "looks at the size of the numbers, not the numerator against the denominator"
+     }
+    ]
+   },
+   "hint": "A fraction is greater than 1 when its numerator is greater than its denominator.",
+   "explanation": "In {n1}/{d1}, the numerator {n1} is greater than the denominator {d1}, so it is more than one whole. The others have a numerator smaller than the denominator.",
+   "misconception": "Assumes every fraction is less than one regardless of its numerator.",
+   "notes": "One improper fraction (less than 2) and three proper fractions with denominators up to 12, all in simplest form; at least one wrong option uses bigger numbers than the right one.",
+   "sources": [
+    "CBSE-C5-CH02-Q313",
+    "CBSE-C5-CH02-Q314",
+    "CBSE-C5-CH02-Q315",
+    "CBSE-C5-CH02-Q316",
+    "CBSE-C5-CH02-Q317",
+    "CBSE-C5-CH02-Q329"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S10-P3",
+   "skill": "C5-FR2-S10",
+   "questionType": "Single Select",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "big",
+     "choice": [
+      0,
+      1
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "d + 1 if big == 1 else 1",
+      "max": "2 * d - 1 if big == 1 else d - 1"
+     }
+    },
+    {
+     "name": "says",
+     "choice": [
+      {
+       "w": "greater",
+       "g": 1
+      },
+      {
+       "w": "less",
+       "g": 0
+      }
+     ]
+    },
+    {
+     "name": "k",
+     "expr": "(0 if big == 1 else 2) if says.g == 1 else (1 if big == 0 else 3)"
+    }
+   ],
+   "text": "{who.name} says, “{n}/{d} is {says.w} than 1.” Is {who.name} right?",
+   "options": {
+    "correct": "'Yes, the numerator is greater than the denominator' if (k) % 4 == 0 else ('Yes, the numerator is less than the denominator' if (k) % 4 == 1 else ('No, the numerator is less than the denominator' if (k) % 4 == 2 else 'No, the numerator is greater than the denominator'))",
+    "wrong": [
+     {
+      "expr": "'Yes, the numerator is greater than the denominator' if (k + 1) % 4 == 0 else ('Yes, the numerator is less than the denominator' if (k + 1) % 4 == 1 else ('No, the numerator is less than the denominator' if (k + 1) % 4 == 2 else 'No, the numerator is greater than the denominator'))",
+      "mistake": "doesn't compare the numerator with the denominator"
+     },
+     {
+      "expr": "'Yes, the numerator is greater than the denominator' if (k + 2) % 4 == 0 else ('Yes, the numerator is less than the denominator' if (k + 2) % 4 == 1 else ('No, the numerator is less than the denominator' if (k + 2) % 4 == 2 else 'No, the numerator is greater than the denominator'))",
+      "mistake": "agrees or disagrees without checking which number is bigger"
+     },
+     {
+      "expr": "'Yes, the numerator is greater than the denominator' if (k + 3) % 4 == 0 else ('Yes, the numerator is less than the denominator' if (k + 3) % 4 == 1 else ('No, the numerator is less than the denominator' if (k + 3) % 4 == 2 else 'No, the numerator is greater than the denominator'))",
+      "mistake": "thinks every fraction is less than one, or mixes up the two numbers"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Compares {n} with {d}: {n}/{d} is {'greater' if n > d else 'less'} than {d}/{d} = 1."
+    },
+    {
+     "marks": 1,
+     "text": "Decides that {who.name} is {'right' if (n > d) == (says.g == 1) else 'not right'}, with the reason."
+    }
+   ],
+   "hint": "One whole is {d}/{d}. Is {n}/{d} more or less than that?",
+   "explanation": "One whole is {d}/{d}. {n} is {'greater' if n > d else 'less'} than {d}, so {n}/{d} is {'greater' if n > d else 'less'} than 1, and {who.name} is {'right' if (n > d) == (says.g == 1) else 'not right'}.",
+   "misconception": "Assumes every fraction is less than one regardless of its numerator.",
+   "notes": "Proper or improper fractions (below 2) with denominators 3 to 12; the child claims 'greater than 1' or 'less than 1', so the right answer is any of four (Yes or No, numerator bigger or smaller).",
+   "sources": [
+    "CBSE-C5-CH02-Q318",
+    "CBSE-C5-CH02-Q319",
+    "CBSE-C5-CH02-Q320",
+    "CBSE-C5-CH02-Q326",
+    "CBSE-C5-CH02-Q327",
+    "CBSE-C5-CH02-Q330"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S11-P1",
+   "skill": "C5-FR2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; integer",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "w",
+     "int": {
+      "min": 1,
+      "max": 5
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "n",
+     "expr": "w * d + r"
+    }
+   ],
+   "require": [
+    "gcd(r, d) == 1"
+   ],
+   "text": "Write {n}/{d} as a mixed number: ___ wholes and ___/{d}. Enter whole number;numerator.",
+   "answer": [
+    "w",
+    "r"
+   ],
+   "hint": "How many groups of {d} are in {n}? The pieces left over stay over {d}.",
+   "explanation": "{n} ÷ {d} = {w} remainder {r}, so {n}/{d} = {w} {r}/{d}.",
+   "misconception": "Uses the remainder as a whole-number part or changes the denominator during conversion.",
+   "notes": "Denominators 2 to 12; 1 to 5 wholes; the fraction part is in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q331",
+    "CBSE-C5-CH02-Q332",
+    "CBSE-C5-CH02-Q336",
+    "CBSE-C5-CH02-Q337",
+    "CBSE-C5-CH02-Q341"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S11-P2",
+   "skill": "C5-FR2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "w",
+     "int": {
+      "min": 1,
+      "max": 5
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(r, d) == 1"
+   ],
+   "text": "Write {w} {r}/{d} as an improper fraction: {w} {r}/{d} = ___/{d}. What is the missing numerator?",
+   "answer": "w * d + r",
+   "hint": "Each whole is {d}/{d}. Multiply {w} by {d}, then add {r}.",
+   "explanation": "{w} {'whole' if w == 1 else 'wholes'} = {w} × {d} = {w * d} pieces of 1/{d}. Add {r}: {w * d} + {r} = {w * d + r}, so {w} {r}/{d} = {w * d + r}/{d}.",
+   "misconception": "Uses the remainder as a whole-number part or changes the denominator during conversion.",
+   "notes": "Denominators 2 to 12; 1 to 5 wholes. Asked as the missing numerator, so the denominator is given.",
+   "sources": [
+    "CBSE-C5-CH02-Q346",
+    "CBSE-C5-CH02-Q347",
+    "CBSE-C5-CH02-Q348",
+    "CBSE-C5-CH02-Q349",
+    "CBSE-C5-CH02-Q350",
+    "CBSE-C5-CH02-Q351"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S11-P3",
+   "skill": "C5-FR2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "w",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "text": "How many complete wholes are in {w * d + r}/{d}?",
+   "answer": "w",
+   "hint": "Count the complete groups of {d} in {w * d + r}.",
+   "explanation": "{w * d + r} ÷ {d} = {w} remainder {r}, so there are {w} complete wholes.",
+   "misconception": "Uses the remainder as a whole-number part or changes the denominator during conversion.",
+   "notes": "Denominators 2 to 12; 1 to 8 wholes with some left over.",
+   "sources": [
+    "CBSE-C5-CH02-Q355",
+    "CBSE-C5-CH02-Q356",
+    "CBSE-C5-CH02-Q357",
+    "CBSE-C5-CH02-Q358",
+    "CBSE-C5-CH02-Q359",
+    "CBSE-C5-CH02-Q361"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S11-P4",
+   "skill": "C5-FR2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Integer; integer",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "item",
+     "choice": [
+      {
+       "one": "roti"
+      },
+      {
+       "one": "cake"
+      },
+      {
+       "one": "pizza"
+      },
+      {
+       "one": "chikki bar"
+      }
+     ]
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 8
+     }
+    },
+    {
+     "name": "w",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "n",
+     "expr": "w * d + r"
+    }
+   ],
+   "text": "Each {item.one} is cut into {d} equal pieces. {who.name} has {n} such pieces. How many whole {item.one}s can be made from them, and how many pieces are left over? Enter wholes;pieces left.",
+   "answer": [
+    "w",
+    "r"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Divides: {n} ÷ {d} = {w} remainder {r} (or {n}/{d} = {w} {r}/{d})."
+    },
+    {
+     "marks": 1,
+     "text": "Answers {w} whole {item.one}s and {r} {'piece' if r == 1 else 'pieces'} left over."
+    }
+   ],
+   "hint": "{d} pieces make one whole {item.one}.",
+   "explanation": "{n} ÷ {d} = {w} remainder {r}, so {n}/{d} = {w} {r}/{d}: {w} whole {item.one}s and {r} {'piece' if r == 1 else 'pieces'} left.",
+   "misconception": "Uses the remainder as a whole-number part or changes the denominator during conversion.",
+   "notes": "3 to 8 pieces in each whole; 2 to 6 wholes and some pieces left over.",
+   "sources": [
+    "CBSE-C5-CH02-Q359",
+    "CBSE-C5-CH02-Q360",
+    "CBSE-C5-CH02-Q361",
+    "CBSE-C5-CH02-Q362"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S12-P1",
+   "skill": "C5-FR2-S12",
+   "questionType": "Text Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Fraction a/b",
+   "answerFormat": "fraction",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(k, d) == 1"
+   ],
+   "text": "A number line from 0 to 1 is divided into {d} equal parts. Counting the marks after 0, what fraction is at mark number {k}? Write it as a/b.",
+   "answer": "frac(k, d)",
+   "hint": "Each part is 1/{d}. Count the parts from 0.",
+   "explanation": "Each part is 1/{d}. Mark number {k} is {k} {'part' if k == 1 else 'parts'} from 0, so it shows {k}/{d}.",
+   "misconception": "Counts tick marks instead of intervals or starts the numerator count at one rather than zero.",
+   "notes": "Lines split into 3 to 12 equal parts; the fraction is in simplest form.",
+   "sources": [
+    "CBSE-C5-CH02-Q364",
+    "CBSE-C5-CH02-Q365",
+    "CBSE-C5-CH02-Q369",
+    "CBSE-C5-CH02-Q370",
+    "CBSE-C5-CH02-Q374",
+    "CBSE-C5-CH02-Q379"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S12-P2",
+   "skill": "C5-FR2-S12",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 15
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "text": "A number line from 0 to 1 has {d} equal parts. Counting the marks after 0, which mark number shows {k}/{d}?",
+   "answer": "k",
+   "hint": "The numerator tells how many parts to move from 0.",
+   "explanation": "{k}/{d} is {k} {'part' if k == 1 else 'parts'} of 1/{d} from 0, so it is at mark number {k}.",
+   "misconception": "Counts tick marks instead of intervals or starts the numerator count at one rather than zero.",
+   "notes": "3 to 15 equal parts.",
+   "sources": [
+    "CBSE-C5-CH02-Q384",
+    "CBSE-C5-CH02-Q385",
+    "CBSE-C5-CH02-Q387",
+    "CBSE-C5-CH02-Q388",
+    "CBSE-C5-CH02-Q389",
+    "CBSE-C5-CH02-Q390"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S12-P3",
+   "skill": "C5-FR2-S12",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "w",
+     "choice": [
+      1,
+      1,
+      2,
+      3
+     ]
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    }
+   ],
+   "text": "A number line from 0 to {w} {'is divided into' if w == 1 else 'has each whole divided into'} {d} equal parts. How many tick marks does it have, counting the marks at both ends?",
+   "answer": "w * d + 1",
+   "hint": "Draw a small line with 2 equal parts and count its marks.",
+   "explanation": "There are {w} × {d} = {w * d} equal parts. A line with {w * d} parts has one more mark than parts: {w * d} + 1 = {w * d + 1} marks.",
+   "misconception": "Counts tick marks instead of intervals or starts the numerator count at one rather than zero.",
+   "notes": "Lines from 0 to 1, 2 or 3 with 2 to 12 parts in each whole (33 different questions).",
+   "sources": [
+    "CBSE-C5-CH02-Q392",
+    "CBSE-C5-CH02-Q393",
+    "CBSE-C5-CH02-Q396"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S12-P4",
+   "skill": "C5-FR2-S12",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "n",
+     "expr": "d + r"
+    }
+   ],
+   "text": "A number line from 0 to 2 is divided so that each whole has {d} equal parts. Counting the marks after 0, which mark number shows {n}/{d}?",
+   "answer": "n",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Sees that each part is 1/{d}, so 1 is at mark {d}."
+    },
+    {
+     "marks": 1,
+     "text": "Counts on {r} more {'part' if r == 1 else 'parts'}: {d} + {r} = mark {n} shows {n}/{d}."
+    }
+   ],
+   "hint": "1 whole is at mark {d}. {n}/{d} is more than 1.",
+   "explanation": "Each part is 1/{d}. 1 = {d}/{d} is at mark {d}, and {n}/{d} is {r} {'part' if r == 1 else 'parts'} further: mark {n}.",
+   "misconception": "Counts tick marks instead of intervals or starts the numerator count at one rather than zero.",
+   "notes": "Each whole split into 2 to 10 parts; the fraction is between 1 and 2.",
+   "sources": [
+    "CBSE-C5-CH02-Q384",
+    "CBSE-C5-CH02-Q385",
+    "CBSE-C5-CH02-Q386",
+    "CBSE-C5-CH02-Q395"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S13-P1",
+   "skill": "C5-FR2-S13",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 24
+     }
+    },
+    {
+     "name": "rel",
+     "choice": [
+      "lt",
+      "lt",
+      "eq",
+      "gt",
+      "gt"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "1 if rel == 'lt' else (d // 2 if rel == 'eq' else d // 2 + 1)",
+      "max": "(d - 1) // 2 if rel == 'lt' else (d // 2 if rel == 'eq' else d - 1)"
+     }
+    },
+    {
+     "name": "c",
+     "expr": "'Less than 1/2' if 2 * n < d else ('Equal to 1/2' if 2 * n == d else 'Greater than 1/2')"
+    }
+   ],
+   "require": [
+    "rel != 'eq' or d % 2 == 0"
+   ],
+   "text": "Is {n}/{d} less than, equal to or greater than one-half?",
+   "options": {
+    "correct": "c",
+    "wrong": [
+     {
+      "expr": "'Equal to 1/2' if c == 'Less than 1/2' else 'Less than 1/2'",
+      "mistake": "judges by the numerator alone"
+     },
+     {
+      "expr": "'Greater than 1/2' if c != 'Greater than 1/2' else 'Equal to 1/2'",
+      "mistake": "judges by the numerator alone"
+     },
+     {
+      "expr": "'It cannot be compared'",
+      "mistake": "doesn't know how to compare with one-half"
+     }
+    ]
+   },
+   "hint": "Double the numerator and compare it with the denominator.",
+   "explanation": "2 × {n} = {2 * n}, which is {'less than' if 2 * n < d else ('equal to' if 2 * n == d else 'greater than')} {d}. So {n}/{d} is {'less than' if 2 * n < d else ('equal to' if 2 * n == d else 'greater than')} one-half.",
+   "misconception": "Checks only whether the numerator itself is large without relating it to the denominator.",
+   "notes": "Proper fractions with denominators 3 to 24; equal to one-half only when the denominator is even.",
+   "sources": [
+    "CBSE-C5-CH02-Q397",
+    "CBSE-C5-CH02-Q398",
+    "CBSE-C5-CH02-Q402",
+    "CBSE-C5-CH02-Q407",
+    "CBSE-C5-CH02-Q412",
+    "CBSE-C5-CH02-Q417"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S13-P2",
+   "skill": "C5-FR2-S13",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 2,
+      "max": 25
+     }
+    }
+   ],
+   "text": "What numerator makes ___/{2 * m} exactly equal to one-half?",
+   "answer": "m",
+   "hint": "Half of the denominator.",
+   "explanation": "Half of {2 * m} is {m}, so {m}/{2 * m} = 1/2.",
+   "misconception": "Checks only whether the numerator itself is large without relating it to the denominator.",
+   "notes": "Even denominators 4 to 50 (only 24 different questions).",
+   "sources": [
+    "CBSE-C5-CH02-Q421",
+    "CBSE-C5-CH02-Q422",
+    "CBSE-C5-CH02-Q423",
+    "CBSE-C5-CH02-Q424",
+    "CBSE-C5-CH02-Q427"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S13-P3",
+   "skill": "C5-FR2-S13",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "act",
+     "choice": [
+      "of a book",
+      "of a puzzle",
+      "of a race",
+      "of the homework",
+      "of a painting"
+     ]
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 5,
+      "max": 20
+     }
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "2 * n != d",
+    "gcd(n, d) == 1",
+    "n >= 3"
+   ],
+   "text": "{who.name} has finished {n}/{d} {act}. Has {who.name} finished more than half?",
+   "options": {
+    "correct": "'Yes, more than half' if 2 * n > d else 'No, less than half'",
+    "wrong": [
+     {
+      "expr": "'No, less than half' if 2 * n > d else 'Yes, more than half'",
+      "mistake": "judges by the size of the numerator alone"
+     },
+     {
+      "expr": "'Exactly half'",
+      "mistake": "doesn't compare twice the numerator with the denominator"
+     },
+     {
+      "expr": "'It cannot be told'",
+      "mistake": "doesn't use one-half as a benchmark"
+     }
+    ]
+   },
+   "hint": "Half of {d} is {d / 2:mixed}. Is {n} more or less than that?",
+   "explanation": "Half of {d} is {d / 2:mixed}. {n} is {'more' if 2 * n > d else 'less'} than that, so {who.name} has finished {'more' if 2 * n > d else 'less'} than half.",
+   "misconception": "Checks only whether the numerator itself is large without relating it to the denominator.",
+   "notes": "Denominators 5 to 20; numerators of 3 or more (so a large-looking numerator can still be less than half); never exactly half.",
+   "sources": [
+    "CBSE-C5-CH02-Q412",
+    "CBSE-C5-CH02-Q413",
+    "CBSE-C5-CH02-Q414",
+    "CBSE-C5-CH02-Q415",
+    "CBSE-C5-CH02-Q416"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S13-P4",
+   "skill": "C5-FR2-S13",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 1,
+      "max": "m - 1"
+     }
+    }
+   ],
+   "text": "A strip is divided into {2 * m} equal parts, and {n} {'part is' if n == 1 else 'parts are'} coloured. How many more parts must be coloured so that exactly one-half of the strip is coloured?",
+   "answer": "m - n",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds one-half of the strip: {2 * m} ÷ 2 = {m} parts."
+    },
+    {
+     "marks": 1,
+     "text": "Finds the extra parts: {m} − {n} = {m - n}."
+    }
+   ],
+   "hint": "How many parts make one-half of {2 * m} parts?",
+   "explanation": "One-half of {2 * m} parts is {m} parts. {n} are coloured, so {m} − {n} = {m - n} more are needed.",
+   "misconception": "Checks only whether the numerator itself is large without relating it to the denominator.",
+   "notes": "Strips of 6 to 24 equal parts (even); fewer than half are coloured to start.",
+   "sources": [
+    "CBSE-C5-CH02-Q425",
+    "CBSE-C5-CH02-Q426",
+    "CBSE-C5-CH02-Q427",
+    "CBSE-C5-CH02-Q428"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S14-P1",
+   "skill": "C5-FR2-S14",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "f",
+     "expr": "frac(a, b)"
+    },
+    {
+     "name": "g",
+     "expr": "frac(c, d)"
+    }
+   ],
+   "require": [
+    "b != d",
+    "a != c",
+    "f != g",
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1"
+   ],
+   "text": "Choose the correct symbol: {a}/{b} ___ {c}/{d}.",
+   "options": {
+    "correct": "'<' if f < g else '>'",
+    "wrong": [
+     {
+      "expr": "'>' if f < g else '<'",
+      "mistake": "compares the numerators or the denominators on their own"
+     },
+     {
+      "expr": "'='",
+      "mistake": "thinks the fractions are equal because they share a number"
+     },
+     {
+      "expr": "'Cannot be decided'",
+      "mistake": "thinks the fractions can't be compared without a picture"
+     }
+    ]
+   },
+   "hint": "Write both fractions with the same denominator, {lcm(b, d)}.",
+   "explanation": "{a}/{b} = {a * lcm(b, d) // b}/{lcm(b, d)} and {c}/{d} = {c * lcm(b, d) // d}/{lcm(b, d)}. So {a}/{b} {'<' if f < g else '>'} {c}/{d}.",
+   "misconception": "Compares numerators or denominators separately without creating a common basis.",
+   "notes": "Two proper fractions in simplest form with different numerators and denominators 2 to 12.",
+   "sources": [
+    "CBSE-C5-CH02-Q430",
+    "CBSE-C5-CH02-Q431",
+    "CBSE-C5-CH02-Q435",
+    "CBSE-C5-CH02-Q436",
+    "CBSE-C5-CH02-Q440",
+    "CBSE-C5-CH02-Q445"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S14-P2",
+   "skill": "C5-FR2-S14",
+   "questionType": "Single Select",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "f",
+     "choice": [
+      {
+       "r": "8/11",
+       "w1": "11/20",
+       "w2": "7/17",
+       "w3": "1/4",
+       "above": 2
+      },
+      {
+       "r": "11/12",
+       "w1": "13/19",
+       "w2": "10/19",
+       "w3": "3/4",
+       "above": 4
+      },
+      {
+       "r": "1/3",
+       "w1": "3/17",
+       "w2": "1/16",
+       "w3": "2/9",
+       "above": 0
+      },
+      {
+       "r": "2/7",
+       "w1": "3/20",
+       "w2": "2/19",
+       "w3": "1/7",
+       "above": 0
+      },
+      {
+       "r": "8/9",
+       "w1": "9/16",
+       "w2": "3/10",
+       "w3": "1/3",
+       "above": 2
+      },
+      {
+       "r": "4/5",
+       "w1": "9/16",
+       "w2": "3/16",
+       "w3": "3/7",
+       "above": 2
+      },
+      {
+       "r": "5/11",
+       "w1": "7/20",
+       "w2": "5/16",
+       "w3": "1/8",
+       "above": 0
+      },
+      {
+       "r": "6/7",
+       "w1": "7/11",
+       "w2": "3/17",
+       "w3": "2/3",
+       "above": 3
+      },
+      {
+       "r": "2/3",
+       "w1": "5/11",
+       "w2": "3/10",
+       "w3": "1/6",
+       "above": 1
+      },
+      {
+       "r": "4/9",
+       "w1": "5/19",
+       "w2": "3/13",
+       "w3": "2/7",
+       "above": 0
+      },
+      {
+       "r": "4/9",
+       "w1": "6/19",
+       "w2": "1/18",
+       "w3": "1/6",
+       "above": 0
+      },
+      {
+       "r": "3/4",
+       "w1": "7/16",
+       "w2": "1/5",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "8/9",
+       "w1": "9/16",
+       "w2": "5/11",
+       "w3": "1/11",
+       "above": 2
+      },
+      {
+       "r": "7/8",
+       "w1": "8/17",
+       "w2": "3/11",
+       "w3": "7/10",
+       "above": 2
+      },
+      {
+       "r": "2/5",
+       "w1": "3/19",
+       "w2": "1/16",
+       "w3": "1/8",
+       "above": 0
+      },
+      {
+       "r": "4/7",
+       "w1": "8/17",
+       "w2": "5/17",
+       "w3": "2/11",
+       "above": 1
+      },
+      {
+       "r": "3/7",
+       "w1": "5/19",
+       "w2": "1/11",
+       "w3": "1/4",
+       "above": 0
+      },
+      {
+       "r": "10/11",
+       "w1": "12/17",
+       "w2": "7/13",
+       "w3": "3/4",
+       "above": 4
+      },
+      {
+       "r": "3/4",
+       "w1": "7/16",
+       "w2": "7/12",
+       "w3": "1/5",
+       "above": 2
+      },
+      {
+       "r": "5/6",
+       "w1": "8/15",
+       "w2": "1/7",
+       "w3": "1/3",
+       "above": 2
+      },
+      {
+       "r": "6/7",
+       "w1": "7/18",
+       "w2": "8/15",
+       "w3": "1/5",
+       "above": 2
+      },
+      {
+       "r": "7/10",
+       "w1": "11/19",
+       "w2": "7/15",
+       "w3": "4/9",
+       "above": 2
+      },
+      {
+       "r": "5/7",
+       "w1": "8/15",
+       "w2": "5/12",
+       "w3": "1/10",
+       "above": 2
+      },
+      {
+       "r": "5/6",
+       "w1": "9/14",
+       "w2": "6/17",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "2/3",
+       "w1": "4/17",
+       "w2": "1/10",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "3/7",
+       "w1": "5/16",
+       "w2": "1/17",
+       "w3": "1/10",
+       "above": 0
+      },
+      {
+       "r": "7/12",
+       "w1": "9/20",
+       "w2": "8/19",
+       "w3": "1/4",
+       "above": 1
+      },
+      {
+       "r": "7/8",
+       "w1": "11/18",
+       "w2": "10/19",
+       "w3": "5/8",
+       "above": 4
+      },
+      {
+       "r": "5/7",
+       "w1": "8/19",
+       "w2": "5/14",
+       "w3": "2/5",
+       "above": 1
+      },
+      {
+       "r": "3/5",
+       "w1": "8/17",
+       "w2": "1/14",
+       "w3": "4/9",
+       "above": 1
+      },
+      {
+       "r": "3/5",
+       "w1": "4/15",
+       "w2": "1/7",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "1/3",
+       "w1": "3/13",
+       "w2": "1/14",
+       "w3": "1/6",
+       "above": 0
+      },
+      {
+       "r": "8/11",
+       "w1": "10/17",
+       "w2": "11/20",
+       "w3": "1/3",
+       "above": 3
+      },
+      {
+       "r": "2/3",
+       "w1": "5/19",
+       "w2": "3/8",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "1/3",
+       "w1": "3/17",
+       "w2": "3/16",
+       "w3": "2/9",
+       "above": 0
+      },
+      {
+       "r": "2/3",
+       "w1": "3/11",
+       "w2": "1/12",
+       "w3": "5/9",
+       "above": 2
+      },
+      {
+       "r": "7/8",
+       "w1": "12/19",
+       "w2": "7/10",
+       "w3": "1/6",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "3/14",
+       "w2": "1/6",
+       "w3": "1/7",
+       "above": 0
+      },
+      {
+       "r": "3/7",
+       "w1": "5/17",
+       "w2": "5/18",
+       "w3": "2/11",
+       "above": 0
+      },
+      {
+       "r": "9/11",
+       "w1": "10/19",
+       "w2": "9/14",
+       "w3": "2/3",
+       "above": 4
+      },
+      {
+       "r": "4/11",
+       "w1": "5/19",
+       "w2": "1/14",
+       "w3": "1/10",
+       "above": 0
+      },
+      {
+       "r": "7/11",
+       "w1": "8/17",
+       "w2": "3/16",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "1/3",
+       "w1": "2/13",
+       "w2": "1/6",
+       "w3": "1/9",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "5/12",
+       "w2": "1/19",
+       "w3": "1/5",
+       "above": 1
+      },
+      {
+       "r": "6/7",
+       "w1": "9/16",
+       "w2": "3/8",
+       "w3": "3/4",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "3/13",
+       "w2": "3/16",
+       "w3": "1/8",
+       "above": 0
+      },
+      {
+       "r": "2/3",
+       "w1": "7/20",
+       "w2": "1/18",
+       "w3": "1/3",
+       "above": 1
+      },
+      {
+       "r": "5/8",
+       "w1": "9/20",
+       "w2": "8/19",
+       "w3": "3/11",
+       "above": 1
+      },
+      {
+       "r": "4/5",
+       "w1": "8/13",
+       "w2": "4/19",
+       "w3": "1/6",
+       "above": 2
+      },
+      {
+       "r": "6/7",
+       "w1": "8/15",
+       "w2": "5/12",
+       "w3": "5/7",
+       "above": 3
+      },
+      {
+       "r": "2/3",
+       "w1": "7/16",
+       "w2": "5/9",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "2/7",
+       "w1": "3/19",
+       "w2": "1/18",
+       "w3": "1/7",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "5/12",
+       "w2": "3/13",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "7/8",
+       "w1": "11/17",
+       "w2": "3/13",
+       "w3": "2/5",
+       "above": 2
+      },
+      {
+       "r": "9/10",
+       "w1": "11/15",
+       "w2": "9/17",
+       "w3": "1/6",
+       "above": 3
+      },
+      {
+       "r": "3/4",
+       "w1": "5/19",
+       "w2": "7/16",
+       "w3": "1/3",
+       "above": 1
+      },
+      {
+       "r": "2/5",
+       "w1": "5/17",
+       "w2": "4/17",
+       "w3": "1/12",
+       "above": 0
+      },
+      {
+       "r": "3/7",
+       "w1": "5/16",
+       "w2": "1/8",
+       "w3": "2/7",
+       "above": 0
+      },
+      {
+       "r": "5/12",
+       "w1": "6/19",
+       "w2": "3/19",
+       "w3": "2/7",
+       "above": 0
+      },
+      {
+       "r": "8/9",
+       "w1": "13/20",
+       "w2": "3/19",
+       "w3": "4/9",
+       "above": 2
+      },
+      {
+       "r": "2/5",
+       "w1": "3/10",
+       "w2": "3/14",
+       "w3": "1/9",
+       "above": 0
+      },
+      {
+       "r": "2/5",
+       "w1": "4/17",
+       "w2": "1/15",
+       "w3": "1/11",
+       "above": 0
+      },
+      {
+       "r": "9/10",
+       "w1": "12/17",
+       "w2": "11/14",
+       "w3": "5/7",
+       "above": 4
+      },
+      {
+       "r": "4/7",
+       "w1": "6/19",
+       "w2": "4/13",
+       "w3": "1/12",
+       "above": 1
+      },
+      {
+       "r": "6/7",
+       "w1": "11/16",
+       "w2": "4/15",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "3/4",
+       "w1": "7/16",
+       "w2": "5/11",
+       "w3": "4/9",
+       "above": 1
+      },
+      {
+       "r": "2/5",
+       "w1": "5/17",
+       "w2": "2/13",
+       "w3": "1/11",
+       "above": 0
+      },
+      {
+       "r": "3/4",
+       "w1": "4/9",
+       "w2": "1/9",
+       "w3": "1/2",
+       "above": 1
+      },
+      {
+       "r": "3/5",
+       "w1": "5/18",
+       "w2": "3/13",
+       "w3": "1/5",
+       "above": 1
+      },
+      {
+       "r": "4/7",
+       "w1": "8/19",
+       "w2": "3/14",
+       "w3": "1/6",
+       "above": 1
+      },
+      {
+       "r": "7/8",
+       "w1": "9/16",
+       "w2": "13/18",
+       "w3": "3/10",
+       "above": 3
+      },
+      {
+       "r": "7/9",
+       "w1": "11/19",
+       "w2": "2/17",
+       "w3": "7/11",
+       "above": 3
+      },
+      {
+       "r": "7/8",
+       "w1": "12/19",
+       "w2": "1/10",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "8/9",
+       "w1": "13/17",
+       "w2": "11/14",
+       "w3": "1/11",
+       "above": 3
+      },
+      {
+       "r": "11/12",
+       "w1": "12/17",
+       "w2": "3/13",
+       "w3": "5/12",
+       "above": 2
+      },
+      {
+       "r": "3/7",
+       "w1": "5/17",
+       "w2": "2/9",
+       "w3": "2/7",
+       "above": 0
+      },
+      {
+       "r": "2/5",
+       "w1": "3/20",
+       "w2": "2/9",
+       "w3": "1/11",
+       "above": 0
+      },
+      {
+       "r": "4/9",
+       "w1": "5/17",
+       "w2": "3/10",
+       "w3": "1/5",
+       "above": 0
+      },
+      {
+       "r": "2/5",
+       "w1": "3/20",
+       "w2": "1/7",
+       "w3": "3/10",
+       "above": 0
+      },
+      {
+       "r": "9/10",
+       "w1": "10/19",
+       "w2": "3/14",
+       "w3": "8/11",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "5/19",
+       "w2": "5/17",
+       "w3": "1/8",
+       "above": 0
+      },
+      {
+       "r": "5/6",
+       "w1": "7/16",
+       "w2": "4/15",
+       "w3": "1/6",
+       "above": 1
+      },
+      {
+       "r": "8/11",
+       "w1": "11/20",
+       "w2": "10/17",
+       "w3": "4/9",
+       "above": 3
+      },
+      {
+       "r": "7/8",
+       "w1": "8/15",
+       "w2": "7/18",
+       "w3": "3/5",
+       "above": 3
+      },
+      {
+       "r": "9/11",
+       "w1": "12/19",
+       "w2": "7/17",
+       "w3": "2/3",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "5/18",
+       "w2": "2/9",
+       "w3": "1/10",
+       "above": 0
+      },
+      {
+       "r": "9/10",
+       "w1": "14/19",
+       "w2": "1/12",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "1/3",
+       "w1": "3/19",
+       "w2": "2/9",
+       "w3": "1/5",
+       "above": 0
+      },
+      {
+       "r": "1/3",
+       "w1": "3/16",
+       "w2": "3/14",
+       "w3": "2/9",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "6/19",
+       "w2": "1/15",
+       "w3": "1/4",
+       "above": 1
+      },
+      {
+       "r": "2/5",
+       "w1": "3/19",
+       "w2": "4/17",
+       "w3": "3/10",
+       "above": 0
+      },
+      {
+       "r": "4/9",
+       "w1": "5/18",
+       "w2": "4/15",
+       "w3": "3/11",
+       "above": 0
+      },
+      {
+       "r": "8/9",
+       "w1": "11/15",
+       "w2": "4/15",
+       "w3": "1/12",
+       "above": 2
+      },
+      {
+       "r": "3/4",
+       "w1": "7/11",
+       "w2": "1/10",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "11/12",
+       "w1": "12/19",
+       "w2": "11/20",
+       "w3": "1/2",
+       "above": 3
+      },
+      {
+       "r": "2/3",
+       "w1": "3/7",
+       "w2": "7/16",
+       "w3": "5/9",
+       "above": 2
+      },
+      {
+       "r": "7/8",
+       "w1": "12/17",
+       "w2": "13/18",
+       "w3": "2/9",
+       "above": 3
+      },
+      {
+       "r": "9/10",
+       "w1": "11/19",
+       "w2": "8/11",
+       "w3": "3/7",
+       "above": 3
+      },
+      {
+       "r": "6/7",
+       "w1": "7/12",
+       "w2": "11/16",
+       "w3": "1/5",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "4/15",
+       "w2": "2/7",
+       "w3": "1/4",
+       "above": 0
+      },
+      {
+       "r": "1/3",
+       "w1": "3/13",
+       "w2": "1/5",
+       "w3": "1/11",
+       "above": 0
+      },
+      {
+       "r": "7/8",
+       "w1": "11/16",
+       "w2": "12/17",
+       "w3": "3/5",
+       "above": 4
+      },
+      {
+       "r": "1/3",
+       "w1": "3/19",
+       "w2": "1/17",
+       "w3": "1/12",
+       "above": 0
+      },
+      {
+       "r": "5/6",
+       "w1": "7/15",
+       "w2": "2/13",
+       "w3": "3/5",
+       "above": 2
+      },
+      {
+       "r": "2/3",
+       "w1": "5/18",
+       "w2": "4/17",
+       "w3": "1/10",
+       "above": 1
+      },
+      {
+       "r": "7/8",
+       "w1": "9/14",
+       "w2": "3/10",
+       "w3": "7/11",
+       "above": 3
+      },
+      {
+       "r": "3/4",
+       "w1": "4/13",
+       "w2": "5/13",
+       "w3": "2/5",
+       "above": 1
+      },
+      {
+       "r": "2/3",
+       "w1": "5/19",
+       "w2": "3/13",
+       "w3": "1/9",
+       "above": 1
+      },
+      {
+       "r": "6/7",
+       "w1": "8/17",
+       "w2": "1/8",
+       "w3": "4/9",
+       "above": 1
+      },
+      {
+       "r": "2/3",
+       "w1": "7/16",
+       "w2": "1/9",
+       "w3": "2/9",
+       "above": 1
+      },
+      {
+       "r": "8/9",
+       "w1": "13/18",
+       "w2": "4/19",
+       "w3": "3/10",
+       "above": 2
+      },
+      {
+       "r": "6/7",
+       "w1": "8/11",
+       "w2": "9/14",
+       "w3": "5/9",
+       "above": 4
+      },
+      {
+       "r": "4/9",
+       "w1": "5/19",
+       "w2": "3/13",
+       "w3": "1/3",
+       "above": 0
+      },
+      {
+       "r": "2/5",
+       "w1": "3/17",
+       "w2": "1/13",
+       "w3": "1/6",
+       "above": 0
+      },
+      {
+       "r": "2/3",
+       "w1": "7/13",
+       "w2": "1/7",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "1/3",
+       "w1": "2/15",
+       "w2": "1/6",
+       "w3": "2/9",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "6/13",
+       "w2": "4/7",
+       "w3": "1/6",
+       "above": 2
+      },
+      {
+       "r": "2/5",
+       "w1": "5/18",
+       "w2": "1/7",
+       "w3": "3/10",
+       "above": 0
+      },
+      {
+       "r": "6/7",
+       "w1": "7/20",
+       "w2": "7/12",
+       "w3": "1/3",
+       "above": 2
+      },
+      {
+       "r": "6/7",
+       "w1": "9/17",
+       "w2": "5/9",
+       "w3": "5/12",
+       "above": 3
+      },
+      {
+       "r": "5/6",
+       "w1": "8/11",
+       "w2": "9/19",
+       "w3": "1/3",
+       "above": 2
+      },
+      {
+       "r": "4/9",
+       "w1": "5/18",
+       "w2": "3/14",
+       "w3": "1/3",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "6/11",
+       "w2": "8/13",
+       "w3": "2/7",
+       "above": 3
+      },
+      {
+       "r": "3/8",
+       "w1": "4/19",
+       "w2": "2/11",
+       "w3": "1/5",
+       "above": 0
+      },
+      {
+       "r": "5/6",
+       "w1": "9/13",
+       "w2": "2/17",
+       "w3": "2/11",
+       "above": 2
+      },
+      {
+       "r": "3/5",
+       "w1": "8/19",
+       "w2": "3/20",
+       "w3": "1/4",
+       "above": 1
+      },
+      {
+       "r": "3/5",
+       "w1": "5/19",
+       "w2": "1/8",
+       "w3": "2/11",
+       "above": 1
+      },
+      {
+       "r": "2/3",
+       "w1": "5/18",
+       "w2": "5/12",
+       "w3": "1/6",
+       "above": 1
+      },
+      {
+       "r": "11/12",
+       "w1": "12/17",
+       "w2": "5/19",
+       "w3": "4/5",
+       "above": 3
+      },
+      {
+       "r": "1/3",
+       "w1": "3/16",
+       "w2": "3/20",
+       "w3": "1/7",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "8/13",
+       "w2": "4/11",
+       "w3": "1/2",
+       "above": 2
+      },
+      {
+       "r": "8/9",
+       "w1": "9/19",
+       "w2": "5/12",
+       "w3": "3/5",
+       "above": 2
+      },
+      {
+       "r": "1/3",
+       "w1": "3/17",
+       "w2": "1/6",
+       "w3": "1/5",
+       "above": 0
+      },
+      {
+       "r": "7/8",
+       "w1": "12/17",
+       "w2": "5/14",
+       "w3": "1/4",
+       "above": 2
+      },
+      {
+       "r": "4/9",
+       "w1": "5/17",
+       "w2": "1/12",
+       "w3": "1/7",
+       "above": 0
+      },
+      {
+       "r": "1/3",
+       "w1": "3/19",
+       "w2": "1/5",
+       "w3": "1/9",
+       "above": 0
+      },
+      {
+       "r": "7/9",
+       "w1": "8/15",
+       "w2": "8/19",
+       "w3": "2/3",
+       "above": 3
+      },
+      {
+       "r": "2/3",
+       "w1": "3/10",
+       "w2": "1/14",
+       "w3": "1/3",
+       "above": 1
+      },
+      {
+       "r": "5/6",
+       "w1": "9/19",
+       "w2": "5/7",
+       "w3": "7/10",
+       "above": 3
+      },
+      {
+       "r": "7/9",
+       "w1": "9/20",
+       "w2": "3/11",
+       "w3": "1/4",
+       "above": 1
+      },
+      {
+       "r": "3/4",
+       "w1": "5/9",
+       "w2": "4/17",
+       "w3": "5/8",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "3/17",
+       "w2": "3/11",
+       "w3": "1/4",
+       "above": 0
+      },
+      {
+       "r": "4/5",
+       "w1": "6/11",
+       "w2": "1/18",
+       "w3": "1/9",
+       "above": 2
+      },
+      {
+       "r": "6/7",
+       "w1": "10/17",
+       "w2": "3/8",
+       "w3": "1/3",
+       "above": 2
+      },
+      {
+       "r": "2/5",
+       "w1": "3/16",
+       "w2": "1/14",
+       "w3": "1/11",
+       "above": 0
+      },
+      {
+       "r": "1/3",
+       "w1": "2/13",
+       "w2": "1/18",
+       "w3": "1/6",
+       "above": 0
+      },
+      {
+       "r": "8/9",
+       "w1": "9/19",
+       "w2": "9/20",
+       "w3": "5/7",
+       "above": 2
+      },
+      {
+       "r": "10/11",
+       "w1": "11/18",
+       "w2": "10/17",
+       "w3": "1/3",
+       "above": 3
+      },
+      {
+       "r": "2/5",
+       "w1": "4/17",
+       "w2": "1/7",
+       "w3": "1/8",
+       "above": 0
+      },
+      {
+       "r": "5/11",
+       "w1": "6/19",
+       "w2": "2/17",
+       "w3": "1/3",
+       "above": 0
+      }
+     ]
+    }
+   ],
+   "text": "Which fraction is the greatest?",
+   "options": {
+    "correct": "f.r",
+    "wrong": [
+     {
+      "expr": "f.w1",
+      "mistake": "picks the fraction with the largest numerator"
+     },
+     {
+      "expr": "f.w2",
+      "mistake": "picks the fraction with a larger denominator"
+     },
+     {
+      "expr": "f.w3",
+      "mistake": "compares without a common denominator or a benchmark"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Uses a common denominator, a benchmark (1/2, 1) or cross-multiplying to compare the fractions."
+    },
+    {
+     "marks": 1,
+     "text": "Chooses {f.r} as the greatest."
+    }
+   ],
+   "hint": "Compare each fraction with one-half, or rewrite them with the same denominator.",
+   "explanation": "Comparing with equivalent fractions (or by cross-multiplying), {f.r} is the greatest. {f.w1} has a bigger numerator but a smaller value.",
+   "misconception": "Compares numerators or denominators separately without creating a common basis.",
+   "notes": "150 sets of four proper fractions in simplest form (listed in the pattern), denominators up to 20. In 50 the greatest is below one-half; in many others two or more options are above one-half. The greatest is at least 1/10 more than each of the others (no near ties). One wrong option has a bigger numerator and one a bigger denominator than the right answer.",
+   "sources": [
+    "CBSE-C5-CH02-Q455",
+    "CBSE-C5-CH02-Q456",
+    "CBSE-C5-CH02-Q457",
+    "CBSE-C5-CH02-Q458",
+    "CBSE-C5-CH02-Q459",
+    "CBSE-C5-CH02-Q460"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S14-P3",
+   "skill": "C5-FR2-S14",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "p",
+     "list": "names"
+    },
+    {
+     "name": "q",
+     "list": "names"
+    },
+    {
+     "name": "what",
+     "choice": [
+      {
+       "do": "walked",
+       "u": "km"
+      },
+      {
+       "do": "swam",
+       "u": "km"
+      },
+      {
+       "do": "cycled",
+       "u": "km"
+      }
+     ]
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "p.name != q.name",
+    "b != d",
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "frac(a, b) != frac(c, d)",
+    "a != c"
+   ],
+   "text": "{p.name} {what.do} {a}/{b} {what.u} and {q.name} {what.do} {c}/{d} {what.u}. Who {what.do} farther?",
+   "options": {
+    "correct": "p.name if frac(a, b) > frac(c, d) else q.name",
+    "wrong": [
+     {
+      "expr": "q.name if frac(a, b) > frac(c, d) else p.name",
+      "mistake": "compares the numerators or the denominators on their own"
+     },
+     {
+      "expr": "'Both the same distance'",
+      "mistake": "doesn't find a common denominator"
+     },
+     {
+      "expr": "'It cannot be told, the denominators are different'",
+      "mistake": "thinks fractions with different denominators can't be compared"
+     }
+    ]
+   },
+   "hint": "Rewrite both distances with the denominator {lcm(b, d)}.",
+   "explanation": "{a}/{b} = {a * lcm(b, d) // b}/{lcm(b, d)} and {c}/{d} = {c * lcm(b, d) // d}/{lcm(b, d)}. So {p.name if frac(a, b) > frac(c, d) else q.name} {what.do} farther.",
+   "misconception": "Compares numerators or denominators separately without creating a common basis.",
+   "notes": "Two proper fractions with denominators 2 to 10, different numerators and denominators.",
+   "sources": [
+    "CBSE-C5-CH02-Q445",
+    "CBSE-C5-CH02-Q446",
+    "CBSE-C5-CH02-Q447",
+    "CBSE-C5-CH02-Q448",
+    "CBSE-C5-CH02-Q449"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S15-P1",
+   "skill": "C5-FR2-S15",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "g",
+     "choice": [
+      {
+       "many": "marbles"
+      },
+      {
+       "many": "beads"
+      },
+      {
+       "many": "mangoes"
+      },
+      {
+       "many": "stickers"
+      },
+      {
+       "many": "pencils"
+      },
+      {
+       "many": "flowers"
+      },
+      {
+       "many": "laddoos"
+      },
+      {
+       "many": "bangles"
+      },
+      {
+       "many": "books"
+      },
+      {
+       "many": "counters"
+      }
+     ]
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "t",
+     "expr": "b * k"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1"
+   ],
+   "text": "{who.name} had {t} {g.many} and used {a}/{b} of them. How many {g.many} are left?",
+   "answer": "t - a * k",
+   "hint": "Find the number used first, then subtract it from {t}.",
+   "explanation": "{a}/{b} of {t} is {t} ÷ {b} × {a} = {a * k} used, so {t} − {a * k} = {t - a * k} are left.",
+   "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
+   "notes": "Denominators 2 to 10; totals are a multiple of the denominator, up to 150.",
+   "sources": [
+    "CBSE-C5-CH02-Q463",
+    "CBSE-C5-CH02-Q464",
+    "CBSE-C5-CH02-Q465",
+    "CBSE-C5-CH02-Q466",
+    "CBSE-C5-CH02-Q468",
+    "CBSE-C5-CH02-Q473"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S15-P2",
+   "skill": "C5-FR2-S15",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "t",
+     "expr": "lcm(b, d) * k"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "frac(a, b) != frac(c, d)",
+    "frac(a, b) + frac(c, d) <= 1",
+    "t >= 12",
+    "t <= 120"
+   ],
+   "text": "A class has {t} counters. Group A uses {a}/{b} of them and Group B uses {c}/{d} of them. How many more counters does the larger share have?",
+   "answer": "abs(t * a // b - t * c // d)",
+   "hint": "Find each group's counters first, then subtract.",
+   "explanation": "Group A: {a}/{b} of {t} = {t * a // b}. Group B: {c}/{d} of {t} = {t * c // d}. The difference is {abs(t * a // b - t * c // d)}.",
+   "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
+   "notes": "Two different fractions (denominators 2 to 12) of the same 12 to 120 counters, together at most the whole.",
+   "sources": [
+    "CBSE-C5-CH02-Q478",
+    "CBSE-C5-CH02-Q479",
+    "CBSE-C5-CH02-Q480",
+    "CBSE-C5-CH02-Q481",
+    "CBSE-C5-CH02-Q482"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S15-P3",
+   "skill": "C5-FR2-S15",
+   "questionType": "Single Select",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Short response",
+   "values": [
+    {
+     "name": "g",
+     "choice": [
+      {
+       "many": "marbles"
+      },
+      {
+       "many": "beads"
+      },
+      {
+       "many": "mangoes"
+      },
+      {
+       "many": "stickers"
+      },
+      {
+       "many": "pencils"
+      },
+      {
+       "many": "flowers"
+      },
+      {
+       "many": "laddoos"
+      },
+      {
+       "many": "bangles"
+      },
+      {
+       "many": "books"
+      },
+      {
+       "many": "counters"
+      }
+     ]
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "k1",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "k2",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "t1",
+     "expr": "b * k1"
+    },
+    {
+     "name": "t2",
+     "expr": "d * k2"
+    },
+    {
+     "name": "s1",
+     "expr": "a * k1"
+    },
+    {
+     "name": "s2",
+     "expr": "c * k2"
+    },
+    {
+     "name": "trap",
+     "choice": [
+      1,
+      1,
+      0
+     ]
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "s1 != s2",
+    "frac(a, b) != frac(c, d)",
+    "((frac(a, b) > frac(c, d)) != (s1 > s2)) == (trap == 1)"
+   ],
+   "text": "Team A gets {a}/{b} of {t1} {g.many}. Team B gets {c}/{d} of {t2} {g.many}. Which team gets more {g.many}?",
+   "options": {
+    "correct": "'Team A' if s1 > s2 else 'Team B'",
+    "wrong": [
+     {
+      "expr": "'Team B' if s1 > s2 else 'Team A'",
+      "mistake": "compares the fractions without checking that the wholes are different"
+     },
+     {
+      "expr": "'Both get the same'",
+      "mistake": "doesn't work out the actual amounts"
+     },
+     {
+      "expr": "'It cannot be found'",
+      "mistake": "doesn't find a fraction of each quantity"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds both amounts: {a}/{b} of {t1} = {s1} and {c}/{d} of {t2} = {s2}."
+    },
+    {
+     "marks": 1,
+     "text": "Concludes {'Team A' if s1 > s2 else 'Team B'} gets more ({max(s1, s2)} > {min(s1, s2)})."
+    }
+   ],
+   "hint": "The wholes are different, so find each team's actual number.",
+   "explanation": "Team A: {t1} ÷ {b} × {a} = {s1}. Team B: {t2} ÷ {d} × {c} = {s2}. {'Team A' if s1 > s2 else 'Team B'} gets more{', even though its fraction is the smaller one' if trap == 1 else ''}.",
+   "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
+   "notes": "Denominators 2 to 6; different wholes (multiples of the denominators). In two copies of three, the team with the larger fraction gets FEWER (the trap); in the rest it gets more, so the fractions alone never decide.",
+   "sources": [
+    "CBSE-C5-CH02-Q483",
+    "CBSE-C5-CH02-Q484",
+    "CBSE-C5-CH02-Q485",
+    "CBSE-C5-CH02-Q488",
+    "CBSE-C5-CH02-Q491",
+    "CBSE-C5-CH02-Q492"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-S15-P4",
+   "skill": "C5-FR2-S15",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "t",
+     "expr": "b * d * k * 10"
+    },
+    {
+     "name": "spent1",
+     "expr": "t * a // b"
+    },
+    {
+     "name": "rest",
+     "expr": "t - spent1"
+    },
+    {
+     "name": "spent2",
+     "expr": "rest * c // d"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "t <= 2000"
+   ],
+   "text": "{who.name} had ₹{t:num}. {who.name} spent {a}/{b} of it on books, and then {c}/{d} of the money left on a bag. How much money does {who.name} have now?",
+   "answer": "rest - spent2",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Books: {a}/{b} of ₹{t:num} = ₹{spent1}; money left = ₹{rest}."
+    },
+    {
+     "marks": 1,
+     "text": "Bag: {c}/{d} of ₹{rest} = ₹{spent2}; money now = ₹{rest - spent2}."
+    }
+   ],
+   "hint": "The second fraction is of the money LEFT, not of ₹{t:num}.",
+   "explanation": "Books: ₹{t:num} ÷ {b} × {a} = ₹{spent1}, leaving ₹{rest}. Bag: ₹{rest} ÷ {d} × {c} = ₹{spent2}. Money now: ₹{rest} − ₹{spent2} = ₹{rest - spent2}.",
+   "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
+   "notes": "Denominators 2 to 5; amounts in tens up to ₹2,000, chosen so every step is whole rupees.",
+   "sources": [
+    "CBSE-C5-CH02-Q494",
+    "CBSE-C5-CH02-Q495",
+    "CBSE-C5-CH02-Q500"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-L3-1",
+   "skill": "C5-FR2-S15",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 4,
+   "competency": "Application in context",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "t",
+     "expr": "b * d * k"
+    },
+    {
+     "name": "bus",
+     "expr": "t * a // b"
+    },
+    {
+     "name": "rest",
+     "expr": "t - bus"
+    },
+    {
+     "name": "walk",
+     "expr": "rest * c // d"
+    },
+    {
+     "name": "cyc",
+     "expr": "rest - walk"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "t >= 40",
+    "t <= 400"
+   ],
+   "text": "A school has {t} students. {a}/{b} of them come by bus. {c}/{d} of the rest walk to school, and the others come by cycle. How many students come by cycle? Show your working.",
+   "answer": "By bus: {t} ÷ {b} × {a} = {bus}. The rest: {t} − {bus} = {rest}. Walk: {rest} ÷ {d} × {c} = {walk}. By cycle: {rest} − {walk} = {cyc}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "By bus: {a}/{b} of {t} = {bus}, so {rest} are left."
+    },
+    {
+     "marks": 1,
+     "text": "Walk: {c}/{d} of the {rest} left = {walk} (not {c}/{d} of {t})."
+    },
+    {
+     "marks": 1,
+     "text": "By cycle: {rest} − {walk} = {cyc} students."
+    }
+   ],
+   "hint": "The second fraction is of the students left, not of the whole school.",
+   "explanation": "{bus} come by bus, leaving {rest}. {walk} of those walk, so {cyc} come by cycle.",
+   "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
+   "notes": "40 to 400 students; denominators 2 to 5; every step is a whole number of students.",
+   "sources": [
+    "CBSE-C5-CH02-Q495",
+    "CBSE-C5-CH02-Q494",
+    "CBSE-C5-CH02-Q478"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-L3-2",
+   "skill": "C5-FR2-S14",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "l",
+     "expr": "lcm(b, d)"
+    },
+    {
+     "name": "x",
+     "expr": "a * l // b"
+    },
+    {
+     "name": "y",
+     "expr": "c * l // d"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "b != d",
+    "x != y",
+    "l != b",
+    "l != d",
+    "l <= 40"
+   ],
+   "text": "Compare {a}/{b} and {c}/{d} by writing them as equivalent fractions with the same denominator. Which is greater, and by how much? Show your working.",
+   "answer": "A common denominator is {l}. {a}/{b} = {x}/{l} and {c}/{d} = {y}/{l}. {max(x, y)}/{l} > {min(x, y)}/{l}, so {a if x > y else c}/{b if x > y else d} is greater, by {max(x, y) - min(x, y)}/{l}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Chooses a common denominator such as {l} (any common multiple is fine)."
+    },
+    {
+     "marks": 1,
+     "text": "Writes {a}/{b} = {x}/{l} and {c}/{d} = {y}/{l}, and says {a if x > y else c}/{b if x > y else d} is greater."
+    },
+    {
+     "marks": 1,
+     "text": "Difference: {max(x, y) - min(x, y)}/{l} (or the same amount in another form, e.g. simplified)."
+    }
+   ],
+   "hint": "Find a number that both {b} and {d} divide into.",
+   "explanation": "With denominator {l}: {x}/{l} and {y}/{l}. The difference is {max(x, y) - min(x, y)}/{l}.",
+   "misconception": "Compares numerators or denominators separately without creating a common basis.",
+   "notes": "Two proper fractions in simplest form, denominators 2 to 9 where neither divides the other; common denominator up to 40.",
+   "sources": [
+    "CBSE-C5-CH02-Q450",
+    "CBSE-C5-CH02-Q451",
+    "CBSE-C5-CH02-Q452",
+    "CBSE-C5-CH02-Q461",
+    "CBSE-C5-CH02-Q462"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-L3-3",
+   "skill": "C5-FR2-S11",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "item",
+     "choice": [
+      "roti",
+      "cake",
+      "pizza",
+      "chikki bar",
+      "watermelon"
+     ]
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 3,
+      "max": 8
+     }
+    },
+    {
+     "name": "w",
+     "int": {
+      "min": 1,
+      "max": 4
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "n",
+     "expr": "w * d + r"
+    }
+   ],
+   "require": [
+    "gcd(r, d) == 1"
+   ],
+   "text": "Each {item} is cut into {d} equal pieces. {who.name} has {n} pieces. (a) Write the amount as an improper fraction of a {item}. (b) Write it as a mixed number. (c) How many more pieces would {who.name} need to have {w + 1} whole {item}s? Show your working.",
+   "answer": "(a) {n}/{d}. (b) {n} ÷ {d} = {w} remainder {r}, so {w} {r}/{d}. (c) {w + 1} wholes = {(w + 1) * d} pieces, so {(w + 1) * d} − {n} = {d - r} more {'piece' if d - r == 1 else 'pieces'}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {n}/{d}."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {w} {r}/{d} (the remainder {r} stays over {d})."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {(w + 1) * d} − {n} = {d - r} more {'piece' if d - r == 1 else 'pieces'}."
+    }
+   ],
+   "hint": "Each whole {item} is {d} pieces.",
+   "explanation": "{n} pieces of 1/{d} is {n}/{d} = {w} {r}/{d}. {w + 1} wholes need {(w + 1) * d} pieces, so {d - r} more.",
+   "misconception": "Uses the remainder as a whole-number part or changes the denominator during conversion.",
+   "notes": "3 to 8 pieces in each whole; 1 to 4 wholes and some left over.",
+   "sources": [
+    "CBSE-C5-CH02-Q359",
+    "CBSE-C5-CH02-Q360",
+    "CBSE-C5-CH02-Q361",
+    "CBSE-C5-CH02-Q362",
+    "CBSE-C5-CH02-Q363"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-L5-1",
+   "skill": "C5-FR2-S15",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Application in context",
+   "responseFormat": "Written working",
+   "maxWords": 90,
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "b",
+     "choice": [
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      4,
+      5,
+      8,
+      10
+     ]
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "t",
+     "expr": "lcm(b, d) * 10 * k"
+    },
+    {
+     "name": "book",
+     "expr": "t * a // b"
+    },
+    {
+     "name": "stat",
+     "expr": "t * c // d"
+    },
+    {
+     "name": "spent",
+     "expr": "book + stat"
+    },
+    {
+     "name": "left",
+     "expr": "t - spent"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "frac(a, b) + frac(c, d) < 1",
+    "t <= 2000",
+    "t >= 100"
+   ],
+   "text": "{who.name} has ₹{t:num}. {who.name} spends {a}/{b} of it on a storybook and {c}/{d} of it on stationery. (a) How much does the storybook cost? (b) How much does the stationery cost? (c) How much is spent in all? (d) What fraction of the money is left? (e) How much money is left? Show your working.",
+   "answer": "(a) ₹{t:num} ÷ {b} × {a} = ₹{book}. (b) ₹{t:num} ÷ {d} × {c} = ₹{stat}. (c) ₹{book} + ₹{stat} = ₹{spent}. (d) {left}/{t} = {frac(left, t):fraction} of the money is left. (e) ₹{t:num} − ₹{spent} = ₹{left}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {a}/{b} of ₹{t:num} = ₹{book}."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {c}/{d} of ₹{t:num} = ₹{stat}."
+    },
+    {
+     "marks": 1,
+     "text": "(c) ₹{book} + ₹{stat} = ₹{spent}."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {frac(left, t):fraction} (accept {left}/{t} or any equivalent fraction, e.g. 1 − {a}/{b} − {c}/{d} worked with a common denominator)."
+    },
+    {
+     "marks": 1,
+     "text": "(e) ₹{left} (follow through from a wrong (c))."
+    }
+   ],
+   "hint": "Both fractions are of the same ₹{t:num}.",
+   "explanation": "Storybook ₹{book}, stationery ₹{stat}, spent ₹{spent}, left ₹{left}, which is {frac(left, t):fraction} of ₹{t:num}.",
+   "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
+   "notes": "Amounts from ₹100 to ₹2,000 that both denominators divide; the two fractions together are less than the whole.",
+   "sources": [
+    "CBSE-C5-CH02-Q495",
+    "CBSE-C5-CH02-Q494",
+    "CBSE-C5-CH02-Q500",
+    "CBSE-C5-CH02-Q478"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-L5-2",
+   "skill": "C5-FR2-S14",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written working",
+   "maxWords": 90,
+   "values": [
+    {
+     "name": "p",
+     "list": "names"
+    },
+    {
+     "name": "q",
+     "list": "names"
+    },
+    {
+     "name": "r",
+     "list": "names"
+    },
+    {
+     "name": "item",
+     "choice": [
+      "chikki bar",
+      "chocolate bar",
+      "roti",
+      "paratha",
+      "cake"
+     ]
+    },
+    {
+     "name": "trio",
+     "choice": [
+      {
+       "b": 2,
+       "d": 3,
+       "f": 6
+      },
+      {
+       "b": 3,
+       "d": 4,
+       "f": 6
+      },
+      {
+       "b": 2,
+       "d": 5,
+       "f": 10
+      },
+      {
+       "b": 3,
+       "d": 4,
+       "f": 12
+      },
+      {
+       "b": 4,
+       "d": 6,
+       "f": 12
+      },
+      {
+       "b": 2,
+       "d": 3,
+       "f": 4
+      },
+      {
+       "b": 4,
+       "d": 5,
+       "f": 10
+      },
+      {
+       "b": 3,
+       "d": 5,
+       "f": 15
+      },
+      {
+       "b": 2,
+       "d": 4,
+       "f": 8
+      },
+      {
+       "b": 3,
+       "d": 6,
+       "f": 9
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "trio.b - 1"
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "trio.d - 1"
+     }
+    },
+    {
+     "name": "e",
+     "int": {
+      "min": 1,
+      "max": "trio.f - 1"
+     }
+    },
+    {
+     "name": "l",
+     "expr": "lcm(lcm(trio.b, trio.d), trio.f)"
+    },
+    {
+     "name": "x",
+     "expr": "a * l // trio.b"
+    },
+    {
+     "name": "y",
+     "expr": "c * l // trio.d"
+    },
+    {
+     "name": "z",
+     "expr": "e * l // trio.f"
+    },
+    {
+     "name": "top",
+     "expr": "max(x, y, z)"
+    },
+    {
+     "name": "bot",
+     "expr": "min(x, y, z)"
+    }
+   ],
+   "require": [
+    "p.name != q.name",
+    "q.name != r.name",
+    "p.name != r.name",
+    "gcd(a, trio.b) == 1",
+    "gcd(c, trio.d) == 1",
+    "gcd(e, trio.f) == 1",
+    "x != y",
+    "y != z",
+    "x != z",
+    "l <= 60"
+   ],
+   "text": "Three equal {item}s are shared. {p.name} eats {a}/{trio.b} of one, {q.name} eats {c}/{trio.d} of another and {r.name} eats {e}/{trio.f} of the third. (a) Write all three fractions with the same denominator. (b) Put the three amounts in order from least to greatest. (c) Who ate the most? (d) How much more did that child eat than the child who ate the least? Show your working.",
+   "answer": "(a) Common denominator {l}: {a}/{trio.b} = {x}/{l}, {c}/{trio.d} = {y}/{l}, {e}/{trio.f} = {z}/{l}. (b) In order: {bot}/{l}, {x + y + z - top - bot}/{l}, {top}/{l}. (c) {p.name if top == x else (q.name if top == y else r.name)} ate the most. (d) {top}/{l} − {bot}/{l} = {top - bot}/{l} of a {item} more.",
+   "steps": [
+    {
+     "marks": 2,
+     "text": "(a) 1 mark for a common denominator such as {l}; 1 mark for all three: {x}/{l}, {y}/{l}, {z}/{l}."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {bot}/{l}, {x + y + z - top - bot}/{l}, {top}/{l} (or the original fractions in that order)."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {p.name if top == x else (q.name if top == y else r.name)}."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {top - bot}/{l} of a {item} (accept an equivalent fraction)."
+    }
+   ],
+   "hint": "Find a number that {trio.b}, {trio.d} and {trio.f} all divide into.",
+   "explanation": "With denominator {l} the amounts are {x}/{l}, {y}/{l} and {z}/{l}; the most is {top}/{l} and the least {bot}/{l}.",
+   "misconception": "Compares numerators or denominators separately without creating a common basis.",
+   "notes": "Ten sets of three denominators (2 to 15) with a common denominator up to 60; three different amounts; three different children.",
+   "sources": [
+    "CBSE-C5-CH02-Q455",
+    "CBSE-C5-CH02-Q456",
+    "CBSE-C5-CH02-Q460",
+    "CBSE-C5-CH02-Q461",
+    "CBSE-C5-CH02-Q462"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-L5-3",
+   "skill": "C5-FR2-S04",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Application in context",
+   "responseFormat": "Written working",
+   "maxWords": 90,
+   "values": [
+    {
+     "name": "b",
+     "choice": [
+      3,
+      4,
+      5,
+      6
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      3,
+      4,
+      5,
+      6,
+      8,
+      10
+     ]
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": 5
+     }
+    },
+    {
+     "name": "t",
+     "expr": "lcm(b, d) * k * 2"
+    },
+    {
+     "name": "ro",
+     "expr": "t * a // b"
+    },
+    {
+     "name": "ma",
+     "expr": "t * c // d"
+    },
+    {
+     "name": "tu",
+     "expr": "t - ro - ma"
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "gcd(c, d) == 1",
+    "b != d",
+    "tu > 0",
+    "2 * tu != t",
+    "t >= 24",
+    "t <= 240"
+   ],
+   "text": "A school garden has {t} plants. {a}/{b} of them are roses and {c}/{d} of them are marigolds. The rest are tulsi plants. (a) How many roses are there? (b) How many marigolds? (c) How many tulsi plants? (d) What fraction of the plants are tulsi, in simplest form? (e) Are the tulsi plants more or less than half of the garden? Explain. Show your working.",
+   "answer": "(a) {t} ÷ {b} × {a} = {ro} roses. (b) {t} ÷ {d} × {c} = {ma} marigolds. (c) {t} − {ro} − {ma} = {tu} tulsi plants. (d) {tu}/{t} = {frac(tu, t):fraction}. (e) Half of {t} is {t // 2}; {tu} is {'more' if 2 * tu > t else 'less'} than {t // 2}, so the tulsi plants are {'more' if 2 * tu > t else 'less'} than half.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {a}/{b} of {t} = {ro} roses."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {c}/{d} of {t} = {ma} marigolds."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {t} − {ro} − {ma} = {tu} tulsi plants (follow through)."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {frac(tu, t):fraction} (from {tu}/{t})."
+    },
+    {
+     "marks": 1,
+     "text": "(e) Compares {tu} with half of {t} ({t // 2}): {'more' if 2 * tu > t else 'less'} than half, with the reason."
+    }
+   ],
+   "hint": "Find each kind of plant from the whole {t}; the rest are tulsi.",
+   "explanation": "{ro} roses + {ma} marigolds leaves {tu} tulsi plants, which is {frac(tu, t):fraction} of the garden.",
+   "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
+   "notes": "24 to 240 plants (an even number that both denominators divide); never exactly half tulsi.",
+   "sources": [
+    "CBSE-C5-CH02-Q128",
+    "CBSE-C5-CH02-Q129",
+    "CBSE-C5-CH02-Q130",
+    "CBSE-C5-CH02-Q131",
+    "CBSE-C5-CH02-Q132"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-CS-1",
+   "skill": "C5-FR2-S04",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "shop",
+     "choice": [
+      "Ramesh's fruit stall",
+      "The school canteen",
+      "A fruit shop in Pune",
+      "The village fair stall"
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 3,
+      "max": 10
+     }
+    },
+    {
+     "name": "t",
+     "expr": "12 * k"
+    },
+    {
+     "name": "b",
+     "choice": [
+      3,
+      4,
+      6
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "b - 1"
+     }
+    },
+    {
+     "name": "sold",
+     "expr": "t * a // b"
+    },
+    {
+     "name": "left",
+     "expr": "t - sold"
+    },
+    {
+     "name": "e",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    }
+   ],
+   "require": [
+    "gcd(a, b) == 1",
+    "left % e == 0",
+    "t % e == 0"
+   ],
+   "stimulus": "Case study: {shop} had {t} mangoes in the morning. By noon {a}/{b} of the mangoes were sold. The mangoes left were packed equally into {e} baskets.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) How many mangoes were sold by noon?",
+     "answer": "sold",
+     "explanation": "{t} ÷ {b} × {a} = {sold}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) How many mangoes were left?",
+     "answer": "left",
+     "explanation": "{t} − {sold} = {left}."
+    },
+    {
+     "questionType": "Text Entry",
+     "marks": 1,
+     "answerFormat": "fraction",
+     "text": "(c) What fraction of the morning's mangoes were left? Write it in simplest form.",
+     "answer": "frac(left, t)",
+     "explanation": "{left}/{t} = {frac(left, t):fraction}."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(d) How many mangoes went into each basket?",
+     "options": {
+      "correct": "left // e",
+      "wrong": [
+       {
+        "expr": "t // e",
+        "mistake": "shares all the morning's mangoes instead of those left"
+       },
+       {
+        "expr": "sold // e",
+        "mistake": "shares the mangoes sold instead of those left"
+       },
+       {
+        "expr": "e",
+        "mistake": "gives the number of baskets instead of the mangoes in each"
+       }
+      ]
+     },
+     "explanation": "{left} ÷ {e} = {left // e} in each basket."
+    }
+   ],
+   "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
+   "notes": "36 to 120 mangoes (a multiple of 12); 1/3 to 5/6 sold; the mangoes left share equally into 2 to 6 baskets.",
+   "sources": [
+    "CBSE-C5-CH02-Q100",
+    "CBSE-C5-CH02-Q105",
+    "CBSE-C5-CH02-Q128",
+    "CBSE-C5-CH02-Q463",
+    "CBSE-C5-CH02-Q468"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-CS-2",
+   "skill": "C5-FR2-S12",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "d",
+     "choice": [
+      4,
+      5,
+      6,
+      8,
+      10
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 1,
+      "max": "d - 1"
+     }
+    }
+   ],
+   "require": [
+    "gcd(k, d) == 1",
+    "k != m",
+    "m + k != d",
+    "2 * m != d"
+   ],
+   "stimulus": "Case study: A 1 km walking track in a park has markers that split it into {d} equal parts, like a number line from 0 km to 1 km. {who.name} starts at 0 and stops at marker number {k}, counting the markers after 0.",
+   "parts": [
+    {
+     "questionType": "Text Entry",
+     "marks": 1,
+     "answerFormat": "fraction",
+     "text": "(a) What fraction of a kilometre has {who.name} walked? Write it as a/b.",
+     "answer": "frac(k, d)",
+     "explanation": "Each part is 1/{d} km, so marker {k} is {k}/{d} km."
+    },
+    {
+     "questionType": "Text Entry",
+     "marks": 1,
+     "answerFormat": "fraction",
+     "text": "(b) What fraction of the track is still left to walk? Write it as a/b.",
+     "answer": "frac(d - k, d)",
+     "explanation": "{d}/{d} − {k}/{d} = {d - k}/{d}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) There is also a marker at 0 km and one at 1 km. How many markers are there in all?",
+     "answer": "d + 1",
+     "explanation": "{d} parts need {d - 1} markers in between, plus the two at the ends: {d + 1}."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(d) A friend is at marker number {m}, counting the markers after 0. Is the friend more or less than halfway along the track?",
+     "options": {
+      "correct": "'More than halfway' if 2 * m > d else 'Less than halfway'",
+      "wrong": [
+       {
+        "expr": "'Less than halfway' if 2 * m > d else 'More than halfway'",
+        "mistake": "doesn't compare the marker with half the parts"
+       },
+       {
+        "expr": "'Exactly halfway'",
+        "mistake": "doesn't compare the marker with half the parts"
+       },
+       {
+        "expr": "'At the end of the track'",
+        "mistake": "confuses a marker number with the total number of parts"
+       }
+      ]
+     },
+     "explanation": "Halfway is marker {d / 2:mixed}; marker {m} is {'more' if 2 * m > d else 'less'} than halfway."
+    }
+   ],
+   "misconception": "Counts tick marks instead of intervals or starts the numerator count at one rather than zero.",
+   "notes": "Tracks split into 4, 5, 6, 8 or 10 equal parts; the friend is never exactly halfway.",
+   "sources": [
+    "CBSE-C5-CH02-Q364",
+    "CBSE-C5-CH02-Q369",
+    "CBSE-C5-CH02-Q384",
+    "CBSE-C5-CH02-Q392",
+    "CBSE-C5-CH02-Q396"
+   ],
+   "chapter": 2
+  },
+  {
+   "code": "C5-FR2-CS-3",
+   "skill": "C5-FR2-S14",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "p",
+     "list": "names"
+    },
+    {
+     "name": "q",
+     "list": "names"
+    },
+    {
+     "name": "pair",
+     "choice": [
+      {
+       "b": 2,
+       "l": 4
+      },
+      {
+       "b": 2,
+       "l": 6
+      },
+      {
+       "b": 3,
+       "l": 6
+      },
+      {
+       "b": 4,
+       "l": 8
+      },
+      {
+       "b": 2,
+       "l": 8
+      },
+      {
+       "b": 3,
+       "l": 9
+      },
+      {
+       "b": 5,
+       "l": 10
+      },
+      {
+       "b": 2,
+       "l": 10
+      },
+      {
+       "b": 4,
+       "l": 12
+      },
+      {
+       "b": 3,
+       "l": 12
+      },
+      {
+       "b": 6,
+       "l": 12
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": "pair.b - 1"
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": "pair.l - 1"
+     }
+    },
+    {
+     "name": "x",
+     "expr": "a * pair.l // pair.b"
+    }
+   ],
+   "require": [
+    "p.name != q.name",
+    "gcd(a, pair.b) == 1",
+    "gcd(c, pair.l) == 1",
+    "x != c",
+    "x + c < pair.l"
+   ],
+   "stimulus": "Case study: {p.name} and {q.name} each bring a tiffin box with one same-sized paratha. At lunch {p.name} eats {a}/{pair.b} of {p.his} paratha and {q.name} eats {c}/{pair.l} of {q.his} paratha.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) {a}/{pair.b} = ___/{pair.l}. What is the missing numerator?",
+     "answer": "x",
+     "explanation": "{pair.l} ÷ {pair.b} = {pair.l // pair.b}, so {a} × {pair.l // pair.b} = {x}."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(b) Who ate more paratha?",
+     "options": {
+      "correct": "p.name if x > c else q.name",
+      "wrong": [
+       {
+        "expr": "q.name if x > c else p.name",
+        "mistake": "compares numerators or denominators on their own"
+       },
+       {
+        "expr": "'Both ate the same'",
+        "mistake": "doesn't use the common denominator"
+       },
+       {
+        "expr": "'It cannot be told'",
+        "mistake": "thinks different denominators can't be compared"
+       }
+      ]
+     },
+     "explanation": "{max(x, c)}/{pair.l} > {min(x, c)}/{pair.l}, so {p.name if x > c else q.name} ate more."
+    },
+    {
+     "questionType": "Text Entry",
+     "marks": 1,
+     "answerFormat": "fraction",
+     "text": "(c) How much more paratha did that child eat? Write it in simplest form.",
+     "answer": "frac(abs(x - c), pair.l)",
+     "explanation": "{max(x, c)}/{pair.l} − {min(x, c)}/{pair.l} = {abs(x - c)}/{pair.l} = {frac(abs(x - c), pair.l):fraction}."
+    },
+    {
+     "questionType": "Text Entry",
+     "marks": 1,
+     "answerFormat": "fraction",
+     "text": "(d) If the two eaten pieces were put together, what fraction of one paratha would they make? Write it in simplest form.",
+     "answer": "frac(x + c, pair.l)",
+     "explanation": "{x}/{pair.l} + {c}/{pair.l} = {x + c}/{pair.l} = {frac(x + c, pair.l):fraction}."
+    }
+   ],
+   "misconception": "Compares numerators or denominators separately without creating a common basis.",
+   "notes": "Related denominators only (one is a multiple of the other: 2 and 4, 3 and 9, 4 and 12 and so on); different amounts; the two pieces together are less than one paratha.",
+   "sources": [
+    "CBSE-C5-CH02-Q445",
+    "CBSE-C5-CH02-Q446",
+    "CBSE-C5-CH02-Q447",
+    "CBSE-C5-CH02-Q450",
+    "CBSE-C5-CH02-Q478"
+   ],
+   "chapter": 2
+  }
+ ]
+}

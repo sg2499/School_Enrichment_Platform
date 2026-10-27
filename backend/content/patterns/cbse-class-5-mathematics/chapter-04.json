@@ -1,0 +1,4883 @@
+{
+ "engine": {
+  "board": "CBSE",
+  "classLevel": "5",
+  "course": "MATHEMATICS"
+ },
+ "about": "Chapter 4, We the Travellers II: 71 patterns, three to five for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "patterns": [
+  {
+   "code": "C5-WT2-S01-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S01",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 20,
+      "max": 60
+     }
+    },
+    {
+     "name": "y",
+     "expr": "x - k"
+    },
+    {
+     "name": "a1",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "a2",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "b1",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "b2",
+     "expr": "a1 + a2 - k - b1"
+    },
+    {
+     "name": "sa",
+     "expr": "a1 + a2 + x"
+    },
+    {
+     "name": "sb",
+     "expr": "b1 + b2 + y"
+    },
+    {
+     "name": "far",
+     "expr": "y + 2 * k"
+    }
+   ],
+   "require": [
+    "10 <= b2 <= 60",
+    "a1 != a2",
+    "a1 != x",
+    "a2 != x",
+    "b1 != b2",
+    "b1 != y",
+    "b2 != y",
+    "a1 != b1",
+    "a1 != b2",
+    "a1 != y",
+    "a2 != b1",
+    "a2 != b2",
+    "a2 != y",
+    "x != b1",
+    "x != b2",
+    "a1 - b1 != k",
+    "a1 - b2 != k",
+    "a1 - y != k",
+    "a2 - b1 != k",
+    "a2 - b2 != k",
+    "a2 - y != k",
+    "x - b1 != k",
+    "x - b2 != k",
+    "far != a1",
+    "far != a2"
+   ],
+   "text": "Group A has {a1}, {a2} and {x}. Group B has {b1}, {b2} and {y}. Which number from Group A should be interchanged with {y} from Group B so that the two groups have equal sums?",
+   "options": {
+    "correct": "x",
+    "wrong": [
+     {
+      "expr": "a1",
+      "mistake": "picks a number without working out how both sums change"
+     },
+     {
+      "expr": "a2",
+      "mistake": "swaps a pair whose difference is not half the gap between the sums"
+     },
+     {
+      "expr": "far",
+      "mistake": "moves the whole gap between the sums instead of half of it"
+     }
+    ]
+   },
+   "hint": "Find both sums first. A swap must take away half of the gap from the bigger sum and give it to the smaller one.",
+   "explanation": "Group A's sum is {sa} and Group B's is {sb}, a gap of {2 * k}. Swapping {x} and {y} takes {k} from A and gives {k} to B, so both sums become {sa - k}.",
+   "misconception": "Swaps any pair without tracking how both group sums change.",
+   "notes": "Numbers 10 to 60, all six different; the gap between the sums is 4 to 12, and exactly one pair (one number from each group) differs by half the gap. Wrong options: two other numbers of Group A, and the number that moves the whole gap.",
+   "sources": [
+    "CBSE-C5-CH04-Q001",
+    "CBSE-C5-CH04-Q008",
+    "CBSE-C5-CH04-Q015",
+    "CBSE-C5-CH04-Q022"
+   ]
+  },
+  {
+   "code": "C5-WT2-S01-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S01",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "tb",
+     "int": {
+      "min": 40,
+      "max": 400
+     }
+    },
+    {
+     "name": "h",
+     "int": {
+      "min": 1,
+      "max": 20
+     }
+    },
+    {
+     "name": "ta",
+     "expr": "tb + 2 * h"
+    }
+   ],
+   "text": "Group A totals {ta} and Group B totals {tb}. How much must be moved from Group A's total to Group B's total so that both totals become equal?",
+   "answer": "h",
+   "hint": "Find the gap between the totals. Moving an amount takes it from one total and adds it to the other.",
+   "explanation": "The gap is {ta} − {tb} = {2 * h}. Moving half of it, {h}, makes both totals {tb + h}.",
+   "misconception": "Swaps any pair without tracking how both group sums change.",
+   "notes": "Group B's total 40 to 400; Group A's is 2 to 40 more (always an even gap), so the answer is a whole number from 1 to 20.",
+   "sources": [
+    "CBSE-C5-CH04-Q005",
+    "CBSE-C5-CH04-Q012",
+    "CBSE-C5-CH04-Q019",
+    "CBSE-C5-CH04-Q026"
+   ]
+  },
+  {
+   "code": "C5-WT2-S01-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S01",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "p",
+     "int": {
+      "min": 10,
+      "max": 90
+     }
+    },
+    {
+     "name": "q",
+     "int": {
+      "min": 10,
+      "max": 90
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 10,
+      "max": 90
+     }
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 10,
+      "max": 90
+     }
+    }
+   ],
+   "require": [
+    "r + s - p >= 5",
+    "p != r",
+    "p != s",
+    "r + s - p != s",
+    "r + s - p != r",
+    "r + s - p != q"
+   ],
+   "text": "Complete the equality: {p} + {q} + □ = {r} + {q} + {s}.",
+   "answer": "r + s - p",
+   "hint": "Both sides share {q}. What must go with {p} to match {r} + {s}?",
+   "explanation": "{q} is on both sides, so {p} + □ = {r} + {s} = {r + s}. □ = {r + s} − {p} = {r + s - p}.",
+   "misconception": "Swaps any pair without tracking how both group sums change.",
+   "notes": "All numbers 10 to 90; the same number appears on both sides; the missing number is at least 5 and differs from the numbers shown on the right.",
+   "sources": [
+    "CBSE-C5-CH04-Q007",
+    "CBSE-C5-CH04-Q014",
+    "CBSE-C5-CH04-Q021",
+    "CBSE-C5-CH04-Q028"
+   ]
+  },
+  {
+   "code": "C5-WT2-S01-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S01",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Two integers separated by a semicolon",
+   "values": [
+    {
+     "name": "tb",
+     "int": {
+      "min": 30,
+      "max": 300
+     }
+    },
+    {
+     "name": "h",
+     "int": {
+      "min": 2,
+      "max": 25
+     }
+    },
+    {
+     "name": "ta",
+     "expr": "tb + 2 * h"
+    }
+   ],
+   "text": "Two groups of numbers total {ta} and {tb}. How much value must move from the larger total to the smaller total to make them equal? What will each total be then? Give the amount first, then the equal total.",
+   "answer": [
+    "h",
+    "tb + h"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds the gap {ta} − {tb} = {2 * h} and halves it: {h} must move."
+    },
+    {
+     "marks": 1,
+     "text": "Gives the equal total: {ta} − {h} = {tb} + {h} = {tb + h}."
+    }
+   ],
+   "hint": "Find the gap first. Half of the gap moves across.",
+   "explanation": "The gap is {ta} − {tb} = {2 * h}. Moving {h} (half of {2 * h}) makes both totals {tb + h}.",
+   "misconception": "Swaps any pair without tracking how both group sums change.",
+   "notes": "Smaller total 30 to 300; the larger is 4 to 50 more (an even gap).",
+   "sources": [
+    "CBSE-C5-CH04-Q029",
+    "CBSE-C5-CH04-Q030",
+    "CBSE-C5-CH04-Q031",
+    "CBSE-C5-CH04-Q033"
+   ]
+  },
+  {
+   "code": "C5-WT2-S02-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S02",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 99,
+       "big": 100,
+       "fix": 1,
+       "right": "Add 100, then subtract 1",
+       "w1": "Add 100, then add 1",
+       "w2": "Subtract 100, then add 1",
+       "w3": "Add 90, then subtract 9"
+      },
+      {
+       "f": 98,
+       "big": 100,
+       "fix": 2,
+       "right": "Add 100, then subtract 2",
+       "w1": "Add 100, then add 2",
+       "w2": "Subtract 100, then add 2",
+       "w3": "Add 100, then subtract 1"
+      },
+      {
+       "f": 199,
+       "big": 200,
+       "fix": 1,
+       "right": "Add 200, then subtract 1",
+       "w1": "Add 200, then add 1",
+       "w2": "Subtract 200, then add 1",
+       "w3": "Add 100, then subtract 1"
+      },
+      {
+       "f": 999,
+       "big": 1000,
+       "fix": 1,
+       "right": "Add 1,000, then subtract 1",
+       "w1": "Add 1,000, then add 1",
+       "w2": "Subtract 1,000, then add 1",
+       "w3": "Add 100, then subtract 1"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 105,
+      "max": 2900
+     }
+    }
+   ],
+   "require": [
+    "n % 10 != 0"
+   ],
+   "text": "Add mentally: {n:num} + {fr.f:num}.",
+   "answer": "n + fr.f",
+   "hint": "{fr.f:num} is {fr.fix} less than {fr.big:num}.",
+   "explanation": "{n:num} + {fr.big:num} = {n + fr.big:num}. Then take away {fr.fix}: {n + fr.f:num}.",
+   "misconception": "Adds the friendly amount but forgets to compensate.",
+   "notes": "A starting number 105 to 2,900 (not a multiple of 10) plus 99, 98, 199 or 999.",
+   "sources": [
+    "CBSE-C5-CH04-Q034",
+    "CBSE-C5-CH04-Q035",
+    "CBSE-C5-CH04-Q039",
+    "CBSE-C5-CH04-Q046"
+   ]
+  },
+  {
+   "code": "C5-WT2-S02-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S02",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 99,
+       "big": 100,
+       "fix": 1,
+       "right": "Add 100, then subtract 1",
+       "w1": "Add 100, then add 1",
+       "w2": "Subtract 100, then add 1",
+       "w3": "Add 90, then subtract 9"
+      },
+      {
+       "f": 98,
+       "big": 100,
+       "fix": 2,
+       "right": "Add 100, then subtract 2",
+       "w1": "Add 100, then add 2",
+       "w2": "Subtract 100, then add 2",
+       "w3": "Add 100, then subtract 1"
+      },
+      {
+       "f": 199,
+       "big": 200,
+       "fix": 1,
+       "right": "Add 200, then subtract 1",
+       "w1": "Add 200, then add 1",
+       "w2": "Subtract 200, then add 1",
+       "w3": "Add 100, then subtract 1"
+      },
+      {
+       "f": 999,
+       "big": 1000,
+       "fix": 1,
+       "right": "Add 1,000, then subtract 1",
+       "w1": "Add 1,000, then add 1",
+       "w2": "Subtract 1,000, then add 1",
+       "w3": "Add 100, then subtract 1"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 105,
+      "max": 2900
+     }
+    }
+   ],
+   "text": "Which mental strategy correctly finds {n:num} + {fr.f:num}?",
+   "options": {
+    "correct": "fr.right",
+    "wrong": [
+     {
+      "expr": "fr.w1",
+      "mistake": "adjusts in the wrong direction after adding the friendly number"
+     },
+     {
+      "expr": "fr.w2",
+      "mistake": "subtracts the friendly number instead of adding it"
+     },
+     {
+      "expr": "fr.w3",
+      "mistake": "uses a friendly number and adjustment that do not make the number being added"
+     }
+    ]
+   },
+   "hint": "Add a friendly number close to {fr.f:num}, then fix the difference.",
+   "explanation": "{fr.f:num} = {fr.big:num} − {fr.fix}, so add {fr.big:num} and then subtract {fr.fix}.",
+   "misconception": "Adds the friendly amount but forgets to compensate.",
+   "notes": "99, 98, 199 or 999 added to a number from 105 to 2,900. The four strategies come from the bank's own options.",
+   "sources": [
+    "CBSE-C5-CH04-Q037",
+    "CBSE-C5-CH04-Q044",
+    "CBSE-C5-CH04-Q051",
+    "CBSE-C5-CH04-Q058"
+   ]
+  },
+  {
+   "code": "C5-WT2-S02-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S02",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 99,
+       "big": 100,
+       "right": "Subtract 1",
+       "w1": "Add 1",
+       "w2": "Subtract 99"
+      },
+      {
+       "f": 98,
+       "big": 100,
+       "right": "Subtract 2",
+       "w1": "Add 2",
+       "w2": "Subtract 98"
+      },
+      {
+       "f": 199,
+       "big": 200,
+       "right": "Subtract 1",
+       "w1": "Add 1",
+       "w2": "Subtract 199"
+      },
+      {
+       "f": 999,
+       "big": 1000,
+       "right": "Subtract 1",
+       "w1": "Add 1",
+       "w2": "Subtract 999"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 105,
+      "max": 2900
+     }
+    }
+   ],
+   "text": "{who.name} found {n:num} + {fr.f:num} by adding {fr.big:num} and wrote {n + fr.big:num}. What correction is needed?",
+   "options": {
+    "correct": "fr.right",
+    "wrong": [
+     {
+      "expr": "fr.w1",
+      "mistake": "adjusts in the wrong direction"
+     },
+     {
+      "expr": "fr.w2",
+      "mistake": "takes away the whole number that was meant to be added"
+     },
+     {
+      "expr": "'No correction'",
+      "mistake": "adds the friendly amount but forgets to compensate"
+     }
+    ]
+   },
+   "hint": "Was {fr.big:num} more or less than {fr.f:num}?",
+   "explanation": "{fr.big:num} is {fr.big - fr.f} more than {fr.f:num}, so {who.he} added {fr.big - fr.f} too many. {n + fr.big:num} − {fr.big - fr.f} = {n + fr.f:num}.",
+   "misconception": "Adds the friendly amount but forgets to compensate.",
+   "notes": "Same numbers as S02-P1, with a named student.",
+   "sources": [
+    "CBSE-C5-CH04-Q040",
+    "CBSE-C5-CH04-Q047",
+    "CBSE-C5-CH04-Q054",
+    "CBSE-C5-CH04-Q061"
+   ]
+  },
+  {
+   "code": "C5-WT2-S02-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S02",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 999,
+       "big": 1000,
+       "fix": 1
+      },
+      {
+       "f": 998,
+       "big": 1000,
+       "fix": 2
+      },
+      {
+       "f": 1999,
+       "big": 2000,
+       "fix": 1
+      },
+      {
+       "f": 9999,
+       "big": 10000,
+       "fix": 1
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 1205,
+      "max": 68000
+     }
+    }
+   ],
+   "require": [
+    "n % 10 != 0"
+   ],
+   "text": "Use compensation to calculate {n:num} + {fr.f:num}.",
+   "answer": "n + fr.f",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Adds the friendly number: {n:num} + {fr.big:num} = {n + fr.big:num}."
+    },
+    {
+     "marks": 1,
+     "text": "Compensates by subtracting {fr.fix}: {n + fr.big:num} − {fr.fix} = {n + fr.f:num}."
+    }
+   ],
+   "hint": "{fr.f:num} is {fr.fix} less than {fr.big:num}.",
+   "explanation": "{n:num} + {fr.big:num} − {fr.fix} = {n + fr.f:num}.",
+   "misconception": "Adds the friendly amount but forgets to compensate.",
+   "notes": "A number from 1,205 to 68,000 (not a multiple of 10) plus 999, 998, 1,999 or 9,999.",
+   "sources": [
+    "CBSE-C5-CH04-Q062",
+    "CBSE-C5-CH04-Q063",
+    "CBSE-C5-CH04-Q064",
+    "CBSE-C5-CH04-Q065",
+    "CBSE-C5-CH04-Q066"
+   ]
+  },
+  {
+   "code": "C5-WT2-S03-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S03",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 105,
+      "max": 4800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 25,
+      "max": 3900
+     }
+    },
+    {
+     "name": "s",
+     "expr": "a + b"
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "If {a:num} + {b:num} = {s:num}, find {s:num} − {b:num}.",
+   "answer": "a",
+   "hint": "Taking away one part from the total leaves the other part.",
+   "explanation": "{a:num} and {b:num} are the parts of {s:num}, so {s:num} − {b:num} = {a:num}.",
+   "misconception": "Treats the equals sign as an instruction instead of a relationship.",
+   "notes": "Parts 105 to 4,800 and 25 to 3,900 (different).",
+   "sources": [
+    "CBSE-C5-CH04-Q067",
+    "CBSE-C5-CH04-Q074",
+    "CBSE-C5-CH04-Q081",
+    "CBSE-C5-CH04-Q088"
+   ]
+  },
+  {
+   "code": "C5-WT2-S03-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S03",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 105,
+      "max": 4800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 25,
+      "max": 3900
+     }
+    },
+    {
+     "name": "s",
+     "expr": "a + b"
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "If {a:num} + {b:num} = {s:num}, which number makes {s:num} − □ = {b:num} true?",
+   "options": {
+    "correct": "a",
+    "format": "num",
+    "wrong": [
+     {
+      "expr": "b",
+      "mistake": "repeats the part already shown instead of the other part"
+     },
+     {
+      "expr": "s",
+      "mistake": "treats the equals sign as an instruction and copies the total"
+     },
+     {
+      "expr": "s + b",
+      "mistake": "adds instead of finding the missing part"
+     }
+    ]
+   },
+   "hint": "The total minus one part gives the other part.",
+   "explanation": "{s:num} − {a:num} = {b:num}, because {a:num} + {b:num} = {s:num}. So □ = {a:num}.",
+   "misconception": "Treats the equals sign as an instruction instead of a relationship.",
+   "notes": "As S03-P1.",
+   "sources": [
+    "CBSE-C5-CH04-Q069",
+    "CBSE-C5-CH04-Q071",
+    "CBSE-C5-CH04-Q076",
+    "CBSE-C5-CH04-Q078"
+   ]
+  },
+  {
+   "code": "C5-WT2-S03-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S03",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 12,
+      "max": 95
+     }
+    },
+    {
+     "name": "add",
+     "int": {
+      "min": 15,
+      "max": 160
+     }
+    },
+    {
+     "name": "s",
+     "expr": "b + add"
+    }
+   ],
+   "text": "A fuel tank had {b} litres in it. After refuelling it held {s} litres. How many litres were added?",
+   "answer": "add",
+   "unit": "litres",
+   "hint": "The new amount is the old amount plus what was added.",
+   "explanation": "{b} + □ = {s}, so □ = {s} − {b} = {add} litres.",
+   "misconception": "Treats the equals sign as an instruction instead of a relationship.",
+   "notes": "12 to 95 litres before, 15 to 160 litres added. The unit, litres, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q070",
+    "CBSE-C5-CH04-Q077",
+    "CBSE-C5-CH04-Q084",
+    "CBSE-C5-CH04-Q091"
+   ]
+  },
+  {
+   "code": "C5-WT2-S03-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S03",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Two integers separated by a semicolon",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1050,
+      "max": 9800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 350,
+      "max": 7900
+     }
+    },
+    {
+     "name": "s",
+     "expr": "a + b"
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "Use the fact {a:num} + {b:num} = {s:num} to find {s:num} − {a:num} and {s:num} − {b:num}. Give the answers in that order.",
+   "answer": [
+    "b",
+    "a"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "{s:num} − {a:num} = {b:num} (the other part)."
+    },
+    {
+     "marks": 1,
+     "text": "{s:num} − {b:num} = {a:num}."
+    }
+   ],
+   "hint": "In a fact family, the total minus either part gives the other part.",
+   "explanation": "{a:num} and {b:num} are the two parts of {s:num}. So {s:num} − {a:num} = {b:num} and {s:num} − {b:num} = {a:num}.",
+   "misconception": "Treats the equals sign as an instruction instead of a relationship.",
+   "notes": "Parts 1,050 to 9,800 and 350 to 7,900.",
+   "sources": [
+    "CBSE-C5-CH04-Q095",
+    "CBSE-C5-CH04-Q096",
+    "CBSE-C5-CH04-Q097",
+    "CBSE-C5-CH04-Q098",
+    "CBSE-C5-CH04-Q099"
+   ]
+  },
+  {
+   "code": "C5-WT2-S04-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S04",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 11,
+      "max": 480
+     }
+    }
+   ],
+   "text": "Find the sum of the three consecutive numbers {n}, {n + 1} and {n + 2}.",
+   "answer": "3 * n + 3",
+   "hint": "The middle number times 3 gives the sum.",
+   "explanation": "{n} + {n + 1} + {n + 2} = 3 × {n + 1} = {3 * n + 3:num}.",
+   "misconception": "Skips a number or assumes successive sums increase by one.",
+   "notes": "The first number 11 to 480.",
+   "sources": [
+    "CBSE-C5-CH04-Q100",
+    "CBSE-C5-CH04-Q107",
+    "CBSE-C5-CH04-Q114",
+    "CBSE-C5-CH04-Q121"
+   ]
+  },
+  {
+   "code": "C5-WT2-S04-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S04",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 12,
+      "max": 650
+     }
+    }
+   ],
+   "text": "Three consecutive numbers have a sum of {3 * m:num}. What is the middle number?",
+   "answer": "m",
+   "hint": "The sum is three times the middle number.",
+   "explanation": "{3 * m:num} ÷ 3 = {m}. Check: {m - 1} + {m} + {m + 1} = {3 * m:num}.",
+   "misconception": "Skips a number or assumes successive sums increase by one.",
+   "notes": "Middle number 12 to 650.",
+   "sources": [
+    "CBSE-C5-CH04-Q103",
+    "CBSE-C5-CH04-Q110",
+    "CBSE-C5-CH04-Q117",
+    "CBSE-C5-CH04-Q124"
+   ]
+  },
+  {
+   "code": "C5-WT2-S04-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S04",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "k",
+     "int": {
+      "min": 3,
+      "max": 6
+     }
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 11,
+      "max": 250
+     }
+    },
+    {
+     "name": "s",
+     "expr": "k * n + k * (k - 1) // 2"
+    },
+    {
+     "name": "v",
+     "int": {
+      "min": 0,
+      "max": 2
+     }
+    }
+   ],
+   "text": "The sum of {k} consecutive numbers beginning at {n} is {s:num}. What is the sum of the {k} consecutive numbers beginning at {n + 1}?",
+   "options": {
+    "correct": "s + k",
+    "format": "num",
+    "wrong": [
+     {
+      "expr": "s + 1",
+      "mistake": "assumes the sum increases by one"
+     },
+     {
+      "expr": "s if v == 0 else s + 2 * k",
+      "mistake": "does not track how every one of the numbers changes"
+     },
+     {
+      "expr": "s - k if v == 2 else s + k + 1",
+      "mistake": "skips a number or counts one change too many or too few"
+     }
+    ]
+   },
+   "hint": "Each of the {k} numbers is one more than before.",
+   "explanation": "Every one of the {k} numbers goes up by 1, so the sum goes up by {k}: {s:num} + {k} = {s + k:num}.",
+   "misconception": "Skips a number or assumes successive sums increase by one.",
+   "notes": "Runs of 3 to 6 numbers starting at 11 to 250. The wrong options vary, so the right one is not always in the same place in size order.",
+   "sources": [
+    "CBSE-C5-CH04-Q106",
+    "CBSE-C5-CH04-Q113",
+    "CBSE-C5-CH04-Q120",
+    "CBSE-C5-CH04-Q127",
+    "CBSE-C5-CH04-Q102"
+   ]
+  },
+  {
+   "code": "C5-WT2-S04-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S04",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "k",
+     "choice": [
+      5,
+      7,
+      9
+     ]
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 15,
+      "max": 520
+     }
+    }
+   ],
+   "text": "Find the sum of {k} consecutive numbers centred on {m}.",
+   "answer": "k * m",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Lists or pairs the numbers from {m - (k - 1) // 2} to {m + (k - 1) // 2}: each pair above and below {m} sums to {2 * m}."
+    },
+    {
+     "marks": 1,
+     "text": "Total = {k} × {m} = {k * m:num}."
+    }
+   ],
+   "hint": "Pair a number below {m} with one the same distance above it.",
+   "explanation": "The numbers run from {m - (k - 1) // 2} to {m + (k - 1) // 2}. Each pair around {m} sums to {2 * m}, so the total is {k} × {m} = {k * m:num}.",
+   "misconception": "Skips a number or assumes successive sums increase by one.",
+   "notes": "5, 7 or 9 numbers centred on 15 to 520.",
+   "sources": [
+    "CBSE-C5-CH04-Q128",
+    "CBSE-C5-CH04-Q129",
+    "CBSE-C5-CH04-Q130",
+    "CBSE-C5-CH04-Q132"
+   ]
+  },
+  {
+   "code": "C5-WT2-S05-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S05",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1205,
+      "max": 58000
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1205,
+      "max": 39000
+     }
+    }
+   ],
+   "require": [
+    "(a % 10 + b % 10) >= 10",
+    "(a // 100 % 10 + b // 100 % 10) >= 9",
+    "a + b <= 99999"
+   ],
+   "text": "Add: {a:num} + {b:num}.",
+   "answer": "a + b",
+   "hint": "Line up ones under ones, tens under tens, and carry when a column makes ten or more.",
+   "explanation": "{a:num} + {b:num} = {a + b:num}.",
+   "misconception": "Misaligns place values or omits a regrouped unit.",
+   "notes": "Numbers 1,205 to 58,000; the ones regroup and the hundreds nearly or fully regroup; the sum stays below 1,00,000.",
+   "sources": [
+    "CBSE-C5-CH04-Q133",
+    "CBSE-C5-CH04-Q134",
+    "CBSE-C5-CH04-Q140",
+    "CBSE-C5-CH04-Q141"
+   ]
+  },
+  {
+   "code": "C5-WT2-S05-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S05",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1050,
+      "max": 4800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 560,
+      "max": 3900
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 120,
+      "max": 990
+     }
+    }
+   ],
+   "require": [
+    "(a % 10 + b % 10 + c % 10) >= 10"
+   ],
+   "text": "Add the three distances: {a:num} km, {b:num} km and {c:num} km.",
+   "answer": "a + b + c",
+   "unit": "km",
+   "hint": "Add two distances, then add the third.",
+   "explanation": "{a:num} + {b:num} = {a + b:num}; {a + b:num} + {c:num} = {a + b + c:num} km.",
+   "misconception": "Misaligns place values or omits a regrouped unit.",
+   "notes": "Distances 1,050 to 4,800 km, 560 to 3,900 km and 120 to 990 km. The unit, km, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q135",
+    "CBSE-C5-CH04-Q142",
+    "CBSE-C5-CH04-Q149",
+    "CBSE-C5-CH04-Q156"
+   ]
+  },
+  {
+   "code": "C5-WT2-S05-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S05",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "pl",
+     "choice": [
+      {
+       "p": 10,
+       "w": "ten",
+       "right": "It will be 10 too small",
+       "big": "It will be 10 too large",
+       "other": "It will be 100 too small"
+      },
+      {
+       "p": 100,
+       "w": "hundred",
+       "right": "It will be 100 too small",
+       "big": "It will be 100 too large",
+       "other": "It will be 10 too small"
+      },
+      {
+       "p": 1000,
+       "w": "thousand",
+       "right": "It will be 1,000 too small",
+       "big": "It will be 1,000 too large",
+       "other": "It will be 100 too small"
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1205,
+      "max": 8800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1205,
+      "max": 8800
+     }
+    }
+   ],
+   "require": [
+    "(a % pl.p + b % pl.p) >= pl.p"
+   ],
+   "text": "A student adds {a:num} + {b:num} and forgets a regrouped {pl.w}. How will the answer compare with the correct sum?",
+   "options": {
+    "correct": "pl.right",
+    "wrong": [
+     {
+      "expr": "pl.big",
+      "mistake": "thinks a forgotten regrouped unit makes the answer bigger"
+     },
+     {
+      "expr": "pl.other",
+      "mistake": "confuses the value of the regrouped unit with another place"
+     },
+     {
+      "expr": "'It will be unchanged'",
+      "mistake": "thinks regrouping does not change the value"
+     }
+    ]
+   },
+   "hint": "A regrouped {pl.w} is carried into the next column. What happens if it is forgotten?",
+   "explanation": "In {a:num} + {b:num} a {pl.w} is regrouped into the next column. Forgetting it leaves out {pl.p:num}, so the answer would be {pl.p:num} less than the correct sum, {a + b:num}.",
+   "misconception": "Misaligns place values or omits a regrouped unit.",
+   "notes": "Four-digit numbers; the student forgets a regrouped ten, hundred or thousand, and the numbers do regroup at that place.",
+   "sources": [
+    "CBSE-C5-CH04-Q137",
+    "CBSE-C5-CH04-Q144",
+    "CBSE-C5-CH04-Q151",
+    "CBSE-C5-CH04-Q158"
+   ]
+  },
+  {
+   "code": "C5-WT2-S05-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S05",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 12050,
+      "max": 58000
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 10050,
+      "max": 38000
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 105,
+      "max": 999
+     }
+    }
+   ],
+   "require": [
+    "(a % 10 + b % 10 + c % 10) >= 10"
+   ],
+   "text": "Find the total of {a:num}, {b:num} and {c:num}.",
+   "answer": "a + b + c",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Adds two of the numbers correctly, e.g. {a:num} + {b:num} = {a + b:num}."
+    },
+    {
+     "marks": 1,
+     "text": "Adds the third: {a + b:num} + {c:num} = {a + b + c:num}."
+    }
+   ],
+   "hint": "Add the two five-digit numbers first, keeping the places lined up.",
+   "explanation": "{a:num} + {b:num} = {a + b:num}. Then {a + b:num} + {c:num} = {a + b + c:num}.",
+   "misconception": "Misaligns place values or omits a regrouped unit.",
+   "notes": "Two five-digit numbers (12,050 to 58,000 and 10,050 to 38,000) and a three-digit number; the ones regroup.",
+   "sources": [
+    "CBSE-C5-CH04-Q161",
+    "CBSE-C5-CH04-Q162",
+    "CBSE-C5-CH04-Q163",
+    "CBSE-C5-CH04-Q164",
+    "CBSE-C5-CH04-Q165"
+   ]
+  },
+  {
+   "code": "C5-WT2-S06-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S06",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1110,
+      "max": 8890
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1110,
+      "max": 8890
+     }
+    }
+   ],
+   "require": [
+    "a % 100 != 50",
+    "b % 100 != 50",
+    "a % 100 != 0",
+    "b % 100 != 0"
+   ],
+   "text": "Estimate {a:num} + {b:num} by rounding each number to the nearest hundred.",
+   "answer": "round_half_up(a, 100) + round_half_up(b, 100)",
+   "hint": "Round each number first, then add the rounded numbers.",
+   "explanation": "{a:num} is about {round_half_up(a, 100):num} and {b:num} is about {round_half_up(b, 100):num}. The estimate is {round_half_up(a, 100) + round_half_up(b, 100):num}.",
+   "misconception": "Treats an estimate as the exact answer or rounds inconsistently.",
+   "notes": "Four-digit numbers that are not whole hundreds and do not end in 50.",
+   "sources": [
+    "CBSE-C5-CH04-Q166",
+    "CBSE-C5-CH04-Q173",
+    "CBSE-C5-CH04-Q180",
+    "CBSE-C5-CH04-Q187"
+   ]
+  },
+  {
+   "code": "C5-WT2-S06-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S06",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 10100,
+      "max": 58900
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 10100,
+      "max": 38900
+     }
+    }
+   ],
+   "require": [
+    "a % 1000 != 500",
+    "b % 1000 != 500",
+    "a % 1000 != 0",
+    "b % 1000 != 0"
+   ],
+   "text": "Estimate {a:num} + {b:num} by rounding each number to the nearest thousand.",
+   "answer": "round_half_up(a, 1000) + round_half_up(b, 1000)",
+   "hint": "Look at the hundreds digit to round each number to the nearest thousand.",
+   "explanation": "{a:num} rounds to {round_half_up(a, 1000):num} and {b:num} to {round_half_up(b, 1000):num}. The estimate is {round_half_up(a, 1000) + round_half_up(b, 1000):num}.",
+   "misconception": "Treats an estimate as the exact answer or rounds inconsistently.",
+   "notes": "Five-digit numbers, not whole thousands and not ending in 500.",
+   "sources": [
+    "CBSE-C5-CH04-Q167",
+    "CBSE-C5-CH04-Q174",
+    "CBSE-C5-CH04-Q181",
+    "CBSE-C5-CH04-Q188"
+   ]
+  },
+  {
+   "code": "C5-WT2-S06-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S06",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1110,
+      "max": 8890
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1110,
+      "max": 8890
+     }
+    },
+    {
+     "name": "est",
+     "expr": "round_half_up(a, 100) + round_half_up(b, 100)"
+    },
+    {
+     "name": "down",
+     "expr": "a // 100 * 100 + b // 100 * 100"
+    },
+    {
+     "name": "thou",
+     "expr": "round_half_up(a, 1000) + round_half_up(b, 1000)"
+    }
+   ],
+   "require": [
+    "a % 100 != 50",
+    "b % 100 != 50",
+    "a % 10 != 0",
+    "b % 10 != 0",
+    "est != down",
+    "est != thou",
+    "down != thou"
+   ],
+   "text": "Which is the best estimate of {a:num} + {b:num} when each number is rounded to the nearest hundred?",
+   "options": {
+    "correct": "est",
+    "format": "num",
+    "wrong": [
+     {
+      "expr": "a + b",
+      "mistake": "gives the exact sum instead of an estimate"
+     },
+     {
+      "expr": "down",
+      "mistake": "rounds both numbers down instead of to the nearest hundred"
+     },
+     {
+      "expr": "thou",
+      "mistake": "rounds to the nearest thousand instead of the nearest hundred"
+     }
+    ]
+   },
+   "hint": "Round each number to the nearest hundred, then add.",
+   "explanation": "{a:num} → {round_half_up(a, 100):num} and {b:num} → {round_half_up(b, 100):num}, so the estimate is {est:num}.",
+   "misconception": "Treats an estimate as the exact answer or rounds inconsistently.",
+   "notes": "Four-digit numbers not ending in 0 or 50, chosen so that rounding down and rounding to thousands give other totals.",
+   "sources": [
+    "CBSE-C5-CH04-Q170",
+    "CBSE-C5-CH04-Q177",
+    "CBSE-C5-CH04-Q184",
+    "CBSE-C5-CH04-Q191"
+   ]
+  },
+  {
+   "code": "C5-WT2-S06-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S06",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 2050,
+      "max": 8900
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2050,
+      "max": 8900
+     }
+    },
+    {
+     "name": "t",
+     "expr": "round_half_up(a + b, 500)"
+    }
+   ],
+   "require": [
+    "a + b != t",
+    "t - (a + b) != 250",
+    "(a + b) - t != 250"
+   ],
+   "text": "How far is the exact sum {a:num} + {b:num} from the target {t:num}?",
+   "answer": "abs(t - (a + b))",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds the exact sum: {a:num} + {b:num} = {a + b:num}."
+    },
+    {
+     "marks": 1,
+     "text": "Finds the difference from the target: {abs(t - (a + b)):num}."
+    }
+   ],
+   "hint": "Work out the exact sum first, then compare it with the target.",
+   "explanation": "{a:num} + {b:num} = {a + b:num}. The difference from {t:num} is {abs(t - (a + b)):num}.",
+   "misconception": "Treats an estimate as the exact answer or rounds inconsistently.",
+   "notes": "Four-digit numbers; the target is the sum rounded to the nearest 500, so the answer is under 250.",
+   "sources": [
+    "CBSE-C5-CH04-Q194",
+    "CBSE-C5-CH04-Q195",
+    "CBSE-C5-CH04-Q196",
+    "CBSE-C5-CH04-Q197",
+    "CBSE-C5-CH04-Q198"
+   ]
+  },
+  {
+   "code": "C5-WT2-S07-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S07",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 3050,
+      "max": 9900
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1050,
+      "max": 8800
+     }
+    }
+   ],
+   "require": [
+    "a - b >= 500",
+    "a % 10 < b % 10",
+    "a // 10 % 10 <= b // 10 % 10"
+   ],
+   "text": "Subtract: {a:num} − {b:num}.",
+   "answer": "a - b",
+   "hint": "Start from the ones. Regroup when the top digit is smaller.",
+   "explanation": "{a:num} − {b:num} = {a - b:num}. Check: {a - b:num} + {b:num} = {a:num}.",
+   "misconception": "Subtracts the smaller digit from the larger digit in each column regardless of position.",
+   "notes": "Four-digit numbers; the ones and tens need regrouping; the difference is at least 500.",
+   "sources": [
+    "CBSE-C5-CH04-Q199",
+    "CBSE-C5-CH04-Q206",
+    "CBSE-C5-CH04-Q213",
+    "CBSE-C5-CH04-Q220"
+   ]
+  },
+  {
+   "code": "C5-WT2-S07-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S07",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 3050,
+      "max": 9900
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1050,
+      "max": 8800
+     }
+    },
+    {
+     "name": "naive",
+     "expr": "abs(a % 10 - b % 10) + 10 * abs(a // 10 % 10 - b // 10 % 10) + 100 * abs(a // 100 % 10 - b // 100 % 10) + 1000 * abs(a // 1000 - b // 1000)"
+    },
+    {
+     "name": "v",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    },
+    {
+     "name": "u",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    }
+   ],
+   "require": [
+    "a - b >= 500",
+    "a % 10 < b % 10",
+    "v == 1 or a - b >= 1500",
+    "u == 1 or a - b >= 600"
+   ],
+   "text": "Choose the correct difference: {a:num} − {b:num}.",
+   "options": {
+    "correct": "a - b",
+    "format": "num",
+    "wrong": [
+     {
+      "expr": "naive",
+      "mistake": "subtracts the smaller digit from the larger in each column"
+     },
+     {
+      "expr": "a - b + 1000 if v == 1 else a - b - 1000",
+      "mistake": "makes a regrouping slip in the thousands"
+     },
+     {
+      "expr": "a - b + 100 if u == 1 else a - b - 100",
+      "mistake": "makes a regrouping slip in the hundreds"
+     }
+    ]
+   },
+   "hint": "Check your choice by adding it to {b:num}.",
+   "explanation": "{a:num} − {b:num} = {a - b:num}, because {a - b:num} + {b:num} = {a:num}.",
+   "misconception": "Subtracts the smaller digit from the larger digit in each column regardless of position.",
+   "notes": "Four-digit numbers with regrouping in the ones. Wrong options: smaller-from-larger in every column, and answers 1,000 or 100 out, above or below, so the right answer is not always the smallest.",
+   "sources": [
+    "CBSE-C5-CH04-Q202",
+    "CBSE-C5-CH04-Q209",
+    "CBSE-C5-CH04-Q216",
+    "CBSE-C5-CH04-Q223"
+   ]
+  },
+  {
+   "code": "C5-WT2-S07-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S07",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "who",
+     "choice": [
+      {
+       "v": "A ship",
+       "r": "sea route"
+      },
+      {
+       "v": "A train",
+       "r": "railway line"
+      },
+      {
+       "v": "A bus",
+       "r": "highway"
+      },
+      {
+       "v": "A plane",
+       "r": "flight path"
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2050,
+      "max": 9800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 560,
+      "max": 7900
+     }
+    }
+   ],
+   "require": [
+    "a - b >= 300",
+    "a % 10 < b % 10"
+   ],
+   "text": "A {who.r} is {a:num} km long. {who.v} has travelled {b:num} km along it. How much farther must it travel?",
+   "answer": "a - b",
+   "unit": "km",
+   "hint": "Take the distance travelled away from the whole length.",
+   "explanation": "{a:num} − {b:num} = {a - b:num} km are left.",
+   "misconception": "Subtracts the smaller digit from the larger digit in each column regardless of position.",
+   "notes": "Routes 2,050 to 9,800 km; travelled 560 to 7,900 km, at least 300 km short of the end. The unit, km, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q201",
+    "CBSE-C5-CH04-Q208",
+    "CBSE-C5-CH04-Q215",
+    "CBSE-C5-CH04-Q222"
+   ]
+  },
+  {
+   "code": "C5-WT2-S07-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S07",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "choice": [
+      20000,
+      30000,
+      40000,
+      50000,
+      60000,
+      70000,
+      80000,
+      90000
+     ]
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 10105,
+      "max": 69995
+     }
+    }
+   ],
+   "require": [
+    "a - b >= 1000",
+    "b % 10 != 0"
+   ],
+   "text": "Find {a:num} − {b:num}. In your working, show how you check the answer by addition.",
+   "answer": "a - b",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Correct answer: {a:num} − {b:num} = {a - b:num}."
+    },
+    {
+     "marks": 1,
+     "text": "The check is shown in the working: {a - b:num} + {b:num} = {a:num} (follow through from the student's own answer)."
+    }
+   ],
+   "hint": "Regroup across the zeros, then check by adding your answer to {b:num}.",
+   "explanation": "{a:num} − {b:num} = {a - b:num}. Check: {a - b:num} + {b:num} = {a:num}.",
+   "misconception": "Subtracts the smaller digit from the larger digit in each column regardless of position.",
+   "notes": "A whole ten-thousand from 20,000 to 90,000 minus a five-digit number not ending in 0, leaving at least 1,000.",
+   "sources": [
+    "CBSE-C5-CH04-Q227",
+    "CBSE-C5-CH04-Q228",
+    "CBSE-C5-CH04-Q229",
+    "CBSE-C5-CH04-Q230",
+    "CBSE-C5-CH04-Q231"
+   ]
+  },
+  {
+   "code": "C5-WT2-S08-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S08",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "tt",
+     "choice": [
+      {
+       "t": 100,
+       "lo": 11,
+       "hi": 89
+      },
+      {
+       "t": 1000,
+       "lo": 105,
+       "hi": 895
+      },
+      {
+       "t": 10000,
+       "lo": 1050,
+       "hi": 8950
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "tt.lo",
+      "max": "tt.hi"
+     }
+    }
+   ],
+   "require": [
+    "n % 10 != 0"
+   ],
+   "text": "Complete: {n:num} + □ = {tt.t:num}.",
+   "answer": "tt.t - n",
+   "hint": "Count on from {n:num} to the next ten, then to {tt.t:num}.",
+   "explanation": "{tt.t:num} − {n:num} = {tt.t - n:num}. Check: {n:num} + {tt.t - n:num} = {tt.t:num}.",
+   "misconception": "Subtracts each digit independently without regrouping.",
+   "notes": "Complements to 100 (from 11 to 89), 1,000 (from 105 to 895) or 10,000 (from 1,050 to 8,950); never a multiple of 10.",
+   "sources": [
+    "CBSE-C5-CH04-Q232",
+    "CBSE-C5-CH04-Q239",
+    "CBSE-C5-CH04-Q246",
+    "CBSE-C5-CH04-Q253"
+   ]
+  },
+  {
+   "code": "C5-WT2-S08-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S08",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 12,
+      "max": 88
+     }
+    },
+    {
+     "name": "v",
+     "int": {
+      "min": 0,
+      "max": 2
+     }
+    }
+   ],
+   "require": [
+    "n % 10 != 0",
+    "n % 10 != 5",
+    "v != 0 or n <= 82",
+    "v != 1 or n <= 72"
+   ],
+   "text": "What must be added to {n} to make 100?",
+   "options": {
+    "correct": "100 - n",
+    "wrong": [
+     {
+      "expr": "(10 - n // 10) * 10 + (10 - n % 10)",
+      "mistake": "subtracts each digit from 10 without regrouping"
+     },
+     {
+      "expr": "100 + n",
+      "mistake": "adds instead of finding what is missing"
+     },
+     {
+      "expr": "90 - n if v == 0 else (80 - n if v == 1 else 120 - n)",
+      "mistake": "makes a tens slip when bridging to the next ten"
+     }
+    ]
+   },
+   "hint": "Make the next ten first, then count on in tens to 100.",
+   "explanation": "{n} + {10 - n % 10} = {n + 10 - n % 10}, and {n + 10 - n % 10} + {100 - n - 10 + n % 10} = 100. So {100 - n} must be added.",
+   "misconception": "Subtracts each digit independently without regrouping.",
+   "notes": "Two-digit numbers 12 to 88, not ending in 0 or 5. One wrong option is 10 or 20 below, or 20 above, the right answer, so its place in size order varies.",
+   "sources": [
+    "CBSE-C5-CH04-Q233",
+    "CBSE-C5-CH04-Q240",
+    "CBSE-C5-CH04-Q247",
+    "CBSE-C5-CH04-Q254"
+   ]
+  },
+  {
+   "code": "C5-WT2-S08-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S08",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "tt",
+     "choice": [
+      {
+       "t": 1000,
+       "lo": 105,
+       "hi": 895,
+       "thing": "people have bought tickets for a 1,000-seat hall.",
+       "ask": "How many more tickets can be sold?",
+       "more": "more tickets"
+      },
+      {
+       "t": 10000,
+       "lo": 1050,
+       "hi": 8950,
+       "thing": "steps are on a step-counter with a goal of 10,000.",
+       "ask": "How many more steps are needed to reach the goal?",
+       "more": "more steps"
+      },
+      {
+       "t": 1000,
+       "lo": 105,
+       "hi": 895,
+       "thing": "kilometres of a 1,000 km road trip have been driven.",
+       "ask": "How many more kilometres are left to drive?",
+       "more": "more kilometres"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "tt.lo",
+      "max": "tt.hi"
+     }
+    }
+   ],
+   "require": [
+    "n % 10 != 0"
+   ],
+   "text": "{n:num} {tt.thing} {tt.ask}",
+   "answer": "tt.t - n",
+   "hint": "Count on from {n:num} to {tt.t:num}.",
+   "explanation": "{tt.t:num} − {n:num} = {tt.t - n:num} {tt.more}.",
+   "misconception": "Subtracts each digit independently without regrouping.",
+   "notes": "As S08-P1, in three settings: tickets, steps, and kilometres (the question asks for a number of kilometres; the answer is the number alone, as in the other two settings).",
+   "sources": [
+    "CBSE-C5-CH04-Q234",
+    "CBSE-C5-CH04-Q241",
+    "CBSE-C5-CH04-Q248",
+    "CBSE-C5-CH04-Q255"
+   ]
+  },
+  {
+   "code": "C5-WT2-S08-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S08",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Two integers separated by a semicolon",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 105,
+      "max": 885
+     }
+    },
+    {
+     "name": "nh",
+     "expr": "(n // 100 + 1) * 100"
+    }
+   ],
+   "require": [
+    "n % 100 != 0",
+    "nh < 1000"
+   ],
+   "text": "Starting at {n}, first add enough to reach the next hundred, then add enough to reach 1,000. How much is added in each step? Give the first step, then the second.",
+   "answer": [
+    "nh - n",
+    "1000 - nh"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "First step: {n} + {nh - n} = {nh}."
+    },
+    {
+     "marks": 1,
+     "text": "Second step: {nh} + {1000 - nh} = 1,000 (so {1000 - n} is added in all)."
+    }
+   ],
+   "hint": "What is the next hundred after {n}?",
+   "explanation": "The next hundred after {n} is {nh}: add {nh - n}. Then {nh} + {1000 - nh} = 1,000. In all, {1000 - n} is added.",
+   "misconception": "Subtracts each digit independently without regrouping.",
+   "notes": "A starting number 105 to 885 that is not a whole hundred.",
+   "sources": [
+    "CBSE-C5-CH04-Q238",
+    "CBSE-C5-CH04-Q245",
+    "CBSE-C5-CH04-Q252",
+    "CBSE-C5-CH04-Q259"
+   ]
+  },
+  {
+   "code": "C5-WT2-S09-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S09",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 9,
+       "big": 10,
+       "right": "Subtract 10, then add 1",
+       "w1": "Subtract 10, then subtract 1",
+       "w2": "Add 10, then subtract 1",
+       "w3": "Subtract 100, then add 1",
+       "lo": 105,
+       "hi": 990,
+       "back": "Add 9"
+      },
+      {
+       "f": 99,
+       "big": 100,
+       "right": "Subtract 100, then add 1",
+       "w1": "Subtract 100, then subtract 1",
+       "w2": "Add 100, then subtract 1",
+       "w3": "Subtract 10, then add 1",
+       "lo": 205,
+       "hi": 4900,
+       "back": "Add 99"
+      },
+      {
+       "f": 999,
+       "big": 1000,
+       "right": "Subtract 1,000, then add 1",
+       "w1": "Subtract 1,000, then subtract 1",
+       "w2": "Add 1,000, then subtract 1",
+       "w3": "Subtract 100, then add 1",
+       "lo": 2050,
+       "hi": 9800,
+       "back": "Add 999"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "fr.lo",
+      "max": "fr.hi"
+     }
+    }
+   ],
+   "text": "Subtract mentally: {n:num} − {fr.f:num}.",
+   "answer": "n - fr.f",
+   "hint": "Take away {fr.big:num}, then give back 1.",
+   "explanation": "{n:num} − {fr.big:num} = {n - fr.big:num}, and adding back 1 gives {n - fr.f:num}.",
+   "misconception": "Subtracts 10 or 100 but forgets to add one back.",
+   "notes": "Take 9 from 105 to 990, 99 from 205 to 4,900, or 999 from 2,050 to 9,800.",
+   "sources": [
+    "CBSE-C5-CH04-Q265",
+    "CBSE-C5-CH04-Q266",
+    "CBSE-C5-CH04-Q272",
+    "CBSE-C5-CH04-Q273"
+   ]
+  },
+  {
+   "code": "C5-WT2-S09-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S09",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 9,
+       "big": 10,
+       "right": "Subtract 10, then add 1",
+       "w1": "Subtract 10, then subtract 1",
+       "w2": "Add 10, then subtract 1",
+       "w3": "Subtract 100, then add 1",
+       "lo": 105,
+       "hi": 990,
+       "back": "Add 9"
+      },
+      {
+       "f": 99,
+       "big": 100,
+       "right": "Subtract 100, then add 1",
+       "w1": "Subtract 100, then subtract 1",
+       "w2": "Add 100, then subtract 1",
+       "w3": "Subtract 10, then add 1",
+       "lo": 205,
+       "hi": 4900,
+       "back": "Add 99"
+      },
+      {
+       "f": 999,
+       "big": 1000,
+       "right": "Subtract 1,000, then add 1",
+       "w1": "Subtract 1,000, then subtract 1",
+       "w2": "Add 1,000, then subtract 1",
+       "w3": "Subtract 100, then add 1",
+       "lo": 2050,
+       "hi": 9800,
+       "back": "Add 999"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "fr.lo",
+      "max": "fr.hi"
+     }
+    }
+   ],
+   "text": "Which strategy correctly computes {n:num} − {fr.f:num}?",
+   "options": {
+    "correct": "fr.right",
+    "wrong": [
+     {
+      "expr": "fr.w1",
+      "mistake": "subtracts 1 more instead of adding one back"
+     },
+     {
+      "expr": "fr.w2",
+      "mistake": "adds the friendly number instead of subtracting it"
+     },
+     {
+      "expr": "fr.w3",
+      "mistake": "uses the wrong friendly number"
+     }
+    ]
+   },
+   "hint": "Taking away {fr.big:num} takes away 1 too many.",
+   "explanation": "{fr.f:num} = {fr.big:num} − 1, so subtract {fr.big:num} and then add 1: {n - fr.f:num}.",
+   "misconception": "Subtracts 10 or 100 but forgets to add one back.",
+   "notes": "As S09-P1. The four strategies follow the bank's own options.",
+   "sources": [
+    "CBSE-C5-CH04-Q267",
+    "CBSE-C5-CH04-Q274",
+    "CBSE-C5-CH04-Q281",
+    "CBSE-C5-CH04-Q288"
+   ]
+  },
+  {
+   "code": "C5-WT2-S09-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S09",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "fr",
+     "choice": [
+      {
+       "f": 9,
+       "big": 10,
+       "right": "Subtract 10, then add 1",
+       "w1": "Subtract 10, then subtract 1",
+       "w2": "Add 10, then subtract 1",
+       "w3": "Subtract 100, then add 1",
+       "lo": 105,
+       "hi": 990,
+       "back": "Add 9"
+      },
+      {
+       "f": 99,
+       "big": 100,
+       "right": "Subtract 100, then add 1",
+       "w1": "Subtract 100, then subtract 1",
+       "w2": "Add 100, then subtract 1",
+       "w3": "Subtract 10, then add 1",
+       "lo": 205,
+       "hi": 4900,
+       "back": "Add 99"
+      },
+      {
+       "f": 999,
+       "big": 1000,
+       "right": "Subtract 1,000, then add 1",
+       "w1": "Subtract 1,000, then subtract 1",
+       "w2": "Add 1,000, then subtract 1",
+       "w3": "Subtract 100, then add 1",
+       "lo": 2050,
+       "hi": 9800,
+       "back": "Add 999"
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": "fr.lo",
+      "max": "fr.hi"
+     }
+    }
+   ],
+   "text": "{who.name} works out {n:num} − {fr.f:num} by first subtracting {fr.big:num}, which gives {n - fr.big:num}. What is {n:num} − {fr.f:num}?",
+   "answer": "n - fr.f",
+   "hint": "Did subtracting {fr.big:num} take away exactly {fr.f:num}?",
+   "explanation": "{fr.big:num} is 1 more than {fr.f:num}, so 1 too many was taken away. {n - fr.big:num} + 1 = {n - fr.f:num}.",
+   "misconception": "Subtracts 10 or 100 but forgets to add one back.",
+   "notes": "As S09-P1, with a named student who has done the first step. (Was multiple choice; its right answer was always 'Add 1'.)",
+   "sources": [
+    "CBSE-C5-CH04-Q270",
+    "CBSE-C5-CH04-Q277",
+    "CBSE-C5-CH04-Q284",
+    "CBSE-C5-CH04-Q291"
+   ]
+  },
+  {
+   "code": "C5-WT2-S09-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S09",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "pair",
+     "choice": [
+      {
+       "f1": 99,
+       "f2": 9,
+       "b1": 100,
+       "b2": 10
+      },
+      {
+       "f1": 999,
+       "f2": 99,
+       "b1": 1000,
+       "b2": 100
+      },
+      {
+       "f1": 999,
+       "f2": 9,
+       "b1": 1000,
+       "b2": 10
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 2050,
+      "max": 9800
+     }
+    }
+   ],
+   "text": "Calculate {n:num} − {pair.f1:num} − {pair.f2} mentally.",
+   "answer": "n - pair.f1 - pair.f2",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Subtracts {pair.f1:num} by taking {pair.b1:num} and adding 1: {n - pair.f1:num}."
+    },
+    {
+     "marks": 1,
+     "text": "Subtracts {pair.f2} the same way: {n - pair.f1 - pair.f2:num}."
+    }
+   ],
+   "hint": "Do one subtraction at a time. Each number is 1 less than a friendly number.",
+   "explanation": "{n:num} − {pair.f1:num} = {n - pair.f1:num}. Then {n - pair.f1:num} − {pair.f2} = {n - pair.f1 - pair.f2:num}.",
+   "misconception": "Subtracts 10 or 100 but forgets to add one back.",
+   "notes": "Start 2,050 to 9,800; take away 99 then 9, 999 then 99, or 999 then 9.",
+   "sources": [
+    "CBSE-C5-CH04-Q293",
+    "CBSE-C5-CH04-Q294",
+    "CBSE-C5-CH04-Q295",
+    "CBSE-C5-CH04-Q296",
+    "CBSE-C5-CH04-Q297"
+   ]
+  },
+  {
+   "code": "C5-WT2-S10-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S10",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 105,
+      "max": 4800
+     }
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 25,
+      "max": 3900
+     }
+    }
+   ],
+   "text": "Find the missing number: {a:num} + □ = {a + m:num}.",
+   "answer": "m",
+   "hint": "The missing part is the total minus the part you know.",
+   "explanation": "□ = {a + m:num} − {a:num} = {m:num}.",
+   "misconception": "Uses the same operation for every blank regardless of its position.",
+   "notes": "Known part 105 to 4,800; missing part 25 to 3,900.",
+   "sources": [
+    "CBSE-C5-CH04-Q298",
+    "CBSE-C5-CH04-Q305",
+    "CBSE-C5-CH04-Q312",
+    "CBSE-C5-CH04-Q319"
+   ]
+  },
+  {
+   "code": "C5-WT2-S10-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S10",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "b",
+     "int": {
+      "min": 25,
+      "max": 3900
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 105,
+      "max": 4800
+     }
+    }
+   ],
+   "text": "Find the missing number: □ − {b:num} = {d:num}.",
+   "answer": "b + d",
+   "hint": "The number you start with is the part taken away plus the part left.",
+   "explanation": "□ = {d:num} + {b:num} = {b + d:num}. Check: {b + d:num} − {b:num} = {d:num}.",
+   "misconception": "Uses the same operation for every blank regardless of its position.",
+   "notes": "Taken away 25 to 3,900; left 105 to 4,800.",
+   "sources": [
+    "CBSE-C5-CH04-Q299",
+    "CBSE-C5-CH04-Q306",
+    "CBSE-C5-CH04-Q313",
+    "CBSE-C5-CH04-Q320"
+   ]
+  },
+  {
+   "code": "C5-WT2-S10-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S10",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "s",
+     "int": {
+      "min": 305,
+      "max": 4800
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 105,
+      "max": 3900
+     }
+    }
+   ],
+   "require": [
+    "s - d >= 60",
+    "s - d != d"
+   ],
+   "text": "What number goes in the box? {s:num} − □ = {d:num}",
+   "options": {
+    "correct": "s - d",
+    "format": "num",
+    "wrong": [
+     {
+      "expr": "s + d",
+      "mistake": "uses addition for every blank regardless of its position"
+     },
+     {
+      "expr": "d",
+      "mistake": "copies the number after the equals sign"
+     },
+     {
+      "expr": "s - d - 10",
+      "mistake": "makes a regrouping slip in the subtraction"
+     }
+    ]
+   },
+   "hint": "What must be taken away from {s:num} to leave {d:num}?",
+   "explanation": "□ = {s:num} − {d:num} = {s - d:num}. Check: {s:num} − {s - d:num} = {d:num}.",
+   "misconception": "Uses the same operation for every blank regardless of its position.",
+   "notes": "Start 305 to 4,800; left 105 to 3,900; the missing number is at least 60 and differs from the number left.",
+   "sources": [
+    "CBSE-C5-CH04-Q300",
+    "CBSE-C5-CH04-Q307",
+    "CBSE-C5-CH04-Q314",
+    "CBSE-C5-CH04-Q321"
+   ]
+  },
+  {
+   "code": "C5-WT2-S10-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S10",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 3050,
+      "max": 9900
+     }
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 510,
+      "max": 6900
+     }
+    }
+   ],
+   "require": [
+    "a - m >= 500"
+   ],
+   "text": "Find □ if {a:num} − □ = {a - m:num}. In your working, show how you check the answer by addition.",
+   "answer": "m",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Correct answer: □ = {a:num} − {a - m:num} = {m:num}."
+    },
+    {
+     "marks": 1,
+     "text": "The check is shown in the working: {a - m:num} + {m:num} = {a:num} (follow through from the student's own answer)."
+    }
+   ],
+   "hint": "Subtract the answer from the starting number, then check by adding.",
+   "explanation": "□ = {a:num} − {a - m:num} = {m:num}, and {a - m:num} + {m:num} = {a:num}.",
+   "misconception": "Uses the same operation for every blank regardless of its position.",
+   "notes": "Start 3,050 to 9,900; the missing number 510 to 6,900; at least 500 left.",
+   "sources": [
+    "CBSE-C5-CH04-Q326",
+    "CBSE-C5-CH04-Q327",
+    "CBSE-C5-CH04-Q328",
+    "CBSE-C5-CH04-Q329",
+    "CBSE-C5-CH04-Q330"
+   ]
+  },
+  {
+   "code": "C5-WT2-S10-P5",
+   "chapter": 4,
+   "skill": "C5-WT2-S10",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "total",
+     "int": {
+      "min": 210,
+      "max": 980
+     }
+    },
+    {
+     "name": "left",
+     "int": {
+      "min": 45,
+      "max": 600
+     }
+    }
+   ],
+   "require": [
+    "total - left >= 40"
+   ],
+   "text": "A route is {total} km long. After travelling some distance, {left} km remain. How far has been travelled?",
+   "answer": "total - left",
+   "unit": "km",
+   "hint": "Distance travelled + distance left = the whole route.",
+   "explanation": "□ + {left} = {total}, so □ = {total} − {left} = {total - left} km.",
+   "misconception": "Uses the same operation for every blank regardless of its position.",
+   "notes": "Routes 210 to 980 km, 45 to 600 km left. The unit, km, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q303",
+    "CBSE-C5-CH04-Q310",
+    "CBSE-C5-CH04-Q317",
+    "CBSE-C5-CH04-Q324"
+   ]
+  },
+  {
+   "code": "C5-WT2-S11-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S11",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 0,
+      "max": 9
+     }
+    },
+    {
+     "name": "v",
+     "int": {
+      "min": 0,
+      "max": 3
+     }
+    }
+   ],
+   "require": [
+    "a != b",
+    "b >= 1",
+    "a >= 2"
+   ],
+   "text": "Which number is a palindrome?",
+   "options": {
+    "correct": "101 * a + 10 * b",
+    "wrong": [
+     {
+      "expr": "101 * a + 10 * b + (1 if v == 0 else (-1 if v == 1 else (100 if v == 2 else -100)))",
+      "mistake": "checks only some of the digits"
+     },
+     {
+      "expr": "110 * a + b",
+      "mistake": "confuses repeated digits with a number that reverses exactly"
+     },
+     {
+      "expr": "100 * b + 11 * a",
+      "mistake": "confuses repeated digits with a number that reverses exactly"
+     }
+    ]
+   },
+   "hint": "A palindrome reads the same from left to right and from right to left.",
+   "explanation": "{101 * a + 10 * b} read backwards is still {101 * a + 10 * b}, so it is a palindrome.",
+   "misconception": "Confuses repeated digits with a number that reverses exactly.",
+   "notes": "Three-digit numbers; first digit 2 to 8, middle 1 to 9, different digits. One wrong option changes the first or the last digit by 1, up or down.",
+   "sources": [
+    "CBSE-C5-CH04-Q331",
+    "CBSE-C5-CH04-Q338",
+    "CBSE-C5-CH04-Q345",
+    "CBSE-C5-CH04-Q352"
+   ]
+  },
+  {
+   "code": "C5-WT2-S11-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 0,
+      "max": 9
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 0,
+      "max": 9
+     }
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "Complete the five-digit palindrome {a}{b}{c}{b}□. What digit belongs in the blank?",
+   "answer": "a",
+   "hint": "The last digit must match the first digit.",
+   "explanation": "Read backwards, the number must start with {a}, so the blank is {a}: {a}{b}{c}{b}{a}.",
+   "misconception": "Confuses repeated digits with a number that reverses exactly.",
+   "notes": "First digit 1 to 9; any middle digits; second digit different from the first.",
+   "sources": [
+    "CBSE-C5-CH04-Q332",
+    "CBSE-C5-CH04-Q339",
+    "CBSE-C5-CH04-Q346",
+    "CBSE-C5-CH04-Q353"
+   ]
+  },
+  {
+   "code": "C5-WT2-S11-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 0,
+      "max": 9
+     }
+    },
+    {
+     "name": "p",
+     "expr": "101 * a + 10 * b"
+    }
+   ],
+   "text": "What is the next palindrome after {p}?",
+   "answer": "p + 10 if b < 9 else (a + 1) * 101",
+   "hint": "Keep the first and last digits and try the next middle digit.",
+   "explanation": "After {p}, the next palindrome is {p + 10 if b < 9 else (a + 1) * 101}.",
+   "misconception": "Confuses repeated digits with a number that reverses exactly.",
+   "notes": "Three-digit palindromes with first digit 1 to 8; when the middle digit is 9 the next palindrome starts a new hundred.",
+   "sources": [
+    "CBSE-C5-CH04-Q337",
+    "CBSE-C5-CH04-Q344",
+    "CBSE-C5-CH04-Q351",
+    "CBSE-C5-CH04-Q358"
+   ]
+  },
+  {
+   "code": "C5-WT2-S11-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S11",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 0,
+      "max": 9
+     }
+    }
+   ],
+   "require": [
+    "a != b"
+   ],
+   "text": "A four-digit palindrome begins with {a}{b}. What is the whole palindrome?",
+   "answer": "1001 * a + 110 * b",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Reverses the first two digits to get the last two: {b}{a}."
+    },
+    {
+     "marks": 1,
+     "text": "Writes the whole palindrome: {1001 * a + 110 * b:num}."
+    }
+   ],
+   "hint": "The last two digits are the first two digits in reverse.",
+   "explanation": "The first two digits are {a}{b}, so the last two are {b}{a}: {1001 * a + 110 * b:num}.",
+   "misconception": "Confuses repeated digits with a number that reverses exactly.",
+   "notes": "First digit 1 to 9, second digit 0 to 9, different.",
+   "sources": [
+    "CBSE-C5-CH04-Q359",
+    "CBSE-C5-CH04-Q360",
+    "CBSE-C5-CH04-Q361",
+    "CBSE-C5-CH04-Q362",
+    "CBSE-C5-CH04-Q363"
+   ]
+  },
+  {
+   "code": "C5-WT2-S12-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S12",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "r",
+     "choice": [
+      {
+       "inc": "5, 9, 11",
+       "dec": "11, 9, 5",
+       "mid": "5, 11, 9",
+       "jump": "9, 5, 11"
+      },
+      {
+       "inc": "14, 17, 25",
+       "dec": "25, 17, 14",
+       "mid": "14, 25, 17",
+       "jump": "17, 14, 25"
+      },
+      {
+       "inc": "2, 4, 6",
+       "dec": "6, 4, 2",
+       "mid": "2, 6, 4",
+       "jump": "4, 2, 6"
+      },
+      {
+       "inc": "11, 14, 19",
+       "dec": "19, 14, 11",
+       "mid": "11, 19, 14",
+       "jump": "14, 11, 19"
+      },
+      {
+       "inc": "3, 26, 27",
+       "dec": "27, 26, 3",
+       "mid": "3, 27, 26",
+       "jump": "26, 3, 27"
+      },
+      {
+       "inc": "9, 18, 19",
+       "dec": "19, 18, 9",
+       "mid": "9, 19, 18",
+       "jump": "18, 9, 19"
+      },
+      {
+       "inc": "10, 13, 26",
+       "dec": "26, 13, 10",
+       "mid": "10, 26, 13",
+       "jump": "13, 10, 26"
+      },
+      {
+       "inc": "5, 7, 28",
+       "dec": "28, 7, 5",
+       "mid": "5, 28, 7",
+       "jump": "7, 5, 28"
+      },
+      {
+       "inc": "2, 8, 10",
+       "dec": "10, 8, 2",
+       "mid": "2, 10, 8",
+       "jump": "8, 2, 10"
+      },
+      {
+       "inc": "22, 27, 28",
+       "dec": "28, 27, 22",
+       "mid": "22, 28, 27",
+       "jump": "27, 22, 28"
+      },
+      {
+       "inc": "8, 10, 27",
+       "dec": "27, 10, 8",
+       "mid": "8, 27, 10",
+       "jump": "10, 8, 27"
+      },
+      {
+       "inc": "7, 11, 22",
+       "dec": "22, 11, 7",
+       "mid": "7, 22, 11",
+       "jump": "11, 7, 22"
+      },
+      {
+       "inc": "13, 25, 29",
+       "dec": "29, 25, 13",
+       "mid": "13, 29, 25",
+       "jump": "25, 13, 29"
+      },
+      {
+       "inc": "4, 21, 29",
+       "dec": "29, 21, 4",
+       "mid": "4, 29, 21",
+       "jump": "21, 4, 29"
+      },
+      {
+       "inc": "12, 14, 23",
+       "dec": "23, 14, 12",
+       "mid": "12, 23, 14",
+       "jump": "14, 12, 23"
+      },
+      {
+       "inc": "7, 9, 18",
+       "dec": "18, 9, 7",
+       "mid": "7, 18, 9",
+       "jump": "9, 7, 18"
+      },
+      {
+       "inc": "9, 10, 17",
+       "dec": "17, 10, 9",
+       "mid": "9, 17, 10",
+       "jump": "10, 9, 17"
+      },
+      {
+       "inc": "4, 28, 29",
+       "dec": "29, 28, 4",
+       "mid": "4, 29, 28",
+       "jump": "28, 4, 29"
+      },
+      {
+       "inc": "11, 19, 28",
+       "dec": "28, 19, 11",
+       "mid": "11, 28, 19",
+       "jump": "19, 11, 28"
+      },
+      {
+       "inc": "2, 11, 20",
+       "dec": "20, 11, 2",
+       "mid": "2, 20, 11",
+       "jump": "11, 2, 20"
+      },
+      {
+       "inc": "11, 24, 29",
+       "dec": "29, 24, 11",
+       "mid": "11, 29, 24",
+       "jump": "24, 11, 29"
+      },
+      {
+       "inc": "8, 18, 26",
+       "dec": "26, 18, 8",
+       "mid": "8, 26, 18",
+       "jump": "18, 8, 26"
+      },
+      {
+       "inc": "11, 15, 21",
+       "dec": "21, 15, 11",
+       "mid": "11, 21, 15",
+       "jump": "15, 11, 21"
+      },
+      {
+       "inc": "7, 15, 16",
+       "dec": "16, 15, 7",
+       "mid": "7, 16, 15",
+       "jump": "15, 7, 16"
+      },
+      {
+       "inc": "9, 10, 11",
+       "dec": "11, 10, 9",
+       "mid": "9, 11, 10",
+       "jump": "10, 9, 11"
+      },
+      {
+       "inc": "3, 27, 28",
+       "dec": "28, 27, 3",
+       "mid": "3, 28, 27",
+       "jump": "27, 3, 28"
+      },
+      {
+       "inc": "3, 4, 16",
+       "dec": "16, 4, 3",
+       "mid": "3, 16, 4",
+       "jump": "4, 3, 16"
+      },
+      {
+       "inc": "10, 18, 22",
+       "dec": "22, 18, 10",
+       "mid": "10, 22, 18",
+       "jump": "18, 10, 22"
+      },
+      {
+       "inc": "17, 19, 22",
+       "dec": "22, 19, 17",
+       "mid": "17, 22, 19",
+       "jump": "19, 17, 22"
+      },
+      {
+       "inc": "6, 12, 24",
+       "dec": "24, 12, 6",
+       "mid": "6, 24, 12",
+       "jump": "12, 6, 24"
+      }
+     ]
+    }
+   ],
+   "text": "Which row is in increasing order?",
+   "options": {
+    "correct": "r.inc",
+    "wrong": [
+     {
+      "expr": "r.dec",
+      "mistake": "reverses increasing and decreasing"
+     },
+     {
+      "expr": "r.mid",
+      "mistake": "checks only the first pair of numbers"
+     },
+     {
+      "expr": "r.jump",
+      "mistake": "checks only the last pair of numbers"
+     }
+    ]
+   },
+   "hint": "In increasing order, each number is bigger than the one before it.",
+   "explanation": "{r.inc} goes up at every step, so it is in increasing order.",
+   "misconception": "Checks a row but ignores the column condition, or reverses increasing and decreasing.",
+   "notes": "Three different numbers from 2 to 29 in four orders; 30 sets.",
+   "sources": [
+    "CBSE-C5-CH04-Q364",
+    "CBSE-C5-CH04-Q371",
+    "CBSE-C5-CH04-Q378",
+    "CBSE-C5-CH04-Q385"
+   ]
+  },
+  {
+   "code": "C5-WT2-S12-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S12",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "lo",
+     "int": {
+      "min": 8,
+      "max": 60
+     }
+    },
+    {
+     "name": "w",
+     "int": {
+      "min": 3,
+      "max": 15
+     }
+    },
+    {
+     "name": "hi",
+     "expr": "lo + w"
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": "lo + 1",
+      "max": "hi - 1"
+     }
+    },
+    {
+     "name": "t",
+     "int": {
+      "min": 1,
+      "max": 4
+     }
+    },
+    {
+     "name": "v1",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    },
+    {
+     "name": "v2",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    },
+    {
+     "name": "v3",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    }
+   ],
+   "text": "Choose a number that makes {lo} < □ < {hi} true.",
+   "options": {
+    "correct": "m",
+    "wrong": [
+     {
+      "expr": "lo if v1 == 0 else hi",
+      "mistake": "includes a number equal to a boundary"
+     },
+     {
+      "expr": "hi + t if v2 == 0 else lo - t",
+      "mistake": "checks only one of the two conditions"
+     },
+     {
+      "expr": "hi + t + 3 if v3 == 0 else lo - t - 3",
+      "mistake": "reverses the meaning of < and >"
+     }
+    ]
+   },
+   "hint": "The number must be bigger than {lo} and smaller than {hi}.",
+   "explanation": "{m} is bigger than {lo} and smaller than {hi}, so {lo} < {m} < {hi} is true.",
+   "misconception": "Checks a row but ignores the column condition, or reverses increasing and decreasing.",
+   "notes": "Boundaries 8 to 75 with a gap of 3 to 15. Each wrong option falls below or above the range at random, so the right answer is not always in the same place in size order.",
+   "sources": [
+    "CBSE-C5-CH04-Q366",
+    "CBSE-C5-CH04-Q373",
+    "CBSE-C5-CH04-Q380",
+    "CBSE-C5-CH04-Q387"
+   ]
+  },
+  {
+   "code": "C5-WT2-S12-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S12",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 20
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": "a + 1",
+      "max": "a + 12"
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": "a + 1",
+      "max": "a + 12"
+     }
+    }
+   ],
+   "require": [
+    "b != c"
+   ],
+   "text": "In a 2 × 2 grid, every row increases from left to right and every column increases from top to bottom. The top row is {a}, {b} and the bottom-left number is {c}. What is the smallest whole number that can go in the bottom-right cell?",
+   "answer": "max(b, c) + 1",
+   "hint": "The bottom-right number must be bigger than {b} (above it) and bigger than {c} (to its left).",
+   "explanation": "It must be greater than {b} and greater than {c}, so greater than {max(b, c)}. The smallest such number is {max(b, c) + 1}.",
+   "misconception": "Checks a row but ignores the column condition, or reverses increasing and decreasing.",
+   "notes": "Top-left 1 to 20; the other two numbers up to 12 more and different. (Was multiple choice; the right answer was always the largest option, because any larger number also works.)",
+   "sources": [
+    "CBSE-C5-CH04-Q367",
+    "CBSE-C5-CH04-Q374",
+    "CBSE-C5-CH04-Q381",
+    "CBSE-C5-CH04-Q388"
+   ]
+  },
+  {
+   "code": "C5-WT2-S12-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S12",
+   "questionType": "Single Select",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "x",
+     "int": {
+      "min": 9,
+      "max": 40
+     }
+    },
+    {
+     "name": "y",
+     "int": {
+      "min": "x + 4",
+      "max": "x + 30"
+     }
+    },
+    {
+     "name": "v",
+     "int": {
+      "min": "x + 1",
+      "max": "y - 1"
+     }
+    },
+    {
+     "name": "t",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "s1",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    },
+    {
+     "name": "s2",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    },
+    {
+     "name": "s3",
+     "int": {
+      "min": 0,
+      "max": 1
+     }
+    }
+   ],
+   "text": "In a grid, rows increase from left to right and columns decrease from top to bottom. A cell is to the right of {x} and below {y}. Which value can go in the cell?",
+   "options": {
+    "correct": "v",
+    "wrong": [
+     {
+      "expr": "y + t if s1 == 0 else x - t",
+      "mistake": "breaks the row or the column condition"
+     },
+     {
+      "expr": "y if s2 == 0 else x",
+      "mistake": "allows a number equal to a neighbour instead of greater or smaller"
+     },
+     {
+      "expr": "y + t + 2 if s3 == 0 else x - t - 2",
+      "mistake": "reverses increasing and decreasing"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Uses the row: the value must be greater than {x}."
+    },
+    {
+     "marks": 1,
+     "text": "Uses the column: the value must be less than {y}; so {v} works."
+    }
+   ],
+   "hint": "Check the row condition and the column condition separately.",
+   "explanation": "To the right of {x} in an increasing row: greater than {x}. Below {y} in a decreasing column: less than {y}. {v} is between {x} and {y}.",
+   "misconception": "Checks a row but ignores the column condition, or reverses increasing and decreasing.",
+   "notes": "Left neighbour 9 to 40; the number above is 4 to 30 more. Each wrong option breaks the rule on the low or the high side at random.",
+   "sources": [
+    "CBSE-C5-CH04-Q392",
+    "CBSE-C5-CH04-Q393",
+    "CBSE-C5-CH04-Q394",
+    "CBSE-C5-CH04-Q396"
+   ]
+  },
+  {
+   "code": "C5-WT2-S13-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S13",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 1021,
+      "max": 98979
+     }
+    }
+   ],
+   "require": [
+    "(n // 10000 if n >= 10000 else n // 1000) % 2 != n % 2"
+   ],
+   "text": "Is {n:num} even or odd?",
+   "options": {
+    "correct": "'Even' if n % 2 == 0 else 'Odd'",
+    "wrong": [
+     {
+      "expr": "'Odd' if n % 2 == 0 else 'Even'",
+      "mistake": "uses the first digit or the size of the number instead of its ones digit"
+     },
+     {
+      "expr": "'Both'",
+      "mistake": "thinks a large number can be both even and odd"
+     },
+     {
+      "expr": "'Neither'",
+      "mistake": "thinks only small numbers are even or odd"
+     }
+    ]
+   },
+   "hint": "Look only at the ones digit.",
+   "explanation": "The ones digit is {n % 10}, which is {'even' if n % 2 == 0 else 'odd'}, so {n:num} is {'even' if n % 2 == 0 else 'odd'}.",
+   "misconception": "Uses the size of a number rather than its ones digit or pairing structure.",
+   "notes": "Four- and five-digit numbers whose first digit has the other parity, so judging by the first digit gives the wrong answer.",
+   "sources": [
+    "CBSE-C5-CH04-Q397",
+    "CBSE-C5-CH04-Q404",
+    "CBSE-C5-CH04-Q411",
+    "CBSE-C5-CH04-Q418"
+   ]
+  },
+  {
+   "code": "C5-WT2-S13-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S13",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 105,
+      "max": 9899
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 105,
+      "max": 9899
+     }
+    }
+   ],
+   "text": "Without adding, is {a:num} + {b:num} even or odd?",
+   "options": {
+    "correct": "'Even' if (a + b) % 2 == 0 else 'Odd'",
+    "wrong": [
+     {
+      "expr": "'Odd' if (a + b) % 2 == 0 else 'Even'",
+      "mistake": "uses the size of the numbers rather than their ones digits"
+     },
+     {
+      "expr": "'It cannot be known without adding'",
+      "mistake": "does not use the even-odd rules"
+     },
+     {
+      "expr": "'It depends on how big the numbers are'",
+      "mistake": "uses the size of a number rather than its ones digit"
+     }
+    ]
+   },
+   "hint": "Even + even and odd + odd are even; even + odd is odd.",
+   "explanation": "{a:num} is {'even' if a % 2 == 0 else 'odd'} and {b:num} is {'even' if b % 2 == 0 else 'odd'}, so the sum is {'even' if (a + b) % 2 == 0 else 'odd'}.",
+   "misconception": "Uses the size of a number rather than its ones digit or pairing structure.",
+   "notes": "Numbers 105 to 9,899.",
+   "sources": [
+    "CBSE-C5-CH04-Q398",
+    "CBSE-C5-CH04-Q399",
+    "CBSE-C5-CH04-Q400",
+    "CBSE-C5-CH04-Q405"
+   ]
+  },
+  {
+   "code": "C5-WT2-S13-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S13",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "dev",
+     "choice": [
+      "torch",
+      "fan",
+      "lamp",
+      "doorbell light"
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 15,
+      "max": 250
+     }
+    }
+   ],
+   "text": "A {dev} is ON after odd-numbered presses and OFF after even-numbered presses. Is it ON or OFF after press {n}?",
+   "options": {
+    "correct": "'ON' if n % 2 == 1 else 'OFF'",
+    "wrong": [
+     {
+      "expr": "'OFF' if n % 2 == 1 else 'ON'",
+      "mistake": "uses the size of the number rather than its ones digit"
+     },
+     {
+      "expr": "'It stays as it was'",
+      "mistake": "does not follow the pairing pattern"
+     },
+     {
+      "expr": "'It cannot be predicted'",
+      "mistake": "does not see that presses come in ON-OFF pairs"
+     }
+    ]
+   },
+   "hint": "Is {n} even or odd?",
+   "explanation": "{n} is {'odd' if n % 2 == 1 else 'even'}, so after press {n} the {dev} is {'ON' if n % 2 == 1 else 'OFF'}.",
+   "misconception": "Uses the size of a number rather than its ones digit or pairing structure.",
+   "notes": "Presses 15 to 250.",
+   "sources": [
+    "CBSE-C5-CH04-Q402",
+    "CBSE-C5-CH04-Q409",
+    "CBSE-C5-CH04-Q416",
+    "CBSE-C5-CH04-Q423",
+    "CBSE-C5-CH04-Q500"
+   ]
+  },
+  {
+   "code": "C5-WT2-S13-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S13",
+   "questionType": "Single Select",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 10001,
+      "max": 49999
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 10001,
+      "max": 49999
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 10001,
+      "max": 19999
+     }
+    }
+   ],
+   "text": "Without calculating exactly, is {a:num} + {b:num} − {c:num} even or odd?",
+   "options": {
+    "correct": "'Even' if (a + b - c) % 2 == 0 else 'Odd'",
+    "wrong": [
+     {
+      "expr": "'Odd' if (a + b - c) % 2 == 0 else 'Even'",
+      "mistake": "applies the even-odd rules to the wrong digits"
+     },
+     {
+      "expr": "'It cannot be known without calculating'",
+      "mistake": "does not use the even-odd rules"
+     },
+     {
+      "expr": "'It depends on which number is biggest'",
+      "mistake": "uses the size of a number rather than its ones digit"
+     }
+    ]
+   },
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds each number's parity from its ones digit: {'even' if a % 2 == 0 else 'odd'}, {'even' if b % 2 == 0 else 'odd'}, {'even' if c % 2 == 0 else 'odd'}."
+    },
+    {
+     "marks": 1,
+     "text": "Combines them with the rules, so the result is {'even' if (a + b - c) % 2 == 0 else 'odd'}."
+    }
+   ],
+   "hint": "Look at the ones digits only, and use the even-odd rules one step at a time.",
+   "explanation": "{a:num} is {'even' if a % 2 == 0 else 'odd'}, {b:num} is {'even' if b % 2 == 0 else 'odd'} and {c:num} is {'even' if c % 2 == 0 else 'odd'}. Adding and subtracting follow the same rules, so the result is {'even' if (a + b - c) % 2 == 0 else 'odd'}.",
+   "misconception": "Uses the size of a number rather than its ones digit or pairing structure.",
+   "notes": "Five-digit numbers; the result is always positive.",
+   "sources": [
+    "CBSE-C5-CH04-Q425",
+    "CBSE-C5-CH04-Q426",
+    "CBSE-C5-CH04-Q427",
+    "CBSE-C5-CH04-Q428",
+    "CBSE-C5-CH04-Q429"
+   ]
+  },
+  {
+   "code": "C5-WT2-S14-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S14",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1050,
+      "max": 4800
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 1050,
+      "max": 4800
+     }
+    }
+   ],
+   "text": "A road trip covers {a:num} km in the first stage and {b:num} km in the second. What is the total distance?",
+   "answer": "a + b",
+   "unit": "km",
+   "hint": "Both stages together make the whole trip.",
+   "explanation": "{a:num} + {b:num} = {a + b:num} km.",
+   "misconception": "Uses every number shown or selects an operation from a keyword alone.",
+   "notes": "Stages 1,050 to 4,800 km. The unit, km, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q430",
+    "CBSE-C5-CH04-Q437",
+    "CBSE-C5-CH04-Q444",
+    "CBSE-C5-CH04-Q451"
+   ]
+  },
+  {
+   "code": "C5-WT2-S14-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S14",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "cap",
+     "int": {
+      "min": 3000,
+      "max": 9500,
+      "step": 50
+     }
+    },
+    {
+     "name": "load",
+     "int": {
+      "min": 1050,
+      "max": 8800,
+      "step": 25
+     }
+    }
+   ],
+   "require": [
+    "cap - load >= 200"
+   ],
+   "text": "A truck can carry {cap:num} kg. It already carries {load:num} kg. How much more can it carry?",
+   "answer": "cap - load",
+   "unit": "kg",
+   "hint": "The space left is what it can carry minus what it already carries.",
+   "explanation": "{cap:num} − {load:num} = {cap - load:num} kg.",
+   "misconception": "Uses every number shown or selects an operation from a keyword alone.",
+   "notes": "Capacity 3,000 to 9,500 kg; load 1,050 to 8,800 kg, at least 200 kg under. The unit, kg, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q431",
+    "CBSE-C5-CH04-Q438",
+    "CBSE-C5-CH04-Q445",
+    "CBSE-C5-CH04-Q452"
+   ]
+  },
+  {
+   "code": "C5-WT2-S14-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S14",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 2000,
+      "max": 9500,
+      "step": 50
+     }
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 505,
+      "max": 1995,
+      "step": 5
+     }
+    }
+   ],
+   "text": "A traveller had {m:money} and spent {s:money}. How much money is left?",
+   "answer": "m - s",
+   "hint": "Take the amount spent away from the amount at the start.",
+   "explanation": "{m:money} − {s:money} = {m - s:money}.",
+   "misconception": "Uses every number shown or selects an operation from a keyword alone.",
+   "notes": "Start ₹2,000 to ₹9,500; spent ₹505 to ₹1,995. Answer in rupees, as a number.",
+   "sources": [
+    "CBSE-C5-CH04-Q435",
+    "CBSE-C5-CH04-Q442",
+    "CBSE-C5-CH04-Q449",
+    "CBSE-C5-CH04-Q456"
+   ]
+  },
+  {
+   "code": "C5-WT2-S14-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S14",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "st",
+     "choice": [
+      {
+       "pre": "A tank held",
+       "mid": "litres and received",
+       "post": "litres more.",
+       "q": "the new amount",
+       "op": "Addition"
+      },
+      {
+       "pre": "A tank held",
+       "mid": "litres and",
+       "post": "litres were used.",
+       "q": "the amount left",
+       "op": "Subtraction"
+      },
+      {
+       "pre": "A bus had",
+       "mid": "passengers and",
+       "post": "more got on.",
+       "q": "the number of passengers now",
+       "op": "Addition"
+      },
+      {
+       "pre": "A shop had",
+       "mid": "tickets and sold",
+       "post": "of them.",
+       "q": "the number of tickets left",
+       "op": "Subtraction"
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 150,
+      "max": 980
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 25,
+      "max": 140
+     }
+    }
+   ],
+   "text": "{st.pre} {a} {st.mid} {b} {st.post} Which operation gives {st.q}?",
+   "options": {
+    "correct": "st.op",
+    "wrong": [
+     {
+      "expr": "'Subtraction' if st.op == 'Addition' else 'Addition'",
+      "mistake": "selects an operation from a keyword alone"
+     },
+     {
+      "expr": "'Multiplication'",
+      "mistake": "uses every number shown without thinking about the story"
+     },
+     {
+      "expr": "'Division'",
+      "mistake": "uses every number shown without thinking about the story"
+     }
+    ]
+   },
+   "hint": "Does the amount go up or down?",
+   "explanation": "The amount {'goes up' if st.op == 'Addition' else 'goes down'}, so the operation is {st.op}.",
+   "misconception": "Uses every number shown or selects an operation from a keyword alone.",
+   "notes": "Four short stories; numbers 150 to 980 and 25 to 140.",
+   "sources": [
+    "CBSE-C5-CH04-Q434",
+    "CBSE-C5-CH04-Q441",
+    "CBSE-C5-CH04-Q448",
+    "CBSE-C5-CH04-Q455"
+   ]
+  },
+  {
+   "code": "C5-WT2-S14-P5",
+   "chapter": 4,
+   "skill": "C5-WT2-S14",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "p",
+     "int": {
+      "min": 10500,
+      "max": 49000,
+      "step": 5
+     }
+    },
+    {
+     "name": "extra",
+     "int": {
+      "min": 105,
+      "max": 1995
+     }
+    }
+   ],
+   "text": "A district printed {p:num} certificates, but {p + extra:num} students attended. How many more certificates are needed?",
+   "answer": "extra",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Chooses subtraction: {p + extra:num} − {p:num}."
+    },
+    {
+     "marks": 1,
+     "text": "Calculates {extra:num} more certificates."
+    }
+   ],
+   "hint": "Compare the number of students with the number of certificates.",
+   "explanation": "{p + extra:num} − {p:num} = {extra:num} more certificates.",
+   "misconception": "Uses every number shown or selects an operation from a keyword alone.",
+   "notes": "Printed 10,500 to 49,000; 105 to 1,995 more students than certificates.",
+   "sources": [
+    "CBSE-C5-CH04-Q458",
+    "CBSE-C5-CH04-Q459",
+    "CBSE-C5-CH04-Q460",
+    "CBSE-C5-CH04-Q461",
+    "CBSE-C5-CH04-Q462"
+   ]
+  },
+  {
+   "code": "C5-WT2-S15-P1",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 8000,
+      "max": 15000,
+      "step": 100
+     }
+    },
+    {
+     "name": "s1",
+     "int": {
+      "min": 1050,
+      "max": 2995,
+      "step": 5
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 500,
+      "max": 2500,
+      "step": 50
+     }
+    },
+    {
+     "name": "s2",
+     "int": {
+      "min": 1050,
+      "max": 2995,
+      "step": 5
+     }
+    }
+   ],
+   "text": "A traveller starts with {m:money}, spends {s1:money}, receives {r:money}, then spends {s2:money}. How much money is left?",
+   "answer": "m - s1 + r - s2",
+   "hint": "Go through the events in order: spend means subtract, receive means add.",
+   "explanation": "{m:money} − {s1:money} = {m - s1:money}; + {r:money} = {m - s1 + r:money}; − {s2:money} = {m - s1 + r - s2:money}.",
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Start ₹8,000 to ₹15,000; two spends of ₹1,050 to ₹2,995; a receipt of ₹500 to ₹2,500.",
+   "sources": [
+    "CBSE-C5-CH04-Q463",
+    "CBSE-C5-CH04-Q470",
+    "CBSE-C5-CH04-Q477",
+    "CBSE-C5-CH04-Q484"
+   ]
+  },
+  {
+   "code": "C5-WT2-S15-P2",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "cap",
+     "int": {
+      "min": 6000,
+      "max": 9500,
+      "step": 50
+     }
+    },
+    {
+     "name": "l1",
+     "int": {
+      "min": 1050,
+      "max": 4500,
+      "step": 25
+     }
+    },
+    {
+     "name": "l2",
+     "int": {
+      "min": 1050,
+      "max": 3500,
+      "step": 25
+     }
+    }
+   ],
+   "require": [
+    "cap - l1 - l2 >= 200"
+   ],
+   "text": "A truck can carry {cap:num} kg. It is loaded with {l1:num} kg and then {l2:num} kg. How much more can it carry?",
+   "answer": "cap - l1 - l2",
+   "unit": "kg",
+   "hint": "Find the total load first.",
+   "explanation": "Load = {l1:num} + {l2:num} = {l1 + l2:num} kg. Space left = {cap:num} − {l1 + l2:num} = {cap - l1 - l2:num} kg.",
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Capacity 6,000 to 9,500 kg; two loads; at least 200 kg of room left. The unit, kg, is in the question.",
+   "sources": [
+    "CBSE-C5-CH04-Q465",
+    "CBSE-C5-CH04-Q472",
+    "CBSE-C5-CH04-Q479",
+    "CBSE-C5-CH04-Q486"
+   ]
+  },
+  {
+   "code": "C5-WT2-S15-P3",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 40000,
+      "max": 95000,
+      "step": 500
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 10105,
+      "max": 39995,
+      "step": 5
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 5105,
+      "max": 19995,
+      "step": 5
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 2105,
+      "max": 9995,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "m - a - b - c >= 500"
+   ],
+   "text": "A school has {m:money} and plans to buy things costing {a:money}, {b:money} and {c:money}. How much money will be left?",
+   "options": {
+    "correct": "m - a - b - c",
+    "format": "money",
+    "wrong": [
+     {
+      "expr": "m - a",
+      "mistake": "stops after one calculation"
+     },
+     {
+      "expr": "a + b + c",
+      "mistake": "gives the total cost instead of the money left"
+     },
+     {
+      "expr": "m - a - b",
+      "mistake": "stops before using every purchase"
+     }
+    ]
+   },
+   "hint": "Add up all the costs, then take them away from the money the school has.",
+   "explanation": "Total cost = {a:money} + {b:money} + {c:money} = {a + b + c:money}. Left: {m:money} − {a + b + c:money} = {m - a - b - c:money}.",
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Budget ₹40,000 to ₹95,000; three costs; at least ₹500 left.",
+   "sources": [
+    "CBSE-C5-CH04-Q466",
+    "CBSE-C5-CH04-Q473",
+    "CBSE-C5-CH04-Q480",
+    "CBSE-C5-CH04-Q487",
+    "CBSE-C5-CH04-Q498"
+   ]
+  },
+  {
+   "code": "C5-WT2-S15-P4",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 60000,
+      "max": 98000,
+      "step": 5
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 15000,
+      "max": 30000,
+      "step": 1000
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 10000,
+      "max": 20000,
+      "step": 1000
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 10105,
+      "max": 19995,
+      "step": 1
+     }
+    }
+   ],
+   "require": [
+    "m - a - b - c >= 1000"
+   ],
+   "text": "A family has {m:money} and buys items costing {a:money}, {b:money} and {c:money}. How much money remains?",
+   "answer": "m - a - b - c",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds the total cost: {a:money} + {b:money} + {c:money} = {a + b + c:money} (or subtracts each cost in turn)."
+    },
+    {
+     "marks": 1,
+     "text": "Money left: {m:money} − {a + b + c:money} = {m - a - b - c:money}."
+    }
+   ],
+   "hint": "Find the total cost first.",
+   "explanation": "Total cost = {a + b + c:money}. Remaining = {m:money} − {a + b + c:money} = {m - a - b - c:money}.",
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Start ₹60,000 to ₹98,000; two round costs and one exact; at least ₹1,000 left.",
+   "sources": [
+    "CBSE-C5-CH04-Q491",
+    "CBSE-C5-CH04-Q492",
+    "CBSE-C5-CH04-Q493",
+    "CBSE-C5-CH04-Q495"
+   ]
+  },
+  {
+   "code": "C5-WT2-L3-1",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "m",
+     "int": {
+      "min": 25000,
+      "max": 60000,
+      "step": 50
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 5105,
+      "max": 14995,
+      "step": 5
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 3105,
+      "max": 9995,
+      "step": 5
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 2000,
+      "max": 8000,
+      "step": 250
+     }
+    }
+   ],
+   "require": [
+    "m - a - b >= 2000"
+   ],
+   "text": "A school has {m:money}. It spends {a:money} on books and {b:money} on sports kits, and then receives a donation of {d:money}. How much money does it have now? Show your working.",
+   "answer": "Money after spending = {m:money} − {a:money} − {b:money} = {m - a - b:money}. After the donation: {m - a - b:money} + {d:money} = {m - a - b + d:money}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Subtracts the spending: {m:money} − {a:money} − {b:money} = {m - a - b:money} (or finds the total spent, {a + b:money}, and subtracts it)."
+    },
+    {
+     "marks": 1,
+     "text": "Adds the donation: {m - a - b:money} + {d:money} = {m - a - b + d:money}."
+    },
+    {
+     "marks": 1,
+     "text": "Correct final answer with ₹, and the order of operations matches the story. Follow through from an arithmetic slip if the method is right."
+    }
+   ],
+   "hint": "Follow the story in order: spending takes money away, a donation adds it.",
+   "explanation": "{m:money} − {a:money} = {m - a:money}; − {b:money} = {m - a - b:money}; + {d:money} = {m - a - b + d:money}.",
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Budget ₹25,000 to ₹60,000; two costs; a donation of ₹2,000 to ₹8,000.",
+   "sources": [
+    "CBSE-C5-CH04-Q494",
+    "CBSE-C5-CH04-Q491",
+    "CBSE-C5-CH04-Q463"
+   ]
+  },
+  {
+   "code": "C5-WT2-L3-2",
+   "chapter": 4,
+   "skill": "C5-WT2-S10",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "pl",
+     "choice": [
+      {
+       "a": "Delhi",
+       "b": "Mumbai"
+      },
+      {
+       "a": "Chennai",
+       "b": "Kolkata"
+      },
+      {
+       "a": "Jaipur",
+       "b": "Bengaluru"
+      },
+      {
+       "a": "Lucknow",
+       "b": "Pune"
+      },
+      {
+       "a": "Guwahati",
+       "b": "Hyderabad"
+      }
+     ]
+    },
+    {
+     "name": "total",
+     "int": {
+      "min": 1150,
+      "max": 2400,
+      "step": 5
+     }
+    },
+    {
+     "name": "done",
+     "int": {
+      "min": 250,
+      "max": 900,
+      "step": 5
+     }
+    },
+    {
+     "name": "more",
+     "int": {
+      "min": 150,
+      "max": 700,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "total - done - more >= 100"
+   ],
+   "text": "A bus is going {total:num} km from {pl.a} to {pl.b}. It travels {done} km, stops for lunch, and then travels {more} km more. How far is still left? Check your answer by addition. Show your working.",
+   "answer": "Distance travelled = {done} + {more} = {done + more:num} km. Left = {total:num} − {done + more:num} = {total - done - more:num} km. Check: {done + more:num} + {total - done - more:num} = {total:num}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds the distance travelled: {done} + {more} = {done + more:num} km (or subtracts {done} and then {more})."
+    },
+    {
+     "marks": 1,
+     "text": "Distance left: {total:num} − {done + more:num} = {total - done - more:num} km."
+    },
+    {
+     "marks": 1,
+     "text": "Checks by adding: {done + more:num} + {total - done - more:num} = {total:num}."
+    }
+   ],
+   "hint": "Add the two parts of the journey first.",
+   "explanation": "Travelled: {done} + {more} = {done + more:num} km. Left: {total:num} − {done + more:num} = {total - done - more:num} km.",
+   "misconception": "Uses the same operation for every blank regardless of its position.",
+   "notes": "Journeys 1,150 to 2,400 km; two legs of 250 to 900 and 150 to 700 km; at least 100 km left.",
+   "sources": [
+    "CBSE-C5-CH04-Q303",
+    "CBSE-C5-CH04-Q310",
+    "CBSE-C5-CH04-Q326",
+    "CBSE-C5-CH04-Q497"
+   ]
+  },
+  {
+   "code": "C5-WT2-L3-3",
+   "chapter": 4,
+   "skill": "C5-WT2-S01",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 20,
+      "max": 60
+     }
+    },
+    {
+     "name": "y",
+     "expr": "x - k"
+    },
+    {
+     "name": "a1",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "a2",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "b1",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "b2",
+     "expr": "a1 + a2 - k - b1"
+    },
+    {
+     "name": "sa",
+     "expr": "a1 + a2 + x"
+    },
+    {
+     "name": "sb",
+     "expr": "b1 + b2 + y"
+    }
+   ],
+   "require": [
+    "10 <= b2 <= 60",
+    "a1 != a2",
+    "a1 != x",
+    "a2 != x",
+    "b1 != b2",
+    "b1 != y",
+    "b2 != y",
+    "a1 != b1",
+    "a1 != b2",
+    "a1 != y",
+    "a2 != b1",
+    "a2 != b2",
+    "a2 != y",
+    "x != b1",
+    "x != b2",
+    "a1 - b1 != k",
+    "a1 - b2 != k",
+    "a1 - y != k",
+    "a2 - b1 != k",
+    "a2 - b2 != k",
+    "a2 - y != k",
+    "x - b1 != k",
+    "x - b2 != k"
+   ],
+   "text": "Group A has {a1}, {a2} and {x}. Group B has {b1}, {b2} and {y}. (a) Find the sum of each group. (b) Which two numbers, one from each group, can be interchanged to make the sums equal? (c) Explain why the swap works.",
+   "answer": "(a) Group A: {a1} + {a2} + {x} = {sa}. Group B: {b1} + {b2} + {y} = {sb}. (b) Interchange {x} and {y}. (c) The gap is {sa} − {sb} = {2 * k}. Swapping takes {x} out of A and puts {y} in, so A goes down by {k}; B goes up by {k}. Both sums become {sa - k}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) Both sums correct: {sa} and {sb}."
+    },
+    {
+     "marks": 1,
+     "text": "(b) Names the swap {x} and {y}."
+    },
+    {
+     "marks": 1,
+     "text": "(c) Explains that A loses {k} and B gains {k} (half of the gap {2 * k}), or shows both new sums are {sa - k}."
+    }
+   ],
+   "hint": "Find the gap between the sums. The two numbers you swap must differ by half of it.",
+   "explanation": "A = {sa}, B = {sb}; the gap is {2 * k}. {x} − {y} = {k}, half the gap, so swapping them makes both sums {sa - k}.",
+   "misconception": "Swaps any pair without tracking how both group sums change.",
+   "notes": "As S01-P1: exactly one swap works.",
+   "sources": [
+    "CBSE-C5-CH04-Q032",
+    "CBSE-C5-CH04-Q008",
+    "CBSE-C5-CH04-Q022"
+   ]
+  },
+  {
+   "code": "C5-WT2-L5-1",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Multi-step application",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "dest",
+     "choice": [
+      "Shimla",
+      "Puri",
+      "Ooty",
+      "Darjeeling",
+      "Udaipur",
+      "Kochi"
+     ]
+    },
+    {
+     "name": "total",
+     "int": {
+      "min": 1500,
+      "max": 2900,
+      "step": 10
+     }
+    },
+    {
+     "name": "d1",
+     "int": {
+      "min": 380,
+      "max": 790
+     }
+    },
+    {
+     "name": "d2",
+     "int": {
+      "min": 310,
+      "max": 690
+     }
+    },
+    {
+     "name": "bud",
+     "int": {
+      "min": 9000,
+      "max": 15000,
+      "step": 500
+     }
+    },
+    {
+     "name": "f1",
+     "int": {
+      "min": 1805,
+      "max": 3995,
+      "step": 5
+     }
+    },
+    {
+     "name": "f2",
+     "int": {
+      "min": 1505,
+      "max": 3495,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "total - d1 - d2 >= 200",
+    "bud - f1 - f2 >= 500",
+    "2 * (total - d1 - d2) != total"
+   ],
+   "text": "{who.name}'s family is driving {total:num} km to {dest}. They drive {d1} km on day 1 and {d2} km on day 2. Their fuel budget is {bud:money}; they spend {f1:money} on day 1 and {f2:money} on day 2. (a) How far have they driven in two days? (b) How far is left? (c) How much has been spent on fuel? (d) How much of the fuel budget is left? (e) Is the distance left more or less than half of the journey? Show your working.",
+   "maxWords": 110,
+   "answer": "(a) {d1} + {d2} = {d1 + d2:num} km. (b) {total:num} − {d1 + d2:num} = {total - d1 - d2:num} km. (c) {f1:money} + {f2:money} = {f1 + f2:money}. (d) {bud:money} − {f1 + f2:money} = {bud - f1 - f2:money}. (e) Half of {total:num} is {total // 2:num}; {total - d1 - d2:num} km is {'more' if 2 * (total - d1 - d2) > total else 'less'} than half.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {d1} + {d2} = {d1 + d2:num} km."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {total:num} − {d1 + d2:num} = {total - d1 - d2:num} km (follow through from (a))."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {f1:money} + {f2:money} = {f1 + f2:money}."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {bud:money} − {f1 + f2:money} = {bud - f1 - f2:money} (follow through from (c))."
+    },
+    {
+     "marks": 1,
+     "text": "(e) Compares with half the journey, {total / 2:num} km: the distance left is {'more' if 2 * (total - d1 - d2) > total else 'less'} than half. Distances and money are never combined."
+    }
+   ],
+   "hint": "Keep the distances and the money separate. Do one step at a time.",
+   "explanation": "Driven: {d1 + d2:num} km; left: {total - d1 - d2:num} km. Fuel spent: {f1 + f2:money}; budget left: {bud - f1 - f2:money}. Half the journey is {total / 2:num} km, so the distance left is {'more' if 2 * (total - d1 - d2) > total else 'less'} than half.",
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Journey 1,500 to 2,900 km (a multiple of 10, so half is whole); two days of 380 to 790 and 310 to 690 km; fuel budget ₹9,000 to ₹15,000 with two spends; at least 200 km and ₹500 left.",
+   "sources": [
+    "CBSE-C5-CH04-Q498",
+    "CBSE-C5-CH04-Q491",
+    "CBSE-C5-CH04-Q464",
+    "CBSE-C5-CH04-Q463"
+   ]
+  },
+  {
+   "code": "C5-WT2-L5-2",
+   "chapter": 4,
+   "skill": "C5-WT2-S06",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Multi-step application",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "st",
+     "choice": [
+      "Jaipur",
+      "Bhopal",
+      "Mysuru",
+      "Agra",
+      "Kochi",
+      "Ranchi"
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 12105,
+      "max": 38995
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 12105,
+      "max": 38995
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 12105,
+      "max": 38995
+     }
+    },
+    {
+     "name": "ra",
+     "expr": "round_half_up(a, 1000)"
+    },
+    {
+     "name": "rb",
+     "expr": "round_half_up(b, 1000)"
+    },
+    {
+     "name": "rc",
+     "expr": "round_half_up(c, 1000)"
+    },
+    {
+     "name": "est",
+     "expr": "ra + rb + rc"
+    },
+    {
+     "name": "ex",
+     "expr": "a + b + c"
+    }
+   ],
+   "require": [
+    "a % 1000 != 500",
+    "b % 1000 != 500",
+    "c % 1000 != 500",
+    "a != b",
+    "b != c",
+    "a != c",
+    "est != ex"
+   ],
+   "text": "A railway station at {st} counted {a:num} passengers in June, {b:num} in July and {c:num} in August. (a) Estimate the total by rounding each number to the nearest thousand. (b) Find the exact total. (c) How far is the estimate from the exact total? (d) How many more passengers came in the busiest month than in the quietest? Show your working.",
+   "maxWords": 90,
+   "answer": "(a) {ra:num} + {rb:num} + {rc:num} = {est:num}. (b) {a:num} + {b:num} + {c:num} = {ex:num}. (c) {abs(est - ex):num}. (d) {max(a, b, c):num} − {min(a, b, c):num} = {max(a, b, c) - min(a, b, c):num}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) Rounds to {ra:num}, {rb:num} and {rc:num} and adds: {est:num}."
+    },
+    {
+     "marks": 2,
+     "text": "(b) 1 mark for adding with correct place value; 1 mark for the exact total {ex:num}."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {abs(est - ex):num} (follow through from (a) and (b))."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {max(a, b, c):num} − {min(a, b, c):num} = {max(a, b, c) - min(a, b, c):num}."
+    }
+   ],
+   "hint": "An estimate uses rounded numbers; the exact total uses the numbers as they are.",
+   "explanation": "Estimate: {est:num}. Exact: {ex:num}. They differ by {abs(est - ex):num}. Busiest minus quietest: {max(a, b, c) - min(a, b, c):num}.",
+   "misconception": "Treats an estimate as the exact answer or rounds inconsistently.",
+   "notes": "Three five-digit monthly counts 12,105 to 38,995, all different, none ending in 500.",
+   "sources": [
+    "CBSE-C5-CH04-Q166",
+    "CBSE-C5-CH04-Q167",
+    "CBSE-C5-CH04-Q161",
+    "CBSE-C5-CH04-Q194",
+    "CBSE-C5-CH04-Q499"
+   ]
+  },
+  {
+   "code": "C5-WT2-L5-3",
+   "chapter": 4,
+   "skill": "C5-WT2-S08",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 3,
+   "competency": "Multi-step application",
+   "responseFormat": "Written working",
+   "values": [
+    {
+     "name": "thing",
+     "choice": [
+      "plastic bottles for recycling",
+      "old newspapers",
+      "books for the library",
+      "seed packets for a garden drive"
+     ]
+    },
+    {
+     "name": "target",
+     "choice": [
+      5000,
+      10000
+     ]
+    },
+    {
+     "name": "w1",
+     "int": {
+      "min": 1205,
+      "max": 2995
+     }
+    },
+    {
+     "name": "w2",
+     "int": {
+      "min": 1205,
+      "max": 2995
+     }
+    },
+    {
+     "name": "w3",
+     "int": {
+      "min": 105,
+      "max": 4995
+     }
+    }
+   ],
+   "require": [
+    "target - w1 - w2 >= 300",
+    "w1 + w2 + w3 != target",
+    "(w1 + w2) % 10 != 0"
+   ],
+   "text": "A school wants to collect {target:num} {thing}. It collects {w1:num} in week 1 and {w2:num} in week 2. (a) How many has it collected so far? (b) How many more are needed to reach {target:num}? (c) In week 3 it collects {w3:num}. Has it reached the target? By how many is it over or short? Show your working.",
+   "maxWords": 90,
+   "answer": "(a) {w1:num} + {w2:num} = {w1 + w2:num}. (b) {target:num} − {w1 + w2:num} = {target - w1 - w2:num}. (c) {w1 + w2:num} + {w3:num} = {w1 + w2 + w3:num}; {'over' if w1 + w2 + w3 > target else 'short'} by {abs(w1 + w2 + w3 - target):num}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {w1:num} + {w2:num} = {w1 + w2:num}."
+    },
+    {
+     "marks": 2,
+     "text": "(b) 1 mark for {target:num} − {w1 + w2:num} (or counting on); 1 mark for {target - w1 - w2:num}."
+    },
+    {
+     "marks": 2,
+     "text": "(c) 1 mark for comparing {w3:num} with {target - w1 - w2:num} (or finding {w1 + w2 + w3:num}); 1 mark for '{'over' if w1 + w2 + w3 > target else 'short'} by {abs(w1 + w2 + w3 - target):num}'."
+    }
+   ],
+   "hint": "The number still needed is the complement of what has been collected.",
+   "explanation": "So far: {w1 + w2:num}. Still needed: {target - w1 - w2:num}. After week 3: {w1 + w2 + w3:num}, which is {'over' if w1 + w2 + w3 > target else 'short'} by {abs(w1 + w2 + w3 - target):num}.",
+   "misconception": "Subtracts each digit independently without regrouping.",
+   "notes": "Targets 5,000 or 10,000; two weeks of 1,205 to 2,995; week 3 from 105 to 4,995, so the target may or may not be reached.",
+   "sources": [
+    "CBSE-C5-CH04-Q232",
+    "CBSE-C5-CH04-Q238",
+    "CBSE-C5-CH04-Q431",
+    "CBSE-C5-CH04-Q465"
+   ]
+  },
+  {
+   "code": "C5-WT2-CS-1",
+   "chapter": 4,
+   "skill": "C5-WT2-S14",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "fam",
+     "choice": [
+      "Sharma",
+      "Iyer",
+      "Khan",
+      "Das",
+      "Patel",
+      "Singh"
+     ]
+    },
+    {
+     "name": "pl",
+     "choice": [
+      {
+       "a": "Delhi",
+       "b": "Kanyakumari"
+      },
+      {
+       "a": "Mumbai",
+       "b": "Guwahati"
+      },
+      {
+       "a": "Kolkata",
+       "b": "Jaisalmer"
+      },
+      {
+       "a": "Chennai",
+       "b": "Amritsar"
+      }
+     ]
+    },
+    {
+     "name": "s1",
+     "int": {
+      "min": 650,
+      "max": 1450
+     }
+    },
+    {
+     "name": "s2",
+     "int": {
+      "min": 650,
+      "max": 1450
+     }
+    },
+    {
+     "name": "s3",
+     "int": {
+      "min": 350,
+      "max": 950
+     }
+    },
+    {
+     "name": "o",
+     "int": {
+      "min": 12050,
+      "max": 68000
+     }
+    },
+    {
+     "name": "tot",
+     "expr": "s1 + s2 + s3"
+    },
+    {
+     "name": "est",
+     "expr": "round_half_up(tot, 100)"
+    }
+   ],
+   "require": [
+    "s2 > s3",
+    "tot % 100 != 50",
+    "tot % 100 != 0",
+    "s1 != s2"
+   ],
+   "stimulus": "Case study: The {fam} family drove from {pl.a} to {pl.b} in three stages of {s1:num} km, {s2:num} km and {s3:num} km. The car's odometer read {o:num} km when they set off.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) What was the total distance?",
+     "answer": "tot",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{s1:num} + {s2:num} + {s3:num} = {tot:num} km."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(b) What is the total distance rounded to the nearest hundred?",
+     "options": {
+      "correct": "est",
+      "format": "num",
+      "wrong": [
+       {
+        "expr": "tot",
+        "mistake": "treats the exact answer as the estimate"
+       },
+       {
+        "expr": "tot // 100 * 100 if est > tot else tot // 100 * 100 + 100",
+        "mistake": "rounds the wrong way"
+       },
+       {
+        "expr": "round_half_up(tot, 1000)",
+        "mistake": "rounds to the nearest thousand instead"
+       }
+      ]
+     },
+     "explanation": "{tot:num} rounded to the nearest hundred is {est:num}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) What did the odometer read at the end of the trip?",
+     "answer": "o + tot",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{o:num} + {tot:num} = {o + tot:num} km."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(d) How much longer was the second stage than the third?",
+     "answer": "s2 - s3",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{s2:num} − {s3:num} = {s2 - s3:num} km."
+    }
+   ],
+   "misconception": "Uses every number shown or selects an operation from a keyword alone.",
+   "notes": "Stages 650 to 1,450 km and 350 to 950 km (the second longer than the third); start reading 12,050 to 68,000 km.",
+   "sources": [
+    "CBSE-C5-CH04-Q430",
+    "CBSE-C5-CH04-Q135",
+    "CBSE-C5-CH04-Q166",
+    "CBSE-C5-CH04-Q496"
+   ]
+  },
+  {
+   "code": "C5-WT2-CS-2",
+   "chapter": 4,
+   "skill": "C5-WT2-S15",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "cls",
+     "choice": [
+      "5A",
+      "5B",
+      "5C",
+      "5D"
+     ]
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 3000,
+      "max": 8000,
+      "step": 100
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 605,
+      "max": 1495,
+      "step": 5
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 505,
+      "max": 1295,
+      "step": 5
+     }
+    },
+    {
+     "name": "e",
+     "int": {
+      "min": 1205,
+      "max": 3995,
+      "step": 5
+     }
+    },
+    {
+     "name": "ask",
+     "choice": [
+      {
+       "q": "after the fair",
+       "right": "Start − decorations − snacks + sales",
+       "short": "Start − decorations − snacks"
+      },
+      {
+       "q": "left before the fair",
+       "right": "Start − decorations − snacks",
+       "short": "Start − decorations − snacks + sales"
+      },
+      {
+       "q": "left after buying the decorations",
+       "right": "Start − decorations",
+       "short": "Start − decorations − snacks"
+      }
+     ]
+    }
+   ],
+   "stimulus": "Case study: Class {cls} has {m:money} for its stall at the school fair. It spends {a:money} on decorations and {b:money} on snacks to sell. At the fair it earns {e:money} from sales.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) How much did the class spend in all?",
+     "answer": "a + b",
+     "explanation": "{a:money} + {b:money} = {a + b:money}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) How much money was left before the fair?",
+     "answer": "m - a - b",
+     "explanation": "{m:money} − {a + b:money} = {m - a - b:money}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) How much money did the class have after the fair?",
+     "answer": "m - a - b + e",
+     "explanation": "{m - a - b:money} + {e:money} = {m - a - b + e:money}."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(d) Which plan finds the money {ask.q}?",
+     "options": {
+      "correct": "ask.right",
+      "wrong": [
+       {
+        "expr": "'Start + decorations + snacks + sales'",
+        "mistake": "uses every number shown without thinking about the story"
+       },
+       {
+        "expr": "'Start − decorations − snacks − sales'",
+        "mistake": "selects an operation from a keyword alone"
+       },
+       {
+        "expr": "ask.short",
+        "mistake": "stops before the last step, or goes past the point asked about"
+       }
+      ]
+     },
+     "explanation": "Spending takes money away and sales add money. The money {ask.q} is {ask.right}."
+    }
+   ],
+   "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
+   "notes": "Start ₹3,000 to ₹8,000; decorations ₹605 to ₹1,495; snacks ₹505 to ₹1,295; sales ₹1,205 to ₹3,995.",
+   "sources": [
+    "CBSE-C5-CH04-Q463",
+    "CBSE-C5-CH04-Q467",
+    "CBSE-C5-CH04-Q469",
+    "CBSE-C5-CH04-Q498"
+   ]
+  },
+  {
+   "code": "C5-WT2-CS-3",
+   "chapter": 4,
+   "skill": "C5-WT2-S01",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 20,
+      "max": 60
+     }
+    },
+    {
+     "name": "y",
+     "expr": "x - k"
+    },
+    {
+     "name": "a1",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "a2",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "b1",
+     "int": {
+      "min": 10,
+      "max": 60
+     }
+    },
+    {
+     "name": "b2",
+     "expr": "a1 + a2 - k - b1"
+    },
+    {
+     "name": "sa",
+     "expr": "a1 + a2 + x"
+    },
+    {
+     "name": "sb",
+     "expr": "b1 + b2 + y"
+    },
+    {
+     "name": "bus",
+     "choice": [
+      {
+       "p": "buses",
+       "one": "bus",
+       "cap": "Bus"
+      },
+      {
+       "p": "boats",
+       "one": "boat",
+       "cap": "Boat"
+      },
+      {
+       "p": "vans",
+       "one": "van",
+       "cap": "Van"
+      }
+     ]
+    }
+   ],
+   "require": [
+    "10 <= b2 <= 60",
+    "a1 != a2",
+    "a1 != x",
+    "a2 != x",
+    "b1 != b2",
+    "b1 != y",
+    "b2 != y",
+    "a1 != b1",
+    "a1 != b2",
+    "a1 != y",
+    "a2 != b1",
+    "a2 != b2",
+    "a2 != y",
+    "x != b1",
+    "x != b2",
+    "a1 - b1 != k",
+    "a1 - b2 != k",
+    "a1 - y != k",
+    "a2 - b1 != k",
+    "a2 - b2 != k",
+    "a2 - y != k",
+    "x - b1 != k",
+    "x - b2 != k",
+    "y + 2 * k != a1",
+    "y + 2 * k != a2"
+   ],
+   "stimulus": "Case study: Two {bus.p} take school groups on a trip. {bus.cap} A carries groups of {a1}, {a2} and {x} children. {bus.cap} B carries groups of {b1}, {b2} and {y} children. The teacher wants both {bus.p} to carry the same number of children.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) How many children are in {bus.one} A?",
+     "answer": "sa",
+     "explanation": "{a1} + {a2} + {x} = {sa}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) How many children are in {bus.one} B?",
+     "answer": "sb",
+     "explanation": "{b1} + {b2} + {y} = {sb}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) How many more children are in {bus.one} A than in {bus.one} B?",
+     "answer": "sa - sb",
+     "explanation": "{sa} − {sb} = {sa - sb}."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(d) Which group in {bus.one} A should swap with the group of {y} in {bus.one} B to make the numbers equal?",
+     "options": {
+      "correct": "x",
+      "wrong": [
+       {
+        "expr": "a1",
+        "mistake": "swaps any pair without tracking how both group sums change"
+       },
+       {
+        "expr": "a2",
+        "mistake": "swaps any pair without tracking how both group sums change"
+       },
+       {
+        "expr": "y + sa - sb",
+        "mistake": "moves the whole difference instead of half of it"
+       }
+      ]
+     },
+     "explanation": "Swapping {x} and {y} moves {k} children, half of the difference {sa - sb}, so both carry {sa - k}."
+    }
+   ],
+   "misconception": "Swaps any pair without tracking how both group sums change.",
+   "notes": "As S01-P1: group sizes 10 to 60, exactly one swap works.",
+   "sources": [
+    "CBSE-C5-CH04-Q001",
+    "CBSE-C5-CH04-Q003",
+    "CBSE-C5-CH04-Q005",
+    "CBSE-C5-CH04-Q029"
+   ]
+  }
+ ]
+}
