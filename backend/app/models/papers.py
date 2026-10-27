@@ -7,8 +7,8 @@ The mock paper engine fills the blanks within the pattern's limits, works
 out the answer itself, checks the result, and stores it as an ordinary
 Question (origin GENERATED) so marking, analytics and progress treat it like
 any other question. A GeneratedQuestion row records how it was made (pattern
-version, seed, values) and its fingerprint, which keeps a school from ever
-being given the same generated question twice.
+version, seed, values) and its fingerprint, which keeps
+a student from ever being given the same generated question twice.
 
 A pattern's spec is JSON (pattern_engine.clean_spec says what it holds); it
 is loaded from the files under backend/content/patterns by
@@ -17,7 +17,7 @@ scripts/load_patterns.py. A pattern is used in papers only once APPROVED
 Admin. Changing an approved pattern's spec makes it a DRAFT again, at the
 next version.
 """
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 
 from app.database import Base
 from app.models.models import uuid_str
@@ -54,6 +54,10 @@ class GeneratedQuestion(Base):
     pattern_id = Column(String, ForeignKey("question_patterns.id", ondelete="RESTRICT"), nullable=False, index=True)
     pattern_version = Column(Integer, nullable=False)
     school_id = Column(String, ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
+    # Whose question it is: a student never gets the same one twice (#166
+    # step 3; was "never the same within a school", which a school of a
+    # few hundred students would use up).
+    student_id = Column(String, ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
     seed = Column(String(40), nullable=False)
     values_json = Column(Text, nullable=False)
     # sha256 of the question as a student reads it (wording, options, key).
@@ -67,6 +71,110 @@ class GeneratedQuestion(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
-        UniqueConstraint("school_id", "fingerprint", name="uq_generated_question_school_fingerprint"),
+        UniqueConstraint("student_id", "fingerprint", name="uq_generated_question_student_fingerprint"),
+        Index("ix_generated_questions_school_fingerprint", "school_id", "fingerprint"),
         Index("ix_generated_questions_pattern_school", "pattern_id", "school_id"),
     )
+
+
+# --- mock papers (#166 step 3) ---------------------------------------------------------
+#
+# Shailesh, 27 Oct 2026: the teacher builds any test the school needs (not
+# three fixed sizes); the teacher approves every paper; every student gets
+# their own version, all made at once; mock papers are practice only.
+
+PAPER_STATUSES = ("DRAFT", "APPROVED", "WITHDRAWN")
+
+
+class PaperFormat(Base):
+    """A saved test format: its sections, time and mix (spec_json, as
+    paper_formats.clean_format reads it). school-wide when owner_user_id is
+    empty (made by the school's admin), else one teacher's own. The three
+    starting points (full paper, unit test, class test) live in code."""
+
+    __tablename__ = "paper_formats"
+    id = Column(String, primary_key=True, default=uuid_str)
+    school_id = Column(String, ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
+    owner_user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    name = Column(String(80), nullable=False)
+    spec_json = Column(Text, nullable=False)
+    created_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class MockPaper(Base):
+    """One test for one section, from DRAFT (slots chosen, previewed with
+    sample numbers, nothing stored for students) to APPROVED (frozen; every
+    student's version made) or WITHDRAWN (taken back before it opened)."""
+
+    __tablename__ = "mock_papers"
+    id = Column(String, primary_key=True, default=uuid_str)
+    school_id = Column(String, ForeignKey("schools.id", ondelete="CASCADE"), nullable=False, index=True)
+    class_level_id = Column(String, ForeignKey("class_levels.id", ondelete="RESTRICT"), nullable=False)
+    section = Column(String(50), nullable=False)
+    board_course_id = Column(String, ForeignKey("board_courses.id", ondelete="RESTRICT"), nullable=False)
+    title = Column(String(120), nullable=False)
+    status = Column(String(20), nullable=False, default="DRAFT")
+    format_json = Column(Text, nullable=False)  # the format as chosen, frozen with the paper
+    chapter_ids_json = Column(Text, nullable=False)
+    opens_at = Column(DateTime(timezone=True), nullable=False)
+    closes_at = Column(DateTime(timezone=True), nullable=False)
+    created_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    withdrawn_at = Column(DateTime(timezone=True), nullable=True)
+    withdraw_reason = Column(String(300), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (Index("ix_mock_papers_scope", "school_id", "class_level_id", "section", "board_course_id"),)
+
+
+class MockPaperSlot(Base):
+    """One place on the paper: its section, marks and the pattern that fills
+    it. An either/or pair shares a choice_group; `alternative` marks the
+    second of the pair (left out of the paper's totals). sample_seed makes
+    the teacher's preview copy, never given to a student."""
+
+    __tablename__ = "mock_paper_slots"
+    id = Column(String, primary_key=True, default=uuid_str)
+    paper_id = Column(String, ForeignKey("mock_papers.id", ondelete="CASCADE"), nullable=False, index=True)
+    section_index = Column(Integer, nullable=False)
+    position = Column(Integer, nullable=False)
+    marks = Column(Integer, nullable=False)
+    kind = Column(String(20), nullable=False)
+    choice_group = Column(Integer, nullable=True)
+    alternative = Column(Boolean, nullable=False, default=False)
+    pattern_id = Column(String, ForeignKey("question_patterns.id", ondelete="RESTRICT"), nullable=True)
+    pattern_version = Column(Integer, nullable=True)
+    sample_seed = Column(String(40), nullable=True)
+    # The pattern's spec as approved with the paper, so the paper (and a
+    # student who joins later) never follows a later edit of the pattern.
+    approved_spec_json = Column(Text, nullable=True)
+
+
+class MockPaperVersion(Base):
+    """One student's own copy of an approved paper."""
+
+    __tablename__ = "mock_paper_versions"
+    id = Column(String, primary_key=True, default=uuid_str)
+    paper_id = Column(String, ForeignKey("mock_papers.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id = Column(String, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("paper_id", "student_id", name="uq_mock_paper_version_student"),)
+
+
+class MockPaperVersionItem(Base):
+    """A question of a student's version: the slot it fills (a case study:
+    one row per part)."""
+
+    __tablename__ = "mock_paper_version_items"
+    id = Column(String, primary_key=True, default=uuid_str)
+    version_id = Column(String, ForeignKey("mock_paper_versions.id", ondelete="CASCADE"), nullable=False, index=True)
+    slot_id = Column(String, ForeignKey("mock_paper_slots.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_id = Column(String, ForeignKey("questions.id", ondelete="RESTRICT"), nullable=False)
+    part_number = Column(Integer, nullable=True)
+
+    __table_args__ = (UniqueConstraint("version_id", "question_id", name="uq_mock_paper_item_question"),)
