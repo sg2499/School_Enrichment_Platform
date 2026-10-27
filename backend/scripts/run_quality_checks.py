@@ -109,7 +109,7 @@ def main() -> int:
             )
             questions = (
                 db.query(Question)
-                .filter(Question.concept_lesson_id.in_([l.id for l in lessons]))
+                .filter(Question.concept_lesson_id.in_([l.id for l in lessons]), Question.origin == "BANK")
                 .order_by(Question.code)
                 .all()
                 if lessons

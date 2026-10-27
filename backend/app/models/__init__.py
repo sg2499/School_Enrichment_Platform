@@ -22,6 +22,7 @@ from app.models.curriculum import (  # noqa: F401
     SubjectGroup,
     Term,
 )
+from app.models.papers import GeneratedQuestion, QuestionPattern  # noqa: F401
 from app.models.learning import (  # noqa: F401
     ACTIVITY_TYPES,
     ASSIGNMENT_REASONS,
