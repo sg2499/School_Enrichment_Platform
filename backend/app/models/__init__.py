@@ -25,6 +25,8 @@ from app.models.curriculum import (  # noqa: F401
 from app.models.papers import (  # noqa: F401
     GeneratedQuestion,
     MockPaper,
+    MockPaperAnswer,
+    MockPaperSitting,
     MockPaperSlot,
     MockPaperVersion,
     MockPaperVersionItem,

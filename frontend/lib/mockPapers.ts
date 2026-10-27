@@ -3,7 +3,7 @@
  * the paper page share. The rules are on the server (mock_paper_service,
  * paper_formats); these only describe them.
  */
-import type { FormatSection, PaperFormat, PaperStatus, QuestionKind } from "@/types/mockPapers";
+import type { FormatSection, PaperFormat, PaperStatus, QuestionKind, SitPlace, SitSection } from "@/types/mockPapers";
 
 export const STATUS_LABEL: Record<PaperStatus, string> = {
   DRAFT: "Draft",
@@ -122,3 +122,56 @@ export function formatForServer(format: PaperFormat): PaperFormat {
       : null,
   };
 }
+
+// --- step 4: sitting the paper ------------------------------------------------------------
+
+/** "1:05:09" or "04:59": the time left, never below zero. */
+export function countdownText(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+/** The half of a place the student is answering: the chosen one of an
+ *  either/or pair (none yet: the first), or the only one. */
+export function activeHalf(place: SitPlace) {
+  if (!place.choiceGroup) return place.halves[0];
+  return place.halves.find((h) => h.slotId === place.chosenSlotId) ?? null;
+}
+
+/** A place counts as answered when every part of the half being answered
+ *  has something in it. `answers` holds what is typed now, by question. */
+export function placeAnswered(place: SitPlace, answers: Record<string, string>): boolean {
+  const half = activeHalf(place);
+  if (!half) return false;
+  return half.parts.every((p) => (answers[p.id] ?? "").replace(/;/g, "").trim() !== "");
+}
+
+export function answeredCount(sections: SitSection[], answers: Record<string, string>): { answered: number; total: number } {
+  let answered = 0;
+  let total = 0;
+  for (const s of sections) {
+    for (const place of s.places) {
+      total += 1;
+      if (placeAnswered(place, answers)) answered += 1;
+    }
+  }
+  return { answered, total };
+}
+
+/** How the paper was handed in, in words. */
+export function handedInText(how: string | null): string {
+  if (how === "TIME") return "Handed in when the time ran out, with the answers you had saved.";
+  if (how === "CLOSED") return "Handed in when the paper closed, with the answers you had saved.";
+  return "You handed in your paper.";
+}
+
+export const RESULT_STATE_LABEL = {
+  NOT_STARTED: "Not Started",
+  IN_PROGRESS: "Sitting Now",
+  TO_MARK: "To Mark",
+  MARKED: "Marked",
+} as const;

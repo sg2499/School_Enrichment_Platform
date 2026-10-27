@@ -137,3 +137,152 @@ export interface PaperDetail extends PaperSummary {
   };
   supply?: SupplyLine[];
 }
+
+// --- step 4: sitting the paper ---------------------------------------------------------
+
+export interface PaperBrief {
+  id: string;
+  title: string;
+  status: PaperStatus;
+  totalMarks: number;
+  timeMinutes: number;
+  readingMinutes: number;
+  navigation: "FREE" | "FORWARD";
+  sections: { name: string; marks: number; count: number; choices: number }[];
+  opensAt: string;
+  closesAt: string;
+  released: boolean;
+}
+
+export interface MyPaper extends PaperBrief {
+  sitting: "IN_PROGRESS" | "SUBMITTED" | null;
+  score: number | null;
+}
+
+export interface SitPart {
+  id: string;
+  label: string | null;
+  text: string;
+  questionType: string;
+  optionA: string | null;
+  optionB: string | null;
+  optionC: string | null;
+  optionD: string | null;
+  marks: number;
+  answerInstruction: string | null;
+  answerNeedsUnit: boolean;
+  acceptsWorking: boolean;
+  answerBlanks: number;
+  answerBlankLabels: string[] | null;
+  response: string | null;
+  working: string | null;
+}
+
+export interface SitPlace {
+  number: number;
+  marks: number;
+  choiceGroup: number | null;
+  chosenSlotId: string | null;
+  halves: { slotId: string; stimulus: string | null; parts: SitPart[] }[];
+}
+
+export interface SitSection {
+  index: number;
+  name: string;
+  marks: number;
+  count: number;
+  choices: number;
+  places: SitPlace[];
+}
+
+export interface Sitting {
+  status: "IN_PROGRESS" | "SUBMITTED";
+  phase: "READING" | "WRITING" | "HANDED_IN";
+  startedAt: string;
+  writingStartsAt: string;
+  deadlineAt: string;
+  submittedAt: string | null;
+  submittedHow: "STUDENT" | "TIME" | "CLOSED" | null;
+  sectionIndex: number;
+  serverNow: string;
+}
+
+export interface ResultPart extends SitPart {
+  score: number | null;
+  maxScore: number;
+  correctAnswer: string | null;
+  acceptedVariants: string | null;
+  explanation: string | null;
+  markingSteps: string | null;
+  note: string | null;
+}
+
+export interface PaperResult {
+  score: number | null;
+  maxScore: number;
+  sections: {
+    name: string;
+    marks: number;
+    maxMarks: number;
+    places: { number: number; marks: number; choice: boolean; stimulus: string | null; parts: ResultPart[] }[];
+  }[];
+}
+
+export interface SittingView {
+  paper: PaperBrief;
+  sitting: Sitting | null;
+  sections: SitSection[];
+  result?: PaperResult;
+}
+
+export interface ResultsGrid {
+  canChange: boolean;
+  shuffled: boolean;
+  status: PaperStatus;
+  columns: { key: string; number: number; sectionIndex: number; marks: number; choice: boolean }[];
+  sections: { name: string; marks: number }[];
+  totalMarks: number;
+  students: {
+    studentId: string;
+    name: string;
+    studentCode: string;
+    state: "NOT_STARTED" | "IN_PROGRESS" | "TO_MARK" | "MARKED";
+    score: number | null;
+    autoScore: number | null;
+    submittedHow: string | null;
+    cells: Record<string, { score: number; max: number; waiting: boolean; blank: boolean }>;
+    sectionMarks: number[];
+  }[];
+  handedIn: number;
+  toMark: number;
+  inProgress: number;
+  released: boolean;
+  releasedAt: string | null;
+  canRelease: boolean;
+}
+
+export interface MarkingView {
+  canMark: boolean;
+  shuffled: boolean;
+  toMark: number;
+  questions: {
+    key: string;
+    number: number | null;
+    sectionIndex: number;
+    marks: number;
+    answers: {
+      answerId: string;
+      student: string;
+      studentCode: string;
+      question: string;
+      response: string | null;
+      working: string | null;
+      autoScore: number | null;
+      maxScore: number;
+      score: number | null;
+      modelAnswer: string | null;
+      markingSteps: string | null;
+      markedAt: string | null;
+    }[];
+  }[];
+}
