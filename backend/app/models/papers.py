@@ -125,6 +125,10 @@ class MockPaper(Base):
     approved_at = Column(DateTime(timezone=True), nullable=True)
     withdrawn_at = Column(DateTime(timezone=True), nullable=True)
     withdraw_reason = Column(String(300), nullable=True)
+    # Step 4: students see their marks and the solutions only once the
+    # teacher releases the results, after marking the written answers.
+    results_released_at = Column(DateTime(timezone=True), nullable=True)
+    results_released_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL", name="fk_mock_papers_results_released_by"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -178,3 +182,58 @@ class MockPaperVersionItem(Base):
     part_number = Column(Integer, nullable=True)
 
     __table_args__ = (UniqueConstraint("version_id", "question_id", name="uq_mock_paper_item_question"),)
+
+
+# --- sitting a paper (#166 step 4) ----------------------------------------------------
+
+
+class MockPaperSitting(Base):
+    """A student sitting their version of a paper: one sitting, timed by
+    the server. Reading time first (questions shown, answers locked), then
+    the writing time; the paper is handed in by the student, or when the
+    time is up or the paper closes (submitted_how STUDENT, TIME, CLOSED).
+    choices_json: for each either/or pair, the slot the student chose."""
+
+    __tablename__ = "mock_paper_sittings"
+    id = Column(String, primary_key=True, default=uuid_str)
+    version_id = Column(String, ForeignKey("mock_paper_versions.id", ondelete="CASCADE"), nullable=False, unique=True)
+    paper_id = Column(String, ForeignKey("mock_papers.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id = Column(String, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="IN_PROGRESS")  # IN_PROGRESS | SUBMITTED
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    writing_starts_at = Column(DateTime(timezone=True), nullable=False)
+    deadline_at = Column(DateTime(timezone=True), nullable=False)
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
+    submitted_how = Column(String(20), nullable=True)
+    section_index = Column(Integer, nullable=False, default=0, server_default="0")  # where a one-way paper has reached
+    choices_json = Column(Text, nullable=False, default="{}", server_default="{}")
+    auto_score = Column(Integer, nullable=True)
+    final_score = Column(Integer, nullable=True)
+    max_score = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MockPaperAnswer(Base):
+    """One question's answer in a sitting. auto_score is the machine's mark
+    (none for a written answer); manual_score the teacher's, who marks
+    written answers step by step (the question's marking steps). counted:
+    False for the half of an either/or pair the student didn't choose."""
+
+    __tablename__ = "mock_paper_answers"
+    id = Column(String, primary_key=True, default=uuid_str)
+    sitting_id = Column(String, ForeignKey("mock_paper_sittings.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_id = Column(String, ForeignKey("questions.id", ondelete="RESTRICT"), nullable=False)
+    slot_id = Column(String, ForeignKey("mock_paper_slots.id", ondelete="CASCADE"), nullable=False)
+    response_text = Column(Text, nullable=True)
+    working_text = Column(Text, nullable=True)
+    answered_at = Column(DateTime(timezone=True), nullable=True)
+    counted = Column(Boolean, nullable=True)
+    is_correct = Column(Boolean, nullable=True)
+    auto_score = Column(Integer, nullable=True)
+    grading_note = Column(String(30), nullable=True)
+    max_score = Column(Integer, nullable=False, default=1)
+    manual_score = Column(Integer, nullable=True)
+    graded_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    graded_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (UniqueConstraint("sitting_id", "question_id", name="uq_mock_paper_answer_question"),)

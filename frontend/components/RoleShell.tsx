@@ -124,7 +124,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         { label: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
         { label: "My Lessons", icon: BookOpen, soon: true },
         { label: "Daily Practice", icon: Target, href: "/student/practice" },
-        { label: "Mock Papers", icon: FileSpreadsheet, soon: true },
+        // #166 step 4: sit the papers the teacher sets, then see the results.
+        { label: "Mock Papers", icon: FileSpreadsheet, href: "/student/papers" },
       ],
     },
     {

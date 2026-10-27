@@ -32,6 +32,8 @@ import { TextField } from "@/components/ui/Field";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { MarkingPanel, ResultsPanel } from "@/components/mockPapers/PaperResults";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { PaperDetail, PaperSlot, SampleQuestion } from "@/types/mockPapers";
 
@@ -178,6 +180,7 @@ export function PaperView({ paperId, role, backHref }: { paperId: string; role: 
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: "", opens: "", closes: "" });
   const [formProblem, setFormProblem] = useState<string | null>(null);
+  const [view, setView] = useState<"paper" | "results" | "marking">("results");
 
   const shown = data && data.id === paperId ? data : paper.data;
 
@@ -197,6 +200,8 @@ export function PaperView({ paperId, role, backHref }: { paperId: string; role: 
   if (!shown) return <TableSkeleton label="Opening the paper" rows={5} />;
 
   const draft = shown.status === "DRAFT";
+  // Once approved and opened, a paper has results and marking to show.
+  const sitting = shown.status === "OPEN" || shown.status === "CLOSED";
   const editable = draft && shown.canChange && role === "TEACHER";
   const fmt = shown.format;
   let number = 0;
@@ -285,74 +290,93 @@ export function PaperView({ paperId, role, backHref }: { paperId: string; role: 
         />
       )}
 
-      <Card>
-        <CardBody className="space-y-3 sm:p-6">
-          <h2 className="font-display text-display-sm text-content">Checks</h2>
-          <ul className="space-y-2">
-            {shown.checks.items.map((c) => (
-              <li key={c.key} className="flex items-start gap-3 text-sm">
-                {c.ok ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-jade-600" aria-label="Met" />
-                ) : (
-                  <CircleAlert
-                    className={cn("mt-0.5 h-4 w-4 shrink-0", c.blocking ? "text-coral-600" : "text-saffron-700")}
-                    aria-label={c.blocking ? "Must fix" : "Worth a look"}
-                  />
-                )}
-                <span>
-                  <span className="font-semibold text-content">{c.label}:</span> <span className="text-content-muted">{c.detail}</span>
-                  {!c.ok && c.blocking ? <span className="ml-1 font-semibold text-coral-800">Fix this before approving.</span> : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {fmt.navigation === "FORWARD" || fmt.shuffle ? (
-            <p className="text-xs text-content-subtle">
-              {[
-                fmt.navigation === "FORWARD" ? "Students move through the sections in order, one way" : null,
-                fmt.shuffle ? "each student's questions come in their own order" : null,
-              ]
-                .filter(Boolean)
-                .join("; ")}
-              .
-            </p>
-          ) : null}
-        </CardBody>
-      </Card>
+      {sitting ? (
+        <SegmentedControl<"paper" | "results" | "marking">
+          label="What to show"
+          segments={[
+            { key: "results", label: "Results" },
+            { key: "marking", label: "Marking" },
+            { key: "paper", label: "Sample Paper" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      ) : null}
+      {sitting && view === "results" ? <ResultsPanel key={`r-${shown.versions}`} paperId={paperId} canAct /> : null}
+      {sitting && view === "marking" ? <MarkingPanel paperId={paperId} canAct /> : null}
 
-      {shown.sections.map((section) => (
-        <section key={section.index} aria-labelledby={`section-${section.index}`} className="space-y-3">
-          <div>
-            <h2 id={`section-${section.index}`} className="font-display text-display-sm text-content">
-              {section.name}
-            </h2>
-            <p className="text-sm text-content-muted">
-              {sectionText(section)} · {KIND_LABEL[section.kind]}
-            </p>
-          </div>
-          <ol className="space-y-3">
-            {section.slots.map((slot) => {
-              if (!slot.alternative) number += 1;
-              return (
-                <Slot
-                  key={slot.slotId}
-                  slot={slot}
-                  number={number}
-                  editable={editable}
-                  busy={busySlot !== null}
-                  onRegenerate={async (mode) => {
-                    setBusySlot(slot.slotId);
-                    await run(mode === "numbers" ? "make new numbers" : "find another question", () =>
-                      api.post<PaperDetail>(`/mock-papers/${paperId}/slots/${slot.slotId}/regenerate`, { mode }),
-                    );
-                    setBusySlot(null);
-                  }}
-                />
-              );
-            })}
-          </ol>
-        </section>
-      ))}
+      {!sitting || view === "paper" ? (
+        <>
+          <Card>
+            <CardBody className="space-y-3 sm:p-6">
+              <h2 className="font-display text-display-sm text-content">Checks</h2>
+              <ul className="space-y-2">
+                {shown.checks.items.map((c) => (
+                  <li key={c.key} className="flex items-start gap-3 text-sm">
+                    {c.ok ? (
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-jade-600" aria-label="Met" />
+                    ) : (
+                      <CircleAlert
+                        className={cn("mt-0.5 h-4 w-4 shrink-0", c.blocking ? "text-coral-600" : "text-saffron-700")}
+                        aria-label={c.blocking ? "Must fix" : "Worth a look"}
+                      />
+                    )}
+                    <span>
+                      <span className="font-semibold text-content">{c.label}:</span> <span className="text-content-muted">{c.detail}</span>
+                      {!c.ok && c.blocking ? <span className="ml-1 font-semibold text-coral-800">Fix this before approving.</span> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {fmt.navigation === "FORWARD" || fmt.shuffle ? (
+                <p className="text-xs text-content-subtle">
+                  {[
+                    fmt.navigation === "FORWARD" ? "Students move through the sections in order, one way" : null,
+                    fmt.shuffle ? "each student's questions come in their own order" : null,
+                  ]
+                    .filter(Boolean)
+                    .join("; ")}
+                  .
+                </p>
+              ) : null}
+            </CardBody>
+          </Card>
+
+          {shown.sections.map((section) => (
+            <section key={section.index} aria-labelledby={`section-${section.index}`} className="space-y-3">
+              <div>
+                <h2 id={`section-${section.index}`} className="font-display text-display-sm text-content">
+                  {section.name}
+                </h2>
+                <p className="text-sm text-content-muted">
+                  {sectionText(section)} · {KIND_LABEL[section.kind]}
+                </p>
+              </div>
+              <ol className="space-y-3">
+                {section.slots.map((slot) => {
+                  if (!slot.alternative) number += 1;
+                  return (
+                    <Slot
+                      key={slot.slotId}
+                      slot={slot}
+                      number={number}
+                      editable={editable}
+                      busy={busySlot !== null}
+                      onRegenerate={async (mode) => {
+                        setBusySlot(slot.slotId);
+                        await run(mode === "numbers" ? "make new numbers" : "find another question", () =>
+                          api.post<PaperDetail>(`/mock-papers/${paperId}/slots/${slot.slotId}/regenerate`, { mode }),
+                        );
+                        setBusySlot(null);
+                      }}
+                    />
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </>
+      ) : null}
 
       {editable ? (
         <div className="flex justify-end">

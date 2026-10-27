@@ -15,6 +15,7 @@ from app.dependencies import require_roles
 from app.models import User
 from app.services import analytics_service, paper_formats, practice_access_service
 from app.services import mock_paper_service as service
+from app.services import mock_sitting_service as sitting_service
 from app.services.audit_service import log_audit_event
 from app.services.paper_formats import FormatError
 from app.services.practice_access_service import Viewer
@@ -192,3 +193,104 @@ def discard_paper(request: Request, paper_id: str, viewer: Viewer = Depends(_vie
     log_audit_event(db, "mock_paper.discarded", user_id=viewer.user.id, request=request, details={"paperId": paper_id})
     db.commit()
     return {"ok": True}
+
+
+# --- step 4: marking and results (teacher and admin) ------------------------------------------
+
+
+class MarkBody(BaseModel):
+    answerId: str = Field(max_length=60)
+    score: int | None = None
+
+
+class MarksBody(BaseModel):
+    marks: list[MarkBody] = Field(min_length=1, max_length=500)
+
+
+@router.get("/{paper_id}/marking")
+def paper_marking(paper_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    return sitting_service.marking(db, viewer, paper_id)
+
+
+@router.post("/{paper_id}/marks")
+@limiter.limit("120/minute")
+def save_marks(request: Request, paper_id: str, body: MarksBody, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    count = sitting_service.save_marks(db, viewer, paper_id, [m.model_dump() for m in body.marks])
+    log_audit_event(db, "mock_paper.marked", user_id=viewer.user.id, request=request, details={"paperId": paper_id, "answers": count})
+    db.commit()
+    return sitting_service.marking(db, viewer, paper_id)
+
+
+@router.get("/{paper_id}/results")
+def paper_results(paper_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    return sitting_service.results(db, viewer, paper_id)
+
+
+@router.post("/{paper_id}/release")
+@limiter.limit("10/minute")
+def release_results(request: Request, paper_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    sitting_service.release(db, viewer, paper_id)
+    log_audit_event(db, "mock_paper.results_released", user_id=viewer.user.id, request=request, details={"paperId": paper_id})
+    db.commit()
+    return sitting_service.results(db, viewer, paper_id)
+
+
+# --- step 4: sitting the paper (student) ------------------------------------------------------
+
+student_router = APIRouter(prefix="/api/my-papers", tags=["mock-papers"])
+
+
+def _student(user: User = Depends(require_roles("STUDENT")), db: Session = Depends(get_db)):
+    return sitting_service.student_of(db, user)
+
+
+class AnswerBody(BaseModel):
+    questionId: str = Field(max_length=60)
+    response: str | None = Field(default=None, max_length=4000)
+    working: str | None = Field(default=None, max_length=4000)
+    workingSent: bool = False
+
+
+class ChooseBody(BaseModel):
+    slotId: str = Field(max_length=60)
+
+
+@student_router.get("")
+def my_papers(student=Depends(_student), db: Session = Depends(get_db)):
+    return {"papers": sitting_service.student_papers(db, student)}
+
+
+@student_router.get("/{paper_id}")
+def my_paper(paper_id: str, student=Depends(_student), db: Session = Depends(get_db)):
+    return sitting_service.view(db, student, paper_id)
+
+
+@student_router.post("/{paper_id}/start")
+@limiter.limit("20/minute")
+def start_paper(request: Request, paper_id: str, student=Depends(_student), db: Session = Depends(get_db)):
+    return sitting_service.start(db, student, paper_id)
+
+
+@student_router.put("/{paper_id}/answers")
+@limiter.limit("240/minute")
+def save_paper_answer(request: Request, paper_id: str, body: AnswerBody, student=Depends(_student), db: Session = Depends(get_db)):
+    return sitting_service.save_answer(db, student, paper_id, body.questionId, body.response, body.working,
+                                       working_sent=body.workingSent)
+
+
+@student_router.post("/{paper_id}/choose")
+@limiter.limit("120/minute")
+def choose_question(request: Request, paper_id: str, body: ChooseBody, student=Depends(_student), db: Session = Depends(get_db)):
+    return sitting_service.choose(db, student, paper_id, body.slotId)
+
+
+@student_router.post("/{paper_id}/next-section")
+@limiter.limit("60/minute")
+def next_section(request: Request, paper_id: str, student=Depends(_student), db: Session = Depends(get_db)):
+    return sitting_service.next_section(db, student, paper_id)
+
+
+@student_router.post("/{paper_id}/submit")
+@limiter.limit("20/minute")
+def submit_paper(request: Request, paper_id: str, student=Depends(_student), db: Session = Depends(get_db)):
+    return sitting_service.submit(db, student, paper_id)
