@@ -159,7 +159,7 @@ def make_plan(db, rows: list[Row], *, lock: bool = False) -> Plan:
     skills = {code: lessons[0] for code, lessons in found.items() if len(lessons) == 1}
     tags: dict[str, set[str]] = {}
     for skill_id, tag in db.query(Question.concept_lesson_id, Question.misconception_tag).filter(
-        Question.concept_lesson_id.in_([s.id for s in skills.values()])
+        Question.concept_lesson_id.in_([s.id for s in skills.values()]), Question.origin == "BANK"
     ):
         if tag_key(tag):
             tags.setdefault(skill_id, set()).add(tag_key(tag))

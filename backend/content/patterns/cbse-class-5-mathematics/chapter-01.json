@@ -1,0 +1,147 @@
+{
+  "engine": {"board": "CBSE", "classLevel": "5", "course": "MATHEMATICS"},
+  "about": "Chapter 1, We the Travellers I. The five sample patterns sent to Ashalatha on 27 Oct 2026 (SE_Class_5_Sample_Patterns_Review.xlsx). All DRAFT until she approves them.",
+  "patterns": [
+    {
+      "code": "C5-WT1-S01-P1",
+      "chapter": 1,
+      "skill": "C5-WT1-S01",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and number-pattern fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {"name": "start", "int": {"min": 1000, "max": 95000, "step": 50}},
+        {"name": "step", "choice": [10, 50, 100, 250, 1000]}
+      ],
+      "text": "Continue the pattern: {start:num}, {start + step:num}, {start + 2 * step:num}, ___.",
+      "answer": "start + 3 * step",
+      "hint": "Find how much the numbers go up by each time.",
+      "explanation": "The numbers go up by {step:num} each time, so the next one is {start + 2 * step:num} + {step:num} = {start + 3 * step:num}.",
+      "misconception": "Looks only at the last digit or repeats visible digits without checking a constant change.",
+      "notes": "start: 1,000 to 95,000, a multiple of 50. step: 10, 50, 100, 250 or 1,000.",
+      "sources": ["CBSE-C5-CH01-Q001"]
+    },
+    {
+      "code": "C5-WT1-S03-P1",
+      "chapter": 1,
+      "skill": "C5-WT1-S03",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "values": [
+        {"name": "n", "int": {"min": 10000, "max": 99999}},
+        {"name": "place", "choice": [10000, 1000, 100]},
+        {"name": "d", "expr": "digit(n, place)"}
+      ],
+      "require": ["d != 0", "count_digit(n, d) == 1"],
+      "text": "What is the place value of the digit {d} in {n:num}?",
+      "options": {
+        "correct": "d * place",
+        "format": "num",
+        "wrong": [
+          {"expr": "d", "mistake": "gives the face value instead of the place value"},
+          {"expr": "d * place * 10", "mistake": "reads the place one too high"},
+          {"expr": "d * place // 10", "mistake": "reads the place one too low"}
+        ]
+      },
+      "hint": "Which place is the digit {d} in?",
+      "explanation": "The {d} is in the place worth {place:num}, so its value is {d} × {place:num} = {d * place:num}.",
+      "misconception": "Gives a digit's face value when the question asks for the value of its place.",
+      "notes": "n: 10,000 to 99,999. The digit asked about is in the ten-thousands, thousands or hundreds place, is not 0, and appears once in n.",
+      "sources": ["CBSE-C5-CH01-Q204"]
+    },
+    {
+      "code": "C5-WT1-S09-P1",
+      "chapter": 1,
+      "skill": "C5-WT1-S09",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "values": [
+        {"name": "n", "int": {"min": 1050, "max": 99949}},
+        {"name": "right", "expr": "round_half_up(n, 100)"},
+        {"name": "down", "expr": "n // 100 * 100"},
+        {"name": "wrong_way", "expr": "down + 100 if right == down else down"},
+        {"name": "ten", "expr": "round_half_up(n, 10)"},
+        {"name": "thousand", "expr": "round_half_up(n, 1000)"}
+      ],
+      "require": ["n % 100 != 0", "ten != right", "thousand != right", "thousand != wrong_way", "ten != wrong_way"],
+      "text": "Round {n:num} to the nearest 100.",
+      "options": {
+        "correct": "right",
+        "format": "num",
+        "wrong": [
+          {"expr": "wrong_way", "mistake": "rounds the wrong way"},
+          {"expr": "ten", "mistake": "rounds to the nearest 10"},
+          {"expr": "thousand", "mistake": "rounds to the nearest 1,000"}
+        ]
+      },
+      "hint": "Look at the tens digit.",
+      "explanation": "The tens digit is {digit(n, 10)}, so {n:num} rounds {'up' if right > n else 'down'} to {right:num}.",
+      "misconception": "Looks at the hundreds digit instead of the tens digit.",
+      "notes": "n: 1,050 to 99,949, not a multiple of 100, and every wrong option different from the right one.",
+      "sources": ["CBSE-C5-CH01-Q336"]
+    },
+    {
+      "code": "C5-WT1-S12-P1",
+      "chapter": 1,
+      "skill": "C5-WT1-S12",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Integer; unit stated in question",
+      "unit": "km",
+      "unitRule": "STATED",
+      "values": [
+        {"name": "who", "list": "names"},
+        {"name": "mode", "choice": [
+          {"verb": "walks", "lo": 3, "hi": 6},
+          {"verb": "cycles", "lo": 8, "hi": 20},
+          {"verb": "travels by bus", "lo": 30, "hi": 60}
+        ]},
+        {"name": "speed", "int": {"min": "mode.lo", "max": "mode.hi"}},
+        {"name": "hours", "int": {"min": 2, "max": 6}}
+      ],
+      "text": "{who.name} {mode.verb} at {speed} km each hour. How far does {who.he} go in {hours} hours at the same speed?",
+      "answer": "speed * hours",
+      "hint": "The same distance is covered in every hour.",
+      "explanation": "{speed} km each hour for {hours} hours is {speed} × {hours} = {speed * hours} km.",
+      "misconception": "Adds the rate and the time instead of multiplying them.",
+      "notes": "Walking 3 to 6 km an hour, cycling 8 to 20, a bus 30 to 60; 2 to 6 hours. The answer is in km, stated in the question.",
+      "sources": ["CBSE-C5-CH01-Q111", "CBSE-C5-CH01-Q422"]
+    },
+    {
+      "code": "C5-WT1-S13-P1",
+      "chapter": 1,
+      "skill": "C5-WT1-S13",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {"name": "vehicle", "choice": [
+          {"one": "van", "many": "vans", "lo": 8, "hi": 12},
+          {"one": "bus", "many": "buses", "lo": 30, "hi": 45},
+          {"one": "auto-rickshaw", "many": "auto-rickshaws", "lo": 3, "hi": 4}
+        ]},
+        {"name": "cap", "int": {"min": "vehicle.lo", "max": "vehicle.hi"}},
+        {"name": "full", "int": {"min": 2, "max": 6}},
+        {"name": "extra", "int": {"min": 1, "max": "cap - 1"}},
+        {"name": "children", "expr": "cap * full + extra"}
+      ],
+      "text": "{children} children are going on a school trip. Each {vehicle.one} can carry {cap} children. How many {vehicle.many} are needed so that every child goes?",
+      "answer": "ceil_div(children, cap)",
+      "hint": "What happens to the children left over after the full {vehicle.many}?",
+      "explanation": "{full} full {vehicle.many} carry {cap * full} children; the {extra} left over need one more, so {full + 1} {vehicle.many}.",
+      "misconception": "Rounds down and leaves out the children left over.",
+      "notes": "A van carries 8 to 12, a bus 30 to 45, an auto-rickshaw 3 or 4; 2 to 6 full vehicles plus one part-full (never an exact fit).",
+      "sources": ["CBSE-C5-CH01-Q499"]
+    }
+  ]
+}

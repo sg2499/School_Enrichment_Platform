@@ -154,7 +154,7 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
     questions = (
         db.query(Question)
         .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
-        .filter(ConceptLesson.chapter_id == chapter.id)
+        .filter(ConceptLesson.chapter_id == chapter.id, Question.origin == "BANK")
         .all()
     )
 

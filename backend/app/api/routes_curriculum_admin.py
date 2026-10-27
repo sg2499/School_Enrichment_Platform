@@ -209,7 +209,7 @@ def _chapter_counts(db: Session, chapter_id: str) -> tuple[int, int]:
     question_count = (
         db.query(Question)
         .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
-        .filter(ConceptLesson.chapter_id == chapter_id)
+        .filter(ConceptLesson.chapter_id == chapter_id, Question.origin == "BANK")
         .count()
     )
     return lesson_count, question_count
@@ -338,7 +338,7 @@ def get_chapter(
     lesson_payload = []
     total_questions = 0
     for lesson in lessons:
-        question_count = db.query(Question).filter(Question.concept_lesson_id == lesson.id).count()
+        question_count = db.query(Question).filter(Question.concept_lesson_id == lesson.id, Question.origin == "BANK").count()
         total_questions += question_count
         lesson_payload.append(
             {
@@ -379,7 +379,11 @@ def update_chapter_status(
             lesson.code
             for lesson in lessons
             if not db.query(Question)
-            .filter(Question.concept_lesson_id == lesson.id, Question.status.in_(_READY_QUESTION_STATUSES))
+            .filter(
+                Question.concept_lesson_id == lesson.id,
+                Question.status.in_(_READY_QUESTION_STATUSES),
+                Question.origin == "BANK",
+            )
             .first()
         ]
         if lessons_missing_questions:
@@ -556,10 +560,17 @@ def _persist_quality_results(db: Session, questions: list[Question]) -> None:
         question.quality_checked_at = now
 
 
+def _refuse_generated(question: Question) -> None:
+    """A question made for a school's paper (#166) is not content: it is
+    changed only by changing its pattern."""
+    if question.origin != "BANK":
+        api_error(409, "GENERATED_QUESTION", "This question was made from a pattern for a paper; change the pattern instead.")
+
+
 def _questions_for_lesson(db: Session, concept_lesson_id: str) -> list[Question]:
     return (
         db.query(Question)
-        .filter(Question.concept_lesson_id == concept_lesson_id)
+        .filter(Question.concept_lesson_id == concept_lesson_id, Question.origin == "BANK")
         .order_by(Question.code)
         .all()
     )
@@ -620,6 +631,7 @@ def update_question_status(
     question = db.get(Question, question_id)
     if not question:
         api_error(404, "NOT_FOUND", "That question couldn't be found. It may have been removed.")
+    _refuse_generated(question)
 
     requested_status = payload.status.strip().upper()
     _apply_transition(question.status, requested_status, _QUESTION_TRANSITIONS, "Question")
@@ -687,6 +699,7 @@ def update_question_marking(
     question = db.get(Question, question_id)
     if not question:
         api_error(404, "NOT_FOUND", "That question couldn't be found. It may have been removed.")
+    _refuse_generated(question)
     # In the form's order, so problems are listed the way the fields are.
     sent = {
         attribute: getattr(payload, name) for name, attribute in _MARKING_PAYLOAD_KEYS.items() if name in payload.model_fields_set
@@ -825,7 +838,7 @@ def bulk_approve_chapter_questions(
     questions = (
         db.query(Question)
         .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
-        .filter(ConceptLesson.chapter_id == chapter_id)
+        .filter(ConceptLesson.chapter_id == chapter_id, Question.origin == "BANK")
         .order_by(Question.code)
         .all()
     )

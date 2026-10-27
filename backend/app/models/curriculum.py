@@ -378,6 +378,10 @@ class Question(Base):
     # source content's own Status column vocabulary (normalized to our
     # upper-snake-case convention).
     status = Column(String(20), nullable=False, default="DRAFT")
+    # BANK: the content's own questions. GENERATED: made from a question
+    # pattern for one school's paper (#166, app/services/pattern_engine.py);
+    # kept out of Curriculum Studio, practice sets and quality checks.
+    origin = Column(String(20), nullable=False, default="BANK", server_default="BANK")
     source_alignment = Column(Text, nullable=True)
     # Free, automated quality-check result (app/services/question_quality_service.py,
     # added 18 Aug 2026) -- "UNCHECKED" | "FLAGGED" | "VERIFIED" | "UNVERIFIED".
