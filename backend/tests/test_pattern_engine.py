@@ -117,6 +117,41 @@ def test_every_chapter_1_pattern_works():
     assert kinds["3"] >= 3 and kinds["4"] >= 3 and kinds["5"] >= 3 and kinds["2"] >= 15
 
 
+def test_chapters_2_to_4_patterns_work():
+    """#166 step 5, batch 1: Chapters 2 (Fractions), 3 (Angles as Turns) and
+    4 (We the Travellers II). Each pattern loads, belongs to its chapter and
+    skill, makes a valid question every time with at least 20 different
+    ones, adds up its marks, and its key gets full marks from the
+    platform's own marking."""
+    prefixes = {2: "C5-FR2-", 3: "C5-AT-", 4: "C5-WT2-"}
+    seen = set(_content_specs())
+    for chapter, prefix in prefixes.items():
+        data = json.loads((CONTENT / f"chapter-{chapter:02d}.json").read_text(encoding="utf-8"))
+        assert data["engine"] == {"board": "CBSE", "classLevel": "5", "course": "MATHEMATICS"}
+        kinds = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        for raw in data["patterns"]:
+            spec = pattern_engine.clean_spec(raw)
+            assert spec.code not in seen and spec.code.startswith(prefix) and spec.skill.startswith(prefix), spec.code
+            assert spec.chapter == chapter, spec.code
+            seen.add(spec.code)
+            kinds[spec.marks] += 1
+            result = pattern_engine.trial(spec, 100)
+            assert result["failed"] == 0 and result["distinct"] >= 20, (spec.code, result)
+            for i in range(10):
+                made = pattern_engine.make(spec, f"key-{i}")
+                assert sum(q["marks"] for q in made.questions) == spec.marks, spec.code
+                for q in made.questions:
+                    if not q["auto_gradable"]:
+                        continue
+                    question = Question(
+                        question_type=q["question_type"], correct_answer=q["correct_answer"],
+                        accepted_variants=q["accepted_variants"], marks=q["marks"], auto_gradable=True,
+                        answer_unit=q["answer_unit"], unit_rule=q["unit_rule"], response_format=q["response_format"],
+                    )
+                    assert learning_service.grade_answer(question, q["correct_answer"]) == (True, q["marks"]), (spec.code, q["stem"])
+        assert len(data["patterns"]) >= 55 and kinds[3] >= 3 and kinds[4] >= 3 and kinds[5] >= 3, (chapter, kinds)
+
+
 def test_the_same_seed_makes_the_same_question():
     spec = _content_specs()["C5-WT1-S09-P1"]
     one, two = pattern_engine.make(spec, "abc"), pattern_engine.make(spec, "abc")
