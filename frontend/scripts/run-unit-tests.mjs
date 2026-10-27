@@ -59,6 +59,7 @@ const UNITS = [
   "lib/analytics.ts",
   "lib/weeklyReports.ts",
   "lib/schoolLogo.ts",
+  "lib/mockPapers.ts",
 ];
 
 /**

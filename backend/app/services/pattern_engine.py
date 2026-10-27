@@ -7,8 +7,8 @@ guidelines and conventions as seen in the practice content". So a pattern
 is one question family written once, with blanks: this module fills the
 blanks within the pattern's limits, works out the answer itself (never
 copied from anywhere), checks the result, and either shows it (preview) or
-stores it as an ordinary Question for a school, never repeating one that
-school has been given.
+stores it as an ordinary Question for a student, never repeating one that
+student has been given.
 
 A pattern spec (JSON, read by clean_spec) holds:
 
@@ -614,58 +614,95 @@ def preview(spec: Spec, count: int, seed: str = "preview", *, version: int = 1) 
 # --- storing for a school ---------------------------------------------------------------
 
 
-def generate_for_school(db, pattern, school_id: str, *, attempts: int = 20) -> list:
-    """Makes and stores one new question (or one case study's parts) from an
-    APPROVED pattern for a school: a question the school has never been
-    given before. Returns the Question rows. The caller commits."""
-    from sqlalchemy.exc import IntegrityError
-
+def build_rows(pattern, made: Made, *, school_id: str, student_id: str | None) -> list[tuple]:
+    """The Question and GeneratedQuestion rows for one generated question
+    (a case study: one pair per part), not yet added to a session."""
     from app.models import Question
     from app.models.papers import GeneratedQuestion
 
+    group_id = str(uuid.uuid4()) if made.stimulus is not None else None
+    rows = []
+    for number, (data, print_) in enumerate(zip(made.questions, made.fingerprints()), start=1):
+        question = Question(
+            id=str(uuid.uuid4()),
+            concept_lesson_id=pattern.concept_lesson_id,
+            code=f"GEN-{uuid.uuid4().hex[:16].upper()}",
+            origin="GENERATED",
+            question_type=data["question_type"], stem=data["stem"],
+            option_a=data["option_a"], option_b=data["option_b"],
+            option_c=data["option_c"], option_d=data["option_d"],
+            correct_answer=data["correct_answer"], accepted_variants=data["accepted_variants"],
+            hint=data["hint"], explanation=data["explanation"],
+            misconception_tag=made.misconception, marks=data["marks"],
+            auto_gradable=data["auto_gradable"], difficulty=pattern.difficulty,
+            competency=pattern.competency, response_format=data["response_format"],
+            teacher_note=data["teacher_note"], answer_unit=data["answer_unit"],
+            unit_rule=data["unit_rule"], status="APPROVED", quality_status="VERIFIED",
+        )
+        record = GeneratedQuestion(
+            question_id=question.id, pattern_id=pattern.id, pattern_version=pattern.version,
+            school_id=school_id, student_id=student_id, seed=made.seed,
+            values_json=json.dumps(made.values, ensure_ascii=False),
+            fingerprint=print_, group_id=group_id, part_number=number if group_id else None,
+            stimulus=made.stimulus if group_id else None,
+            mistakes_json=json.dumps(data["mistakes"], ensure_ascii=False) if data["mistakes"] else None,
+        )
+        rows.append((question, record))
+    return rows
+
+
+def student_fingerprints(db, student_ids) -> dict[str, set[str]]:
+    """Every generated question each student has been given, by fingerprint."""
+    from app.models.papers import GeneratedQuestion
+
+    out: dict[str, set[str]] = {sid: set() for sid in student_ids}
+    if out:
+        for sid, print_ in db.query(GeneratedQuestion.student_id, GeneratedQuestion.fingerprint).filter(
+            GeneratedQuestion.student_id.in_(list(out))
+        ):
+            out[sid].add(print_)
+    return out
+
+
+def make_new(spec: Spec, pattern, seen: set[str], avoid: set[str] = frozenset(), attempts: int = 20) -> Made:
+    """A question from the pattern the student has never had (`seen`),
+    preferably one nobody else on this paper has (`avoid`). Shailesh, 27
+    Oct 2026: a student never gets the same question twice; each student's
+    version differs wherever the pattern allows."""
+    fallback = None
+    # The more a student has had, the harder an unseen one is to find by
+    # chance, so the tries grow with it (review).
+    tries = attempts + min(len(seen), 400)
+    for i in range(tries):
+        try:
+            made = make(spec, uuid.uuid4().hex[:16], version=pattern.version)
+        except GenerationError:
+            continue
+        prints = made.fingerprints()
+        if any(p in seen for p in prints):
+            continue
+        if not any(p in avoid for p in prints):
+            return made
+        fallback = fallback or made
+    if fallback is not None:
+        return fallback
+    raise GenerationError(f"{pattern.code} is used up for this student: no question they haven't had after {tries} tries.")
+
+
+def generate_for_student(db, pattern, *, school_id: str, student_id: str, attempts: int = 20) -> list:
+    """Makes and stores one question (or one case study's parts) from an
+    APPROVED pattern for a student who has never had it. Returns the
+    Question rows; the caller commits."""
     if pattern.status != "APPROVED":
         raise GenerationError(f"{pattern.code} is not approved, so it can't be used in a paper yet.")
     spec = clean_spec(json.loads(pattern.spec_json))
-    for _ in range(attempts):
-        seed = uuid.uuid4().hex[:16]
-        made = make(spec, seed, version=pattern.version)
-        prints = made.fingerprints()
-        if db.query(GeneratedQuestion.id).filter(
-            GeneratedQuestion.school_id == school_id, GeneratedQuestion.fingerprint.in_(prints)
-        ).first():
-            continue
-        group_id = str(uuid.uuid4()) if spec.is_group else None
-        rows = []
-        try:
-            with db.begin_nested():
-                for number, (data, print_) in enumerate(zip(made.questions, prints), start=1):
-                    question = Question(
-                        concept_lesson_id=pattern.concept_lesson_id,
-                        code=f"GEN-{uuid.uuid4().hex[:16].upper()}",
-                        origin="GENERATED",
-                        question_type=data["question_type"], stem=data["stem"],
-                        option_a=data["option_a"], option_b=data["option_b"],
-                        option_c=data["option_c"], option_d=data["option_d"],
-                        correct_answer=data["correct_answer"], accepted_variants=data["accepted_variants"],
-                        hint=data["hint"], explanation=data["explanation"],
-                        misconception_tag=made.misconception, marks=data["marks"],
-                        auto_gradable=data["auto_gradable"], difficulty=pattern.difficulty,
-                        competency=pattern.competency, response_format=data["response_format"],
-                        teacher_note=data["teacher_note"], answer_unit=data["answer_unit"],
-                        unit_rule=data["unit_rule"], status="APPROVED", quality_status="VERIFIED",
-                    )
-                    db.add(question)
-                    db.flush()
-                    db.add(GeneratedQuestion(
-                        question_id=question.id, pattern_id=pattern.id, pattern_version=pattern.version,
-                        school_id=school_id, seed=made.seed, values_json=json.dumps(made.values, ensure_ascii=False),
-                        fingerprint=print_, group_id=group_id, part_number=number if group_id else None,
-                        stimulus=made.stimulus if group_id else None,
-                        mistakes_json=json.dumps(data["mistakes"], ensure_ascii=False) if data["mistakes"] else None,
-                    ))
-                    rows.append(question)
-                db.flush()
-        except IntegrityError:
-            continue  # made at the same moment by another request: draw again
-        return rows
-    raise GenerationError(f"{pattern.code}: no new question for this school after {attempts} tries; it may be used up.")
+    seen = student_fingerprints(db, [student_id])[student_id]
+    made = make_new(spec, pattern, seen, attempts=attempts)
+    rows = build_rows(pattern, made, school_id=school_id, student_id=student_id)
+    for question, record in rows:
+        db.add(question)
+    db.flush()
+    for _question, record in rows:
+        db.add(record)
+    db.flush()
+    return [q for q, _r in rows]

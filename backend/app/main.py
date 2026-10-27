@@ -32,6 +32,7 @@ from app.api.routes_learning import router as learning_router
 from app.api.routes_platform import router as platform_router
 from app.api.routes_practice_tracker import router as practice_tracker_router
 from app.api.routes_question_patterns import router as question_patterns_router
+from app.api.routes_mock_papers import router as mock_papers_router
 from app.api.routes_report_cards import router as report_cards_router
 from app.api.routes_roster import router as roster_router
 from app.api.routes_school_logo import router as school_logo_router
@@ -218,3 +219,4 @@ app.include_router(weekly_reports_router)
 app.include_router(school_logo_router)
 app.include_router(analytics_router)
 app.include_router(question_patterns_router)
+app.include_router(mock_papers_router)

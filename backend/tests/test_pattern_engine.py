@@ -25,7 +25,7 @@ from app.models import AuditLog, Question
 from app.models.papers import GeneratedQuestion, QuestionPattern
 from app.services import learning_service, pattern_engine, pattern_expr, pattern_store
 from app.services.pattern_engine import GenerationError, PatternError
-from tests.test_learning import _login, _make_chapter_with_skills, _make_school, _make_super_admin, _make_teacher
+from tests.test_learning import _login, _make_chapter_with_skills, _make_school, _make_student, _make_super_admin, _make_teacher
 
 CONTENT = Path(__file__).resolve().parents[1] / "content" / "patterns" / "cbse-class-5-mathematics"
 
@@ -262,11 +262,13 @@ def test_load_approve_and_generate_for_a_school(db_session, tmp_path):
     db = db_session
     chapter, (skill, _s2) = _make_chapter_with_skills(db, "PE1")
     school = _make_school(db, "pe1")
+    student = _make_student(db, school, "pat-pe1")
     db.commit()
 
     patterns = json.loads((CONTENT / "chapter-01.json").read_text(encoding="utf-8"))["patterns"]
     spec = {**next(p for p in patterns if p["code"] == "C5-WT1-S12-P1"), "code": "T-RATE"}
     entries = _entries("MATH-PE1", skill.code, [spec, _tiny(top=25)])
+    loads_before = db.query(AuditLog).filter(AuditLog.event_type == pattern_store.AUDIT_LOAD).count()
     plan = pattern_store.make_plan(db, entries, trial_count=60)
     assert len(plan.add) == 2 and not plan.change
     pattern_store.apply_plan(db, plan)
@@ -277,7 +279,7 @@ def test_load_approve_and_generate_for_a_school(db_session, tmp_path):
 
     # A DRAFT pattern makes nothing for a school.
     with pytest.raises(GenerationError, match="not approved"):
-        pattern_engine.generate_for_school(db, rate, school.id)
+        pattern_engine.generate_for_student(db, rate, school_id=school.id, student_id=student.id)
 
     # Her sheet approves it (version 1).
     import openpyxl
@@ -294,12 +296,12 @@ def test_load_approve_and_generate_for_a_school(db_session, tmp_path):
     db.refresh(rate)
     assert rate.status == "APPROVED" and rate.approved_by == "Ashalatha Gupta"
 
-    rows = pattern_engine.generate_for_school(db, rate, school.id)
+    rows = pattern_engine.generate_for_student(db, rate, school_id=school.id, student_id=student.id)
     db.commit()
     (question,) = rows
     assert question.origin == "GENERATED" and question.concept_lesson_id == skill.id and question.code.startswith("GEN-")
     record = db.query(GeneratedQuestion).filter_by(question_id=question.id).one()
-    assert record.school_id == school.id and record.pattern_version == 1
+    assert (record.school_id, record.student_id, record.pattern_version) == (school.id, student.id, 1)
     values = json.loads(record.values_json)
     # Marked like any other question.
     right = str(values["speed"] * values["hours"])
@@ -322,33 +324,36 @@ def test_load_approve_and_generate_for_a_school(db_session, tmp_path):
     assert (rate.status, rate.version, rate.approved_by) == ("DRAFT", 2, None)
     with pytest.raises(pattern_store.StopBeforeWriting, match="not the version she reviewed"):
         pattern_store.apply_decisions(db, pattern_store.read_decisions(str(path)), reviewer="A", workbook="r")
-    assert db.query(AuditLog).filter(AuditLog.event_type == pattern_store.AUDIT_LOAD).count() == 2
+    assert db.query(AuditLog).filter(AuditLog.event_type == pattern_store.AUDIT_LOAD).count() == loads_before + 2
 
 
-def test_a_school_never_gets_the_same_question_twice(db_session):
+def test_a_student_never_gets_the_same_question_twice(db_session):
+    """Shailesh, 27 Oct 2026: uniqueness is per student (per school would
+    use a small pattern up within one class)."""
     db = db_session
     chapter, (skill, _s2) = _make_chapter_with_skills(db, "PE2")
-    school, other = _make_school(db, "pe2"), _make_school(db, "pe2-o")
+    school = _make_school(db, "pe2")
+    student, classmate = _make_student(db, school, "pat-pe2"), _make_student(db, school, "pat-pe2-o")
     db.commit()
     plan = pattern_store.make_plan(db, _entries("MATH-PE2", skill.code, [_tiny("T-TINY-2", top=3)]), trial_count=30, min_distinct=3)
     pattern_store.apply_plan(db, plan)
     tiny = db.query(QuestionPattern).filter_by(code="T-TINY-2").one()
     tiny.status = "APPROVED"
     db.commit()
-    stems = set()
-    for _ in range(3):
-        stems.add(pattern_engine.generate_for_school(db, tiny, school.id, attempts=60)[0].stem)
+    make = lambda who, n: pattern_engine.generate_for_student(db, tiny, school_id=school.id, student_id=who.id, attempts=n)  # noqa: E731
+    stems = {make(student, 60)[0].stem for _ in range(3)}
     db.commit()
     assert stems == {"Write the number 1.", "Write the number 2.", "Write the number 3."}
     with pytest.raises(GenerationError, match="used up"):
-        pattern_engine.generate_for_school(db, tiny, school.id, attempts=30)
-    # Another school is a separate count.
-    assert pattern_engine.generate_for_school(db, tiny, other.id, attempts=60)
+        make(student, 30)
+    # A classmate is a separate count.
+    assert make(classmate, 60)
+    db.commit()
 
 
 def test_reshuffled_options_are_the_same_question(db_session):
     """Review: a multiple-choice question with its options in another order
-    is the same question, for the trial count and for a school."""
+    is the same question, for the trial count and for a student."""
     spec_raw = {
         "code": "T-SS-SMALL", "chapter": 1, "questionType": "Single Select", "marks": 1,
         "values": [{"name": "n", "int": {"min": 3, "max": 4}}], "text": "What is {n} + {n}?",
@@ -361,17 +366,18 @@ def test_reshuffled_options_are_the_same_question(db_session):
     db = db_session
     _chapter, (skill, _s2) = _make_chapter_with_skills(db, "PE5")
     school = _make_school(db, "pe5")
+    student = _make_student(db, school, "pat-pe5")
     db.commit()
     plan = pattern_store.make_plan(db, _entries("MATH-PE5", skill.code, [spec_raw]), trial_count=40, min_distinct=2)
     pattern_store.apply_plan(db, plan)
     pattern = db.query(QuestionPattern).filter_by(code="T-SS-SMALL").one()
     pattern.status = "APPROVED"
     db.commit()
-    stems = {pattern_engine.generate_for_school(db, pattern, school.id, attempts=80)[0].stem for _ in range(2)}
+    stems = {pattern_engine.generate_for_student(db, pattern, school_id=school.id, student_id=student.id, attempts=80)[0].stem for _ in range(2)}
     db.commit()
     assert stems == {"What is 3 + 3?", "What is 4 + 4?"}
     with pytest.raises(GenerationError, match="used up"):
-        pattern_engine.generate_for_school(db, pattern, school.id, attempts=40)
+        pattern_engine.generate_for_student(db, pattern, school_id=school.id, student_id=student.id, attempts=40)
 
 
 def test_a_bad_file_stops_the_load(db_session):
@@ -392,6 +398,7 @@ def test_only_the_super_admin_sees_patterns(client, db_session):
     school = _make_school(db, "pe4")
     teacher = _make_teacher(db, school, "pe4")
     sa = _make_super_admin(db, "pe4")
+    student = _make_student(db, school, "pat-pe4")
     db.commit()
     pattern_store.apply_plan(db, pattern_store.make_plan(db, _entries("MATH-PE4", skill.code, [_tiny("T-TINY-4", top=50)]), trial_count=30))
     pattern = db.query(QuestionPattern).filter_by(code="T-TINY-4").one()
@@ -412,7 +419,7 @@ def test_only_the_super_admin_sees_patterns(client, db_session):
     # A generated question stays out of Curriculum Studio and can't be edited there.
     pattern.status = "APPROVED"
     db.commit()
-    (made,) = pattern_engine.generate_for_school(db, pattern, school.id)
+    (made,) = pattern_engine.generate_for_student(db, pattern, school_id=school.id, student_id=student.id)
     db.commit()
     studio = client.get(f"/api/curriculum-admin/chapters/{_chapter.id}", headers=headers)
     assert studio.status_code == 200, studio.text

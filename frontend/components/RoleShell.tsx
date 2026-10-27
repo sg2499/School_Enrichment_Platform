@@ -157,6 +157,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         { label: "Report Cards", icon: ScrollText, href: "/teacher/report-cards" },
         // #187: each child's week for the parents, issued per section.
         { label: "Weekly Reports", icon: CalendarCheck, href: "/teacher/weekly-reports" },
+        // #166: build, preview and approve practice papers.
+        { label: "Mock Papers", icon: FileSpreadsheet, href: "/teacher/papers" },
       ],
     },
     {
@@ -183,7 +185,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
         { label: "Assessment Schemes", icon: ListChecks, href: "/admin/assessment" },
         { label: "Question Bank", icon: Database, soon: true },
-        { label: "Papers & Mocks", icon: FileSpreadsheet, soon: true },
+        // #166: every section's mock papers, and the school's test formats.
+        { label: "Mock Papers", icon: FileSpreadsheet, href: "/admin/papers" },
       ],
     },
     {
