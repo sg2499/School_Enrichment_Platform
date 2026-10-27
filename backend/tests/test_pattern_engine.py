@@ -93,6 +93,30 @@ def _content_specs():
     return {p["code"]: pattern_engine.clean_spec(p) for p in data["patterns"]}
 
 
+SAMPLES = ("C5-WT1-S01-P1", "C5-WT1-S03-P1", "C5-WT1-S09-P1", "C5-WT1-S12-P1", "C5-WT1-S13-P1")
+
+
+def test_every_chapter_1_pattern_works():
+    """#166 step 2: every Chapter 1 pattern loads, makes a valid question in
+    each of 200 tries with at least 20 different ones, carries its skill's
+    own misconception note (so her reviews apply), and adds up its marks."""
+    bank_notes = {
+        "C5-WT1-S12": "Adds the rate once instead of multiplying by the number of equal intervals.",
+    }
+    specs = _content_specs()
+    assert len(specs) >= 59
+    kinds = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+    for code, spec in specs.items():
+        result = pattern_engine.trial(spec, 200)
+        assert result["failed"] == 0 and result["distinct"] >= 20, (code, result)
+        kinds[str(spec.marks)] += 1
+        made = pattern_engine.make(spec, "marks")
+        assert sum(q["marks"] for q in made.questions) == spec.marks
+        if spec.skill in bank_notes:
+            assert made.misconception == bank_notes[spec.skill], code
+    assert kinds["3"] >= 3 and kinds["4"] >= 3 and kinds["5"] >= 3 and kinds["2"] >= 15
+
+
 def test_the_same_seed_makes_the_same_question():
     spec = _content_specs()["C5-WT1-S09-P1"]
     one, two = pattern_engine.make(spec, "abc"), pattern_engine.make(spec, "abc")
@@ -106,7 +130,8 @@ def test_the_same_seed_makes_the_same_question():
 def test_every_sample_copy_has_the_right_answer():
     """200 copies of each Chapter 1 sample pattern, each answer worked out
     here a second way, from the question's own words."""
-    specs = _content_specs()
+    specs = {c: s for c, s in _content_specs().items() if c in SAMPLES}
+    assert len(specs) == 5
     for code, spec in specs.items():
         for i in range(200):
             q = pattern_engine.make(spec, f"check-{i}").questions[0]
@@ -179,7 +204,7 @@ LONG_ANSWER = {
 def test_case_studies_and_long_answers():
     case = pattern_engine.clean_spec(CASE_STUDY)
     made = pattern_engine.make(case, "x")
-    assert case.is_group and len(made.questions) == 4 and sum(q["marks"] for q in made.questions) == 4
+    assert case.is_group and case.question_type == "Case Study" and len(made.questions) == 4 and sum(q["marks"] for q in made.questions) == 4
     assert all(q["stem"].startswith("Case study: A class buys") for q in made.questions)
     price, count, paid = (made.values[k] for k in ("price", "count", "paid"))
     assert int(made.questions[1]["correct_answer"]) == paid - price * count
@@ -239,7 +264,8 @@ def test_load_approve_and_generate_for_a_school(db_session, tmp_path):
     school = _make_school(db, "pe1")
     db.commit()
 
-    spec = {**json.loads((CONTENT / "chapter-01.json").read_text(encoding="utf-8"))["patterns"][3], "code": "T-RATE"}
+    patterns = json.loads((CONTENT / "chapter-01.json").read_text(encoding="utf-8"))["patterns"]
+    spec = {**next(p for p in patterns if p["code"] == "C5-WT1-S12-P1"), "code": "T-RATE"}
     entries = _entries("MATH-PE1", skill.code, [spec, _tiny(top=25)])
     plan = pattern_store.make_plan(db, entries, trial_count=60)
     assert len(plan.add) == 2 and not plan.change

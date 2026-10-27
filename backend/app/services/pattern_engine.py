@@ -360,7 +360,8 @@ def clean_spec(raw: dict) -> Spec:
     if problems:
         raise PatternError(problems)
     return Spec(
-        code=code, chapter=chapter, skill=skill, question_type=question_type or parts[0].question_type,
+        code=code, chapter=chapter, skill=skill,
+        question_type="Case Study" if stimulus is not None else (question_type or parts[0].question_type),
         marks=raw.get("marks"), difficulty=difficulty, competency=raw.get("competency"),
         values=values, require=[r for r in require if r is not None], parts=parts, stimulus=stimulus,
         misconception=misconception,

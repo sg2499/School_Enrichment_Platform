@@ -1,6 +1,10 @@
 {
-  "engine": {"board": "CBSE", "classLevel": "5", "course": "MATHEMATICS"},
-  "about": "Chapter 1, We the Travellers I. The five sample patterns sent to Ashalatha on 27 Oct 2026 (SE_Class_5_Sample_Patterns_Review.xlsx). All DRAFT until she approves them.",
+  "engine": {
+    "board": "CBSE",
+    "classLevel": "5",
+    "course": "MATHEMATICS"
+  },
+  "about": "Chapter 1, We the Travellers I: 59 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them; the first five were sent to her as samples on 27 Oct 2026.",
   "patterns": [
     {
       "code": "C5-WT1-S01-P1",
@@ -12,8 +16,24 @@
       "competency": "Conceptual understanding and number-pattern fluency",
       "responseFormat": "Integer",
       "values": [
-        {"name": "start", "int": {"min": 1000, "max": 95000, "step": 50}},
-        {"name": "step", "choice": [10, 50, 100, 250, 1000]}
+        {
+          "name": "start",
+          "int": {
+            "min": 1000,
+            "max": 95000,
+            "step": 50
+          }
+        },
+        {
+          "name": "step",
+          "choice": [
+            10,
+            50,
+            100,
+            250,
+            1000
+          ]
+        }
       ],
       "text": "Continue the pattern: {start:num}, {start + step:num}, {start + 2 * step:num}, ___.",
       "answer": "start + 3 * step",
@@ -21,7 +41,845 @@
       "explanation": "The numbers go up by {step:num} each time, so the next one is {start + 2 * step:num} + {step:num} = {start + 3 * step:num}.",
       "misconception": "Looks only at the last digit or repeats visible digits without checking a constant change.",
       "notes": "start: 1,000 to 95,000, a multiple of 50. step: 10, 50, 100, 250 or 1,000.",
-      "sources": ["CBSE-C5-CH01-Q001"]
+      "sources": [
+        "CBSE-C5-CH01-Q001"
+      ]
+    },
+    {
+      "code": "C5-WT1-S01-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S01",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "step",
+          "choice": [
+            25,
+            50,
+            75,
+            100,
+            125,
+            150,
+            200,
+            250,
+            500,
+            750,
+            1000,
+            1500,
+            2000
+          ]
+        },
+        {
+          "name": "dir",
+          "choice": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "t1",
+          "int": {
+            "min": 2000,
+            "max": 95000,
+            "step": 25
+          }
+        },
+        {
+          "name": "t2",
+          "expr": "t1 + dir * step"
+        },
+        {
+          "name": "t3",
+          "expr": "t1 + 2 * dir * step"
+        },
+        {
+          "name": "t4",
+          "expr": "t1 + 3 * dir * step"
+        },
+        {
+          "name": "pos",
+          "choice": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "ans",
+          "expr": "t1 if pos == 1 else (t2 if pos == 2 else t3)"
+        },
+        {
+          "name": "s1",
+          "expr": "'___' if pos == 1 else t1"
+        },
+        {
+          "name": "s2",
+          "expr": "'___' if pos == 2 else t2"
+        },
+        {
+          "name": "s3",
+          "expr": "'___' if pos == 3 else t3"
+        }
+      ],
+      "require": [
+        "min(t1, t4) >= 1000",
+        "max(t1, t4) <= 99999"
+      ],
+      "text": "Find the missing number in the pattern: {s1:num}, {s2:num}, {s3:num}, {t4:num}.",
+      "answer": "ans",
+      "hint": "Find how much the numbers change each time, using two numbers that are next to each other.",
+      "explanation": "The numbers go {'up' if dir == 1 else 'down'} by {step:num} each time, so the missing number is {ans:num}. The pattern is {t1:num}, {t2:num}, {t3:num}, {t4:num}.",
+      "misconception": "Looks only at the last digit or repeats visible digits without checking a constant change.",
+      "notes": "Four terms with the first, second or third missing (never the last: that is P1). Step 25 to 2,000; the pattern goes up or down; every term from 1,000 to 99,999.",
+      "sources": [
+        "CBSE-C5-CH01-Q156",
+        "CBSE-C5-CH01-Q157",
+        "CBSE-C5-CH01-Q010"
+      ]
+    },
+    {
+      "code": "C5-WT1-S01-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S01",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "rule",
+          "choice": [
+            {
+              "s": 50,
+              "add": "Add 50",
+              "sub": "Subtract 50",
+              "add_lo": "Add 5",
+              "sub_lo": "Subtract 5",
+              "add_2": "Add 100",
+              "sub_2": "Subtract 100"
+            },
+            {
+              "s": 200,
+              "add": "Add 200",
+              "sub": "Subtract 200",
+              "add_lo": "Add 20",
+              "sub_lo": "Subtract 20",
+              "add_2": "Add 400",
+              "sub_2": "Subtract 400"
+            },
+            {
+              "s": 250,
+              "add": "Add 250",
+              "sub": "Subtract 250",
+              "add_lo": "Add 25",
+              "sub_lo": "Subtract 25",
+              "add_2": "Add 500",
+              "sub_2": "Subtract 500"
+            },
+            {
+              "s": 300,
+              "add": "Add 300",
+              "sub": "Subtract 300",
+              "add_lo": "Add 30",
+              "sub_lo": "Subtract 30",
+              "add_2": "Add 600",
+              "sub_2": "Subtract 600"
+            },
+            {
+              "s": 500,
+              "add": "Add 500",
+              "sub": "Subtract 500",
+              "add_lo": "Add 50",
+              "sub_lo": "Subtract 50",
+              "add_2": "Add 1,000",
+              "sub_2": "Subtract 1,000"
+            },
+            {
+              "s": 900,
+              "add": "Add 900",
+              "sub": "Subtract 900",
+              "add_lo": "Add 90",
+              "sub_lo": "Subtract 90",
+              "add_2": "Add 1,800",
+              "sub_2": "Subtract 1,800"
+            },
+            {
+              "s": 1000,
+              "add": "Add 1,000",
+              "sub": "Subtract 1,000",
+              "add_lo": "Add 100",
+              "sub_lo": "Subtract 100",
+              "add_2": "Add 2,000",
+              "sub_2": "Subtract 2,000"
+            },
+            {
+              "s": 1500,
+              "add": "Add 1,500",
+              "sub": "Subtract 1,500",
+              "add_lo": "Add 150",
+              "sub_lo": "Subtract 150",
+              "add_2": "Add 3,000",
+              "sub_2": "Subtract 3,000"
+            },
+            {
+              "s": 2000,
+              "add": "Add 2,000",
+              "sub": "Subtract 2,000",
+              "add_lo": "Add 200",
+              "sub_lo": "Subtract 200",
+              "add_2": "Add 4,000",
+              "sub_2": "Subtract 4,000"
+            },
+            {
+              "s": 2500,
+              "add": "Add 2,500",
+              "sub": "Subtract 2,500",
+              "add_lo": "Add 250",
+              "sub_lo": "Subtract 250",
+              "add_2": "Add 5,000",
+              "sub_2": "Subtract 5,000"
+            }
+          ]
+        },
+        {
+          "name": "dir",
+          "choice": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "t1",
+          "int": {
+            "min": 2000,
+            "max": 95000,
+            "step": 10
+          }
+        },
+        {
+          "name": "t2",
+          "expr": "t1 + dir * rule.s"
+        },
+        {
+          "name": "t3",
+          "expr": "t1 + 2 * dir * rule.s"
+        },
+        {
+          "name": "t4",
+          "expr": "t1 + 3 * dir * rule.s"
+        }
+      ],
+      "require": [
+        "min(t1, t4) >= 1000",
+        "max(t1, t4) <= 99999"
+      ],
+      "text": "What is the rule for the pattern {t1:num}, {t2:num}, {t3:num}, {t4:num}?",
+      "options": {
+        "correct": "rule.add if dir == 1 else rule.sub",
+        "wrong": [
+          {
+            "expr": "rule.add_lo if dir == 1 else rule.sub_lo",
+            "mistake": "reads the change one place too low"
+          },
+          {
+            "expr": "rule.add_2 if dir == 1 else rule.sub_2",
+            "mistake": "takes the change across two steps instead of one"
+          },
+          {
+            "expr": "rule.sub if dir == 1 else rule.add",
+            "mistake": "gets the direction of the pattern wrong"
+          }
+        ]
+      },
+      "hint": "Subtract the first number from the second, then check the next pair.",
+      "explanation": "{max(t1, t2):num} − {min(t1, t2):num} = {rule.s:num}, and the numbers keep going {'up' if dir == 1 else 'down'} by the same amount. So the rule is: {rule.add if dir == 1 else rule.sub}.",
+      "misconception": "Looks only at the last digit or repeats visible digits without checking a constant change.",
+      "notes": "Steps 50, 200, 250, 300, 500, 900, 1,000, 1,500, 2,000 or 2,500; going up or down; every term from 1,000 to 99,999. Wrong rules: a tenth of the step, double the step, the opposite direction.",
+      "sources": [
+        "CBSE-C5-CH01-Q004",
+        "CBSE-C5-CH01-Q158"
+      ]
+    },
+    {
+      "code": "C5-WT1-S01-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S01",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer; unit stated in question",
+      "unit": "km",
+      "unitRule": "STATED",
+      "values": [
+        {
+          "name": "vehicle",
+          "choice": [
+            "bus",
+            "taxi",
+            "truck",
+            "tourist van",
+            "jeep"
+          ]
+        },
+        {
+          "name": "start",
+          "int": {
+            "min": 10000,
+            "max": 85000,
+            "step": 10
+          }
+        },
+        {
+          "name": "per",
+          "int": {
+            "min": 45,
+            "max": 495,
+            "step": 5
+          }
+        },
+        {
+          "name": "days",
+          "int": {
+            "min": 3,
+            "max": 8
+          }
+        },
+        {
+          "name": "total",
+          "expr": "per * days"
+        }
+      ],
+      "require": [
+        "per % 100 != 0"
+      ],
+      "text": "The odometer of a {vehicle} reads {start:num} km. The reading goes up by {per} km each day. What will it read after {days} days?",
+      "answer": "start + total",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Finds the total increase: {days} × {per} = {total:num} km."
+        },
+        {
+          "marks": 1,
+          "text": "Adds it to the first reading: {start:num} + {total:num} = {start + total:num} km."
+        }
+      ],
+      "hint": "Find the total increase for {days} equal days first.",
+      "explanation": "The increase is {per} × {days} = {total:num} km. The new reading is {start:num} + {total:num} = {start + total:num} km.",
+      "misconception": "Looks only at the last digit or repeats visible digits without checking a constant change.",
+      "notes": "Start reading 10,000 to 85,000 km (a multiple of 10); 45 to 495 km a day (a multiple of 5, not of 100); 3 to 8 days. The answer stays below 99,999 and is in km, stated in the question.",
+      "sources": [
+        "CBSE-C5-CH01-Q007",
+        "CBSE-C5-CH01-Q160",
+        "CBSE-C5-CH01-Q170"
+      ]
+    },
+    {
+      "code": "C5-WT1-S02-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S02",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "a",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "c",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "d",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "e",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        }
+      ],
+      "require": [
+        "b == 0 or c == 0 or d == 0",
+        "b + c + d > 0",
+        "b != 1 and c != 1 and d != 1"
+      ],
+      "text": "Which number has {a} ten-thousands, {b} thousands, {c} hundreds, {d} tens and {e} ones?",
+      "answer": "a * 10000 + b * 1000 + c * 100 + d * 10 + e",
+      "hint": "Write each digit in its named place. Write 0 for a place with nothing in it.",
+      "explanation": "Writing the digits {a}, {b}, {c}, {d}, {e} in their places from ten-thousands to ones gives {a * 10000 + b * 1000 + c * 100 + d * 10 + e:num}.",
+      "misconception": "Drops internal zeroes or places commas after every three digits from the left.",
+      "notes": "All five places named; at least one of the thousands, hundreds and tens digits is 0 (but not all three), so the zero placeholder is tested. No place has exactly 1 (avoids \"1 tens\"); ten-thousands and ones 2 to 9.",
+      "sources": [
+        "CBSE-C5-CH01-Q188",
+        "CBSE-C5-CH01-Q195"
+      ]
+    },
+    {
+      "code": "C5-WT1-S02-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S02",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "th",
+          "choice": [
+            {
+              "n": 12,
+              "w": "twelve"
+            },
+            {
+              "n": 15,
+              "w": "fifteen"
+            },
+            {
+              "n": 18,
+              "w": "eighteen"
+            },
+            {
+              "n": 20,
+              "w": "twenty"
+            },
+            {
+              "n": 23,
+              "w": "twenty-three"
+            },
+            {
+              "n": 30,
+              "w": "thirty"
+            },
+            {
+              "n": 36,
+              "w": "thirty-six"
+            },
+            {
+              "n": 40,
+              "w": "forty"
+            },
+            {
+              "n": 45,
+              "w": "forty-five"
+            },
+            {
+              "n": 47,
+              "w": "forty-seven"
+            },
+            {
+              "n": 50,
+              "w": "fifty"
+            },
+            {
+              "n": 52,
+              "w": "fifty-two"
+            },
+            {
+              "n": 60,
+              "w": "sixty"
+            },
+            {
+              "n": 64,
+              "w": "sixty-four"
+            },
+            {
+              "n": 68,
+              "w": "sixty-eight"
+            },
+            {
+              "n": 70,
+              "w": "seventy"
+            },
+            {
+              "n": 72,
+              "w": "seventy-two"
+            },
+            {
+              "n": 80,
+              "w": "eighty"
+            },
+            {
+              "n": 81,
+              "w": "eighty-one"
+            },
+            {
+              "n": 84,
+              "w": "eighty-four"
+            },
+            {
+              "n": 90,
+              "w": "ninety"
+            },
+            {
+              "n": 95,
+              "w": "ninety-five"
+            },
+            {
+              "n": 98,
+              "w": "ninety-eight"
+            },
+            {
+              "n": 99,
+              "w": "ninety-nine"
+            }
+          ]
+        },
+        {
+          "name": "r",
+          "choice": [
+            {
+              "n": 1,
+              "w": "one"
+            },
+            {
+              "n": 2,
+              "w": "two"
+            },
+            {
+              "n": 3,
+              "w": "three"
+            },
+            {
+              "n": 4,
+              "w": "four"
+            },
+            {
+              "n": 5,
+              "w": "five"
+            },
+            {
+              "n": 6,
+              "w": "six"
+            },
+            {
+              "n": 7,
+              "w": "seven"
+            },
+            {
+              "n": 8,
+              "w": "eight"
+            },
+            {
+              "n": 9,
+              "w": "nine"
+            },
+            {
+              "n": 20,
+              "w": "twenty"
+            },
+            {
+              "n": 30,
+              "w": "thirty"
+            },
+            {
+              "n": 40,
+              "w": "forty"
+            },
+            {
+              "n": 50,
+              "w": "fifty"
+            },
+            {
+              "n": 60,
+              "w": "sixty"
+            },
+            {
+              "n": 70,
+              "w": "seventy"
+            },
+            {
+              "n": 80,
+              "w": "eighty"
+            },
+            {
+              "n": 90,
+              "w": "ninety"
+            }
+          ]
+        },
+        {
+          "name": "n",
+          "expr": "th.n * 1000 + r.n"
+        }
+      ],
+      "text": "Which numeral is {th.w} thousand {r.w}?",
+      "options": {
+        "correct": "n",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "th.n * 1000 + r.n * 10",
+            "mistake": "puts the last part one place too far to the left"
+          },
+          {
+            "expr": "th.n * 100 + r.n",
+            "mistake": "leaves out a zero placeholder and writes only four digits"
+          },
+          {
+            "expr": "th.n * 1000 + r.n * 100 if r.n < 10 else th.n * 1000 + r.n // 10",
+            "mistake": "writes the last part in the wrong place"
+          }
+        ]
+      },
+      "hint": "Write {th.w} thousand first, then fill the hundreds, tens and ones places.",
+      "explanation": "In numerals, {th.w} thousand is {th.n * 1000:num} and {r.w} is {r.n}. Together they make {n:num}, with 0 in the empty places.",
+      "misconception": "Drops internal zeroes or places commas after every three digits from the left.",
+      "notes": "Thousands part from 24 word forms (twelve to ninety-nine thousand); the last part is a single digit (one to nine) or a tens word (twenty to ninety), so the hundreds place (and often the tens) is 0.",
+      "sources": [
+        "CBSE-C5-CH01-Q012",
+        "CBSE-C5-CH01-Q017",
+        "CBSE-C5-CH01-Q019",
+        "CBSE-C5-CH01-Q191"
+      ]
+    },
+    {
+      "code": "C5-WT1-S02-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S02",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Two integers separated by a semicolon",
+      "values": [
+        {
+          "name": "th",
+          "choice": [
+            {
+              "n": 12,
+              "w": "twelve"
+            },
+            {
+              "n": 15,
+              "w": "fifteen"
+            },
+            {
+              "n": 18,
+              "w": "eighteen"
+            },
+            {
+              "n": 20,
+              "w": "twenty"
+            },
+            {
+              "n": 23,
+              "w": "twenty-three"
+            },
+            {
+              "n": 30,
+              "w": "thirty"
+            },
+            {
+              "n": 36,
+              "w": "thirty-six"
+            },
+            {
+              "n": 40,
+              "w": "forty"
+            },
+            {
+              "n": 45,
+              "w": "forty-five"
+            },
+            {
+              "n": 47,
+              "w": "forty-seven"
+            },
+            {
+              "n": 50,
+              "w": "fifty"
+            },
+            {
+              "n": 52,
+              "w": "fifty-two"
+            },
+            {
+              "n": 60,
+              "w": "sixty"
+            },
+            {
+              "n": 64,
+              "w": "sixty-four"
+            },
+            {
+              "n": 68,
+              "w": "sixty-eight"
+            },
+            {
+              "n": 70,
+              "w": "seventy"
+            },
+            {
+              "n": 72,
+              "w": "seventy-two"
+            },
+            {
+              "n": 80,
+              "w": "eighty"
+            },
+            {
+              "n": 81,
+              "w": "eighty-one"
+            },
+            {
+              "n": 84,
+              "w": "eighty-four"
+            },
+            {
+              "n": 90,
+              "w": "ninety"
+            },
+            {
+              "n": 95,
+              "w": "ninety-five"
+            },
+            {
+              "n": 98,
+              "w": "ninety-eight"
+            },
+            {
+              "n": 99,
+              "w": "ninety-nine"
+            }
+          ]
+        },
+        {
+          "name": "dd",
+          "choice": [
+            {
+              "d": 1,
+              "one": "one",
+              "ten": "ten",
+              "hun": "one hundred"
+            },
+            {
+              "d": 2,
+              "one": "two",
+              "ten": "twenty",
+              "hun": "two hundred"
+            },
+            {
+              "d": 3,
+              "one": "three",
+              "ten": "thirty",
+              "hun": "three hundred"
+            },
+            {
+              "d": 4,
+              "one": "four",
+              "ten": "forty",
+              "hun": "four hundred"
+            },
+            {
+              "d": 5,
+              "one": "five",
+              "ten": "fifty",
+              "hun": "five hundred"
+            },
+            {
+              "d": 6,
+              "one": "six",
+              "ten": "sixty",
+              "hun": "six hundred"
+            },
+            {
+              "d": 7,
+              "one": "seven",
+              "ten": "seventy",
+              "hun": "seven hundred"
+            },
+            {
+              "d": 8,
+              "one": "eight",
+              "ten": "eighty",
+              "hun": "eight hundred"
+            },
+            {
+              "d": 9,
+              "one": "nine",
+              "ten": "ninety",
+              "hun": "nine hundred"
+            }
+          ]
+        },
+        {
+          "name": "kind",
+          "choice": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "name": "wa",
+          "expr": "dd.ten if kind == 3 else dd.one"
+        },
+        {
+          "name": "wb",
+          "expr": "dd.ten if kind == 1 else dd.hun"
+        },
+        {
+          "name": "va",
+          "expr": "dd.d * 10 if kind == 3 else dd.d"
+        },
+        {
+          "name": "vb",
+          "expr": "dd.d * 10 if kind == 1 else dd.d * 100"
+        }
+      ],
+      "text": "A railway office prints two ticket numbers: (a) {th.w} thousand {wa}, and (b) {th.w} thousand {wb}. Write both as numerals.",
+      "answer": [
+        "th.n * 1000 + va",
+        "th.n * 1000 + vb"
+      ],
+      "steps": [
+        {
+          "marks": 1,
+          "text": "(a) writes {th.n * 1000 + va:num}, keeping the zero placeholders."
+        },
+        {
+          "marks": 1,
+          "text": "(b) writes {th.n * 1000 + vb:num}, with the {dd.d} in the {'tens' if kind == 1 else 'hundreds'} place."
+        }
+      ],
+      "hint": "Both numbers start with {th.n * 1000:num}. Check which place the last part goes in.",
+      "explanation": "In numerals, {th.w} thousand is {th.n * 1000:num}. (a) {wa} is {va}, so {th.n * 1000 + va:num}. (b) {wb} is {vb}, so {th.n * 1000 + vb:num}.",
+      "misconception": "Drops internal zeroes or places commas after every three digits from the left.",
+      "notes": "Same thousands part (twelve to ninety-nine thousand) for both; the last parts use the same digit 1 to 9 as ones and tens, ones and hundreds, or tens and hundreds, so only careful zero placeholders separate them.",
+      "sources": [
+        "CBSE-C5-CH01-Q496",
+        "CBSE-C5-CH01-Q193",
+        "CBSE-C5-CH01-Q020"
+      ]
     },
     {
       "code": "C5-WT1-S03-P1",
@@ -32,26 +890,1669 @@
       "difficulty": 1,
       "competency": "Conceptual understanding and fluency",
       "values": [
-        {"name": "n", "int": {"min": 10000, "max": 99999}},
-        {"name": "place", "choice": [10000, 1000, 100]},
-        {"name": "d", "expr": "digit(n, place)"}
+        {
+          "name": "n",
+          "int": {
+            "min": 10000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "place",
+          "choice": [
+            10000,
+            1000,
+            100
+          ]
+        },
+        {
+          "name": "d",
+          "expr": "digit(n, place)"
+        }
       ],
-      "require": ["d != 0", "count_digit(n, d) == 1"],
+      "require": [
+        "d != 0",
+        "count_digit(n, d) == 1"
+      ],
       "text": "What is the place value of the digit {d} in {n:num}?",
       "options": {
         "correct": "d * place",
         "format": "num",
         "wrong": [
-          {"expr": "d", "mistake": "gives the face value instead of the place value"},
-          {"expr": "d * place * 10", "mistake": "reads the place one too high"},
-          {"expr": "d * place // 10", "mistake": "reads the place one too low"}
+          {
+            "expr": "d",
+            "mistake": "gives the face value instead of the place value"
+          },
+          {
+            "expr": "d * place * 10",
+            "mistake": "reads the place one too high"
+          },
+          {
+            "expr": "d * place // 10",
+            "mistake": "reads the place one too low"
+          }
         ]
       },
       "hint": "Which place is the digit {d} in?",
       "explanation": "The {d} is in the place worth {place:num}, so its value is {d} × {place:num} = {d * place:num}.",
-      "misconception": "Gives a digit's face value when the question asks for the value of its place.",
+      "misconception": "Confuses a digit's face value with the value created by its position.",
       "notes": "n: 10,000 to 99,999. The digit asked about is in the ten-thousands, thousands or hundreds place, is not 0, and appears once in n.",
-      "sources": ["CBSE-C5-CH01-Q204"]
+      "sources": [
+        "CBSE-C5-CH01-Q204"
+      ]
+    },
+    {
+      "code": "C5-WT1-S03-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S03",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "n",
+          "int": {
+            "min": 10000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "pl",
+          "choice": [
+            {
+              "p": 10000,
+              "w": "ten-thousands",
+              "mirror": 1
+            },
+            {
+              "p": 1000,
+              "w": "thousands",
+              "mirror": 10
+            },
+            {
+              "p": 100,
+              "w": "hundreds",
+              "mirror": 100
+            },
+            {
+              "p": 10,
+              "w": "tens",
+              "mirror": 1000
+            }
+          ]
+        }
+      ],
+      "require": [
+        "pl.p == 100 or digit(n, pl.p) != digit(n, pl.mirror)",
+        "count_digit(n, digit(n, pl.p)) == 1 or digit(n, pl.p) == 0"
+      ],
+      "text": "Which digit is in the {pl.w} place of {n:num}?",
+      "answer": "digit(n, pl.p)",
+      "hint": "Start at the right with ones and move left: ones, tens, hundreds, thousands, ten-thousands.",
+      "explanation": "In {n:num}, the places are {digit(n, 10000)} ten-thousands, {digit(n, 1000)} thousands, {digit(n, 100)} hundreds, {digit(n, 10)} tens and {digit(n, 1)} ones. The {pl.w} digit is {digit(n, pl.p)}.",
+      "misconception": "Confuses a digit's face value with the value created by its position.",
+      "notes": "n: 10,000 to 99,999; asks for the ten-thousands, thousands, hundreds or tens digit. That digit differs from the one in the mirror place (so counting from the wrong end gives a different answer) and appears only once (0 may repeat).",
+      "sources": [
+        "CBSE-C5-CH01-Q023",
+        "CBSE-C5-CH01-Q199",
+        "CBSE-C5-CH01-Q200",
+        "CBSE-C5-CH01-Q215"
+      ]
+    },
+    {
+      "code": "C5-WT1-S03-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S03",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "n",
+          "int": {
+            "min": 10000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "p",
+          "choice": [
+            10000,
+            1000,
+            100,
+            10
+          ]
+        },
+        {
+          "name": "a",
+          "expr": "digit(n, p)"
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": "a + 1",
+            "max": 9
+          }
+        },
+        {
+          "name": "m",
+          "expr": "n + (b - a) * p"
+        },
+        {
+          "name": "thing",
+          "choice": [
+            "A toll-gate counter",
+            "A bus odometer",
+            "A visitor counter at a fort",
+            "A railway ticket counter"
+          ]
+        }
+      ],
+      "require": [
+        "a != 0"
+      ],
+      "text": "{thing} changes from {n:num} to {m:num}. By how much did the number increase?",
+      "options": {
+        "correct": "(b - a) * p",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "b - a",
+            "mistake": "subtracts the face values of the changed digits only"
+          },
+          {
+            "expr": "b * p",
+            "mistake": "gives the place value of the new digit, not the change"
+          },
+          {
+            "expr": "(b - a) * p * 10 if p <= 1000 else (b - a) * p // 10",
+            "mistake": "reads the changed place one place off"
+          }
+        ]
+      },
+      "hint": "Find the one place where the digit has changed.",
+      "explanation": "Only the {'ten-thousands' if p == 10000 else ('thousands' if p == 1000 else ('hundreds' if p == 100 else 'tens'))} digit changes, from {a} to {b}. Its value goes from {a * p:num} to {b * p:num}, an increase of {(b - a) * p:num}.",
+      "misconception": "Confuses a digit's face value with the value created by its position.",
+      "notes": "n: 10,000 to 99,999. One digit (ten-thousands, thousands, hundreds or tens place, not 0) goes up to a bigger digit; nothing else changes.",
+      "sources": [
+        "CBSE-C5-CH01-Q206",
+        "CBSE-C5-CH01-Q207",
+        "CBSE-C5-CH01-Q027"
+      ]
+    },
+    {
+      "code": "C5-WT1-S03-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S03",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "n",
+          "int": {
+            "min": 10000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "pp",
+          "choice": [
+            {
+              "hi": 10000,
+              "lo": 1000,
+              "hiw": "ten-thousands",
+              "low": "thousands"
+            },
+            {
+              "hi": 10000,
+              "lo": 100,
+              "hiw": "ten-thousands",
+              "low": "hundreds"
+            },
+            {
+              "hi": 10000,
+              "lo": 10,
+              "hiw": "ten-thousands",
+              "low": "tens"
+            },
+            {
+              "hi": 10000,
+              "lo": 1,
+              "hiw": "ten-thousands",
+              "low": "ones"
+            },
+            {
+              "hi": 1000,
+              "lo": 100,
+              "hiw": "thousands",
+              "low": "hundreds"
+            },
+            {
+              "hi": 1000,
+              "lo": 10,
+              "hiw": "thousands",
+              "low": "tens"
+            },
+            {
+              "hi": 1000,
+              "lo": 1,
+              "hiw": "thousands",
+              "low": "ones"
+            },
+            {
+              "hi": 100,
+              "lo": 10,
+              "hiw": "hundreds",
+              "low": "tens"
+            },
+            {
+              "hi": 100,
+              "lo": 1,
+              "hiw": "hundreds",
+              "low": "ones"
+            },
+            {
+              "hi": 10,
+              "lo": 1,
+              "hiw": "tens",
+              "low": "ones"
+            }
+          ]
+        },
+        {
+          "name": "d",
+          "expr": "digit(n, pp.hi)"
+        }
+      ],
+      "require": [
+        "d != 0",
+        "digit(n, pp.lo) == d",
+        "count_digit(n, d) == 2"
+      ],
+      "text": "The digit {d} appears twice in {n:num}. What is the difference between the place values of the two {d}s?",
+      "answer": "d * pp.hi - d * pp.lo",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Gives the two place values: {d * pp.hi:num} ({pp.hiw}) and {d * pp.lo:num} ({pp.low})."
+        },
+        {
+          "marks": 1,
+          "text": "Subtracts: {d * pp.hi:num} − {d * pp.lo:num} = {d * pp.hi - d * pp.lo:num}."
+        }
+      ],
+      "hint": "Each {d} has a different value because it is in a different place.",
+      "explanation": "The {d}s are in the {pp.hiw} and {pp.low} places, so they stand for {d * pp.hi:num} and {d * pp.lo:num}. The difference is {d * pp.hi:num} − {d * pp.lo:num} = {d * pp.hi - d * pp.lo:num}.",
+      "misconception": "Confuses a digit's face value with the value created by its position.",
+      "notes": "n: 10,000 to 99,999 with one non-zero digit appearing exactly twice, in any two places; the other three digits are different from it.",
+      "sources": [
+        "CBSE-C5-CH01-Q028",
+        "CBSE-C5-CH01-Q211",
+        "CBSE-C5-CH01-Q210"
+      ]
+    },
+    {
+      "code": "C5-WT1-S04-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S04",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "a",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "c",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "e",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "f",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "z",
+          "choice": [
+            1000,
+            100,
+            10
+          ]
+        },
+        {
+          "name": "t1",
+          "expr": "a * 10000"
+        },
+        {
+          "name": "t2",
+          "expr": "b * 1000 if z != 1000 else c * 100"
+        },
+        {
+          "name": "t3",
+          "expr": "c * 100 if z == 10 else e * 10"
+        },
+        {
+          "name": "t4",
+          "expr": "f"
+        },
+        {
+          "name": "n",
+          "expr": "t1 + t2 + t3 + t4"
+        }
+      ],
+      "text": "Write {t1:num} + {t2:num} + {t3:num} + {t4} in standard form.",
+      "answer": "n",
+      "hint": "Put each part in its own place. Write 0 for the place that is missing.",
+      "explanation": "{t1:num} + {t2:num} + {t3:num} + {t4} = {n:num}. There are no {'thousands' if z == 1000 else ('hundreds' if z == 100 else 'tens')}, so that place is 0.",
+      "misconception": "Writes zero-value places as extra digits or assumes each place can have only 0–9 groups.",
+      "notes": "A five-digit number with exactly one of the thousands, hundreds or tens places empty (0); the other digits 1 to 9. Parts are given in order from ten-thousands to ones.",
+      "sources": [
+        "CBSE-C5-CH01-Q032",
+        "CBSE-C5-CH01-Q222",
+        "CBSE-C5-CH01-Q230"
+      ]
+    },
+    {
+      "code": "C5-WT1-S04-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S04",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "a",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "h",
+          "int": {
+            "min": 11,
+            "max": 29
+          }
+        },
+        {
+          "name": "t",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "o",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "n",
+          "expr": "a * 1000 + h * 100 + t * 10 + o"
+        }
+      ],
+      "require": [
+        "h % 10 != 0"
+      ],
+      "text": "Find the number: {a} thousands + {h} hundreds + {t} tens + {o} ones.",
+      "options": {
+        "correct": "n",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "a * 10000 + h * 100 + t * 10 + o",
+            "mistake": "writes the group counts side by side without regrouping"
+          },
+          {
+            "expr": "a * 1000 + h % 10 * 100 + t * 10 + o",
+            "mistake": "keeps only the ones digit of the hundreds count and loses the thousands inside it"
+          },
+          {
+            "expr": "(a + h // 10) * 1000 + t * 10 + o",
+            "mistake": "regroups the hundreds into thousands but forgets the hundreds left over"
+          }
+        ]
+      },
+      "hint": "{h} hundreds equal {h * 100:num}.",
+      "explanation": "{a * 1000:num} + {h * 100:num} + {t * 10} + {o} = {n:num}.",
+      "misconception": "Writes zero-value places as extra digits or assumes each place can have only 0–9 groups.",
+      "notes": "2 to 9 thousands, 11 to 29 hundreds (not 20), 2 to 9 tens and ones, so the hundreds must be regrouped.",
+      "sources": [
+        "CBSE-C5-CH01-Q035",
+        "CBSE-C5-CH01-Q036",
+        "CBSE-C5-CH01-Q224"
+      ]
+    },
+    {
+      "code": "C5-WT1-S04-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S04",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "n",
+          "int": {
+            "min": 20000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "mode",
+          "choice": [
+            1,
+            2
+          ]
+        },
+        {
+          "name": "a",
+          "expr": "digit(n, 10000)"
+        },
+        {
+          "name": "b",
+          "expr": "digit(n, 1000)"
+        },
+        {
+          "name": "c",
+          "expr": "digit(n, 100)"
+        },
+        {
+          "name": "r",
+          "expr": "n % 100"
+        },
+        {
+          "name": "s1",
+          "expr": "a - 1 if mode == 1 else a"
+        },
+        {
+          "name": "s2",
+          "expr": "'___' if mode == 1 else b - 1"
+        },
+        {
+          "name": "s3",
+          "expr": "c if mode == 1 else '___'"
+        },
+        {
+          "name": "known",
+          "expr": "s1 * 10000 + c * 100 + r if mode == 1 else s1 * 10000 + (b - 1) * 1000 + r"
+        },
+        {
+          "name": "rest",
+          "expr": "n - known"
+        },
+        {
+          "name": "ans",
+          "expr": "10 + b if mode == 1 else 10 + c"
+        },
+        {
+          "name": "unitw",
+          "expr": "'thousands' if mode == 1 else 'hundreds'"
+        }
+      ],
+      "require": [
+        "r >= 10",
+        "s1 >= 2",
+        "c >= 2 if mode == 1 else b >= 3"
+      ],
+      "text": "Complete: {n:num} = {s1} ten-thousands + {s2} thousands + {s3} hundreds + {r} ones.",
+      "answer": "ans",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Takes away the known groups: {n:num} − {known:num} = {rest:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Writes {rest:num} as {ans} {unitw}."
+        }
+      ],
+      "hint": "Work out the value of the groups you know and subtract it from {n:num}.",
+      "explanation": "The known groups make {known:num}. {n:num} − {known:num} = {rest:num}, which is {ans} {unitw}.",
+      "misconception": "Writes zero-value places as extra digits or assumes each place can have only 0–9 groups.",
+      "notes": "n: 20,000 to 99,999, last two digits 10 or more. Either one ten-thousand is regrouped into the thousands (blank is 10 to 19 thousands) or one thousand into the hundreds (blank is 10 to 19 hundreds); every other group in the sum is 2 or more (never 0 or 1).",
+      "sources": [
+        "CBSE-C5-CH01-Q040",
+        "CBSE-C5-CH01-Q234",
+        "CBSE-C5-CH01-Q241"
+      ]
+    },
+    {
+      "code": "C5-WT1-S05-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S05",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "target",
+          "int": {
+            "min": 20000,
+            "max": 90000,
+            "step": 10000
+          }
+        },
+        {
+          "name": "da",
+          "int": {
+            "min": 50,
+            "max": 950,
+            "step": 50
+          }
+        },
+        {
+          "name": "db",
+          "int": {
+            "min": 50,
+            "max": 950,
+            "step": 50
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "target - da"
+        },
+        {
+          "name": "hi",
+          "expr": "target + db"
+        },
+        {
+          "name": "ans",
+          "expr": "lo if da < db else hi"
+        }
+      ],
+      "require": [
+        "da != db"
+      ],
+      "text": "Which is closer to {target:num}: {lo:num} or {hi:num}? Enter the closer number.",
+      "answer": "ans",
+      "hint": "Find how far each number is from {target:num}.",
+      "explanation": "{lo:num} is {da} away, while {hi:num} is {db} away. So {ans:num} is closer.",
+      "misconception": "Compares only the first visible digit rather than number of digits and left-to-right place value.",
+      "notes": "Target 20,000 to 90,000 (a multiple of 10,000); one number 50 to 950 below it and one 50 to 950 above it (multiples of 50, never the same distance). Either may be the closer one.",
+      "sources": [
+        "CBSE-C5-CH01-Q045",
+        "CBSE-C5-CH01-Q251"
+      ]
+    },
+    {
+      "code": "C5-WT1-S05-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S05",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "x",
+          "int": {
+            "min": 11000,
+            "max": 98000,
+            "step": 1000
+          }
+        },
+        {
+          "name": "u",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "n1",
+          "expr": "x - 1000 + u * 110"
+        },
+        {
+          "name": "n2",
+          "expr": "x + u"
+        },
+        {
+          "name": "n3",
+          "expr": "x + u * 10"
+        },
+        {
+          "name": "n4",
+          "expr": "x + u * 100"
+        },
+        {
+          "name": "perm",
+          "choice": [
+            {
+              "a": 1,
+              "b": 2,
+              "c": 4,
+              "d": 3,
+              "ok": "A, B, D, C",
+              "rev": "C, D, B, A",
+              "last3": "B, D, C, A",
+              "ones": "A, D, B, C"
+            },
+            {
+              "a": 1,
+              "b": 4,
+              "c": 2,
+              "d": 3,
+              "ok": "A, C, D, B",
+              "rev": "B, D, C, A",
+              "last3": "C, D, B, A",
+              "ones": "A, D, C, B"
+            },
+            {
+              "a": 2,
+              "b": 1,
+              "c": 4,
+              "d": 3,
+              "ok": "B, A, D, C",
+              "rev": "C, D, A, B",
+              "last3": "A, D, C, B",
+              "ones": "B, D, A, C"
+            },
+            {
+              "a": 2,
+              "b": 4,
+              "c": 1,
+              "d": 3,
+              "ok": "C, A, D, B",
+              "rev": "B, D, A, C",
+              "last3": "A, D, B, C",
+              "ones": "C, D, A, B"
+            },
+            {
+              "a": 3,
+              "b": 1,
+              "c": 4,
+              "d": 2,
+              "ok": "B, D, A, C",
+              "rev": "C, A, D, B",
+              "last3": "D, A, C, B",
+              "ones": "B, A, D, C"
+            },
+            {
+              "a": 3,
+              "b": 4,
+              "c": 1,
+              "d": 2,
+              "ok": "C, D, A, B",
+              "rev": "B, A, D, C",
+              "last3": "D, A, B, C",
+              "ones": "C, A, D, B"
+            },
+            {
+              "a": 4,
+              "b": 1,
+              "c": 3,
+              "d": 2,
+              "ok": "B, D, C, A",
+              "rev": "A, C, D, B",
+              "last3": "D, C, A, B",
+              "ones": "B, C, D, A"
+            },
+            {
+              "a": 4,
+              "b": 3,
+              "c": 1,
+              "d": 2,
+              "ok": "C, D, B, A",
+              "rev": "A, B, D, C",
+              "last3": "D, B, A, C",
+              "ones": "C, B, D, A"
+            }
+          ]
+        },
+        {
+          "name": "la",
+          "expr": "n1 if perm.a == 1 else (n2 if perm.a == 2 else (n3 if perm.a == 3 else n4))"
+        },
+        {
+          "name": "lb",
+          "expr": "n1 if perm.b == 1 else (n2 if perm.b == 2 else (n3 if perm.b == 3 else n4))"
+        },
+        {
+          "name": "lc",
+          "expr": "n1 if perm.c == 1 else (n2 if perm.c == 2 else (n3 if perm.c == 3 else n4))"
+        },
+        {
+          "name": "ld",
+          "expr": "n1 if perm.d == 1 else (n2 if perm.d == 2 else (n3 if perm.d == 3 else n4))"
+        }
+      ],
+      "text": "Four buses have travelled A: {la:num} km, B: {lb:num} km, C: {lc:num} km and D: {ld:num} km. Which shows the buses from the shortest to the longest distance?",
+      "options": {
+        "correct": "perm.ok",
+        "wrong": [
+          {
+            "expr": "perm.rev",
+            "mistake": "arranges from the longest to the shortest"
+          },
+          {
+            "expr": "perm.last3",
+            "mistake": "compares only the last three digits and ignores the thousands"
+          },
+          {
+            "expr": "perm.ones",
+            "mistake": "compares the ones digit before the tens digit"
+          }
+        ]
+      },
+      "hint": "Compare the thousands first, then the hundreds, then the tens.",
+      "explanation": "{n1:num} is the shortest because it has fewer thousands. Then {n2:num} < {n3:num} < {n4:num}, so the order is {perm.ok}.",
+      "misconception": "Compares only the first visible digit rather than number of digits and left-to-right place value.",
+      "notes": "Four readings built like 18,990; 19,009; 19,090; 19,900: one with a smaller thousands part but many big digits, and three that share their thousands and differ only in where one digit (2 to 9) sits. Thousands part 11 to 98; 8 different letter arrangements.",
+      "sources": [
+        "CBSE-C5-CH01-Q043",
+        "CBSE-C5-CH01-Q246",
+        "CBSE-C5-CH01-Q262"
+      ]
+    },
+    {
+      "code": "C5-WT1-S05-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S05",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "x",
+          "int": {
+            "min": 11000,
+            "max": 97000,
+            "step": 1000
+          }
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "c",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "na",
+          "expr": "x + a * 100 + b * 10 + c"
+        },
+        {
+          "name": "nb",
+          "expr": "x + a * 100 + c * 10 + b"
+        },
+        {
+          "name": "nc",
+          "expr": "x + b * 100 + a * 10 + c"
+        },
+        {
+          "name": "nd",
+          "expr": "x - 1000 + a * 100 + c * 10 + b"
+        },
+        {
+          "name": "ne",
+          "expr": "x + 1000 + b * 100 + c * 10 + a"
+        },
+        {
+          "name": "small",
+          "expr": "min(na, nb, nc)"
+        },
+        {
+          "name": "big",
+          "expr": "max(na, nb, nc)"
+        },
+        {
+          "name": "mid",
+          "expr": "na + nb + nc - small - big"
+        }
+      ],
+      "require": [
+        "a != b",
+        "b != c",
+        "a != c",
+        "mid != nc"
+      ],
+      "text": "Arrange {na:num}; {ne:num}; {nc:num}; {nd:num}; {nb:num} from smallest to greatest. Which number is in the middle?",
+      "answer": "mid",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Orders the numbers: {nd:num}; {small:num}; {mid:num}; {big:num}; {ne:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Picks the third of the five, {mid:num}."
+        }
+      ],
+      "hint": "The middle of five ordered numbers is the third number.",
+      "explanation": "The order is {nd:num}; {small:num}; {mid:num}; {big:num}; {ne:num}. The middle number is {mid:num}.",
+      "misconception": "Compares only the first visible digit rather than number of digits and left-to-right place value.",
+      "notes": "Three numbers share a thousands part (11 to 97 thousand) and use the same three different digits in other orders; one has one thousand less and one has one thousand more. The middle number is never the third one listed.",
+      "sources": [
+        "CBSE-C5-CH01-Q050",
+        "CBSE-C5-CH01-Q257"
+      ]
+    },
+    {
+      "code": "C5-WT1-S06-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S06",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "n",
+          "int": {
+            "min": 10000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "pr",
+          "choice": [
+            {
+              "p": 10000,
+              "q": 1000
+            },
+            {
+              "p": 10000,
+              "q": 100
+            },
+            {
+              "p": 10000,
+              "q": 10
+            },
+            {
+              "p": 1000,
+              "q": 100
+            },
+            {
+              "p": 1000,
+              "q": 10
+            },
+            {
+              "p": 1000,
+              "q": 1
+            },
+            {
+              "p": 100,
+              "q": 10
+            },
+            {
+              "p": 100,
+              "q": 1
+            }
+          ]
+        },
+        {
+          "name": "dp",
+          "expr": "digit(n, pr.p)"
+        },
+        {
+          "name": "dq",
+          "expr": "digit(n, pr.q)"
+        },
+        {
+          "name": "ans",
+          "expr": "n + (dq - dp) * (pr.p - pr.q)"
+        }
+      ],
+      "require": [
+        "count_digit(n, dp) == 1",
+        "count_digit(n, dq) == 1",
+        "pr.p != 10000 or dq != 0"
+      ],
+      "text": "Swap the digits {dp} and {dq} in {n:num}. What number is formed?",
+      "answer": "ans",
+      "hint": "Only the places of {dp} and {dq} change. The other digits stay where they are.",
+      "explanation": "The {dp} and the {dq} change places and the other digits stay, so {n:num} becomes {ans:num}.",
+      "misconception": "Creates a leading zero or changes more than the allowed digits.",
+      "notes": "n: 10,000 to 99,999. The two digits swapped each appear only once in n, so the question is clear. Any two places from ten-thousands down to ones; a 0 is never moved to the ten-thousands place (no leading zero).",
+      "sources": [
+        "CBSE-C5-CH01-Q051",
+        "CBSE-C5-CH01-Q052",
+        "CBSE-C5-CH01-Q266",
+        "CBSE-C5-CH01-Q267"
+      ]
+    },
+    {
+      "code": "C5-WT1-S06-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S06",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Strategic number formation",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "p",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "q",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "r",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "s",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "z",
+          "int": {
+            "min": 2,
+            "max": 5
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "min(p, q, r, s)"
+        },
+        {
+          "name": "hi",
+          "expr": "max(p, q, r, s)"
+        },
+        {
+          "name": "m1",
+          "expr": "min(p if p != lo else 10, q if q != lo else 10, r if r != lo else 10, s if s != lo else 10)"
+        },
+        {
+          "name": "m2",
+          "expr": "p + q + r + s - lo - hi - m1"
+        },
+        {
+          "name": "s1",
+          "expr": "p"
+        },
+        {
+          "name": "s2",
+          "expr": "0 if z == 2 else q"
+        },
+        {
+          "name": "s3",
+          "expr": "0 if z == 3 else (q if z < 3 else r)"
+        },
+        {
+          "name": "s4",
+          "expr": "0 if z == 4 else (r if z < 4 else s)"
+        },
+        {
+          "name": "s5",
+          "expr": "0 if z == 5 else s"
+        },
+        {
+          "name": "small",
+          "expr": "lo * 10000 + m1 * 100 + m2 * 10 + hi"
+        },
+        {
+          "name": "great",
+          "expr": "hi * 10000 + m2 * 1000 + m1 * 100 + lo * 10"
+        }
+      ],
+      "require": [
+        "p != q",
+        "p != r",
+        "p != s",
+        "q != r",
+        "q != s",
+        "r != s"
+      ],
+      "text": "Using the digits {s1}, {s2}, {s3}, {s4} and {s5} once each, what is the smallest five-digit number you can make?",
+      "options": {
+        "correct": "small",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "lo * 1000 + m1 * 100 + m2 * 10 + hi",
+            "mistake": "puts 0 first, which makes only a four-digit number"
+          },
+          {
+            "expr": "lo * 10000 + m1 * 1000 + m2 * 100 + hi * 10",
+            "mistake": "leaves the 0 in the ones place instead of the thousands place"
+          },
+          {
+            "expr": "lo * 10000 + hi * 100 + m2 * 10 + m1",
+            "mistake": "puts 0 second but arranges the other digits from greatest to smallest"
+          }
+        ]
+      },
+      "hint": "A five-digit number cannot begin with 0.",
+      "explanation": "Begin with the smallest non-zero digit {lo}, then 0, then {m1}, {m2} and {hi} from smallest to greatest: {small:num}.",
+      "misconception": "Creates a leading zero or changes more than the allowed digits.",
+      "notes": "Four different non-zero digits (1 to 9) and one 0, listed in a mixed order; the 0 is never listed first. Wrong options: 0 put first (a four-digit number), 0 put last, and 0 second with the rest in descending order.",
+      "sources": [
+        "CBSE-C5-CH01-Q057",
+        "CBSE-C5-CH01-Q271",
+        "CBSE-C5-CH01-Q282",
+        "CBSE-C5-CH01-Q284"
+      ]
+    },
+    {
+      "code": "C5-WT1-S06-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S06",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "p",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "q",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "r",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "s",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "z",
+          "int": {
+            "min": 2,
+            "max": 5
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "min(p, q, r, s)"
+        },
+        {
+          "name": "hi",
+          "expr": "max(p, q, r, s)"
+        },
+        {
+          "name": "m1",
+          "expr": "min(p if p != lo else 10, q if q != lo else 10, r if r != lo else 10, s if s != lo else 10)"
+        },
+        {
+          "name": "m2",
+          "expr": "p + q + r + s - lo - hi - m1"
+        },
+        {
+          "name": "s1",
+          "expr": "p"
+        },
+        {
+          "name": "s2",
+          "expr": "0 if z == 2 else q"
+        },
+        {
+          "name": "s3",
+          "expr": "0 if z == 3 else (q if z < 3 else r)"
+        },
+        {
+          "name": "s4",
+          "expr": "0 if z == 4 else (r if z < 4 else s)"
+        },
+        {
+          "name": "s5",
+          "expr": "0 if z == 5 else s"
+        },
+        {
+          "name": "small",
+          "expr": "lo * 10000 + m1 * 100 + m2 * 10 + hi"
+        },
+        {
+          "name": "great",
+          "expr": "hi * 10000 + m2 * 1000 + m1 * 100 + lo * 10"
+        }
+      ],
+      "require": [
+        "p != q",
+        "p != r",
+        "p != s",
+        "q != r",
+        "q != s",
+        "r != s"
+      ],
+      "text": "Using the digits {s1}, {s2}, {s3}, {s4} and {s5} once each, make the greatest and the smallest five-digit numbers. Subtract the smallest from the greatest.",
+      "answer": "great - small",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Forms both numbers correctly: greatest {great:num} and smallest {small:num} (the smallest does not begin with 0)."
+        },
+        {
+          "marks": 1,
+          "text": "Subtracts correctly: {great:num} − {small:num} = {great - small:num}."
+        }
+      ],
+      "hint": "Form both numbers first. The smallest cannot begin with 0.",
+      "explanation": "Greatest = {great:num} (digits from greatest to smallest). Smallest = {small:num} ({lo} first, then 0). Difference = {great:num} − {small:num} = {great - small:num}.",
+      "misconception": "Creates a leading zero or changes more than the allowed digits.",
+      "notes": "Four different non-zero digits (1 to 9) and one 0, listed in a mixed order with the 0 never first. The answer is always a positive five-digit number.",
+      "sources": [
+        "CBSE-C5-CH01-Q060",
+        "CBSE-C5-CH01-Q285"
+      ]
+    },
+    {
+      "code": "C5-WT1-S07-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S07",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "u",
+          "choice": [
+            100,
+            1000
+          ]
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 1050,
+            "max": 90000,
+            "step": 50
+          }
+        },
+        {
+          "name": "gap",
+          "int": {
+            "min": "3 * u",
+            "max": "8 * u",
+            "step": 50
+          }
+        },
+        {
+          "name": "b",
+          "expr": "a + gap"
+        },
+        {
+          "name": "first",
+          "expr": "(a // u + 1) * u"
+        },
+        {
+          "name": "last",
+          "expr": "b // u * u"
+        },
+        {
+          "name": "count",
+          "expr": "b // u - a // u"
+        }
+      ],
+      "require": [
+        "a % u != 0",
+        "b % u != 0",
+        "b < 99000"
+      ],
+      "text": "How many multiples of {u:num} lie strictly between {a:num} and {b:num}?",
+      "answer": "count",
+      "hint": "Start with the first multiple of {u:num} after {a:num}.",
+      "explanation": "The first multiple of {u:num} after {a:num} is {first:num}, and the last one before {b:num} is {last:num}. Counting {first:num}, {first + u:num}, … , {last:num} gives {count}.",
+      "misconception": "Includes one or both boundary numbers when the wording says 'between'.",
+      "notes": "Multiples of 100 or of 1,000. Both boundaries are multiples of 50 but never multiples of the number asked about, so no boundary question arises; the gap is 3 to 8 multiples wide (answer 3 to 8). Both numbers below 99,000.",
+      "sources": [
+        "CBSE-C5-CH01-Q064",
+        "CBSE-C5-CH01-Q066",
+        "CBSE-C5-CH01-Q293"
+      ]
+    },
+    {
+      "code": "C5-WT1-S07-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S07",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Interval reasoning in context",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            "checkpoint",
+            "route marker",
+            "bus pass",
+            "railway coach"
+          ]
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 10000,
+            "max": 98000,
+            "step": 10
+          }
+        },
+        {
+          "name": "gap",
+          "choice": [
+            10,
+            20,
+            50,
+            100
+          ]
+        },
+        {
+          "name": "b",
+          "expr": "a + gap"
+        },
+        {
+          "name": "k",
+          "int": {
+            "min": 1,
+            "max": "gap - 1"
+          }
+        },
+        {
+          "name": "j",
+          "int": {
+            "min": 1,
+            "max": 9
+          }
+        },
+        {
+          "name": "c",
+          "expr": "a + k"
+        }
+      ],
+      "text": "A {ctx} number is greater than {a:num} but less than {b:num}. Which could it be?",
+      "options": {
+        "correct": "c",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "a",
+            "mistake": "includes the lower boundary number"
+          },
+          {
+            "expr": "b",
+            "mistake": "includes the upper boundary number"
+          },
+          {
+            "expr": "a - j",
+            "mistake": "checks only that the number is less than the upper boundary"
+          }
+        ]
+      },
+      "hint": "It must be more than {a:num} and also less than {b:num}.",
+      "explanation": "{c:num} is greater than {a:num} and less than {b:num}. {a:num} and {b:num} are the boundaries themselves, and {a - j:num} is less than {a:num}.",
+      "misconception": "Includes one or both boundary numbers when the wording says 'between'.",
+      "notes": "Lower boundary 10,000 to 98,000 (a multiple of 10); the upper is 10, 20, 50 or 100 more. Wrong options: each boundary, and a number 1 to 9 below the lower boundary.",
+      "sources": [
+        "CBSE-C5-CH01-Q063",
+        "CBSE-C5-CH01-Q067",
+        "CBSE-C5-CH01-Q291",
+        "CBSE-C5-CH01-Q298"
+      ]
+    },
+    {
+      "code": "C5-WT1-S07-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S07",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "c",
+          "int": {
+            "min": 1100,
+            "max": 99000,
+            "step": 100
+          }
+        },
+        {
+          "name": "u",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "v",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "a",
+          "expr": "c - u"
+        },
+        {
+          "name": "b",
+          "expr": "c + v"
+        },
+        {
+          "name": "ans",
+          "expr": "b - a - 1"
+        }
+      ],
+      "text": "How many whole numbers lie strictly between {a:num} and {b:num}?",
+      "answer": "ans",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Starts at {a + 1:num} and stops at {b - 1:num}, leaving out both boundary numbers."
+        },
+        {
+          "marks": 1,
+          "text": "Counts them correctly: {ans} numbers."
+        }
+      ],
+      "hint": "Do not count {a:num} or {b:num} themselves.",
+      "explanation": "The numbers are {a + 1:num}, {a + 2:num}, … up to {b - 1:num}. That is {b:num} − {a:num} − 1 = {ans} numbers.",
+      "misconception": "Includes one or both boundary numbers when the wording says 'between'.",
+      "notes": "The two numbers sit 2 to 9 either side of a whole hundred or thousand (1,100 to 99,000), so the list crosses it, as in the bank's 5,996 and 6,002. Answer 3 to 17. Counting one boundary gives one more; counting both gives two more.",
+      "sources": [
+        "CBSE-C5-CH01-Q068",
+        "CBSE-C5-CH01-Q302",
+        "CBSE-C5-CH01-Q292"
+      ]
+    },
+    {
+      "code": "C5-WT1-S08-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S08",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            {
+              "lead": "A railway station counted",
+              "what": "travellers in a day"
+            },
+            {
+              "lead": "A bus depot sold",
+              "what": "tickets in a month"
+            },
+            {
+              "lead": "A toll plaza counted",
+              "what": "vehicles in a week"
+            },
+            {
+              "lead": "A fort had",
+              "what": "visitors in a month"
+            }
+          ]
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 1001,
+            "max": 99994
+          }
+        },
+        {
+          "name": "rn",
+          "expr": "round_half_up(n, 10)"
+        }
+      ],
+      "require": [
+        "n % 10 != 0"
+      ],
+      "text": "{ctx.lead} {n:num} {ctx.what}. Round this number to the nearest 10.",
+      "answer": "rn",
+      "hint": "Look at the ones digit.",
+      "explanation": "The ones digit is {digit(n, 1)}, so {n:num} rounds {'up' if rn > n else 'down'} to {rn:num}.",
+      "misconception": "Looks at the tens digit instead of the ones digit or rounds a 5 downward.",
+      "notes": "n: 1,001 to 99,994, not a multiple of 10 (an ones digit of 5 rounds up).",
+      "sources": [
+        "CBSE-C5-CH01-Q071",
+        "CBSE-C5-CH01-Q078",
+        "CBSE-C5-CH01-Q313",
+        "CBSE-C5-CH01-Q321"
+      ]
+    },
+    {
+      "code": "C5-WT1-S08-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S08",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            "passengers at a station",
+            "tickets sold at a fair",
+            "visitors to a fort",
+            "cars at a toll plaza"
+          ]
+        },
+        {
+          "name": "rr",
+          "int": {
+            "min": 1010,
+            "max": 99980,
+            "step": 10
+          }
+        },
+        {
+          "name": "k",
+          "int": {
+            "min": -5,
+            "max": 4
+          }
+        },
+        {
+          "name": "c",
+          "expr": "rr + k"
+        }
+      ],
+      "require": [
+        "k != 0"
+      ],
+      "text": "The number of {ctx}, rounded to the nearest 10, is {rr:num}. Which could be the actual number?",
+      "options": {
+        "correct": "c",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "rr + 5",
+            "mistake": "rounds an ones digit of 5 down"
+          },
+          {
+            "expr": "rr + 7",
+            "mistake": "drops the ones digit instead of rounding"
+          },
+          {
+            "expr": "rr - 6",
+            "mistake": "rounds an ones digit of 4 up"
+          }
+        ]
+      },
+      "hint": "Which numbers round to {rr:num}? Think of the ones digit.",
+      "explanation": "Numbers from {rr - 5:num} to {rr + 4:num} round to {rr:num}, and {c:num} is one of them. {rr + 5:num} and {rr + 7:num} round up to {rr + 10:num}; {rr - 6:num} rounds down to {rr - 10:num}.",
+      "misconception": "Looks at the tens digit instead of the ones digit or rounds a 5 downward.",
+      "notes": "Rounded count 1,010 to 99,980 (a multiple of 10). The right option is 5 below to 4 above it (never the rounded number itself). Wrong options: 5 above, 7 above, 6 below.",
+      "sources": [
+        "CBSE-C5-CH01-Q318",
+        "CBSE-C5-CH01-Q324"
+      ]
+    },
+    {
+      "code": "C5-WT1-S08-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S08",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            "A train",
+            "A ferry",
+            "A bus company"
+          ]
+        },
+        {
+          "name": "mo",
+          "choice": [
+            {
+              "m1": "January",
+              "m2": "February"
+            },
+            {
+              "m1": "May",
+              "m2": "June"
+            },
+            {
+              "m1": "October",
+              "m2": "November"
+            }
+          ]
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 1001,
+            "max": 49994
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 1001,
+            "max": 49994
+          }
+        },
+        {
+          "name": "ra",
+          "expr": "round_half_up(a, 10)"
+        },
+        {
+          "name": "rb",
+          "expr": "round_half_up(b, 10)"
+        }
+      ],
+      "require": [
+        "a % 10 != 0",
+        "b % 10 != 0",
+        "(ra > a) != (rb > b)"
+      ],
+      "text": "{ctx} carried {a:num} passengers in {mo.m1} and {b:num} in {mo.m2}. Round each number to the nearest 10, then add to estimate the total.",
+      "answer": "ra + rb",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Rounds both numbers correctly: {a:num} → {ra:num} and {b:num} → {rb:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Adds the rounded numbers: {ra:num} + {rb:num} = {ra + rb:num}."
+        }
+      ],
+      "hint": "Round each number first, then add.",
+      "explanation": "{a:num} → {ra:num} and {b:num} → {rb:num}. Estimated total = {ra:num} + {rb:num} = {ra + rb:num}.",
+      "misconception": "Looks at the tens digit instead of the ones digit or rounds a 5 downward.",
+      "notes": "Two counts of 1,001 to 49,994, neither a multiple of 10; one rounds up and the other rounds down, so both directions are tested.",
+      "sources": [
+        "CBSE-C5-CH01-Q331",
+        "CBSE-C5-CH01-Q498"
+      ]
     },
     {
       "code": "C5-WT1-S09-P1",
@@ -62,29 +2563,789 @@
       "difficulty": 2,
       "competency": "Conceptual understanding and fluency",
       "values": [
-        {"name": "n", "int": {"min": 1050, "max": 99949}},
-        {"name": "right", "expr": "round_half_up(n, 100)"},
-        {"name": "down", "expr": "n // 100 * 100"},
-        {"name": "wrong_way", "expr": "down + 100 if right == down else down"},
-        {"name": "ten", "expr": "round_half_up(n, 10)"},
-        {"name": "thousand", "expr": "round_half_up(n, 1000)"}
+        {
+          "name": "n",
+          "int": {
+            "min": 1050,
+            "max": 99949
+          }
+        },
+        {
+          "name": "right",
+          "expr": "round_half_up(n, 100)"
+        },
+        {
+          "name": "down",
+          "expr": "n // 100 * 100"
+        },
+        {
+          "name": "wrong_way",
+          "expr": "down + 100 if right == down else down"
+        },
+        {
+          "name": "ten",
+          "expr": "round_half_up(n, 10)"
+        },
+        {
+          "name": "thousand",
+          "expr": "round_half_up(n, 1000)"
+        }
       ],
-      "require": ["n % 100 != 0", "ten != right", "thousand != right", "thousand != wrong_way", "ten != wrong_way"],
+      "require": [
+        "n % 100 != 0",
+        "ten != right",
+        "thousand != right",
+        "thousand != wrong_way",
+        "ten != wrong_way"
+      ],
       "text": "Round {n:num} to the nearest 100.",
       "options": {
         "correct": "right",
         "format": "num",
         "wrong": [
-          {"expr": "wrong_way", "mistake": "rounds the wrong way"},
-          {"expr": "ten", "mistake": "rounds to the nearest 10"},
-          {"expr": "thousand", "mistake": "rounds to the nearest 1,000"}
+          {
+            "expr": "wrong_way",
+            "mistake": "rounds the wrong way"
+          },
+          {
+            "expr": "ten",
+            "mistake": "rounds to the nearest 10"
+          },
+          {
+            "expr": "thousand",
+            "mistake": "rounds to the nearest 1,000"
+          }
         ]
       },
       "hint": "Look at the tens digit.",
       "explanation": "The tens digit is {digit(n, 10)}, so {n:num} rounds {'up' if right > n else 'down'} to {right:num}.",
       "misconception": "Looks at the hundreds digit instead of the tens digit.",
       "notes": "n: 1,050 to 99,949, not a multiple of 100, and every wrong option different from the right one.",
-      "sources": ["CBSE-C5-CH01-Q336"]
+      "sources": [
+        "CBSE-C5-CH01-Q336"
+      ]
+    },
+    {
+      "code": "C5-WT1-S09-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S09",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "rr",
+          "int": {
+            "min": 1100,
+            "max": 99800,
+            "step": 100
+          }
+        },
+        {
+          "name": "ask",
+          "choice": [
+            {
+              "word": "greatest",
+              "off": 49
+            },
+            {
+              "word": "smallest",
+              "off": -50
+            }
+          ]
+        },
+        {
+          "name": "ans",
+          "expr": "rr + ask.off"
+        }
+      ],
+      "text": "What is the {ask.word} whole number that rounds to {rr:num} to the nearest 100?",
+      "answer": "ans",
+      "hint": "Find the halfway numbers between {rr:num} and the hundreds on either side of it.",
+      "explanation": "Numbers from {rr - 50:num} to {rr + 49:num} round to {rr:num}. The {ask.word} of them is {ans:num}.",
+      "misconception": "Looks at the hundreds digit instead of the tens digit.",
+      "notes": "Rounded number 1,100 to 99,800, a multiple of 100. Asks for the greatest (49 above) or the smallest (50 below, as 50 rounds up).",
+      "sources": [
+        "CBSE-C5-CH01-Q343",
+        "CBSE-C5-CH01-Q349"
+      ]
+    },
+    {
+      "code": "C5-WT1-S09-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S09",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            "visitors to a museum",
+            "bus tickets sold in a month",
+            "people at a mela",
+            "travellers at an airport in a day"
+          ]
+        },
+        {
+          "name": "rr",
+          "int": {
+            "min": 1100,
+            "max": 99800,
+            "step": 100
+          }
+        },
+        {
+          "name": "k",
+          "int": {
+            "min": -50,
+            "max": 49
+          }
+        },
+        {
+          "name": "t",
+          "int": {
+            "min": 51,
+            "max": 99
+          }
+        },
+        {
+          "name": "w",
+          "int": {
+            "min": 51,
+            "max": 99
+          }
+        },
+        {
+          "name": "c",
+          "expr": "rr + k"
+        }
+      ],
+      "require": [
+        "k != 0"
+      ],
+      "text": "The number of {ctx}, rounded to the nearest 100, is {rr:num}. Which could be the actual number?",
+      "options": {
+        "correct": "c",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "rr + 50",
+            "mistake": "rounds a final 50 down"
+          },
+          {
+            "expr": "rr + t",
+            "mistake": "keeps the same hundreds digit without looking at the tens digit"
+          },
+          {
+            "expr": "rr - w",
+            "mistake": "rounds a number below the halfway point up"
+          }
+        ]
+      },
+      "hint": "Look at the tens digit of each number.",
+      "explanation": "Numbers from {rr - 50:num} to {rr + 49:num} round to {rr:num}, and {c:num} is one of them. {rr + 50:num} and {rr + t:num} round up to {rr + 100:num}; {rr - w:num} rounds down to {rr - 100:num}.",
+      "misconception": "Looks at the hundreds digit instead of the tens digit.",
+      "notes": "Rounded count 1,100 to 99,800 (a multiple of 100). The right option is 50 below to 49 above it (never the rounded number itself). Wrong options: exactly 50 above, 51 to 99 above (same hundreds digit, rounds up), 51 to 99 below.",
+      "sources": [
+        "CBSE-C5-CH01-Q341",
+        "CBSE-C5-CH01-Q347"
+      ]
+    },
+    {
+      "code": "C5-WT1-S09-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S09",
+      "questionType": "Single Select",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "th",
+          "int": {
+            "min": 2,
+            "max": 98
+          }
+        },
+        {
+          "name": "side",
+          "choice": [
+            0,
+            1
+          ]
+        },
+        {
+          "name": "cc",
+          "int": {
+            "min": 1,
+            "max": 49
+          }
+        },
+        {
+          "name": "cor",
+          "expr": "th * 1000 + (cc if side == 0 else 950 + cc)"
+        },
+        {
+          "name": "wa",
+          "int": {
+            "min": "th * 1000 + 150",
+            "max": "th * 1000 + 449"
+          }
+        },
+        {
+          "name": "wb",
+          "int": {
+            "min": "th * 1000 + 450",
+            "max": "th * 1000 + 499"
+          }
+        },
+        {
+          "name": "we",
+          "int": {
+            "min": "th * 1000 + 510",
+            "max": "th * 1000 + 940"
+          }
+        },
+        {
+          "name": "r",
+          "expr": "round_half_up(cor, 100)"
+        }
+      ],
+      "require": [
+        "r == round_half_up(cor, 1000)",
+        "round_half_up(wa, 100) != round_half_up(wa, 1000)",
+        "round_half_up(wb, 100) != round_half_up(wb, 1000)",
+        "round_half_up(we, 100) != round_half_up(we, 1000)",
+        "wa % 100 != 0",
+        "we % 100 != 0"
+      ],
+      "text": "Which number gives the same answer when rounded to the nearest 100 and to the nearest 1,000?",
+      "options": {
+        "correct": "cor",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "wa",
+            "mistake": "rounds only to the nearest 1,000 and does not check the nearest 100"
+          },
+          {
+            "expr": "wb",
+            "mistake": "looks at the hundreds digit 4 instead of the tens digit, so rounds down to the hundred as well"
+          },
+          {
+            "expr": "we",
+            "mistake": "rounds only to the nearest 100 and does not check the nearest 1,000"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Rounds the numbers to the nearest 100 correctly (for example {wb:num} → {round_half_up(wb, 100):num})."
+        },
+        {
+          "marks": 1,
+          "text": "Compares with the nearest 1,000 and chooses {cor:num}, which gives {r:num} both ways."
+        }
+      ],
+      "hint": "Round each number to the nearest 100 and then to the nearest 1,000.",
+      "explanation": "{cor:num} rounds to {r:num} both ways. {wa:num} gives {round_half_up(wa, 100):num} and {round_half_up(wa, 1000):num}; {wb:num} gives {round_half_up(wb, 100):num} and {round_half_up(wb, 1000):num}; {we:num} gives {round_half_up(we, 100):num} and {round_half_up(we, 1000):num}.",
+      "misconception": "Looks at the hundreds digit instead of the tens digit.",
+      "notes": "All four options are in the same thousand (2,000s to 98,000s). The right one ends in 001 to 049 or in 951 to 999. Wrong ones end in 150 to 449, in 450 to 499 (hundreds digit 4 but rounds up to 500), or in 510 to 940.",
+      "sources": [
+        "CBSE-C5-CH01-Q090",
+        "CBSE-C5-CH01-Q356",
+        "CBSE-C5-CH01-Q379"
+      ]
+    },
+    {
+      "code": "C5-WT1-S10-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S10",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Integer; unit stated in question",
+      "unit": "km",
+      "unitRule": "STATED",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            {
+              "lead": "A truck travelled",
+              "tail": "in one year"
+            },
+            {
+              "lead": "A taxi has travelled",
+              "tail": "since it was bought"
+            },
+            {
+              "lead": "A tourist bus travelled",
+              "tail": "in six months"
+            }
+          ]
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 1001,
+            "max": 99999
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "n // 1000 * 1000"
+        },
+        {
+          "name": "rn",
+          "expr": "round_half_up(n, 1000)"
+        }
+      ],
+      "require": [
+        "n % 1000 != 0"
+      ],
+      "text": "{ctx.lead} {n:num} km {ctx.tail}. Round this distance to the nearest 1,000 km.",
+      "answer": "rn",
+      "hint": "Compare the number with the halfway number between the two thousands.",
+      "explanation": "{n:num} lies between {lo:num} and {lo + 1000:num}. The halfway number is {lo + 500:num}, and {n:num} is {'above' if n > lo + 500 else ('equal to' if n == lo + 500 else 'below')} it, so it rounds to {rn:num} km.",
+      "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
+      "notes": "n: 1,001 to 99,999 km, not a whole thousand (a number from 99,500 rounds to 1,00,000 = 100,000). The unit km is stated in the question.",
+      "sources": [
+        "CBSE-C5-CH01-Q368",
+        "CBSE-C5-CH01-Q369",
+        "CBSE-C5-CH01-Q098"
+      ]
+    },
+    {
+      "code": "C5-WT1-S10-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S10",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Choice or short text",
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 1001,
+            "max": 98999
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "n // 1000 * 1000"
+        },
+        {
+          "name": "rn",
+          "expr": "round_half_up(n, 1000)"
+        },
+        {
+          "name": "learner",
+          "expr": "lo + 1000 if digit(n, 1000) >= 5 else lo"
+        },
+        {
+          "name": "hund",
+          "expr": "round_half_up(n, 100)"
+        },
+        {
+          "name": "mid",
+          "expr": "lo + 500"
+        }
+      ],
+      "require": [
+        "n % 100 != 0",
+        "learner != rn",
+        "hund != rn",
+        "hund != learner",
+        "hund != mid"
+      ],
+      "text": "{who.name} rounded {n:num} to the nearest 1,000 and got {learner:num}. What is the correct answer?",
+      "options": {
+        "correct": "rn",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "learner",
+            "mistake": "decides by the thousands digit, as the learner did, instead of comparing with the halfway number"
+          },
+          {
+            "expr": "hund",
+            "mistake": "rounds to the nearest 100 instead"
+          },
+          {
+            "expr": "mid",
+            "mistake": "gives the halfway number instead of a whole thousand"
+          }
+        ]
+      },
+      "hint": "Compare {n:num} with the halfway number {mid:num}.",
+      "explanation": "{n:num} is {'above' if n > mid else 'below'} the halfway number {mid:num}, so it rounds {'up' if rn > n else 'down'} to {rn:num}. The thousands digit, {digit(n, 1000)}, does not decide this.",
+      "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
+      "notes": "n: 1,001 to 98,999, not a whole hundred. The learner's answer always comes from deciding by the thousands digit (5 or more up), and only numbers where that gives the wrong answer are used. Wrong options: the learner's answer, the nearest 100, the halfway number.",
+      "sources": [
+        "CBSE-C5-CH01-Q099",
+        "CBSE-C5-CH01-Q374"
+      ]
+    },
+    {
+      "code": "C5-WT1-S10-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S10",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "values": [
+        {
+          "name": "ctx",
+          "choice": [
+            {
+              "place": "A railway station",
+              "what": "passengers"
+            },
+            {
+              "place": "A hill fort",
+              "what": "visitors"
+            },
+            {
+              "place": "An airport",
+              "what": "travellers"
+            }
+          ]
+        },
+        {
+          "name": "mo",
+          "choice": [
+            {
+              "m1": "May",
+              "m2": "June"
+            },
+            {
+              "m1": "March",
+              "m2": "April"
+            },
+            {
+              "m1": "October",
+              "m2": "November"
+            }
+          ]
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 10001,
+            "max": 60000
+          }
+        },
+        {
+          "name": "gap",
+          "int": {
+            "min": 3000,
+            "max": 35000
+          }
+        },
+        {
+          "name": "b",
+          "expr": "a + gap"
+        },
+        {
+          "name": "ra",
+          "expr": "round_half_up(a, 1000)"
+        },
+        {
+          "name": "rb",
+          "expr": "round_half_up(b, 1000)"
+        }
+      ],
+      "require": [
+        "a % 1000 != 0",
+        "b % 1000 != 0",
+        "(ra > a) != (rb > b)"
+      ],
+      "text": "{ctx.place} had {a:num} {ctx.what} in {mo.m1} and {b:num} in {mo.m2}. Round each number to the nearest 1,000 and estimate how many more came in {mo.m2}.",
+      "answer": "rb - ra",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Rounds both numbers correctly: {a:num} → {ra:num} and {b:num} → {rb:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Subtracts the rounded numbers: {rb:num} − {ra:num} = {rb - ra:num}."
+        }
+      ],
+      "hint": "Round each number first, then subtract.",
+      "explanation": "{a:num} → {ra:num} and {b:num} → {rb:num}. About {rb:num} − {ra:num} = {rb - ra:num} more {ctx.what} came in {mo.m2}.",
+      "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
+      "notes": "First count 10,001 to 60,000; the second is 3,000 to 35,000 more (at most 95,000). Neither is a whole thousand; one rounds up and the other down.",
+      "sources": [
+        "CBSE-C5-CH01-Q378",
+        "CBSE-C5-CH01-Q377"
+      ]
+    },
+    {
+      "code": "C5-WT1-S11-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S11",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Estimation of a school-based large count",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "c",
+          "choice": [
+            {
+              "s1": "A hall has",
+              "g": "rows",
+              "s2": "seats in each row",
+              "what": "seats"
+            },
+            {
+              "s1": "A school has",
+              "g": "classrooms",
+              "s2": "students in each",
+              "what": "students"
+            },
+            {
+              "s1": "A library has",
+              "g": "shelves",
+              "s2": "books on each",
+              "what": "books"
+            },
+            {
+              "s1": "A train has",
+              "g": "coaches",
+              "s2": "passengers in each",
+              "what": "passengers"
+            }
+          ]
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 21,
+            "max": 89
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 21,
+            "max": 79
+          }
+        },
+        {
+          "name": "ra",
+          "expr": "round_half_up(a, 10)"
+        },
+        {
+          "name": "rb",
+          "expr": "round_half_up(b, 10)"
+        }
+      ],
+      "require": [
+        "a % 10 != 0",
+        "a % 10 != 5",
+        "b % 10 != 0",
+        "b % 10 != 5"
+      ],
+      "text": "{c.s1} {a} {c.g} with about {b} {c.s2}. Round both numbers to the nearest 10 and estimate the total number of {c.what}.",
+      "answer": "ra * rb",
+      "hint": "Round {a} and {b} to the nearest 10 first, then multiply.",
+      "explanation": "{a} is about {ra} and {b} is about {rb}, so the estimate is {ra} × {rb} = {ra * rb:num} {c.what}.",
+      "misconception": "Treats an estimate as an exact answer or chooses units that are not plausible.",
+      "notes": "Two numbers from 21 to 89 and 21 to 79, neither ending in 0 or 5 (so the rounding is never a tie and is always needed). Answer: the product of the rounded numbers (400 to 7,200). Four contexts: hall seats, school students, library books, train passengers.",
+      "sources": [
+        "CBSE-C5-CH01-Q107",
+        "CBSE-C5-CH01-Q389",
+        "CBSE-C5-CH01-Q106",
+        "CBSE-C5-CH01-Q386"
+      ]
+    },
+    {
+      "code": "C5-WT1-S11-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S11",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Choice or short text",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "h",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "off",
+          "int": {
+            "min": -4,
+            "max": 4
+          }
+        },
+        {
+          "name": "t",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "off2",
+          "int": {
+            "min": -2,
+            "max": 2
+          }
+        },
+        {
+          "name": "a",
+          "expr": "h * 100 + off"
+        },
+        {
+          "name": "b",
+          "expr": "t * 10 + off2"
+        },
+        {
+          "name": "est",
+          "expr": "h * 100 * t * 10"
+        }
+      ],
+      "require": [
+        "off != 0",
+        "off2 != 0",
+        "h * 100 + t * 10 != est // 10"
+      ],
+      "text": "Which is the best quick estimate for {a} × {b}?",
+      "options": {
+        "correct": "est",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "est // 10",
+            "mistake": "loses a zero when multiplying the rounded numbers"
+          },
+          {
+            "expr": "est * 10",
+            "mistake": "writes one zero too many when multiplying the rounded numbers"
+          },
+          {
+            "expr": "h * 100 + t * 10",
+            "mistake": "adds the rounded numbers instead of multiplying them"
+          }
+        ]
+      },
+      "hint": "Round {a} to the nearest 100 and {b} to the nearest 10.",
+      "explanation": "{a} is about {h * 100} and {b} is about {t * 10}, so a quick estimate is {h * 100} × {t * 10} = {est:num}.",
+      "misconception": "Treats an estimate as an exact answer or chooses units that are not plausible.",
+      "notes": "First number within 4 of a hundred from 200 to 900 (never the hundred itself); second within 2 of a ten from 20 to 90 (never the ten itself). Right answer: the product of the rounded numbers (4,000 to 81,000). Wrong options: one zero fewer, one zero more, the rounded numbers added.",
+      "sources": [
+        "CBSE-C5-CH01-Q104",
+        "CBSE-C5-CH01-Q383",
+        "CBSE-C5-CH01-Q388",
+        "CBSE-C5-CH01-Q397"
+      ]
+    },
+    {
+      "code": "C5-WT1-S11-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S11",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "op",
+          "choice": [
+            {
+              "word": "sum",
+              "sign": "+",
+              "k": 1
+            },
+            {
+              "word": "difference",
+              "sign": "−",
+              "k": -1
+            }
+          ]
+        },
+        {
+          "name": "x",
+          "int": {
+            "min": 20000,
+            "max": 89999
+          }
+        },
+        {
+          "name": "y",
+          "int": {
+            "min": 10000,
+            "max": "min(x - 3000, 99999 - x) if op.k == 1 else x - 3000"
+          }
+        },
+        {
+          "name": "rx",
+          "expr": "round_half_up(x, 1000)"
+        },
+        {
+          "name": "ry",
+          "expr": "round_half_up(y, 1000)"
+        },
+        {
+          "name": "ans",
+          "expr": "rx + op.k * ry"
+        }
+      ],
+      "require": [
+        "x % 1000 != 0",
+        "y % 1000 != 0",
+        "x % 1000 != 500",
+        "y % 1000 != 500"
+      ],
+      "text": "Estimate the {op.word} {x:num} {op.sign} {y:num} by rounding both numbers to the nearest 1,000.",
+      "answer": "ans",
+      "hint": "Look at the hundreds digit of each number to round it to the nearest 1,000.",
+      "explanation": "{x:num} rounds to {rx:num} and {y:num} rounds to {ry:num}. So the estimate is {rx:num} {op.sign} {ry:num} = {ans:num}.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Rounds both numbers to the nearest 1,000: {x:num} to {rx:num} and {y:num} to {ry:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Works out {rx:num} {op.sign} {ry:num} = {ans:num}."
+        }
+      ],
+      "misconception": "Treats an estimate as an exact answer or chooses units that are not plausible.",
+      "notes": "A sum or a difference of two 5-digit numbers. First number 20,000 to 89,999; second 10,000 up to 3,000 less than the first, and for a sum small enough that the two add to at most 99,999. Neither number is a whole thousand or ends in exactly 500 (no ties). Answer: the rounded sum or difference.",
+      "sources": [
+        "CBSE-C5-CH01-Q401",
+        "CBSE-C5-CH01-Q393"
+      ]
     },
     {
       "code": "C5-WT1-S12-P1",
@@ -98,22 +3359,282 @@
       "unit": "km",
       "unitRule": "STATED",
       "values": [
-        {"name": "who", "list": "names"},
-        {"name": "mode", "choice": [
-          {"verb": "walks", "lo": 3, "hi": 6},
-          {"verb": "cycles", "lo": 8, "hi": 20},
-          {"verb": "travels by bus", "lo": 30, "hi": 60}
-        ]},
-        {"name": "speed", "int": {"min": "mode.lo", "max": "mode.hi"}},
-        {"name": "hours", "int": {"min": 2, "max": 6}}
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "mode",
+          "choice": [
+            {
+              "verb": "walks",
+              "lo": 3,
+              "hi": 6
+            },
+            {
+              "verb": "cycles",
+              "lo": 8,
+              "hi": 20
+            },
+            {
+              "verb": "travels by bus",
+              "lo": 30,
+              "hi": 60
+            }
+          ]
+        },
+        {
+          "name": "speed",
+          "int": {
+            "min": "mode.lo",
+            "max": "mode.hi"
+          }
+        },
+        {
+          "name": "hours",
+          "int": {
+            "min": 2,
+            "max": 6
+          }
+        }
       ],
       "text": "{who.name} {mode.verb} at {speed} km each hour. How far does {who.he} go in {hours} hours at the same speed?",
       "answer": "speed * hours",
       "hint": "The same distance is covered in every hour.",
       "explanation": "{speed} km each hour for {hours} hours is {speed} × {hours} = {speed * hours} km.",
-      "misconception": "Adds the rate and the time instead of multiplying them.",
+      "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
       "notes": "Walking 3 to 6 km an hour, cycling 8 to 20, a bus 30 to 60; 2 to 6 hours. The answer is in km, stated in the question.",
-      "sources": ["CBSE-C5-CH01-Q111", "CBSE-C5-CH01-Q422"]
+      "sources": [
+        "CBSE-C5-CH01-Q111",
+        "CBSE-C5-CH01-Q422"
+      ]
+    },
+    {
+      "code": "C5-WT1-S12-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S12",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer; unit stated in question",
+      "unit": "km",
+      "unitRule": "STATED",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "v",
+          "choice": [
+            {
+              "one": "train",
+              "lo": 40,
+              "hi": 90
+            },
+            {
+              "one": "bus",
+              "lo": 30,
+              "hi": 60
+            },
+            {
+              "one": "ferry",
+              "lo": 12,
+              "hi": 30
+            },
+            {
+              "one": "truck",
+              "lo": 30,
+              "hi": 55
+            }
+          ]
+        },
+        {
+          "name": "speed",
+          "int": {
+            "min": "v.lo",
+            "max": "v.hi"
+          }
+        },
+        {
+          "name": "hours",
+          "int": {
+            "min": 2,
+            "max": 8
+          }
+        },
+        {
+          "name": "total",
+          "expr": "speed * hours"
+        }
+      ],
+      "text": "A {v.one} covers {total} km in {hours} hours, going the same distance each hour. How many kilometres does it cover each hour?",
+      "answer": "speed",
+      "hint": "Share the total distance equally among the {hours} hours.",
+      "explanation": "{total} ÷ {hours} = {speed}, so the {v.one} covers {speed} km each hour.",
+      "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
+      "notes": "A train 40 to 90 km each hour, a bus 30 to 60, a ferry 12 to 30, a truck 30 to 55; 2 to 8 hours. The total is the speed times the hours, so the answer is always a whole number of km, stated in the question.",
+      "sources": [
+        "CBSE-C5-CH01-Q113",
+        "CBSE-C5-CH01-Q406",
+        "CBSE-C5-CH01-Q412",
+        "CBSE-C5-CH01-Q421"
+      ]
+    },
+    {
+      "code": "C5-WT1-S12-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S12",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Choice or short text",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "v",
+          "choice": [
+            {
+              "one": "train",
+              "lo": 50,
+              "hi": 90
+            },
+            {
+              "one": "bus",
+              "lo": 30,
+              "hi": 60
+            },
+            {
+              "one": "truck",
+              "lo": 35,
+              "hi": 60
+            }
+          ]
+        },
+        {
+          "name": "s",
+          "int": {
+            "min": "v.lo",
+            "max": "v.hi"
+          }
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 2,
+            "max": 6
+          }
+        }
+      ],
+      "text": "A {v.one} covers {s} km in the first hour and the same distance in each of the next {n} hours. How many kilometres does it travel in all?",
+      "options": {
+        "correct": "s * (n + 1)",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "s * n",
+            "mistake": "leaves out the first hour and multiplies by the next hours only"
+          },
+          {
+            "expr": "s + n + 1",
+            "mistake": "adds the distance and the number of hours instead of multiplying"
+          },
+          {
+            "expr": "s * (n + 2)",
+            "mistake": "counts the first hour twice"
+          }
+        ]
+      },
+      "hint": "Count all the hours: the first hour and the next {n}.",
+      "explanation": "There are 1 + {n} = {n + 1} hours altogether, so the {v.one} travels {s} × {n + 1} = {s * (n + 1)} km.",
+      "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
+      "notes": "A train 50 to 90 km in an hour, a bus 30 to 60, a truck 35 to 60; 2 to 6 further hours. Right answer: the distance times all the hours. Wrong options: the first hour left out, distance and hours added, the first hour counted twice.",
+      "sources": [
+        "CBSE-C5-CH01-Q415",
+        "CBSE-C5-CH01-Q405",
+        "CBSE-C5-CH01-Q422"
+      ]
+    },
+    {
+      "code": "C5-WT1-S12-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S12",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer; unit stated in question",
+      "unit": "km",
+      "unitRule": "STATED",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "v",
+          "choice": [
+            {
+              "one": "bus",
+              "lo": 35,
+              "hi": 65
+            },
+            {
+              "one": "train",
+              "lo": 50,
+              "hi": 90
+            },
+            {
+              "one": "truck",
+              "lo": 40,
+              "hi": 60
+            }
+          ]
+        },
+        {
+          "name": "s",
+          "int": {
+            "min": "v.lo",
+            "max": "v.hi"
+          }
+        },
+        {
+          "name": "h",
+          "int": {
+            "min": 3,
+            "max": 7
+          }
+        },
+        {
+          "name": "left",
+          "int": {
+            "min": 12,
+            "max": 99
+          }
+        },
+        {
+          "name": "done",
+          "expr": "s * h"
+        }
+      ],
+      "text": "A {v.one} travels {s} km each hour. After {h} hours, it still has {left} km to go. How long is the whole route?",
+      "answer": "done + left",
+      "hint": "First find how far the {v.one} has already gone, then add the part still to go.",
+      "explanation": "In {h} hours the {v.one} goes {s} × {h} = {done} km. The whole route is {done} + {left} = {done + left} km.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Finds the distance already covered: {s} × {h} = {done} km."
+        },
+        {
+          "marks": 1,
+          "text": "Adds the distance still to go: {done} + {left} = {done + left} km."
+        }
+      ],
+      "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
+      "notes": "A bus 35 to 65 km each hour, a train 50 to 90, a truck 40 to 60; 3 to 7 hours; 12 to 99 km still to go. Answer in km, stated in the question.",
+      "sources": [
+        "CBSE-C5-CH01-Q425",
+        "CBSE-C5-CH01-Q120",
+        "CBSE-C5-CH01-Q423",
+        "CBSE-C5-CH01-Q411"
+      ]
     },
     {
       "code": "C5-WT1-S13-P1",
@@ -125,23 +3646,1748 @@
       "competency": "Reasoning and problem solving",
       "responseFormat": "Integer",
       "values": [
-        {"name": "vehicle", "choice": [
-          {"one": "van", "many": "vans", "lo": 8, "hi": 12},
-          {"one": "bus", "many": "buses", "lo": 30, "hi": 45},
-          {"one": "auto-rickshaw", "many": "auto-rickshaws", "lo": 3, "hi": 4}
-        ]},
-        {"name": "cap", "int": {"min": "vehicle.lo", "max": "vehicle.hi"}},
-        {"name": "full", "int": {"min": 2, "max": 6}},
-        {"name": "extra", "int": {"min": 1, "max": "cap - 1"}},
-        {"name": "children", "expr": "cap * full + extra"}
+        {
+          "name": "vehicle",
+          "choice": [
+            {
+              "one": "van",
+              "many": "vans",
+              "lo": 8,
+              "hi": 12
+            },
+            {
+              "one": "bus",
+              "many": "buses",
+              "lo": 30,
+              "hi": 45
+            },
+            {
+              "one": "auto-rickshaw",
+              "many": "auto-rickshaws",
+              "lo": 3,
+              "hi": 4
+            }
+          ]
+        },
+        {
+          "name": "cap",
+          "int": {
+            "min": "vehicle.lo",
+            "max": "vehicle.hi"
+          }
+        },
+        {
+          "name": "full",
+          "int": {
+            "min": 2,
+            "max": 6
+          }
+        },
+        {
+          "name": "extra",
+          "int": {
+            "min": 1,
+            "max": "cap - 1"
+          }
+        },
+        {
+          "name": "children",
+          "expr": "cap * full + extra"
+        }
       ],
       "text": "{children} children are going on a school trip. Each {vehicle.one} can carry {cap} children. How many {vehicle.many} are needed so that every child goes?",
       "answer": "ceil_div(children, cap)",
       "hint": "What happens to the children left over after the full {vehicle.many}?",
       "explanation": "{full} full {vehicle.many} carry {cap * full} children; the {extra} left over need one more, so {full + 1} {vehicle.many}.",
-      "misconception": "Rounds down and leaves out the children left over.",
+      "misconception": "Drops the remainder even when every person or object must be accommodated.",
       "notes": "A van carries 8 to 12, a bus 30 to 45, an auto-rickshaw 3 or 4; 2 to 6 full vehicles plus one part-full (never an exact fit).",
-      "sources": ["CBSE-C5-CH01-Q499"]
+      "sources": [
+        "CBSE-C5-CH01-Q499"
+      ]
+    },
+    {
+      "code": "C5-WT1-S13-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S13",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "v",
+          "choice": [
+            {
+              "one": "bus",
+              "many": "buses",
+              "lo": 30,
+              "hi": 52
+            },
+            {
+              "one": "van",
+              "many": "vans",
+              "lo": 8,
+              "hi": 14
+            },
+            {
+              "one": "coach",
+              "many": "coaches",
+              "lo": 40,
+              "hi": 56
+            },
+            {
+              "one": "boat",
+              "many": "boats",
+              "lo": 6,
+              "hi": 20
+            }
+          ]
+        },
+        {
+          "name": "c",
+          "int": {
+            "min": "v.lo",
+            "max": "v.hi"
+          }
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 5,
+            "max": 15
+          }
+        }
+      ],
+      "text": "A school hires {n} {v.many} for a trip. Each {v.one} has {c} seats. How many seats are there altogether?",
+      "answer": "n * c",
+      "hint": "Multiply the number of {v.many} by the seats in each {v.one}.",
+      "explanation": "{n} {v.many} with {c} seats each have {n} × {c} = {n * c:num} seats.",
+      "misconception": "Drops the remainder even when every person or object must be accommodated.",
+      "notes": "5 to 15 vehicles: a bus with 30 to 52 seats, a van 8 to 14, a coach 40 to 56, a boat 6 to 20. Answer: vehicles times seats (30 to 840).",
+      "sources": [
+        "CBSE-C5-CH01-Q126",
+        "CBSE-C5-CH01-Q433",
+        "CBSE-C5-CH01-Q434"
+      ]
+    },
+    {
+      "code": "C5-WT1-S13-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S13",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Application in context",
+      "responseFormat": "Choice or short text",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "v",
+          "choice": [
+            {
+              "one": "van",
+              "many": "vans",
+              "lo": 8,
+              "hi": 12
+            },
+            {
+              "one": "bus",
+              "many": "buses",
+              "lo": 30,
+              "hi": 45
+            },
+            {
+              "one": "boat",
+              "many": "boats",
+              "lo": 10,
+              "hi": 20
+            },
+            {
+              "one": "minibus",
+              "many": "minibuses",
+              "lo": 15,
+              "hi": 25
+            }
+          ]
+        },
+        {
+          "name": "cap",
+          "int": {
+            "min": "v.lo",
+            "max": "v.hi"
+          }
+        },
+        {
+          "name": "q",
+          "int": {
+            "min": 3,
+            "max": 9
+          }
+        },
+        {
+          "name": "rem",
+          "int": {
+            "min": 1,
+            "max": "cap - 1"
+          }
+        },
+        {
+          "name": "p",
+          "expr": "cap * q + rem"
+        }
+      ],
+      "require": [
+        "cap - rem != rem",
+        "cap - rem != q",
+        "cap - rem != q + 1",
+        "rem != q",
+        "rem != q + 1"
+      ],
+      "text": "{p} students go on a trip in {v.many} that each seat {cap}. The {v.many} are filled one by one. How many seats are empty in the last {v.one}?",
+      "options": {
+        "correct": "cap - rem",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "rem",
+            "mistake": "gives the number of students in the last vehicle instead of the empty seats"
+          },
+          {
+            "expr": "q",
+            "mistake": "gives the number of full vehicles"
+          },
+          {
+            "expr": "q + 1",
+            "mistake": "gives the number of vehicles needed"
+          }
+        ]
+      },
+      "hint": "Find how many students are left over after the full {v.many}.",
+      "explanation": "{p} ÷ {cap} = {q} remainder {rem}. The last {v.one} has {rem} {'student' if rem == 1 else 'students'}, so {cap} − {rem} = {cap - rem} seats are empty.",
+      "misconception": "Drops the remainder even when every person or object must be accommodated.",
+      "notes": "A van seats 8 to 12, a bus 30 to 45, a boat 10 to 20, a minibus 15 to 25; 3 to 9 full vehicles plus one part-full (never an exact fit). Right answer: the seats left in the part-full vehicle. Wrong options come from the same division: the remainder, the full vehicles, the vehicles needed; all four always differ.",
+      "sources": [
+        "CBSE-C5-CH01-Q447",
+        "CBSE-C5-CH01-Q124",
+        "CBSE-C5-CH01-Q438"
+      ]
+    },
+    {
+      "code": "C5-WT1-S13-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S13",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "v",
+          "choice": [
+            {
+              "one": "bus",
+              "many": "buses",
+              "lo": 35,
+              "hi": 50
+            },
+            {
+              "one": "coach",
+              "many": "coaches",
+              "lo": 40,
+              "hi": 56
+            },
+            {
+              "one": "minibus",
+              "many": "minibuses",
+              "lo": 20,
+              "hi": 30
+            }
+          ]
+        },
+        {
+          "name": "cap",
+          "int": {
+            "min": "v.lo",
+            "max": "v.hi"
+          }
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 120,
+            "max": 360
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 12,
+            "max": 48
+          }
+        },
+        {
+          "name": "t",
+          "expr": "a + b"
+        },
+        {
+          "name": "need",
+          "expr": "ceil_div(t, cap)"
+        }
+      ],
+      "require": [
+        "t % cap != 0"
+      ],
+      "text": "A camp has {a} children and {b} adults. Each {v.one} seats {cap} people. How many {v.many} are needed to take everyone?",
+      "answer": "need",
+      "hint": "Add the children and adults first, then think about the people left over.",
+      "explanation": "{a} + {b} = {t} people. {need - 1} {v.many} seat {(need - 1) * cap} people, leaving {t % cap}, so {need} {v.many} are needed.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Adds the two groups: {a} + {b} = {t} people."
+        },
+        {
+          "marks": 1,
+          "text": "Divides by {cap} ({need - 1} remainder {t % cap}) and adds one more for the {t % cap} left over: {need} {v.many}."
+        }
+      ],
+      "misconception": "Drops the remainder even when every person or object must be accommodated.",
+      "notes": "120 to 360 children and 12 to 48 adults. A bus seats 35 to 50, a coach 40 to 56, a minibus 20 to 30. The total never fills the vehicles exactly, so the answer is always one more than the full vehicles (3 to 21).",
+      "sources": [
+        "CBSE-C5-CH01-Q130",
+        "CBSE-C5-CH01-Q441",
+        "CBSE-C5-CH01-Q446",
+        "CBSE-C5-CH01-Q499"
+      ]
+    },
+    {
+      "code": "C5-WT1-S14-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S14",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "n",
+          "int": {
+            "min": 2000,
+            "max": 9999
+          }
+        },
+        {
+          "name": "th",
+          "expr": "digit(n, 1000)"
+        },
+        {
+          "name": "hu",
+          "expr": "digit(n, 100)"
+        },
+        {
+          "name": "te",
+          "expr": "digit(n, 10)"
+        },
+        {
+          "name": "on",
+          "expr": "digit(n, 1)"
+        },
+        {
+          "name": "t",
+          "int": {
+            "min": 1,
+            "max": "th - 1"
+          }
+        },
+        {
+          "name": "ans",
+          "expr": "(th - t) * 10 + hu"
+        }
+      ],
+      "require": [
+        "te != 0",
+        "on != 0"
+      ],
+      "text": "Complete: {n:num} = {t} {'thousand' if t == 1 else 'thousands'} + ___ hundreds + {te} {'ten' if te == 1 else 'tens'} + {on} {'one' if on == 1 else 'ones'}.",
+      "answer": "ans",
+      "hint": "Take away {t * 1000:num}, {te * 10} and {on} from {n:num}, then count what is left in hundreds.",
+      "explanation": "{n:num} − {t * 1000:num} − {te * 10} − {on} = {ans * 100:num}, which is {ans} hundreds.",
+      "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
+      "notes": "A 4-digit number 2,000 to 9,999 with no 0 in the tens or ones place. The thousands given are fewer than its thousands digit, so the missing hundreds are always 10 or more (never just the hundreds digit).",
+      "sources": [
+        "CBSE-C5-CH01-Q135",
+        "CBSE-C5-CH01-Q457",
+        "CBSE-C5-CH01-Q467"
+      ]
+    },
+    {
+      "code": "C5-WT1-S14-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S14",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 1,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Choice or short text",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "pl",
+          "choice": [
+            {
+              "word": "hundreds",
+              "one": "hundred",
+              "v": 100,
+              "lo": 1000
+            },
+            {
+              "word": "thousands",
+              "one": "thousand",
+              "v": 1000,
+              "lo": 10000
+            }
+          ]
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": "pl.lo",
+            "max": 99999
+          }
+        },
+        {
+          "name": "d",
+          "expr": "digit(n, pl.v)"
+        },
+        {
+          "name": "right",
+          "expr": "n // pl.v"
+        },
+        {
+          "name": "up",
+          "expr": "n // (pl.v * 10)"
+        },
+        {
+          "name": "down",
+          "expr": "n // (pl.v // 10)"
+        }
+      ],
+      "require": [
+        "d != 0",
+        "d != right",
+        "d != up",
+        "up != right"
+      ],
+      "text": "{who.name} says {n:num} has {d} complete {pl.one if d == 1 else pl.word}, because its {pl.word} digit is {d}. How many complete {pl.word} are there in {n:num}?",
+      "options": {
+        "correct": "right",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "d",
+            "mistake": "gives the digit in that place instead of the complete groups in the whole number"
+          },
+          {
+            "expr": "up",
+            "mistake": "counts the complete groups of the next place up"
+          },
+          {
+            "expr": "down",
+            "mistake": "counts the complete groups of the next place down"
+          }
+        ]
+      },
+      "hint": "Only complete groups count, and the larger places can be regrouped into {pl.word} too.",
+      "explanation": "{n:num} = {right:num} × {pl.v:num} + {n % pl.v}, so there are {right:num} complete {pl.word}, not {d}.",
+      "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
+      "notes": "Complete hundreds in a number from 1,000 to 99,999, or complete thousands in one from 10,000 to 99,999. Right answer: the number divided by 100 or 1,000, remainder dropped. The place digit is never 0. Wrong options: the place digit (the skill's misconception), the groups of the next place up and down; all four always differ.",
+      "sources": [
+        "CBSE-C5-CH01-Q139",
+        "CBSE-C5-CH01-Q466",
+        "CBSE-C5-CH01-Q463"
+      ]
+    },
+    {
+      "code": "C5-WT1-S14-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S14",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Quotient and remainder separated by a semicolon",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "note",
+          "choice": [
+            200,
+            500
+          ]
+        },
+        {
+          "name": "amt",
+          "int": {
+            "min": 5000,
+            "max": 99999
+          }
+        },
+        {
+          "name": "q",
+          "expr": "amt // note"
+        },
+        {
+          "name": "r",
+          "expr": "amt % note"
+        }
+      ],
+      "require": [
+        "r != 0"
+      ],
+      "text": "{who.name} wants to change {amt:money} into {note:money} notes. How many complete notes can {who.he} get, and how many rupees are left over? Enter notes;rupees left.",
+      "answer": [
+        "q",
+        "r"
+      ],
+      "hint": "Find the greatest multiple of {note} that is not more than {amt:num}.",
+      "explanation": "{q:num} × {note} = {q * note:num}, and one more note would need {(q + 1) * note:num}. So {who.he} gets {q:num} notes and {amt:money} − {q * note:money} = {r:money} is left.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Finds the complete notes: {q:num} × {note} = {q * note:num}, and {q + 1} notes would need {(q + 1) * note:num}, which is too much. So {q:num} notes."
+        },
+        {
+          "marks": 1,
+          "text": "Finds what is left: {amt:num} − {q * note:num} = {r} rupees."
+        }
+      ],
+      "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
+      "notes": "An amount from ₹5,000 to ₹99,999 changed into ₹200 or ₹500 notes, never an exact number of notes. Two boxes: the complete notes (10 to 499) and the rupees left (1 to 499).",
+      "sources": [
+        "CBSE-C5-CH01-Q140",
+        "CBSE-C5-CH01-Q470",
+        "CBSE-C5-CH01-Q137",
+        "CBSE-C5-CH01-Q459"
+      ]
+    },
+    {
+      "code": "C5-WT1-S15-P2",
+      "chapter": 1,
+      "skill": "C5-WT1-S15",
+      "questionType": "Numeric Entry",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Conceptual understanding and fluency",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "sh",
+          "choice": [
+            {
+              "name": "triangular",
+              "sides": 3
+            },
+            {
+              "name": "square",
+              "sides": 4
+            },
+            {
+              "name": "pentagonal",
+              "sides": 5
+            },
+            {
+              "name": "hexagonal",
+              "sides": 6
+            }
+          ]
+        },
+        {
+          "name": "obj",
+          "choice": [
+            "lamps",
+            "flags",
+            "counters",
+            "bulbs",
+            "diyas"
+          ]
+        },
+        {
+          "name": "k",
+          "int": {
+            "min": 3,
+            "max": 12
+          }
+        }
+      ],
+      "text": "A {sh.name} border has {k} {obj} on each side, including one at every corner. How many {obj} are there in all?",
+      "answer": "sh.sides * (k - 1)",
+      "hint": "Each corner one is counted on two sides.",
+      "explanation": "Adding the sides gives {sh.sides} × {k} = {sh.sides * k}, but the {sh.sides} corner {obj} were counted twice. So there are {sh.sides * k} − {sh.sides} = {sh.sides * (k - 1)} {obj}.",
+      "misconception": "Counts a shared object more than once or tests cases without preserving the puzzle rule.",
+      "notes": "A triangle, square, pentagon or hexagon with 3 to 12 objects on each side, corners included. Answer: sides × (objects on a side − 1).",
+      "sources": [
+        "CBSE-C5-CH01-Q142",
+        "CBSE-C5-CH01-Q150",
+        "CBSE-C5-CH01-Q492",
+        "CBSE-C5-CH01-Q493"
+      ]
+    },
+    {
+      "code": "C5-WT1-S15-P3",
+      "chapter": 1,
+      "skill": "C5-WT1-S15",
+      "questionType": "Single Select",
+      "marks": 1,
+      "difficulty": 2,
+      "competency": "Pattern investigation",
+      "responseFormat": "Choice or short text",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "a",
+          "int": {
+            "min": 2,
+            "max": 9
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 1,
+            "max": "a - 1"
+          }
+        },
+        {
+          "name": "big",
+          "expr": "10 * a + b"
+        },
+        {
+          "name": "small",
+          "expr": "10 * b + a"
+        }
+      ],
+      "text": "Make a two-digit number with the digits {a} and {b}, then swap its digits to make a second number. Subtract the smaller number from the larger. What is the difference?",
+      "options": {
+        "correct": "big - small",
+        "format": "num",
+        "wrong": [
+          {
+            "expr": "11 * (a - b)",
+            "mistake": "takes the smaller digit from the larger in each column instead of regrouping"
+          },
+          {
+            "expr": "big + small",
+            "mistake": "adds the two numbers instead of subtracting"
+          },
+          {
+            "expr": "a - b",
+            "mistake": "subtracts the two digits instead of the two numbers"
+          }
+        ]
+      },
+      "hint": "The two numbers are {big} and {small}.",
+      "explanation": "The numbers are {big} and {small}, and {big} − {small} = {big - small}.",
+      "misconception": "Counts a shared object more than once or tests cases without preserving the puzzle rule.",
+      "notes": "Two different digits from 1 to 9 (no 0, so both numbers are two-digit). Right answer: 9 × the difference of the digits. Wrong options: column-by-column subtraction without regrouping, the sum of the numbers, the difference of the digits.",
+      "sources": [
+        "CBSE-C5-CH01-Q146",
+        "CBSE-C5-CH01-Q147",
+        "CBSE-C5-CH01-Q476",
+        "CBSE-C5-CH01-Q485"
+      ]
+    },
+    {
+      "code": "C5-WT1-S15-P4",
+      "chapter": 1,
+      "skill": "C5-WT1-S15",
+      "questionType": "Numeric Entry",
+      "marks": 2,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Integer",
+      "maxWords": 40,
+      "values": [
+        {
+          "name": "obj",
+          "choice": [
+            "lamps",
+            "flags",
+            "counters",
+            "bulbs",
+            "diyas",
+            "flowerpots"
+          ]
+        },
+        {
+          "name": "l",
+          "int": {
+            "min": 5,
+            "max": 15
+          }
+        },
+        {
+          "name": "s",
+          "int": {
+            "min": 3,
+            "max": "l - 1"
+          }
+        },
+        {
+          "name": "sides",
+          "expr": "2 * l + 2 * s"
+        }
+      ],
+      "text": "A rectangular border has {l} {obj} on each long side and {s} on each short side, counting the {obj} at all four corners. How many {obj} are there in all?",
+      "answer": "sides - 4",
+      "hint": "Add all four sides, then think about the corners.",
+      "explanation": "The four sides add up to {l} + {l} + {s} + {s} = {sides}. Each of the 4 corner {obj} was counted on two sides, so there are {sides} − 4 = {sides - 4} {obj}.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Adds the four sides: {l} + {l} + {s} + {s} = {sides}."
+        },
+        {
+          "marks": 1,
+          "text": "Takes away the 4 corner {obj} counted twice: {sides} − 4 = {sides - 4}."
+        }
+      ],
+      "misconception": "Counts a shared object more than once or tests cases without preserving the puzzle rule.",
+      "notes": "Long sides 5 to 15 objects, short sides 3 up to one fewer than the long side, corners included. Answer: twice each side added, minus 4.",
+      "sources": [
+        "CBSE-C5-CH01-Q480",
+        "CBSE-C5-CH01-Q487",
+        "CBSE-C5-CH01-Q489"
+      ]
+    },
+    {
+      "code": "C5-WT1-L3-1",
+      "chapter": 1,
+      "skill": "C5-WT1-S13",
+      "questionType": "Constructed Response",
+      "marks": 3,
+      "difficulty": 3,
+      "competency": "Application in context",
+      "responseFormat": "Written working",
+      "values": [
+        {
+          "name": "place",
+          "choice": [
+            "Science City in Kolkata",
+            "the Rail Museum in Delhi",
+            "Mysuru Zoo",
+            "the Planetarium in Chennai",
+            "the Salar Jung Museum in Hyderabad"
+          ]
+        },
+        {
+          "name": "students",
+          "int": {
+            "min": 150,
+            "max": 380
+          }
+        },
+        {
+          "name": "teachers",
+          "int": {
+            "min": 8,
+            "max": 20
+          }
+        },
+        {
+          "name": "cap",
+          "choice": [
+            40,
+            45,
+            48,
+            50,
+            52
+          ]
+        },
+        {
+          "name": "total",
+          "expr": "students + teachers"
+        },
+        {
+          "name": "q",
+          "expr": "total // cap"
+        },
+        {
+          "name": "r",
+          "expr": "total % cap"
+        },
+        {
+          "name": "buses",
+          "expr": "ceil_div(total, cap)"
+        },
+        {
+          "name": "empty",
+          "expr": "buses * cap - total"
+        }
+      ],
+      "require": [
+        "r != 0"
+      ],
+      "text": "A school is taking {students} students and {teachers} teachers on a trip to {place}. Each bus can seat {cap} people. How many buses are needed so that everyone goes? How many seats will be empty? Show your working.",
+      "answer": "Total people = {students} + {teachers} = {total}. {total} ÷ {cap} = {q} remainder {r}. {q} buses seat {q * cap} people, so {r} people are left over and need one more bus. Buses needed = {buses}. Seats in {buses} buses = {buses} × {cap} = {buses * cap}, so empty seats = {buses * cap} − {total} = {empty}.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Adds students and teachers: {students} + {teachers} = {total} people."
+        },
+        {
+          "marks": 1,
+          "text": "Divides {total} by {cap} to get {q} remainder {r} (or shows that {q} buses seat {q * cap} and {r} people are left). Accept repeated addition or multiplication by trial."
+        },
+        {
+          "marks": 1,
+          "text": "Concludes {buses} buses (one more for the {r} people left over) and {empty} empty seats. Both are needed for the mark; {q} buses gets no mark. Follow through from a wrong total if the method is right."
+        }
+      ],
+      "hint": "Find the total number of people first. What happens to the people left over after the full buses?",
+      "explanation": "{students} + {teachers} = {total} people. {total} ÷ {cap} = {q} remainder {r}, so {q} full buses leave {r} people, who need one more bus: {buses} buses. They have {buses * cap} seats, so {buses * cap} − {total} = {empty} seats are empty.",
+      "misconception": "Drops the remainder even when every person or object must be accommodated.",
+      "notes": "150 to 380 students and 8 to 20 teachers; a bus seats 40, 45, 48, 50 or 52. The people never fill the buses exactly, so there is always a part-full bus.",
+      "sources": [
+        "CBSE-C5-CH01-Q128",
+        "CBSE-C5-CH01-Q499",
+        "CBSE-C5-CH01-Q441",
+        "CBSE-C5-CH01-Q447"
+      ]
+    },
+    {
+      "code": "C5-WT1-L3-2",
+      "chapter": 1,
+      "skill": "C5-WT1-S10",
+      "questionType": "Constructed Response",
+      "marks": 3,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Written working",
+      "values": [
+        {
+          "name": "event",
+          "choice": [
+            "visited the book fair in Kolkata",
+            "watched the kabaddi final at the stadium",
+            "visited the Surajkund Mela on Sunday",
+            "took part in the city marathon",
+            "visited the flower show in Bengaluru"
+          ]
+        },
+        {
+          "name": "r",
+          "int": {
+            "min": 12000,
+            "max": 98000,
+            "step": 1000
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "r - 500"
+        },
+        {
+          "name": "hi",
+          "expr": "r + 499"
+        }
+      ],
+      "text": "A newspaper says that {r:num} people {event}. The number was rounded to the nearest 1,000. What is the smallest number of people who could have come? What is the greatest? How many different exact numbers are possible? Explain.",
+      "answer": "Numbers from {lo:num} to {hi:num} round to {r:num}. Smallest: {lo:num}, because it is exactly halfway between {r - 1000:num} and {r:num} and a halfway number rounds up. Greatest: {hi:num}, because {r + 500:num} would round up to {r + 1000:num}. Number of possible counts = {hi:num} − {lo:num} + 1 = 1,000.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Uses the halfway points: {lo:num} (halfway, so it rounds up to {r:num}) and {r + 500:num} (rounds up to {r + 1000:num}). Accept a number line or a clear statement that 500 below and up to 499 above round to {r:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Smallest {lo:num} and greatest {hi:num}, both right. No mark for {lo - 1:num} or {r + 500:num}."
+        },
+        {
+          "marks": 1,
+          "text": "Concludes that 1,000 different numbers are possible (from {hi:num} − {lo:num} + 1). Follow through from the student's own smallest and greatest if the counting is right."
+        }
+      ],
+      "hint": "Which numbers are halfway between {r - 1000:num} and {r:num}, and between {r:num} and {r + 1000:num}? Which way does a halfway number round?",
+      "explanation": "A number rounds to {r:num} if it is at least {lo:num} (halfway rounds up) and less than {r + 500:num}. So the smallest is {lo:num}, the greatest is {hi:num}, and there are {hi:num} − {lo:num} + 1 = 1,000 possible numbers.",
+      "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
+      "notes": "The rounded number is a thousand from 12,000 to 98,000; the answers are 500 below it and 499 above it, and always 1,000 possible numbers.",
+      "sources": [
+        "CBSE-C5-CH01-Q100",
+        "CBSE-C5-CH01-Q371",
+        "CBSE-C5-CH01-Q372",
+        "CBSE-C5-CH01-Q380"
+      ]
+    },
+    {
+      "code": "C5-WT1-L3-3",
+      "chapter": 1,
+      "skill": "C5-WT1-S06",
+      "questionType": "Constructed Response",
+      "marks": 3,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "responseFormat": "Written working",
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "d1",
+          "int": {
+            "min": 1,
+            "max": 6
+          }
+        },
+        {
+          "name": "d2",
+          "int": {
+            "min": "d1 + 1",
+            "max": 7
+          }
+        },
+        {
+          "name": "d3",
+          "int": {
+            "min": "d2 + 1",
+            "max": 8
+          }
+        },
+        {
+          "name": "d4",
+          "int": {
+            "min": "d3 + 1",
+            "max": 9
+          }
+        },
+        {
+          "name": "order",
+          "int": {
+            "min": 1,
+            "max": 3
+          }
+        },
+        {
+          "name": "big",
+          "expr": "d4 * 10000 + d3 * 1000 + d2 * 100 + d1 * 10"
+        },
+        {
+          "name": "small",
+          "expr": "d1 * 10000 + d2 * 100 + d3 * 10 + d4"
+        }
+      ],
+      "text": "{who.name} has five number cards: {d3 if order == 1 else d2}, 0, {d1 if order == 1 else d4}, {d4 if order == 1 else (d3 if order == 2 else d1)}, {d2 if order == 1 else (d1 if order == 2 else d3)}. Using each card once, {who.he} makes the greatest and the smallest 5-digit numbers. Write both numbers and find their difference. Show your working.",
+      "answer": "Greatest number: {big:num} (biggest digits in the highest places, 0 in the ones place). Smallest 5-digit number: {small:num} (0 cannot go first, so the smallest non-zero digit {d1} goes first and 0 goes next). Difference = {big:num} − {small:num} = {big - small:num}.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Greatest number {big:num}, with the digits in order from biggest to smallest."
+        },
+        {
+          "marks": 1,
+          "text": "Smallest 5-digit number {small:num}, with {d1} first and 0 in the thousands place. No mark for a number starting with 0 (that is not a 5-digit number)."
+        },
+        {
+          "marks": 1,
+          "text": "Difference {big - small:num}, subtracted correctly. Follow through: give this mark if the subtraction is right for the student's own two numbers."
+        }
+      ],
+      "hint": "For the greatest, put the biggest digit in the ten-thousands place. Can a 5-digit number start with 0?",
+      "explanation": "Greatest: {big:num}. The smallest cannot start with 0, so it starts with {d1}, then 0, then {d2}, {d3}, {d4}: {small:num}. Difference: {big:num} − {small:num} = {big - small:num}.",
+      "misconception": "Creates a leading zero or changes more than the allowed digits.",
+      "notes": "Four different digits from 1 to 9 plus a 0, shown in one of three mixed-up orders. The smallest number always has 0 in the thousands place.",
+      "sources": [
+        "CBSE-C5-CH01-Q060",
+        "CBSE-C5-CH01-Q285",
+        "CBSE-C5-CH01-Q286"
+      ]
+    },
+    {
+      "code": "C5-WT1-L5-1",
+      "chapter": 1,
+      "skill": "C5-WT1-S12",
+      "questionType": "Constructed Response",
+      "marks": 5,
+      "difficulty": 4,
+      "competency": "Application in context",
+      "responseFormat": "Written working",
+      "maxWords": 90,
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "dest",
+          "choice": [
+            "grandparents' village",
+            "aunt's house in Nashik",
+            "uncle's farm near Ludhiana",
+            "cousin's wedding in Udaipur",
+            "holiday home in Ooty"
+          ]
+        },
+        {
+          "name": "s1",
+          "int": {
+            "min": 40,
+            "max": 65
+          }
+        },
+        {
+          "name": "h1",
+          "int": {
+            "min": 2,
+            "max": 4
+          }
+        },
+        {
+          "name": "s2",
+          "int": {
+            "min": 30,
+            "max": 60,
+            "step": 5
+          }
+        },
+        {
+          "name": "h2",
+          "int": {
+            "min": 2,
+            "max": 5
+          }
+        },
+        {
+          "name": "m",
+          "expr": "s1 * h1"
+        },
+        {
+          "name": "rest",
+          "expr": "s2 * h2"
+        },
+        {
+          "name": "d",
+          "expr": "m + rest"
+        }
+      ],
+      "require": [
+        "s1 != s2",
+        "h1 != h2"
+      ],
+      "text": "{who.name}'s family drives {d} km to {who.his} {dest}. Before lunch they drive at {s1} km each hour for {h1} hours. After lunch they drive at {s2} km each hour until they reach. (a) How far do they drive before lunch? (b) How far is left after lunch? (c) For how many hours do they drive after lunch? (d) For how many hours do they drive in all? Show your working.",
+      "answer": "(a) Before lunch: {s1} × {h1} = {m} km. (b) Left after lunch: {d} − {m} = {rest} km. (c) Hours after lunch: {rest} ÷ {s2} = {h2} hours. (d) Total time: {h1} + {h2} = {h1 + h2} hours.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "(a) Multiplies: {s1} × {h1} = {m} km. No mark for {s1} + {h1}."
+        },
+        {
+          "marks": 1,
+          "text": "(b) Subtracts from the whole journey: {d} − {m} = {rest} km (follow through from a wrong (a))."
+        },
+        {
+          "marks": 2,
+          "text": "(c) 1 mark for dividing the distance left by {s2} (or adding {s2} km an hour until reaching {rest} km); 1 mark for {h2} hours."
+        },
+        {
+          "marks": 1,
+          "text": "(d) {h1} + {h2} = {h1 + h2} hours, with the unit (hours). Follow through from the student's own (c)."
+        }
+      ],
+      "hint": "The same distance is covered in every hour. Find the distance before lunch first.",
+      "explanation": "Before lunch: {s1} km each hour for {h1} hours is {s1} × {h1} = {m} km. Left: {d} − {m} = {rest} km. At {s2} km each hour that takes {rest} ÷ {s2} = {h2} hours. In all: {h1} + {h2} = {h1 + h2} hours.",
+      "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
+      "notes": "Before lunch 40 to 65 km an hour for 2 to 4 hours; after lunch 30 to 60 km an hour (a multiple of 5) for 2 to 5 hours, so the distance left always divides exactly. The two speeds differ and the two times differ. Journey 110 to 560 km.",
+      "sources": [
+        "CBSE-C5-CH01-Q120",
+        "CBSE-C5-CH01-Q423",
+        "CBSE-C5-CH01-Q425",
+        "CBSE-C5-CH01-Q114"
+      ]
+    },
+    {
+      "code": "C5-WT1-L5-2",
+      "chapter": 1,
+      "skill": "C5-WT1-S14",
+      "questionType": "Constructed Response",
+      "marks": 5,
+      "difficulty": 4,
+      "competency": "Application in context",
+      "responseFormat": "Written working",
+      "maxWords": 90,
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "trip",
+          "choice": [
+            "Lucknow",
+            "Agra",
+            "Shimla",
+            "Puducherry",
+            "Hampi",
+            "Shillong"
+          ]
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 24,
+            "max": 42
+          }
+        },
+        {
+          "name": "p",
+          "int": {
+            "min": 150,
+            "max": 450,
+            "step": 10
+          }
+        },
+        {
+          "name": "t",
+          "expr": "n * p"
+        },
+        {
+          "name": "n500",
+          "expr": "t // 500"
+        },
+        {
+          "name": "r500",
+          "expr": "t % 500"
+        },
+        {
+          "name": "n100",
+          "expr": "r500 // 100"
+        },
+        {
+          "name": "n10",
+          "expr": "r500 % 100 // 10"
+        }
+      ],
+      "require": [
+        "r500 >= 200",
+        "r500 % 100 >= 20",
+        "n500 >= 10"
+      ],
+      "text": "Each of the {n} children in Class 5 pays {p:money} for a school trip to {trip}. Their teacher, {who.name}, takes all the money to the bank and asks for as many ₹500 notes as possible, then as many ₹100 notes as possible, and the rest in ₹10 notes. (a) How much money was collected? (b) How many notes of each kind does {who.he} get? Show your working.",
+      "answer": "(a) Money collected = {n} × {p:money} = {t:money}. (b) {t:num} ÷ 500 = {n500} remainder {r500}, so {n500} notes of ₹500 make {n500 * 500:money} and {r500:money} is left. {r500} ÷ 100 = {n100} remainder {r500 % 100}, so {n100} notes of ₹100. {r500 % 100} ÷ 10 = {n10}, so {n10} notes of ₹10. Check: {n500 * 500:money} + {n100 * 100:money} + {n10 * 10:money} = {t:money}.",
+      "steps": [
+        {
+          "marks": 2,
+          "text": "(a) 1 mark for multiplying {n} × {p}; 1 mark for {t:money}."
+        },
+        {
+          "marks": 1,
+          "text": "{n500} notes of ₹500 with {r500:money} left (from {t:num} ÷ 500). No mark for giving a digit of {t:num} instead of the number of complete ₹500 groups. Follow through from a wrong (a)."
+        },
+        {
+          "marks": 1,
+          "text": "{n100} notes of ₹100 from the {r500:money} left (follow through)."
+        },
+        {
+          "marks": 1,
+          "text": "{n10} notes of ₹10, with all three counts stated as the final answer (follow through)."
+        }
+      ],
+      "hint": "Find the total first. How many complete ₹500 groups are in the whole amount, not just in the thousands?",
+      "explanation": "{n} × {p:money} = {t:money}. {t:num} ÷ 500 = {n500} remainder {r500}, so {n500} notes of ₹500. The {r500:money} left gives {n100} notes of ₹100 and {r500 % 100:money}, which is {n10} notes of ₹10.",
+      "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
+      "notes": "24 to 42 children paying ₹150 to ₹450 (a multiple of ₹10), so ₹3,600 to ₹18,900 in all. At least 10 notes of ₹500, and always at least 2 notes of ₹100 and at least 2 notes of ₹10.",
+      "sources": [
+        "CBSE-C5-CH01-Q138",
+        "CBSE-C5-CH01-Q140",
+        "CBSE-C5-CH01-Q464",
+        "CBSE-C5-CH01-Q426"
+      ]
+    },
+    {
+      "code": "C5-WT1-L5-3",
+      "chapter": 1,
+      "skill": "C5-WT1-S11",
+      "questionType": "Constructed Response",
+      "marks": 5,
+      "difficulty": 4,
+      "competency": "Application in context",
+      "responseFormat": "Written working",
+      "maxWords": 90,
+      "values": [
+        {
+          "name": "train",
+          "choice": [
+            "Rajdhani Express",
+            "Shatabdi Express",
+            "Vande Bharat Express",
+            "Duronto Express",
+            "Garib Rath Express"
+          ]
+        },
+        {
+          "name": "c",
+          "int": {
+            "min": 12,
+            "max": 24
+          }
+        },
+        {
+          "name": "s",
+          "int": {
+            "min": 61,
+            "max": 89
+          }
+        },
+        {
+          "name": "rc",
+          "expr": "round_half_up(c, 10)"
+        },
+        {
+          "name": "rs",
+          "expr": "round_half_up(s, 10)"
+        },
+        {
+          "name": "est",
+          "expr": "rc * rs"
+        },
+        {
+          "name": "ex",
+          "expr": "c * s"
+        },
+        {
+          "name": "gap",
+          "expr": "abs(est - ex)"
+        },
+        {
+          "name": "way",
+          "expr": "'more' if est > ex else 'less'"
+        }
+      ],
+      "require": [
+        "c % 10 != 0",
+        "c % 10 != 5",
+        "s % 10 != 0",
+        "s % 10 != 5",
+        "est != ex"
+      ],
+      "text": "A {train} has {c} coaches. Each coach has {s} seats. (a) Round both numbers to the nearest 10 and estimate the number of seats on the train. (b) Find the exact number of seats. (c) By how many seats is your estimate more or less than the exact number? Show your working.",
+      "answer": "(a) {c} rounds to {rc} and {s} rounds to {rs}. Estimate = {rc} × {rs} = {est:num} seats. (b) Exact = {c} × {s} = {ex:num} seats. (c) {max(est, ex):num} − {min(est, ex):num} = {gap}, so the estimate is {gap} seats {way} than the exact number.",
+      "steps": [
+        {
+          "marks": 1,
+          "text": "Rounds both numbers: {c} to {rc} and {s} to {rs}."
+        },
+        {
+          "marks": 1,
+          "text": "Estimate {rc} × {rs} = {est:num} (follow through from the student's rounding)."
+        },
+        {
+          "marks": 2,
+          "text": "(b) 1 mark for multiplying {c} × {s} by a correct method; 1 mark for {ex:num}."
+        },
+        {
+          "marks": 1,
+          "text": "(c) {gap} seats, and says the estimate is {way} than the exact number. Both needed. Follow through from the student's own (a) and (b)."
+        }
+      ],
+      "hint": "Look at the ones digit to round to the nearest 10. Then multiply the rounded numbers.",
+      "explanation": "{c} is about {rc} and {s} is about {rs}, so the estimate is {rc} × {rs} = {est:num}. Exactly, {c} × {s} = {ex:num}. The estimate is {gap} {way} than the exact number, which is why an estimate is only a quick check.",
+      "misconception": "Treats an estimate as an exact answer or chooses units that are not plausible.",
+      "notes": "12 to 24 coaches with 61 to 89 seats each; neither number ends in 0 or 5, and the estimate is never exactly right. Exact totals 732 to 2,136.",
+      "sources": [
+        "CBSE-C5-CH01-Q108",
+        "CBSE-C5-CH01-Q395",
+        "CBSE-C5-CH01-Q400",
+        "CBSE-C5-CH01-Q403"
+      ]
+    },
+    {
+      "code": "C5-WT1-CS-1",
+      "chapter": 1,
+      "skill": "C5-WT1-S05",
+      "marks": 4,
+      "difficulty": 3,
+      "competency": "Application in context",
+      "values": [
+        {
+          "name": "site",
+          "choice": [
+            "Mysuru Palace",
+            "the Qutub Minar",
+            "the Charminar",
+            "the Victoria Memorial",
+            "the Golconda Fort"
+          ]
+        },
+        {
+          "name": "k",
+          "int": {
+            "min": 1,
+            "max": 3
+          }
+        },
+        {
+          "name": "th",
+          "int": {
+            "min": 0,
+            "max": 9
+          }
+        },
+        {
+          "name": "e1",
+          "int": {
+            "min": 0,
+            "max": 999
+          }
+        },
+        {
+          "name": "e2",
+          "int": {
+            "min": 0,
+            "max": 999
+          }
+        },
+        {
+          "name": "e3",
+          "int": {
+            "min": 0,
+            "max": 9999
+          }
+        },
+        {
+          "name": "x1",
+          "expr": "k * 10000 + th * 1000 + e1"
+        },
+        {
+          "name": "x2",
+          "expr": "k * 10000 + th * 1000 + e2"
+        },
+        {
+          "name": "x3",
+          "expr": "k * 10000 + e3"
+        },
+        {
+          "name": "small",
+          "int": {
+            "min": 8000,
+            "max": 9999
+          }
+        },
+        {
+          "name": "slot",
+          "int": {
+            "min": 1,
+            "max": 4
+          }
+        },
+        {
+          "name": "mon",
+          "expr": "small if slot == 1 else x1"
+        },
+        {
+          "name": "tue",
+          "expr": "small if slot == 2 else (x1 if slot == 1 else x2)"
+        },
+        {
+          "name": "wed",
+          "expr": "small if slot == 3 else (x3 if slot == 4 else x2)"
+        },
+        {
+          "name": "thu",
+          "expr": "small if slot == 4 else x3"
+        },
+        {
+          "name": "g",
+          "expr": "max(x1, x2, x3)"
+        },
+        {
+          "name": "lo",
+          "expr": "min(x1, x2, x3)"
+        },
+        {
+          "name": "mid",
+          "expr": "x1 + x2 + x3 - g - lo"
+        },
+        {
+          "name": "dg",
+          "expr": "'Monday' if mon == g else ('Tuesday' if tue == g else ('Wednesday' if wed == g else 'Thursday'))"
+        },
+        {
+          "name": "dm",
+          "expr": "'Monday' if mon == mid else ('Tuesday' if tue == mid else ('Wednesday' if wed == mid else 'Thursday'))"
+        },
+        {
+          "name": "dl",
+          "expr": "'Monday' if mon == lo else ('Tuesday' if tue == lo else ('Wednesday' if wed == lo else 'Thursday'))"
+        },
+        {
+          "name": "ds",
+          "expr": "'Monday' if mon == small else ('Tuesday' if tue == small else ('Wednesday' if wed == small else 'Thursday'))"
+        },
+        {
+          "name": "f",
+          "int": {
+            "min": "k * 10000",
+            "max": "g - 1"
+          }
+        },
+        {
+          "name": "fewer",
+          "expr": "1 + (1 if lo < f else 0) + (1 if mid < f else 0)"
+        }
+      ],
+      "require": [
+        "x1 != x2",
+        "x1 != x3",
+        "x2 != x3",
+        "f != lo",
+        "f != mid",
+        "g - lo >= 100"
+      ],
+      "stimulus": "Case study: The number of visitors to {site} on four days of the Dussehra holidays was: Monday {mon:num}, Tuesday {tue:num}, Wednesday {wed:num} and Thursday {thu:num}.",
+      "parts": [
+        {
+          "questionType": "Single Select",
+          "marks": 1,
+          "text": "(a) On which day did the most visitors come?",
+          "options": {
+            "correct": "dg",
+            "wrong": [
+              {
+                "expr": "ds",
+                "mistake": "compares only the first digit and picks the 4-digit number"
+              },
+              {
+                "expr": "dm",
+                "mistake": "picks the second greatest number"
+              },
+              {
+                "expr": "dl",
+                "mistake": "picks the smallest 5-digit number"
+              }
+            ]
+          },
+          "hint": "First count the digits in each number.",
+          "explanation": "{small:num} has only 4 digits, so it is the smallest. Of the 5-digit numbers, {g:num} is the greatest, so the most visitors came on {dg}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Four integers, smallest first",
+          "text": "(b) Write the four numbers of visitors in order from the smallest to the greatest.",
+          "answer": [
+            "small",
+            "lo",
+            "mid",
+            "g"
+          ],
+          "hint": "A 4-digit number is smaller than any 5-digit number. Then compare the 5-digit numbers place by place from the left.",
+          "explanation": "{small:num} < {lo:num} < {mid:num} < {g:num}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(c) How many more visitors came on {dg} than on {ds}?",
+          "answer": "g - small",
+          "hint": "Subtract the smaller number from the greater one.",
+          "explanation": "{g:num} − {small:num} = {g - small:num} more visitors."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(d) On Friday, {f:num} visitors came. On how many of the four days did fewer visitors come than on Friday?",
+          "answer": "fewer",
+          "hint": "Use your order from part (b) and find where {f:num} fits.",
+          "explanation": "In the order from part (b), {f:num} comes after {fewer} of the four numbers. So on {fewer} {'day' if fewer == 1 else 'days'} fewer visitors came than on Friday."
+        }
+      ],
+      "misconception": "Compares only the first visible digit rather than number of digits and left-to-right place value.",
+      "notes": "Three counts are 5-digit numbers with the same ten-thousands digit (1, 2 or 3), two of them also sharing the thousands digit; one count is a 4-digit number from 8,000 to 9,999 (so its first digit is bigger) on a random day. Friday's count is between the ten-thousand mark and the greatest count and equals none of them; the answer to (d) is 1, 2 or 3.",
+      "sources": [
+        "CBSE-C5-CH01-Q497",
+        "CBSE-C5-CH01-Q050",
+        "CBSE-C5-CH01-Q256",
+        "CBSE-C5-CH01-Q262"
+      ]
+    },
+    {
+      "code": "C5-WT1-CS-2",
+      "chapter": 1,
+      "skill": "C5-WT1-S15",
+      "marks": 4,
+      "difficulty": 4,
+      "competency": "Reasoning and problem solving",
+      "values": [
+        {
+          "name": "who",
+          "list": "names"
+        },
+        {
+          "name": "n",
+          "int": {
+            "min": 6,
+            "max": 20
+          }
+        },
+        {
+          "name": "p",
+          "int": {
+            "min": 8,
+            "max": 25
+          }
+        },
+        {
+          "name": "m",
+          "int": {
+            "min": 6,
+            "max": 20
+          }
+        },
+        {
+          "name": "real",
+          "expr": "4 * n - 4"
+        },
+        {
+          "name": "other",
+          "expr": "4 * m - 4"
+        }
+      ],
+      "require": [
+        "m != n"
+      ],
+      "stimulus": "Case study: For Diwali, Class 5 is placing diyas along the edges of a square stage. Each side has {n} diyas, counting the diyas at both corners of that side. {who.name} adds the four sides and says that {4 * n} diyas are needed.",
+      "parts": [
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(a) How many diyas are actually on the stage?",
+          "answer": "real",
+          "hint": "Each corner diya is on two sides at once.",
+          "explanation": "Adding the four sides counts each of the 4 corner diyas twice, so {4 * n} − 4 = {real} diyas."
+        },
+        {
+          "questionType": "Single Select",
+          "marks": 1,
+          "text": "(b) What mistake did {who.name} make?",
+          "options": {
+            "correct": "'Each corner diya was counted twice.'",
+            "wrong": [
+              {
+                "expr": "'One diya is missing from each side.'",
+                "mistake": "thinks the answer is too small, not too big"
+              },
+              {
+                "expr": "'The four corners should be added on.'",
+                "mistake": "adds the corners again instead of removing the double count"
+              },
+              {
+                "expr": "'There is no mistake; adding the sides is right.'",
+                "mistake": "does not notice that corner diyas are shared"
+              }
+            ]
+          },
+          "hint": "Draw a small square with 3 diyas on each side and count.",
+          "explanation": "A corner diya belongs to two sides, so adding the sides counts it twice. There are 4 corners, so the total is 4 too many."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer; unit stated in question",
+          "unit": "₹",
+          "unitRule": "STATED",
+          "text": "(c) Each diya costs ₹{p}. How much do all the diyas on the stage cost?",
+          "answer": "real * p",
+          "hint": "Use the real number of diyas from part (a).",
+          "explanation": "{real} diyas × ₹{p} = {real * p:money}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(d) A second square stage uses {other} diyas in all, with the same number on every side, counting both corners. How many diyas are on each side?",
+          "answer": "m",
+          "hint": "Add 4 for the corner diyas, because each corner is on two sides. Then share equally among the 4 sides.",
+          "explanation": "Adding the corners back: {other} + 4 = {other + 4}, and {other + 4} ÷ 4 = {m} diyas on each side. Check: 4 × {m} − 4 = {other}."
+        }
+      ],
+      "misconception": "Counts a shared object more than once or tests cases without preserving the puzzle rule.",
+      "notes": "6 to 20 diyas on each side of the first stage, ₹8 to ₹25 a diya; the second stage has 6 to 20 on each side (never the same as the first), so it uses 20 to 76 diyas.",
+      "sources": [
+        "CBSE-C5-CH01-Q500",
+        "CBSE-C5-CH01-Q141",
+        "CBSE-C5-CH01-Q487",
+        "CBSE-C5-CH01-Q150"
+      ]
+    },
+    {
+      "code": "C5-WT1-CS-3",
+      "chapter": 1,
+      "skill": "C5-WT1-S09",
+      "marks": 4,
+      "difficulty": 3,
+      "competency": "Application in context",
+      "values": [
+        {
+          "name": "station",
+          "choice": [
+            "Jaipur",
+            "Bhopal",
+            "Guwahati",
+            "Madurai",
+            "Patna",
+            "Vadodara"
+          ]
+        },
+        {
+          "name": "a",
+          "int": {
+            "min": 1050,
+            "max": 9949
+          }
+        },
+        {
+          "name": "b",
+          "int": {
+            "min": 1050,
+            "max": 9949
+          }
+        },
+        {
+          "name": "c",
+          "int": {
+            "min": 1050,
+            "max": 9949
+          }
+        },
+        {
+          "name": "ra",
+          "expr": "round_half_up(a, 100)"
+        },
+        {
+          "name": "rb",
+          "expr": "round_half_up(b, 100)"
+        },
+        {
+          "name": "rc",
+          "expr": "round_half_up(c, 100)"
+        },
+        {
+          "name": "down",
+          "expr": "a // 100 * 100"
+        },
+        {
+          "name": "wrong_way",
+          "expr": "down + 100 if ra == down else down"
+        },
+        {
+          "name": "ten",
+          "expr": "round_half_up(a, 10)"
+        },
+        {
+          "name": "thousand",
+          "expr": "round_half_up(a, 1000)"
+        },
+        {
+          "name": "est",
+          "expr": "ra + rb + rc"
+        },
+        {
+          "name": "ex",
+          "expr": "a + b + c"
+        }
+      ],
+      "require": [
+        "a % 100 != 0",
+        "a % 100 != 50",
+        "b % 100 != 0",
+        "b % 100 != 50",
+        "c % 100 != 0",
+        "c % 100 != 50",
+        "ten != ra",
+        "thousand != ra",
+        "thousand != wrong_way",
+        "ten != wrong_way",
+        "est != ex"
+      ],
+      "stimulus": "Case study: The number of passengers who got on trains at {station} railway station was {a:num} on Monday, {b:num} on Tuesday and {c:num} on Wednesday. The station master wants a quick estimate of the total.",
+      "parts": [
+        {
+          "questionType": "Single Select",
+          "marks": 1,
+          "text": "(a) What is Monday's number of passengers rounded to the nearest 100?",
+          "options": {
+            "correct": "ra",
+            "format": "num",
+            "wrong": [
+              {
+                "expr": "wrong_way",
+                "mistake": "rounds the wrong way"
+              },
+              {
+                "expr": "ten",
+                "mistake": "rounds to the nearest 10"
+              },
+              {
+                "expr": "thousand",
+                "mistake": "rounds to the nearest 1,000"
+              }
+            ]
+          },
+          "hint": "Look at the tens digit.",
+          "explanation": "The tens digit of {a:num} is {digit(a, 10)}, so it rounds {'up' if ra > a else 'down'} to {ra:num}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(b) Round each day's number to the nearest 100 and add them to estimate the total.",
+          "answer": "est",
+          "hint": "Round all three numbers first, then add.",
+          "explanation": "{ra:num} + {rb:num} + {rc:num} = {est:num}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(c) Find the exact total number of passengers on the three days.",
+          "answer": "ex",
+          "hint": "Add the three numbers as they are.",
+          "explanation": "{a:num} + {b:num} + {c:num} = {ex:num}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "responseFormat": "Integer",
+          "text": "(d) What is the difference between the estimate and the exact total?",
+          "answer": "abs(est - ex)",
+          "hint": "Subtract the smaller total from the bigger one.",
+          "explanation": "{max(est, ex):num} − {min(est, ex):num} = {abs(est - ex)}. The estimate is {'more' if est > ex else 'less'} than the exact total."
+        }
+      ],
+      "misconception": "Looks at the hundreds digit instead of the tens digit.",
+      "notes": "Three 4-digit counts from 1,050 to 9,949; none ends in 00 or 50, so no count is exactly halfway. The wrong options in (a) all differ from the right answer, and the estimate is never exactly the total.",
+      "sources": [
+        "CBSE-C5-CH01-Q498",
+        "CBSE-C5-CH01-Q336",
+        "CBSE-C5-CH01-Q377"
+      ]
     }
   ]
 }
