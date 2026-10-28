@@ -3,13 +3,13 @@
 /**
  * An approved paper's results and marking (#166 step 4), for the section's
  * teacher and the school's admin. Results: question by student, with
- * totals; the teacher releases them to students once the paper has closed
- * and every written answer is marked. Marking: each written answer, with
- * that student's own question and marking steps (every student's numbers
- * differ).
+ * totals. Each student sees their marks at hand-in and the solutions once
+ * the paper closes (#208: no release step). Marking: each written answer,
+ * with that student's own question and marking steps (every student's
+ * numbers differ); a mark can be changed at any time.
  */
 import { useState } from "react";
-import { Save, Send } from "lucide-react";
+import { Save } from "lucide-react";
 import { api, describeApiError } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { RESULT_STATE_LABEL } from "@/lib/mockPapers";
@@ -20,7 +20,6 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Modal } from "@/components/ui/Modal";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { MarkingView, ResultsGrid } from "@/types/mockPapers";
 
@@ -28,41 +27,30 @@ const STATE_TONE = { NOT_STARTED: "neutral", IN_PROGRESS: "brand", TO_MARK: "war
 
 export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boolean }) {
   const grid = useApiQuery<ResultsGrid>(`/mock-papers/${paperId}/results`, {}, { action: "load the results" });
-  const [confirm, setConfirm] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
   if (grid.problem) return <LoadError problem={grid.problem} onRetry={grid.reload} />;
   if (!grid.data) return <TableSkeleton label="Loading the results" rows={5} />;
   const g = grid.data;
-  const why = g.released
-    ? `Released to students on ${formatDateTime(g.releasedAt)}.`
-    : g.status !== "CLOSED"
-      ? "The results can be released once the paper closes, so nobody still sitting sees the solutions."
-      : g.toMark
-        ? `${g.toMark} written ${g.toMark === 1 ? "answer is" : "answers are"} still to be marked.`
-        : "Everything is marked. Students see their marks and the solutions once you release them.";
+  // #208: no release step. Each student sees their marks at hand-in, and the
+  // right answers and solutions once the paper closes.
+  const why = [
+    g.toMark ? `${g.toMark} written ${g.toMark === 1 ? "answer is" : "answers are"} still to be marked` : null,
+    g.solutionsOpen
+      ? "students see their marks and the solutions"
+      : `students see their marks at once, the solutions when the paper closes (${formatDateTime(g.closesAt)})`,
+  ]
+    .filter(Boolean)
+    .join("; ");
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-content-muted">
-          {g.handedIn} of {g.students.length} handed in{g.inProgress ? `, ${g.inProgress} sitting now` : ""} · {why}
+          {g.handedIn} of {g.students.length} handed in{g.inProgress ? `, ${g.inProgress} sitting now` : ""} ·{" "}
+          {why.replace(/^./, (c) => c.toUpperCase())}.
         </p>
-        {canAct && g.canChange && !g.released ? (
-          <Button
-            type="button"
-            variant="accent"
-            leadingIcon={<Send className="h-4 w-4" />}
-            disabled={!g.canRelease}
-            onClick={() => setConfirm(true)}
-          >
-            Release Results
-          </Button>
-        ) : null}
       </div>
       {g.shuffled ? (
         <p className="text-xs text-content-subtle">Columns follow the paper as built; each student saw the questions in their own order.</p>
       ) : null}
-      {problem ? <AlertBanner tone="error" message={problem} /> : null}
       {g.students.length === 0 ? (
         <Card className="p-6">
           <EmptyState title="No Student Yet" description="Each student's results appear here once they sit the paper." />
@@ -153,43 +141,6 @@ export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boo
           </div>
         </Card>
       )}
-      <Modal
-        open={confirm}
-        onClose={() => (busy ? undefined : setConfirm(false))}
-        title="Release the Results?"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" disabled={busy} onClick={() => setConfirm(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              loading={busy}
-              loadingLabel="Releasing"
-              onClick={async () => {
-                setBusy(true);
-                setProblem(null);
-                try {
-                  await api.post(`/mock-papers/${paperId}/release`);
-                  grid.reload();
-                } catch (err) {
-                  setProblem(describeApiError(err, "release the results").message);
-                } finally {
-                  setBusy(false);
-                  setConfirm(false);
-                }
-              }}
-            >
-              Release
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-content">
-          Each student sees their marks per section and question, with the solutions. Marks can&apos;t be changed after this.
-        </p>
-      </Modal>
     </div>
   );
 }

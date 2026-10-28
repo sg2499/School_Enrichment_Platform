@@ -5,9 +5,10 @@ while the paper is open; the server keeps the time (reading time locks
 answers, the paper is handed in when the time is up or it closes); no key,
 hint or explanation reaches the student while sitting; in an either/or
 pair only the chosen question counts; number and choice answers are marked
-at once, written answers by the section's teacher; results reach students
-only when the teacher releases them, after the paper closes and everything
-is marked; a one-way paper can't go back a section.
+at once, written answers by the section's teacher; the student sees their
+marks at hand-in and the right answers and solutions once the paper closes
+(#208: no release step); a mark can be changed at any time; a one-way paper
+can't go back a section.
 """
 import json
 from datetime import timedelta
@@ -60,7 +61,7 @@ def _items(db, view):
             for half in place["halves"] for part in half["parts"]]
 
 
-def test_a_student_sits_hands_in_and_sees_released_results(db_session):
+def test_a_student_sits_hands_in_and_sees_results_at_once(db_session):
     db = db_session
     w = _world(db, "MKS1", students=2)
     paper, teacher = _paper(db, w, SMALL)
@@ -93,7 +94,15 @@ def test_a_student_sits_hands_in_and_sees_released_results(db_session):
     assert again["sections"][0]["places"][0]["halves"][0]["parts"][0]["response"] == keys[one["id"]].correct_answer
 
     done = sit.submit(db, a, paper.id, now=writing + timedelta(minutes=1))
-    assert done["sitting"]["status"] == "SUBMITTED" and done["sections"] == [] and "result" not in done
+    assert done["sitting"]["status"] == "SUBMITTED" and done["sections"] == []
+    # #208: the marks at once; the right answers and solutions only once the
+    # paper closes (others may still be sitting).
+    early = done["result"]
+    assert early["scoreSoFar"] == 1 and early["waiting"] == 1 and early["score"] is None and not early["solutionsOpen"]
+    for sec in early["sections"]:
+        for place in sec["places"]:
+            for part in place["parts"]:
+                assert part["correctAnswer"] is None and part["explanation"] is None and part["markingSteps"] is None
     _refused(lambda: sit.save_answer(db, a, paper.id, one["id"], "2", now=writing), "HANDED_IN")
     sitting_a = db.query(MockPaperSitting).filter_by(paper_id=paper.id, student_id=a.id).one()
     assert sitting_a.auto_score == 1 and sitting_a.final_score is None  # the written answer waits
@@ -109,27 +118,32 @@ def test_a_student_sits_hands_in_and_sees_released_results(db_session):
     (written,) = marking["questions"][0]["answers"]
     assert written["response"] == "My working and answer." and written["markingSteps"]
     _refused(lambda: sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 4}]), "VALIDATION_ERROR")
-    _refused(lambda: sit.release(db, teacher, paper.id, now=late), "STILL_OPEN")
     sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 2}])
     db.commit()
     db.refresh(sitting_a)
     assert sitting_a.final_score == 3
 
+    # Marked while the paper is still open: the student's total is final.
+    assert sit.view(db, a, paper.id, now=late)["result"]["score"] == 3
+    # Just after closing, a last save may still arrive: no solutions yet.
+    just = T0 + timedelta(hours=3, seconds=5)
+    assert not sit.view(db, a, paper.id, now=just)["result"]["solutionsOpen"]
+    assert not sit.results(db, teacher, paper.id, now=just)["solutionsOpen"]
     closed = T0 + timedelta(hours=3, minutes=1)
     grid = sit.results(db, teacher, paper.id, now=closed)
-    assert grid["canRelease"] and grid["handedIn"] == 2 and [r["score"] for r in grid["students"]].count(3) == 1
-    # Students see nothing until release.
-    assert "result" not in sit.view(db, a, paper.id, now=closed)
-    sit.release(db, teacher, paper.id, now=closed)
-    db.commit()
+    assert grid["solutionsOpen"] and grid["handedIn"] == 2 and [r["score"] for r in grid["students"]].count(3) == 1
     result = sit.view(db, a, paper.id, now=closed)["result"]
-    assert result["score"] == 3 and result["maxScore"] == 5
+    assert result["score"] == 3 and result["maxScore"] == 5 and result["solutionsOpen"]
     assert [s["marks"] for s in result["sections"]] == [1, 2]
     shown = result["sections"][1]["places"][0]["parts"][0]
     assert shown["response"] == "My working and answer." and shown["score"] == 2 and shown["markingSteps"]
-    _refused(lambda: sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 3}]), "RELEASED")
+    assert result["sections"][0]["places"][0]["parts"][0]["correctAnswer"]
+    # A mark can still be changed after closing; the result follows it.
+    sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 3}])
+    db.commit()
+    assert sit.view(db, a, paper.id, now=closed)["result"]["score"] == 4
     listed = sit.student_papers(db, a, now=closed)
-    assert listed[0]["released"] and listed[0]["score"] == 3
+    assert listed[0]["solutionsOpen"] and listed[0]["score"] == 4 and listed[0]["waiting"] == 0
 
     # The unchosen half was saved but not counted.
     unchosen = db.query(MockPaperAnswer).filter_by(sitting_id=sitting_a.id, response_text="Not chosen.").one()
@@ -200,15 +214,15 @@ def test_the_student_api(client, db_session):
     teacher_headers = {**_login(client, w["teacher"].user.email), "x-auth-role": "TEACHER"}
     assert client.get("/api/my-papers", headers=teacher_headers).status_code == 403
     grid = client.get(f"/api/mock-papers/{paper.id}/results", headers=teacher_headers).json()
-    assert [r["state"] for r in grid["students"]] == ["IN_PROGRESS"] and grid["canRelease"] is False
+    assert [r["state"] for r in grid["students"]] == ["IN_PROGRESS"] and grid["solutionsOpen"] is False
     items = db.query(MockPaperVersionItem).count()
     assert items > 0
 
 
 def test_review_fixes(db_session):
-    """Release waits for anyone still finishing; choosing is for the writing
-    time; a start with no time left is refused; the admin may mark; number
-    answers with working can be given method marks."""
+    """Choosing is for the writing time; a start with no time left is
+    refused; the admin may mark; number answers with working can be given
+    method marks, which the student's result shows at once."""
     db = db_session
     w = _world(db, "MKS5", students=2)
     fmt = {**SMALL, "readingMinutes": 0, "sections": [
@@ -225,12 +239,6 @@ def test_review_fixes(db_session):
     _refused(lambda: sit.choose(db, a, paper.id, pair[1]["slotId"], now=end + timedelta(seconds=5)), "TIME_UP")
     # B starts with only seconds left: refused.
     _refused(lambda: sit.start(db, b, paper.id, now=end - timedelta(seconds=30)), "TOO_LATE")
-    # Just after closing, A is within the grace: release must wait.
-    from app.models.papers import MockPaper
-
-    db.get(MockPaper, paper.id)
-    _refused(lambda: sit.release(db, teacher, paper.id, now=end + timedelta(seconds=5)), "STILL_SITTING")
-    db.rollback()
     # Method marks: the number answer with working is offered for review.
     from tests.test_learning import _make_school_admin
 
@@ -241,8 +249,6 @@ def test_review_fixes(db_session):
     (ans,) = group["answers"]
     assert ans["working"] == "my steps" and ans["autoScore"] == 0
     sit.save_marks(db, admin, paper.id, [{"answerId": ans["answerId"], "score": 1}])
-    db.commit()
-    sit.release(db, admin, paper.id, now=end + timedelta(minutes=1))
     db.commit()
     result = sit.view(db, a, paper.id, now=end + timedelta(minutes=2))["result"]
     assert result["sections"][0]["places"][0]["parts"][0]["score"] == 1

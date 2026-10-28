@@ -45,6 +45,14 @@ export function percentText(percent: number | null | undefined): string {
   return `${Math.floor(percent + 1e-9)}%`;
 }
 
+/** A mock paper's marks: "34 / 60 (56%)", "so far" while a written answer
+ *  waits for its mark, or "—". */
+export function mockMarksText(m: { score: number | null; maxScore: number | null; percent: number | null; waiting?: number }): string {
+  if (m.score === null || !m.maxScore) return "—";
+  const marks = m.percent === null ? `${m.score} / ${m.maxScore}` : `${m.score} / ${m.maxScore} (${percentText(m.percent)})`;
+  return m.waiting ? `${marks} so far` : marks;
+}
+
 /** The self-practice button's words for a set the student already has. */
 export function selfPracticeAction(openTargetId: string | null, status: string | null | undefined): string {
   if (!openTargetId) return "Practise on My Own";

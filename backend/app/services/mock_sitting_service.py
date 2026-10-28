@@ -1,6 +1,6 @@
-"""Sitting a mock paper online, marking it and releasing the results (#166
-step 4, 27 Oct 2026; PHASE5_MOCK_PAPER_DESIGN.md, "Sitting the paper
-online").
+"""Sitting a mock paper online and marking it (#166 step 4, 27 Oct 2026;
+PHASE5_MOCK_PAPER_DESIGN.md, "Sitting the paper online"; #208, 28 Oct:
+results at hand-in).
 
 A student opens an approved paper while it is open and sits their own
 version once. The server keeps the time: reading time first (the questions
@@ -10,12 +10,15 @@ student goes; when the time is up the paper is handed in with whatever was
 saved, the next time anyone looks at it. In an either/or pair the student
 chooses one question and only that one is marked.
 
-No answers, hints or marks are shown during the paper. Number and choice
-answers are marked when it is handed in; written answers go to the
-section's teacher, who marks them against each student's own marking steps.
-The teacher then releases the results, and each student sees their marks
-per section and question with the solutions. Mock papers are practice: they
-count in no report.
+No answers, hints or marks are shown during the paper. Everything that can
+be marked automatically is marked when it is handed in, and the student
+sees their marks per section and question at once, like practice (his
+call, 28 Oct 2026: "the results should be out instantly as soon as the
+students submit"); the right answers and solutions follow once the paper
+has closed, so nobody still sitting can be shown them. A written answer
+(until every long question marks itself, #208) waits for the section's
+teacher, who may also change any mark at any time; nothing waits for a
+release. Mock papers are practice: they never count in term marks.
 """
 from __future__ import annotations
 
@@ -223,7 +226,7 @@ def sitting_view(db: Session, paper: MockPaper, student: Student, sitting: MockP
             "sectionIndex": sitting.section_index,
             "serverNow": now.isoformat(),
         },
-        # Only while sitting: a handed-in paper shows nothing until the results are released.
+        # Only while sitting: a handed-in paper shows its result instead.
         "sections": sections if sitting.status == "IN_PROGRESS" else [],
     }
 
@@ -235,8 +238,21 @@ def _paper_brief(paper: MockPaper, fmt: dict, now: datetime) -> dict:
         "navigation": fmt.get("navigation", "FREE"),
         "sections": [{"name": s["name"], "marks": s["marks"], "count": s["count"], "choices": s["choices"]} for s in fmt["sections"]],
         "opensAt": _aware(paper.opens_at).isoformat(), "closesAt": _aware(paper.closes_at).isoformat(),
-        "released": paper.results_released_at is not None,
+        # #208: marks come at hand-in; the right answers and solutions once
+        # the paper has closed, so nobody still sitting can be shown them.
+        "solutionsOpen": solutions_open(paper, now),
     }
+
+
+def solutions_at(paper: MockPaper) -> datetime:
+    """When the right answers and solutions show: the close, plus the grace
+    in which a last save may still arrive, after which every sitting is
+    handed in (#208 review)."""
+    return _aware(paper.closes_at) + GRACE
+
+
+def solutions_open(paper: MockPaper, now: datetime) -> bool:
+    return now >= solutions_at(paper)
 
 
 # --- the student's list ------------------------------------------------------------------------
@@ -258,11 +274,14 @@ def student_papers(db: Session, student: Student, now: datetime | None = None) -
         if sitting is not None:
             settle(db, sitting, now)
         fmt = json.loads(paper.format_json)
-        released = paper.results_released_at is not None
+        handed_in = sitting is not None and sitting.status == "SUBMITTED"
         out.append({
             **_paper_brief(paper, fmt, now),
             "sitting": None if sitting is None else sitting.status,
-            "score": sitting.final_score if released and sitting is not None else None,
+            # #208: the marks come at hand-in; a written answer still to be
+            # marked leaves the total open ("so far").
+            "score": score_so_far(db, sitting) if handed_in else None,
+            "waiting": waiting_count(db, sitting) if handed_in else 0,
         })
     db.commit()
     return out
@@ -308,8 +327,8 @@ def view(db: Session, student: Student, paper_id: str, now: datetime | None = No
     settle(db, sitting, now)
     db.commit()
     result = sitting_view(db, paper, student, sitting, now)
-    if paper.results_released_at is not None and sitting.status == "SUBMITTED":
-        result["result"] = student_result(db, paper, student, sitting)
+    if sitting.status == "SUBMITTED":
+        result["result"] = student_result(db, paper, student, sitting, solutions=solutions_open(paper, now))
     return result
 
 
@@ -420,7 +439,9 @@ def submit(db: Session, student: Student, paper_id: str, now: datetime | None = 
     paper, sitting = _locked_sitting(db, student, paper_id, now)
     hand_in(db, sitting, "STUDENT", now)
     db.commit()
-    return sitting_view(db, paper, student, sitting, now)
+    result = sitting_view(db, paper, student, sitting, now)
+    result["result"] = student_result(db, paper, student, sitting, solutions=solutions_open(paper, now))
+    return result
 
 
 # --- handing in and marking -------------------------------------------------------------------------
@@ -499,6 +520,18 @@ def _recompute(db: Session, sitting: MockPaperSitting) -> None:
     sitting.final_score = None if waiting else total
 
 
+def score_so_far(db: Session, sitting: MockPaperSitting) -> int:
+    total = 0
+    for a in db.query(MockPaperAnswer).filter_by(sitting_id=sitting.id, counted=True):
+        score = a.manual_score if a.manual_score is not None else a.auto_score
+        total += score or 0
+    return total
+
+
+def waiting_count(db: Session, sitting: MockPaperSitting) -> int:
+    return sum(1 for a in db.query(MockPaperAnswer).filter_by(sitting_id=sitting.id) if needs_marking(a))
+
+
 def needs_marking(answer: MockPaperAnswer) -> bool:
     return bool(answer.counted) and answer.auto_score is None and answer.manual_score is None
 
@@ -518,7 +551,7 @@ def _student_names(db: Session, student_ids) -> dict[str, tuple[str, str]]:
 
 
 def can_mark(viewer: Viewer, entry: dict) -> bool:
-    """The section's teacher marks and releases; so may the school's admin,
+    """The section's teacher marks; so may the school's admin,
     so a section with no teacher now isn't left waiting (review)."""
     return papers.can_change(viewer, entry) or viewer.role == "ADMIN"
 
@@ -579,7 +612,7 @@ def marking(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
     for g in ordered:
         g["answers"].sort(key=lambda x: (x["student"], x["studentCode"]))
     return {
-        "canMark": can_mark(viewer, entry) and paper.results_released_at is None,
+        "canMark": can_mark(viewer, entry),
         "questions": ordered,
         "toMark": sum(1 for a in written if needs_marking(a)),
         "shuffled": bool(json.loads(paper.format_json).get("shuffle")),
@@ -599,8 +632,8 @@ def _numbers(db: Session, paper: MockPaper) -> dict[str, int]:
 
 def save_marks(db: Session, viewer: Viewer, paper_id: str, marks: list[dict], now: datetime | None = None) -> int:
     paper, _entry = _load_for_marking(db, viewer, paper_id)
-    if paper.results_released_at is not None:
-        api_error(409, "RELEASED", "The results have been released, so marks can't be changed.")
+    # #208: no release step; a mark can be changed at any time, and the
+    # student's result, My Progress and reports follow it.
     now = _now(now)
     ids = [m.get("answerId") for m in marks]
     rows = {a.id: a for a in db.query(MockPaperAnswer).filter(MockPaperAnswer.id.in_(ids))} if ids else {}
@@ -698,36 +731,15 @@ def results(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
         "handedIn": len(handed),
         "toMark": to_mark,
         "inProgress": in_progress,
-        "released": paper.results_released_at is not None,
-        "releasedAt": _aware(paper.results_released_at).isoformat() if paper.results_released_at else None,
-        "canRelease": paper.results_released_at is None and to_mark == 0 and in_progress == 0 and status == "CLOSED",
+        "solutionsOpen": solutions_open(paper, now),
+        "closesAt": _aware(paper.closes_at).isoformat(),
     }
 
 
-def release(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = None) -> None:
-    now = _now(now)
-    paper, _entry = _load_for_marking(db, viewer, paper_id)
-    if paper.status != "APPROVED":
-        api_error(409, "NOT_APPROVED", "This paper hasn't been approved.")
-    if paper.results_released_at is not None:
-        api_error(409, "RELEASED", "The results are already released.")
-    settle_paper(db, paper, now)
-    if papers.status_of(paper, now) != "CLOSED":
-        api_error(409, "STILL_OPEN", "Release the results once the paper has closed, so nobody still sitting sees the solutions.")
-    if db.query(MockPaperSitting).filter_by(paper_id=paper.id, status="IN_PROGRESS").count():
-        api_error(409, "STILL_SITTING", "A student is still finishing; try again in a minute.")
-    left = 0
-    for sitting in db.query(MockPaperSitting).filter_by(paper_id=paper.id, status="SUBMITTED"):
-        left += sum(1 for a in db.query(MockPaperAnswer).filter_by(sitting_id=sitting.id) if needs_marking(a))
-    if left:
-        api_error(409, "STILL_TO_MARK", f"{left} written {'answer is' if left == 1 else 'answers are'} still to be marked.")
-    paper.results_released_at = now
-    paper.results_released_by_user_id = viewer.user.id
-
-
-def student_result(db: Session, paper: MockPaper, student: Student, sitting: MockPaperSitting) -> dict:
-    """After release: the student's marks per section and question, with the
-    solutions."""
+def student_result(db: Session, paper: MockPaper, student: Student, sitting: MockPaperSitting, *, solutions: bool) -> dict:
+    """After hand-in (#208): the student's marks per section and question,
+    with their answers; the right answers, solutions and marking steps once
+    the paper has closed (`solutions`)."""
     version = _version(db, paper, student)
     answers = _answers(db, sitting)
     choices = _choices(sitting)
@@ -751,12 +763,18 @@ def student_result(db: Session, paper: MockPaper, student: Student, sitting: Moc
                     "text": p["text"], **public_question(q),
                     "response": a.response_text if a else None, "working": a.working_text if a else None,
                     "score": score, "maxScore": q.marks,
-                    "correctAnswer": q.correct_answer, "acceptedVariants": q.accepted_variants,
-                    "explanation": q.explanation, "markingSteps": q.teacher_note,
+                    "correctAnswer": q.correct_answer if solutions else None,
+                    "acceptedVariants": q.accepted_variants if solutions else None,
+                    "explanation": q.explanation if solutions else None,
+                    "markingSteps": q.teacher_note if solutions else None,
                     "note": learning_service.grading_note_words(
                         a.grading_note, marks_lost=(a.max_score - a.auto_score) if a and a.auto_score is not None else None) if a else None,
                 })
             places.append({"number": number, "marks": halves[0]["slot"].marks, "choice": bool(group),
                            "stimulus": chosen["stimulus"], "parts": parts})
         sections.append({"name": sec["format"]["name"], "marks": marks, "maxMarks": sec["format"]["marks"] * sec["format"]["count"], "places": places})
-    return {"score": sitting.final_score, "maxScore": sitting.max_score, "sections": sections}
+    return {
+        "score": sitting.final_score, "scoreSoFar": score_so_far(db, sitting), "waiting": waiting_count(db, sitting),
+        "maxScore": sitting.max_score, "sections": sections,
+        "solutionsOpen": solutions, "solutionsAt": solutions_at(paper).isoformat(),
+    }

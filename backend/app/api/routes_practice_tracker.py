@@ -64,7 +64,7 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
-from app.services import learning_service, practice_access_service, progress_service
+from app.services import learning_service, mock_results_service, practice_access_service, progress_service
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
 
@@ -710,6 +710,7 @@ def get_tracker_student_skills(student_id: str, viewer: Viewer = Depends(_viewer
         db,
         student,
         assignment_clause=practice_access_service.readable_assignments_clause(viewer),
+        mock_clause=mock_results_service.readable_papers_clause(viewer),
         for_student=False,
     )
 

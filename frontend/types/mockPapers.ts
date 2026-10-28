@@ -151,12 +151,15 @@ export interface PaperBrief {
   sections: { name: string; marks: number; count: number; choices: number }[];
   opensAt: string;
   closesAt: string;
-  released: boolean;
+  // #208: the right answers and solutions show once the paper has closed.
+  solutionsOpen: boolean;
 }
 
 export interface MyPaper extends PaperBrief {
   sitting: "IN_PROGRESS" | "SUBMITTED" | null;
+  // From hand-in; with `waiting` written answers still to be marked, so far.
   score: number | null;
+  waiting: number;
 }
 
 export interface SitPart {
@@ -218,7 +221,12 @@ export interface ResultPart extends SitPart {
 }
 
 export interface PaperResult {
+  // Final once nothing waits for a teacher; until then null, with scoreSoFar.
   score: number | null;
+  scoreSoFar: number;
+  waiting: number;
+  solutionsOpen: boolean;
+  solutionsAt: string;
   maxScore: number;
   sections: {
     name: string;
@@ -256,9 +264,8 @@ export interface ResultsGrid {
   handedIn: number;
   toMark: number;
   inProgress: number;
-  released: boolean;
-  releasedAt: string | null;
-  canRelease: boolean;
+  solutionsOpen: boolean;
+  closesAt: string;
 }
 
 export interface MarkingView {
