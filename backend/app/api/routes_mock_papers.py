@@ -226,15 +226,6 @@ def paper_results(paper_id: str, viewer: Viewer = Depends(_viewer), db: Session 
     return sitting_service.results(db, viewer, paper_id)
 
 
-@router.post("/{paper_id}/release")
-@limiter.limit("10/minute")
-def release_results(request: Request, paper_id: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
-    sitting_service.release(db, viewer, paper_id)
-    log_audit_event(db, "mock_paper.results_released", user_id=viewer.user.id, request=request, details={"paperId": paper_id})
-    db.commit()
-    return sitting_service.results(db, viewer, paper_id)
-
-
 # --- step 4: sitting the paper (student) ------------------------------------------------------
 
 student_router = APIRouter(prefix="/api/my-papers", tags=["mock-papers"])

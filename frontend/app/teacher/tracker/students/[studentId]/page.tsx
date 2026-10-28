@@ -61,6 +61,7 @@ import {
   SELF_PRACTICE_LABEL,
   studentClassLabel,
 } from "@/lib/tracker";
+import { MockPaperResults } from "@/components/progress/MockPaperResults";
 import { SkillMap } from "@/components/progress/SkillMap";
 import { percentText } from "@/lib/progress";
 import type { ProgressPayload } from "@/types/progress";
@@ -381,6 +382,15 @@ function StudentWorkspace() {
             <TableSkeleton label="Loading this student's skills" rows={3} />
           )}
         </section>
+
+        {skills.data && skills.data.student.id === studentId ? (
+          <MockPaperResults
+            papers={skills.data.mockPapers ?? []}
+            headingId="student-mock-heading"
+            description="Mock papers of your sections this student has handed in. Their answers count in the skills above."
+            hrefFor={(id) => `/teacher/papers/${id}`}
+          />
+        ) : null}
 
         {data ? (
           data.total === 0 ? (

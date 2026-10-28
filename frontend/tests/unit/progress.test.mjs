@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  mockMarksText,
   answeredText,
   BAND_LABEL,
   BAND_TONE,
@@ -116,5 +117,14 @@ describe("class standing (#185)", () => {
       { ...CHAPTERS[1], id: "c3", standing: "TOP_HALF" },
     ];
     assert.deepEqual(chaptersWithStanding(chapters).map((c) => c.id), ["c1", "c3"]);
+  });
+});
+
+describe("mock paper results (#207)", () => {
+  test("marks with the percent, floored like every percent", () => {
+    assert.equal(mockMarksText({ score: 34, maxScore: 60, percent: 56.7 }), "34 / 60 (56%)");
+    assert.equal(mockMarksText({ score: 0, maxScore: 20, percent: 0 }), "0 / 20 (0%)");
+    assert.equal(mockMarksText({ score: 5, maxScore: 10, percent: null }), "5 / 10");
+    assert.equal(mockMarksText({ score: null, maxScore: 60, percent: null }), "—");
   });
 });

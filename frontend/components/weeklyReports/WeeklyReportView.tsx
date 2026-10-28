@@ -5,6 +5,7 @@
  * prints. Used by the student's Weekly Report page and by staff previewing
  * or opening a child's page.
  */
+import { mockMarksText } from "@/lib/progress";
 import { scoreText, shortDay, STATUS_TONE } from "@/lib/weeklyReports";
 import { Badge } from "@/components/ui/Badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
@@ -148,6 +149,35 @@ export function WeeklyReportView({
         )}
       </section>
 
+      {report.mockPapers && report.mockPapers.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-bold text-content">Mock Papers</h3>
+          <Table caption="Mock papers handed in this week" minWidth="28rem">
+            <THead>
+              <TH>Paper</TH>
+              <TH>Handed In</TH>
+              <TH align="right">Marks</TH>
+            </THead>
+            <TBody>
+              {report.mockPapers.map((m) => (
+                <TR key={m.paperId}>
+                  <TD>
+                    <span className="font-semibold text-content">{m.title}</span>
+                  </TD>
+                  <TD className="whitespace-nowrap">{shortDay(m.handedInAt.slice(0, 10))}</TD>
+                  <TD align="right" className="whitespace-nowrap tabular">
+                    {mockMarksText(m)}
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+          <p className="text-xs text-content-subtle">
+            A practice paper set by the teacher, marked online. It does not count towards term marks.
+          </p>
+        </section>
+      ) : null}
+
       <section className="space-y-3">
         <h3 className="text-sm font-bold text-content">The Week in Numbers</h3>
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -185,8 +215,8 @@ export function WeeklyReportView({
             />
           </div>
           <p className="text-xs text-content-subtle">
-            Skills are judged on the practice handed in up to the end of this
-            week, the most recent answer to each question counting.
+            Skills are judged on the practice and mock papers handed in by the
+            end of this week, the most recent answer to each question counting.
           </p>
         </section>
       ) : null}

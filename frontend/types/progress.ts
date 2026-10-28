@@ -80,6 +80,17 @@ export interface ProgressSummary {
   overallPercent: number | null;
 }
 
+export interface MockPaperResult {
+  paperId: string;
+  title: string;
+  handedInAt: string;
+  score: number | null;
+  maxScore: number | null;
+  percent: number | null;
+  // Written answers still to be marked: the marks are "so far".
+  waiting?: number;
+}
+
 export interface ProgressPayload {
   student: {
     id: string;
@@ -92,6 +103,8 @@ export interface ProgressPayload {
   summary: ProgressSummary;
   chapters: ChapterProgress[];
   practiseNext: PractiseNextItem[];
+  // #207: the mock papers the student has handed in, newest first.
+  mockPapers?: MockPaperResult[];
   // The student's own view only.
   selfPractice?: SelfPracticeHistoryItem[];
   standing?: {

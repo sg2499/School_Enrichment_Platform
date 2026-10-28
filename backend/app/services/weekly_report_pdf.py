@@ -830,6 +830,36 @@ def _practice(page: dict) -> list:
     return [table]
 
 
+def _mock_papers(page: dict) -> list:
+    """#207: mock papers handed in this week; only shown when there is one."""
+    rows = page.get("mockPapers") or []
+    widths = [CONTENT_W - 64 * mm, 30 * mm, 34 * mm]
+    data = [[Label("Paper"), Label("Handed In"), Label("Marks", align="right")]]
+    for r in rows:
+        marks = f"{r['score']} / {r['maxScore']}" if r.get("score") is not None and r.get("maxScore") else "—"
+        if r.get("percent") is not None:
+            marks += f"   ({int(r['percent'] + 1e-9)}%)"  # floored, as on screen
+        if r.get("waiting"):
+            marks += " so far"
+        data.append([_p(r["title"], S_SET), _p(_date_text((r.get("handedInAt") or "")[:10], year=False), S_CELL), _p(marks, S_CELL_R)])
+    table = Table(data, colWidths=widths, repeatRows=1, cornerRadii=[7, 7, 7, 7])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), TINT),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), PAD),
+                ("RIGHTPADDING", (0, 0), (-1, -1), PAD),
+                ("TOPPADDING", (0, 0), (-1, -1), 2.3 * mm),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2.3 * mm),
+                ("BOX", (0, 0), (-1, -1), 0.8, LINE),
+                ("LINEBELOW", (0, 0), (-1, -2), 0.6, LINE),
+            ]
+        )
+    )
+    return [table, Spacer(1, 2 * mm), _p("A practice paper set by the teacher, marked online. It does not count towards term marks.", S_SMALL)]
+
+
 def _skills(page: dict) -> list:
     skills = page.get("skills") or {"strong": [], "workOn": []}
     half = (CONTENT_W - 5 * mm) / 2
@@ -852,7 +882,7 @@ def _skills(page: dict) -> list:
     return [
         table,
         Spacer(1, 2 * mm),
-        _p("Judged on the practice handed in up to the end of this week; the most recent answer to each question counts.", S_SMALL),
+        _p("Judged on the practice and mock papers handed in by the end of this week; the most recent answer to each question counts.", S_SMALL),
     ]
 
 
@@ -874,6 +904,8 @@ def _page_story(page: dict, logo=None) -> list:
     story: list = [PageMark(page, logo), _details(page)]
     story += [SectionHeading("The Week at a Glance")] + _glance(page)
     story += [SectionHeading("This Week's Practice")] + _practice(page)
+    if page.get("mockPapers"):
+        story += [KeepTogether([SectionHeading("Mock Papers")] + _mock_papers(page))]
     story += [KeepTogether([SectionHeading("Skills")] + _skills(page))]
     story += [KeepTogether([SectionHeading("From the Teacher")] + _notes(page))]
     return story

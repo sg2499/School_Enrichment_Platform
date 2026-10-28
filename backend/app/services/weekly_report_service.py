@@ -46,7 +46,7 @@ from app.models import (
     WeeklyReportIssue,
     WeeklyReportNote,
 )
-from app.services import progress_service, report_card_service
+from app.services import mock_results_service, progress_service, report_card_service
 from app.services.assessment_service import SCHOOL_TIMEZONE
 from app.services.practice_access_service import Viewer
 
@@ -565,11 +565,12 @@ def _totals(rows: list[dict]) -> dict:
 
 
 def _skills(db: Session, student: Student, week_start: date) -> dict:
-    """Strong skills and skills to work on, from the practice handed in up to
-    the end of the week (so a week issued again later says the same)."""
+    """Strong skills and skills to work on, from the practice handed in, and
+    the mock papers handed in, by the end of the week (so a
+    week issued again later says the same)."""
     _, end = week_window(week_start)
     rows = [
-        r for r in progress_service.skill_rows(db, student, Attempt.submitted_at < end)
+        r for r in progress_service.skill_rows(db, student, Attempt.submitted_at < end, mock_before=end)
         if r.score is not None and r.score.answered >= progress_service.MIN_ANSWERS_FOR_BAND
     ]
     as_dict = lambda r: {
@@ -633,6 +634,9 @@ def build(
         }
         if with_skills:
             page["skills"] = _skills(db, student, week_start)
+            # #207: mock papers handed in this week (none: no block).
+            start, end = week_window(week_start)
+            page["mockPapers"] = mock_results_service.papers_for(db, student.id, handed_from=start, handed_before=end)
         pages.append(page)
     return pages
 

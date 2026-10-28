@@ -1,5 +1,6 @@
 // The weekly parent report (#187): GET/PUT/POST /api/weekly-reports/*.
 import type { ActivityType } from "@/types/learning";
+import type { MockPaperResult } from "@/types/progress";
 
 export type SetStatus = "DONE_ON_TIME" | "DONE_LATE" | "DONE" | "NOT_DONE" | "IN_PROGRESS" | "NOT_STARTED";
 export type WeeklyIssueStatus = "ISSUED" | "WITHDRAWN";
@@ -116,6 +117,8 @@ export interface WeeklyReportData {
   totals: WeekTotals;
   weekNumbers: WeekNumbers;
   skills?: { strong: WeeklySkill[]; workOn: WeeklySkill[] };
+  // #207: mock papers handed in that week (pages issued before it have none).
+  mockPapers?: MockPaperResult[];
   notes: { section: string | null; child: string | null };
   madeOn: string;
   issuedAt?: string;

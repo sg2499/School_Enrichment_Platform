@@ -15,14 +15,14 @@ import type { MyPaper } from "@/types/mockPapers";
 
 function action(p: MyPaper): { label: string; variant: "primary" | "tinted" | "ghost" } {
   if (p.sitting === "IN_PROGRESS") return { label: "Carry On", variant: "primary" };
-  if (p.sitting === "SUBMITTED") return { label: p.released ? "See Results" : "View", variant: "tinted" };
+  if (p.sitting === "SUBMITTED") return { label: "See Results", variant: "tinted" };
   if (p.status === "OPEN") return { label: "Start", variant: "primary" };
   return { label: "View", variant: "ghost" };
 }
 
 function line(p: MyPaper): string {
   const parts = [`${p.totalMarks} marks`, durationText(p.timeMinutes)];
-  if (p.sitting === "SUBMITTED") parts.push(p.released ? `Your marks: ${p.score ?? "—"} / ${p.totalMarks}` : "Handed in; results to come");
+  if (p.sitting === "SUBMITTED") parts.push(`Your marks: ${p.score ?? "—"} / ${p.totalMarks}${p.waiting ? " so far" : ""}`);
   else if (p.sitting === "IN_PROGRESS") parts.push("Started");
   else if (p.status === "SCHEDULED") parts.push(`Opens ${formatDateTime(p.opensAt)}`);
   else if (p.status === "OPEN") parts.push(`Closes ${formatDateTime(p.closesAt)}`);

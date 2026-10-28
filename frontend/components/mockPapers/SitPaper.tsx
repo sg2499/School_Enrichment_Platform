@@ -6,8 +6,9 @@
  * locked), then writing time with a countdown always in view. Every answer
  * saves as it is typed, so a dropped connection loses nothing, and when the
  * time is up the paper is handed in with what was saved. In an either/or
- * pair the student picks one question. No answers or marks show until the
- * teacher releases the results.
+ * pair the student picks one question. No answers or marks show while
+ * sitting; at hand-in the marks show at once (#208), and the right answers
+ * and solutions once the paper closes.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, CircleAlert, Clock, Cloud, CloudOff, Loader2, Send } from "lucide-react";
@@ -65,7 +66,7 @@ function Rules({ view }: { view: SittingView }) {
           : "You can move between the sections in any order."}
       </li>
       <li>Your answers save as you type. When the time is up, your paper is handed in with what you saved.</li>
-      <li>You sit this paper once. Your marks and the solutions come when your teacher releases them.</li>
+      <li>You sit this paper once. You see your marks as soon as you hand in, and the answers and solutions once the paper closes.</li>
     </ul>
   );
 }
@@ -138,8 +139,14 @@ function ResultView({ result }: { result: PaperResult }) {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-content-subtle">Your Marks</p>
             <p className="font-display text-display-md text-content">
-              {result.score ?? "—"} <span className="text-content-subtle">/ {result.maxScore}</span>
+              {result.score ?? result.scoreSoFar} <span className="text-content-subtle">/ {result.maxScore}</span>
             </p>
+            {result.waiting ? (
+              <p className="text-xs text-content-subtle">
+                Your total so far: {result.waiting} written {result.waiting === 1 ? "answer is" : "answers are"} still to be marked by your
+                teacher.
+              </p>
+            ) : null}
           </div>
           <ul className="flex flex-wrap gap-3 text-sm">
             {result.sections.map((s) => (
@@ -153,6 +160,11 @@ function ResultView({ result }: { result: PaperResult }) {
           </ul>
         </CardBody>
       </Card>
+      {result.solutionsOpen ? null : (
+        <p className="rounded-2xl bg-surface-muted px-4 py-3 text-sm text-content-muted">
+          The right answers and solutions show here when the paper closes, {formatDateTime(result.solutionsAt)}, once everyone has finished.
+        </p>
+      )}
       {result.sections.map((s) => (
         <section key={s.name} aria-label={s.name} className="space-y-3">
           <h2 className="font-display text-display-sm text-content">{s.name}</h2>
@@ -170,6 +182,7 @@ function ResultView({ result }: { result: PaperResult }) {
                     ) : null}
                     {place.parts.map((part) => {
                       const full = part.score !== null && part.score === part.maxScore;
+                      const waiting = part.score === null;
                       return (
                         <div key={part.id} className="space-y-2">
                           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -178,10 +191,10 @@ function ResultView({ result }: { result: PaperResult }) {
                               {part.text}
                             </p>
                             <Badge
-                              tone={full ? "success" : part.score ? "warning" : "danger"}
+                              tone={waiting ? "neutral" : full ? "success" : part.score ? "warning" : "danger"}
                               icon={full ? <CheckCircle2 className="h-3 w-3" /> : undefined}
                             >
-                              {part.score ?? 0} / {part.maxScore}
+                              {waiting ? `Waiting for your teacher (out of ${part.maxScore})` : `${part.score} / ${part.maxScore}`}
                             </Badge>
                           </div>
                           <p className="text-sm">
@@ -195,24 +208,26 @@ function ResultView({ result }: { result: PaperResult }) {
                             </p>
                           ) : null}
                           {part.note ? <p className="text-sm text-saffron-800">{part.note}</p> : null}
-                          <div className="space-y-1.5 rounded-xl bg-surface-muted px-3 py-2 text-sm text-content-muted">
-                            <p>
-                              <span className="font-semibold text-content">Answer:</span>{" "}
-                              {part.questionType === "Single Select"
-                                ? `${part.correctAnswer}. ${part[`option${part.correctAnswer}` as "optionA"] ?? ""}`
-                                : part.correctAnswer}
-                            </p>
-                            {part.markingSteps ? (
-                              <p className="whitespace-pre-line">
-                                <span className="font-semibold text-content">How the marks are given:</span> {part.markingSteps}
+                          {result.solutionsOpen ? (
+                            <div className="space-y-1.5 rounded-xl bg-surface-muted px-3 py-2 text-sm text-content-muted">
+                              <p>
+                                <span className="font-semibold text-content">Answer:</span>{" "}
+                                {part.questionType === "Single Select"
+                                  ? `${part.correctAnswer}. ${part[`option${part.correctAnswer}` as "optionA"] ?? ""}`
+                                  : part.correctAnswer}
                               </p>
-                            ) : null}
-                            {part.explanation ? (
-                              <p className="whitespace-pre-line">
-                                <span className="font-semibold text-content">Explanation:</span> {part.explanation}
-                              </p>
-                            ) : null}
-                          </div>
+                              {part.markingSteps ? (
+                                <p className="whitespace-pre-line">
+                                  <span className="font-semibold text-content">How the marks are given:</span> {part.markingSteps}
+                                </p>
+                              ) : null}
+                              {part.explanation ? (
+                                <p className="whitespace-pre-line">
+                                  <span className="font-semibold text-content">Explanation:</span> {part.explanation}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}
@@ -482,6 +497,30 @@ export function SitPaper({ paperId }: { paperId: string }) {
     }
   }, [inProgress, serverNow, deadline, handIn]);
 
+  // #208: a handed-in result can still change (a written answer marked, the
+  // solutions opening at the close), so it is looked at again every minute
+  // until it is final, and when the student comes back to the tab.
+  const result = view?.result ?? null;
+  const settled = !result || (result.waiting === 0 && result.solutionsOpen);
+  useEffect(() => {
+    if (settled) return;
+    const again = async () => {
+      try {
+        const { data } = await api.get<SittingView>(`/my-papers/${paperId}`);
+        adoptRef.current(data);
+      } catch {
+        // A missed refresh is tried again in a minute.
+      }
+    };
+    const timer = window.setInterval(again, 60_000);
+    const onFocus = () => document.visibilityState === "visible" && void again();
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [settled, paperId]);
+
   if (loaded.problem) return <LoadError problem={loaded.problem} onRetry={loaded.reload} />;
   if (!view) return <TableSkeleton label="Opening the paper" rows={4} />;
 
@@ -558,7 +597,12 @@ export function SitPaper({ paperId }: { paperId: string }) {
       <div className="space-y-8">
         {header}
         {view.result ? (
-          <ResultView result={view.result} />
+          <>
+            <p className="flex items-center gap-2 text-sm text-content-muted">
+              <CheckCircle2 className="h-4 w-4 text-jade-600" aria-hidden /> {handedInText(sitting.submittedHow)}
+            </p>
+            <ResultView result={view.result} />
+          </>
         ) : (
           <Card>
             <CardBody className="space-y-2 sm:p-7">
@@ -566,7 +610,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
                 <CheckCircle2 className="h-5 w-5 text-jade-600" aria-hidden /> Handed In
               </p>
               <p className="text-sm text-content-muted">{handedInText(sitting.submittedHow)}</p>
-              <p className="text-sm text-content-muted">Your marks and the solutions appear here once your teacher releases the results.</p>
+              <p className="text-sm text-content-muted">Your marks will show here. If they don&apos;t, open this page again.</p>
             </CardBody>
           </Card>
         )}

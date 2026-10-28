@@ -35,6 +35,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableSkeleton } from "@/components/ui/Table";
+import { MockPaperResults } from "@/components/progress/MockPaperResults";
 import { SkillMap } from "@/components/progress/SkillMap";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { PractiseNextItem, ProgressPayload } from "@/types/progress";
@@ -218,7 +219,7 @@ function MyProgressPage() {
           surface="masthead"
           eyebrow="Track"
           title="My Progress"
-          description="How you're doing on every skill, from the practice you've handed in. Your latest answer to each question counts."
+          description="How you're doing on every skill, from the practice you've handed in and your mock papers. Your latest answer to each question counts."
           stats={[
             {
               label: "Strong",
@@ -278,6 +279,12 @@ function MyProgressPage() {
                 </ol>
               )}
             </section>
+
+            <MockPaperResults
+              papers={data.mockPapers ?? []}
+              description="Mock papers your teacher set, from when you hand them in. Your answers count in your skills below; they don't count towards your term marks."
+              hrefFor={(id) => `/student/papers/${id}`}
+            />
 
             <WhereYouStand data={data} />
 

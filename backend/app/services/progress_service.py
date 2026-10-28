@@ -107,10 +107,14 @@ def _answer_score(manual: int | None, auto: int | None) -> int | None:
     return manual if manual is not None else auto
 
 
-def skill_scores(db: Session, student: Student, assignment_clause=None) -> dict[str, SkillScore]:
+def skill_scores(
+    db: Session, student: Student, assignment_clause=None, *, mock_clause=None, mock_before=None
+) -> dict[str, SkillScore]:
     """concept_lesson_id -> the student's score on it, from each question's
     latest marked answer. `assignment_clause` narrows which assignments'
-    answers count (a teacher sees only what they can read)."""
+    answers count (a teacher sees only what they can read); `mock_clause`
+    and `mock_before` do the same for mock papers (#207), whose answers count
+    like practice answers, dated by the hand-in (#208)."""
     query = (
         db.query(
             AttemptAnswer.question_id,
@@ -149,6 +153,14 @@ def skill_scores(db: Session, student: Student, assignment_clause=None) -> dict[
         current = latest.get(question_id)
         if current is None or key > current[1].when:
             latest[question_id] = (skill_id, _Latest(key, max(0, min(score, max_score)), max_score, stamp))
+
+    from app.services import mock_results_service
+
+    for answer in mock_results_service.answers(db, [student.id], before=mock_before, paper_clause=mock_clause):
+        key = (answer.handed_in_at, 0, answer.sitting_id)
+        current = latest.get(answer.question_id)
+        if current is None or key > current[1].when:
+            latest[answer.question_id] = (answer.skill_id, _Latest(key, answer.score, answer.max_score, answer.handed_in_at))
 
     scores: dict[str, SkillScore] = {}
     for skill_id, item in latest.values():
@@ -206,8 +218,8 @@ class SkillRow:
         return self.score.percent if self.score else None
 
 
-def skill_rows(db: Session, student: Student, assignment_clause=None) -> list[SkillRow]:
-    scores = skill_scores(db, student, assignment_clause)
+def skill_rows(db: Session, student: Student, assignment_clause=None, *, mock_clause=None, mock_before=None) -> list[SkillRow]:
+    scores = skill_scores(db, student, assignment_clause, mock_clause=mock_clause, mock_before=mock_before)
     chapters = _mapped_chapters(db, student)
     chapter_ids = [c.id for c in chapters]
     skills = (
@@ -334,8 +346,10 @@ def _skill_dict(row: SkillRow) -> dict:
     }
 
 
-def progress_payload(db: Session, student: Student, *, assignment_clause=None, for_student: bool) -> dict:
-    rows = skill_rows(db, student, assignment_clause)
+def progress_payload(db: Session, student: Student, *, assignment_clause=None, mock_clause=None, for_student: bool) -> dict:
+    from app.services import mock_results_service
+
+    rows = skill_rows(db, student, assignment_clause, mock_clause=mock_clause)
 
     chapters: list[dict] = []
     index: dict[str, dict] = {}
@@ -451,6 +465,8 @@ def progress_payload(db: Session, student: Student, *, assignment_clause=None, f
         },
         "chapters": chapters,
         "practiseNext": practise_next,
+        # #207: the mock papers the student has handed in, newest first.
+        "mockPapers": mock_results_service.papers_for(db, student.id, paper_clause=mock_clause),
     }
     if for_student:
         payload["selfPractice"] = _self_practice_history(db, own_pairs, counts)

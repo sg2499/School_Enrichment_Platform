@@ -50,7 +50,7 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
-from app.services import practice_access_service
+from app.services import mock_results_service, practice_access_service
 from app.services.practice_access_service import Viewer
 
 MISSED_FOR_MISCONCEPTION = 2
@@ -318,6 +318,15 @@ def practice_sets(db: Session, viewer: Viewer, scope: Scope) -> dict:
         if assignment.created_at and (entry["lastSetAt"] is None or assignment.created_at > entry["lastSetAt"]):
             entry["lastSetAt"] = assignment.created_at
     chapter_ids = {e["activity"].chapter_id for e in by_activity.values()}
+    # #207: a chapter a handed-in mock paper covered has misconceptions to
+    # show even if no practice was set on it.
+    chapter_ids |= mock_results_service.handed_in_chapter_ids(
+        db,
+        and_(
+            mock_results_service.readable_papers_clause(viewer),
+            mock_results_service.section_clause(scope.class_level_id, scope.section, scope.board_course_id),
+        ),
+    )
     if chapter_ids:
         chapters = {c.id: c for c in db.query(Chapter).filter(Chapter.id.in_(chapter_ids)).all()}
     all_ids = [aid for e in by_activity.values() for aid in e["assignmentIds"]]
@@ -469,15 +478,42 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
         .join(LearningActivity, LearningActivity.id == Assignment.learning_activity_id)
         .filter(_scope_assignments_clause(viewer, scope), LearningActivity.chapter_id == chapter_id)
     ]
-    question_rows = (
-        db.query(Question.id, Question.misconception_tag, ConceptLesson)
-        .join(ConceptLesson, ConceptLesson.id == Question.concept_lesson_id)
-        .filter(ConceptLesson.chapter_id == chapter_id)
-        .all()
-    )
-    by_question = {qid: (tag, skill) for qid, tag, skill in question_rows}
     picked = _pick(_answers(db, assignment_ids, chapter_id=chapter_id), which) if assignment_ids else {}
     students = {s.id: (s, u) for s, u in _section_students(db, viewer, scope, assignment_ids)}
+    # #207: the section's mock papers count too, from hand-in (#208). Each student's
+    # paper questions are their own, so there is no first or latest to pick.
+    mock_rows = mock_results_service.answers(
+        db,
+        None,
+        chapter_id=chapter_id,
+        paper_clause=and_(
+            mock_results_service.readable_papers_clause(viewer),
+            mock_results_service.section_clause(scope.class_level_id, scope.section, scope.board_course_id),
+        ),
+    )
+    missing = {a.student_id for a in mock_rows} - set(students)
+    if missing:
+        for s, u in db.query(Student, User).join(User, User.id == Student.user_id).filter(Student.id.in_(missing)).all():
+            students[s.id] = (s, u)
+    # A mock question is generated for one student, so "questions that test
+    # it" counts the paper's question (its slot), not each student's copy
+    # (#207 review).
+    counted_as: dict[str, str] = {}
+    for a in mock_rows:
+        picked[(a.student_id, a.question_id)] = (a.student_id, a.question_id, a.score, a.max_score, None, (a.handed_in_at, 0, a.sitting_id))
+        counted_as[a.question_id] = f"slot:{a.slot_id}"
+    # Only the questions answered here (the chapter's every question, at
+    # every school, would be read otherwise).
+    answered_ids = {qid for _, qid in picked}
+    by_question: dict = {}
+    if answered_ids:
+        for qid, tag, skill in (
+            db.query(Question.id, Question.misconception_tag, ConceptLesson)
+            .join(ConceptLesson, ConceptLesson.id == Question.concept_lesson_id)
+            .filter(ConceptLesson.chapter_id == chapter_id, Question.id.in_(answered_ids))
+            .all()
+        ):
+            by_question[qid] = (tag, skill)
     in_section = _in_section(db, scope)
 
     groups: dict[tuple[str, str], dict] = {}
@@ -492,7 +528,7 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
             (skill.id, key),
             {"skill": skill, "tag": " ".join(raw_tag.split()), "questions": set(), "per_student": {}},
         )
-        group["questions"].add(question_id)
+        group["questions"].add(counted_as.get(question_id, question_id))
         answered, missed = group["per_student"].get(student_id, (0, 0))
         group["per_student"][student_id] = (answered + 1, missed + (1 if row[2] < row[3] else 0))
 
