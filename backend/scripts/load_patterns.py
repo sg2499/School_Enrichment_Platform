@@ -67,9 +67,11 @@ def main() -> int:
             if input("\nType YES to load these patterns: ").strip() != "YES":
                 print("Stopped: nothing was written.")
                 return 1
-            print("Checking again on a fresh connection before writing ...")
+            print("Checking the database again on a fresh connection (a few seconds) ...")
             db = SessionLocal()
-            plan = pattern_store.make_plan(db, entries)
+            # The files haven't changed, so the 200 tries above still stand:
+            # this pass only re-reads what is in the database.
+            plan = pattern_store.make_plan(db, entries, trial_count=1, min_distinct=1)
             if _summary(plan) != confirmed:
                 print("\nStopped: the database changed since the report above. Nothing was written; run it again.")
                 return 1

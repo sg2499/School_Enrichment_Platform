@@ -117,18 +117,20 @@ def test_every_chapter_1_pattern_works():
     assert kinds["3"] >= 3 and kinds["4"] >= 3 and kinds["5"] >= 3 and kinds["2"] >= 15
 
 
-def test_chapters_2_to_13_patterns_work():
+def test_chapters_2_to_15_patterns_work():
     """#166 step 5: Chapters 2 (Fractions), 3 (Angles as Turns), 4 (We the
     Travellers II), 5 (Far and Near), 6 (The Dairy Farm), 7 (Shapes and
     Patterns), 8 (Weight and Capacity), 9 (Coconut Farm), 10
     (Symmetrical Designs), 11 (Grandmother's Quilt), 12 (Racing
-    Seconds) and 13 (Animal Jumps). Each pattern loads, belongs to its chapter and
+    Seconds), 13 (Animal Jumps), 14 (Maps and Locations) and 15 (Data
+    Through Pictures). Each pattern loads, belongs to its chapter and
     skill, makes a valid question every time with at least 20 different
     ones, adds up its marks, and its key gets full marks from the
     platform's own marking."""
     prefixes = {2: "C5-FR2-", 3: "C5-AT-", 4: "C5-WT2-", 5: "C5-FN-", 6: "C5-DF-", 7: "C5-SP-",
                 8: "C5-WC-", 9: "C5-CF-", 10: "C5-SD-",
-                11: "C5-GQ-", 12: "C5-RS-", 13: "C5-AJ-"}
+                11: "C5-GQ-", 12: "C5-RS-", 13: "C5-AJ-",
+                14: "C5-ML-", 15: "C5-DP-"}
     seen = set(_content_specs())
     for chapter, prefix in prefixes.items():
         data = json.loads((CONTENT / f"chapter-{chapter:02d}.json").read_text(encoding="utf-8"))
@@ -155,6 +157,17 @@ def test_chapters_2_to_13_patterns_work():
                     )
                     assert learning_service.grade_answer(question, q["correct_answer"]) == (True, q["marks"]), (spec.code, q["stem"])
         assert len(data["patterns"]) >= 55 and kinds[3] >= 3 and kinds[4] >= 3 and kinds[5] >= 3, (chapter, kinds)
+
+
+def test_mistake_notes_have_their_blanks_filled():
+    """28 Oct 2026: a wrong option's mistake note may name a value
+    ("picks a factor of {r.n}"); the teacher sees it filled in."""
+    data = json.loads((CONTENT / "chapter-13.json").read_text(encoding="utf-8"))
+    spec = pattern_engine.clean_spec(next(p for p in data["patterns"] if p["code"] == "C5-AJ-S01-P3"))
+    for i in range(20):
+        made = pattern_engine.make(spec, f"m{i}").questions[0]
+        assert made["mistakes"] and all("{" not in m and "}" not in m for m in made["mistakes"].values()), made["mistakes"]
+    assert any(any(ch.isdigit() for ch in m) for m in made["mistakes"].values())
 
 
 def test_the_same_seed_makes_the_same_question():
