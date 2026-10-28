@@ -6849,7 +6849,7 @@
     },
     {
      "marks": 1,
-     "text": "{x.k} spaces."
+     "text": "{x.k} {'space' if (x.k) == 1 else 'spaces'}."
     }
    ],
    "hint": "Count the gaps you move across, not the marks you see.",
@@ -19241,7 +19241,7 @@
      "text": "(a) How many clock-number spaces does the minute hand move during the warm-up?",
      "answer": "x.s1",
      "hint": "Each space is 5 minutes.",
-     "explanation": "{x.m1} ÷ 5 = {x.s1} spaces."
+     "explanation": "{x.m1} ÷ 5 = {x.s1} {'space' if (x.s1) == 1 else 'spaces'}."
     },
     {
      "questionType": "Numeric Entry",
@@ -19250,7 +19250,7 @@
      "text": "(b) At which clock number does the minute hand point when the relay ends?",
      "answer": "x.stop2",
      "hint": "Add the warm-up and relay times, then count spaces from 12.",
-     "explanation": "{x.m1} + {x.m2} = {x.m1 + x.m2} minutes is {(x.m1 + x.m2) // 5} spaces from 12, so it points to {x.stop2}."
+     "explanation": "{x.m1} + {x.m2} = {x.m1 + x.m2} minutes is {(x.m1 + x.m2) // 5} {'space' if ((x.m1 + x.m2) // 5) == 1 else 'spaces'} from 12, so it points to {x.stop2}."
     },
     {
      "questionType": "Text Entry",

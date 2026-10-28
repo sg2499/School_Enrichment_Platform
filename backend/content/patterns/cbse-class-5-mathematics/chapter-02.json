@@ -1014,7 +1014,7 @@
     }
    ],
    "hint": "{a}/{b} is {a} equal groups out of {b}. Find one group first.",
-   "explanation": "{a} groups make {a * k}, so one group is {a * k} ÷ {a} = {k}. The whole box has {b} groups: {k} × {b} = {b * k}.",
+   "explanation": "{a} {'group' if (a) == 1 else 'groups'} make {a * k}, so one group is {a * k} ÷ {a} = {k}. The whole box has {b} {'group' if (b) == 1 else 'groups'}: {k} × {b} = {b * k}.",
    "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
    "notes": "Denominators 3 to 10; the part given is a whole number of equal groups of 2 to 12.",
    "sources": [

@@ -215,7 +215,10 @@ def _part(data, where, problems, known, *, top_type=None) -> Part | None:
                 if not isinstance(w, dict) or not str(w.get("mistake") or "").strip():
                     problems.append(f"{where} wrong option {i}: needs an expr and the mistake behind it.")
                     continue
-                parsed.append((_expr(w.get("expr", ""), f"{where} wrong option {i}", problems, known), w["mistake"].strip()))
+                parsed.append((
+                    _expr(w.get("expr", ""), f"{where} wrong option {i}", problems, known),
+                    _template(w["mistake"].strip(), f"{where} wrong option {i} mistake", problems, known),
+                ))
             options = {"correct": correct, "wrong": parsed, "format": fmt}
     elif qtype in ("Numeric Entry", "Text Entry"):
         raw = data.get("answer")
@@ -497,7 +500,8 @@ def _build_part(spec: Spec, part: Part, env: dict, rng: random.Random, stimulus:
         fmt = part.options["format"]
         correct_value = pattern_expr.evaluate(part.options["correct"], env)
         correct = format_value(correct_value, fmt)
-        wrong = [(format_value(pattern_expr.evaluate(t, env), fmt), m) for t, m in part.options["wrong"]]
+        # The mistake notes may use blanks too ("picks a factor of {r.n}"), so fill them in.
+        wrong = [(format_value(pattern_expr.evaluate(t, env), fmt), _render(m, env)) for t, m in part.options["wrong"]]
         shown = [correct] + [w for w, _m in wrong]
         if len(set(shown)) != 4:
             raise GenerationError("Two options would read the same.")

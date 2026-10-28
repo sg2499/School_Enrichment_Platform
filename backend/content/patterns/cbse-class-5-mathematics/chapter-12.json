@@ -1148,7 +1148,7 @@
    "text": "How many five-minute jumps does the minute hand make to move from {a} to {b}?",
    "answer": "b - a",
    "hint": "Count the numbers the minute hand passes: each one is a five-minute jump.",
-   "explanation": "From {a} to {b} is {b - a} numbers, so {b - a} five-minute jumps ({5 * (b - a)} minutes).",
+   "explanation": "From {a} to {b} is {b - a} {'number' if (b - a) == 1 else 'numbers'}, so {b - a} five-minute jumps ({5 * (b - a)} minutes).",
    "misconception": "Interchanges the hour and minute hands or reads the minute-hand number as minutes rather than groups of five.",
    "notes": "From one clock number to a later one, without passing 12.",
    "sources": [
@@ -1931,7 +1931,7 @@
    "text": "A runner starts when the seconds hand points to {a} and stops when it points to {b}, less than a minute later. How long did the run take, in seconds?",
    "answer": "5 * ((b - a) % 12)",
    "hint": "Each number on the clock is 5 seconds for the seconds hand. Go clockwise.",
-   "explanation": "Clockwise from {a} to {b} is {(b - a) % 12} numbers: {(b - a) % 12} × 5 = {5 * ((b - a) % 12)} seconds.",
+   "explanation": "Clockwise from {a} to {b} is {(b - a) % 12} {'number' if ((b - a) % 12) == 1 else 'numbers'}: {(b - a) % 12} × 5 = {5 * ((b - a) % 12)} seconds.",
    "misconception": "Treats one clock number as one second or assumes a minute contains 100 seconds.",
    "notes": "Any two different positions 1 to 12; the hand may pass 12.",
    "sources": [
@@ -2101,7 +2101,7 @@
    "text": "The seconds hand points to {a}. Which number will it point to {s} seconds later?",
    "answer": "(a + s // 5 - 1) % 12 + 1",
    "hint": "Every 5 seconds the hand moves on one number. After 12 comes 1.",
-   "explanation": "{s} seconds is {s // 5} numbers on. From {a}, that is {(a + s // 5 - 1) % 12 + 1}.",
+   "explanation": "{s} seconds is {s // 5} {'number' if (s // 5) == 1 else 'numbers'} on. From {a}, that is {(a + s // 5 - 1) % 12 + 1}.",
    "misconception": "Treats one clock number as one second or assumes a minute contains 100 seconds.",
    "notes": "Start 1 to 12, 5 to 55 seconds later; the hand often passes 12.",
    "sources": [
@@ -5485,7 +5485,7 @@
     }
    ],
    "hint": "The end minutes are fewer than the start minutes, so borrow an hour.",
-   "explanation": "{h + k}:{b} − {h}:{a}: borrow 1 hour, {60 + b} − {a} = {60 + b - a} minutes and {k - 1} hours. So {k - 1} h {60 + b - a} min.",
+   "explanation": "{'0' if (h + k) < 10 else ''}{h + k}:{'0' if (b) < 10 else ''}{b} − {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}: borrow 1 hour, {60 + b} − {a} = {60 + b - a} minutes and {k - 1} {'hour' if (k - 1) == 1 else 'hours'}. So {k - 1} h {60 + b - a} min.",
    "misconception": "Subtracts minutes without regrouping or treats one hour as 100 minutes.",
    "notes": "The end minutes are always smaller than the start minutes, so the child must regroup; 1 to 2 hours and some minutes, never under an hour; two boxes.",
    "sources": [

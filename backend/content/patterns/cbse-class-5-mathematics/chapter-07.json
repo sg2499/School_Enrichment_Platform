@@ -7697,7 +7697,7 @@
    "text": "{who.name} draws {'an' if n == 8 or n == 11 else 'a'} {n}-sided polygon with no dents. From one corner, {who.he} draws every diagonal that does not cross another. How many {ask} does {who.he} get?",
    "answer": "n - 2 if ask == 'triangles' else n - 3",
    "hint": "Try it with a square or a pentagon first and look for the rule.",
-   "explanation": "From one corner of {'an' if n == 8 or n == 11 else 'a'} {n}-sided polygon there are {n} − 3 = {n - 3} diagonals, making {n} − 2 = {n - 2} triangles. The answer is {n - 2 if ask == 'triangles' else n - 3}.",
+   "explanation": "From one corner of {'an' if n == 8 or n == 11 else 'a'} {n}-sided polygon there are {n} − 3 = {n - 3} {'diagonal' if (n - 3) == 1 else 'diagonals'}, making {n} − 2 = {n - 2} triangles. The answer is {n - 2 if ask == 'triangles' else n - 3}.",
    "misconception": "Counts a shared internal side as part of the outside boundary or assumes pieces change size when moved.",
    "notes": "Convex polygons with 4 to 12 sides; asks for the triangles (n − 2) or the diagonals (n − 3).",
    "sources": [
@@ -9470,7 +9470,7 @@
    "text": "{who.name} is building {'an' if n == 8 or n == 11 else 'a'} {n} × {n} × {n} cube from small cubes. {who.name} has finished {d} complete {'layer' if d == 1 else 'layers'}. How many more small cubes are needed?",
    "answer": "(n - d) * n * n",
    "hint": "Each layer has {n} × {n} cubes.",
-   "explanation": "Each layer has {n * n} cubes. {n - d} layers are left: {n - d} × {n * n} = {(n - d) * n * n}.",
+   "explanation": "Each layer has {n * n} cubes. {n - d} {'layer' if (n - d) == 1 else 'layers'} are left: {n - d} × {n * n} = {(n - d) * n * n}.",
    "misconception": "Counts only visible cubes or subtracts a linear amount from a three-dimensional arrangement.",
    "notes": "Cubes 3 × 3 × 3 to 8 × 8 × 8, with 1 to n − 1 layers done.",
    "sources": [

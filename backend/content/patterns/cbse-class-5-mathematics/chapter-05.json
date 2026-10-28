@@ -7790,7 +7790,7 @@
     },
     {
      "marks": 1,
-     "text": "(c) Divides by {p}: {(100 * roll - n * (100 * a + b)) // p} strips."
+     "text": "(c) Divides by {p}: {(100 * roll - n * (100 * a + b)) // p} {'strip' if ((100 * roll - n * (100 * a + b)) // p) == 1 else 'strips'}."
     },
     {
      "marks": 1,

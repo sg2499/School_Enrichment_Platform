@@ -224,7 +224,7 @@
      "list": "names"
     }
    ],
-   "text": "{who.name} draws a dot {a} {'square' if a == 1 else 'squares'} to the left of a fold line. On the right, the matching dot is drawn {a + e} squares from the fold. How many squares closer to the fold must the right-hand dot move, and how many squares apart will the two dots then be? Give the move first.",
+   "text": "{who.name} draws a dot {a} {'square' if a == 1 else 'squares'} to the left of a fold line. On the right, the matching dot is drawn {a + e} {'square' if (a + e) == 1 else 'squares'} from the fold. How many squares closer to the fold must the right-hand dot move, and how many squares apart will the two dots then be? Give the move first.",
    "answer": [
     "e",
     "2 * a"
@@ -236,11 +236,11 @@
     },
     {
      "marks": 1,
-     "text": "The two dots are then {a} + {a} = {2 * a} squares apart."
+     "text": "The two dots are then {a} + {a} = {2 * a} {'square' if (2 * a) == 1 else 'squares'} apart."
     }
    ],
    "hint": "Mirror partners are the same distance from the fold, on opposite sides.",
-   "explanation": "The right dot should be {a} squares from the fold, so it moves {e}. Then the dots are {2 * a} squares apart.",
+   "explanation": "The right dot should be {a} {'square' if (a) == 1 else 'squares'} from the fold, so it moves {e}. Then the dots are {2 * a} {'square' if (2 * a) == 1 else 'squares'} apart.",
    "misconception": "Treats equal area or similar-looking parts as mirror images without checking point-to-point matching.",
    "notes": "Left dot 1 to 6 squares from the fold; the right dot drawn 1 to 4 squares too far.",
    "sources": [
@@ -723,15 +723,15 @@
    "steps": [
     {
      "marks": 1,
-     "text": "The dot is {c - x} columns left of column {c}, so its image is in column {c} + {c - x} = {2 * c - x}."
+     "text": "The dot is {c - x} {'column' if (c - x) == 1 else 'columns'} left of column {c}, so its image is in column {c} + {c - x} = {2 * c - x}."
     },
     {
      "marks": 1,
-     "text": "They are {2 * c - x} − {x} = {2 * (c - x)} columns apart."
+     "text": "They are {2 * c - x} − {x} = {2 * (c - x)} {'column' if (2 * (c - x)) == 1 else 'columns'} apart."
     }
    ],
    "hint": "Count how far the dot is from the mirror column, then go the same distance on the other side.",
-   "explanation": "Column {x} is {c - x} left of column {c}; the image is {c - x} right of it, in column {2 * c - x}, {2 * (c - x)} columns away.",
+   "explanation": "Column {x} is {c - x} left of column {c}; the image is {c - x} right of it, in column {2 * c - x}, {2 * (c - x)} {'column' if (2 * (c - x)) == 1 else 'columns'} away.",
    "misconception": "Copies a half without reversing its left–right orientation or places points at unequal distances from the axis.",
    "notes": "Mirror column 6 to 12, dot to its left; images within 20 columns.",
    "sources": [
@@ -1660,11 +1660,11 @@
    "steps": [
     {
      "marks": 1,
-     "text": "Row {y} is {r - y} rows above row {r}, so the image is in row {r} + {r - y} = {2 * r - y}."
+     "text": "Row {y} is {r - y} {'row' if (r - y) == 1 else 'rows'} above row {r}, so the image is in row {r} + {r - y} = {2 * r - y}."
     },
     {
      "marks": 1,
-     "text": "They are {2 * r - y} − {y} = {2 * (r - y)} rows apart."
+     "text": "They are {2 * r - y} − {y} = {2 * (r - y)} {'row' if (2 * (r - y)) == 1 else 'rows'} apart."
     }
    ],
    "hint": "Count how far the cell is from the mirror row, then go the same distance below it.",
@@ -17931,7 +17931,7 @@
    "text": "{who.name}'s grid design should have a vertical line of symmetry. {a} coloured {'cell' if a == 1 else 'cells'} on the left {'has' if a == 1 else 'have'} no partner on the right, and {b} coloured {'cell' if b == 1 else 'cells'} on the right {'has' if b == 1 else 'have'} no partner on the left. Without rubbing anything out, what is the smallest number of cells {who.he} must colour?",
    "answer": "a + b",
    "hint": "Every coloured cell without a partner needs one coloured in on the other side.",
-   "explanation": "{a} partners on the right and {b} on the left: {a} + {b} = {a + b}.",
+   "explanation": "{a} {'partner' if (a) == 1 else 'partners'} on the right and {b} on the left: {a} + {b} = {a + b}.",
    "misconception": "Adds decoration without verifying every required mirror or rotation match.",
    "notes": "1 to 8 unmatched on the left, 0 to 6 on the right.",
    "sources": [
@@ -30207,7 +30207,7 @@
     }
    ],
    "hint": "Order 1 means it fits only after a full turn, so it has no rotational symmetry.",
-   "explanation": "{p.la} against {p.lb} lines; orders {p.oa} and {p.ob}.",
+   "explanation": "{p.la} against {p.lb} {'line' if (p.lb) == 1 else 'lines'}; orders {p.oa} and {p.ob}.",
    "misconception": "Assumes reflection and rotational symmetry always occur together.",
    "notes": "Pairs of shapes with different numbers of lines; order 1 counts as no rotational symmetry.",
    "sources": [

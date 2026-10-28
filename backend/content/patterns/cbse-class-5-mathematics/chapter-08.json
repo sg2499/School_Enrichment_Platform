@@ -1984,12 +1984,12 @@
      }
     }
    ],
-   "text": "A warehouse receives {t} tonnes and {q} quintals of wheat. How many kilograms of wheat is that altogether?",
+   "text": "A warehouse receives {t} tonnes and {q} {'quintal' if (q) == 1 else 'quintals'} of wheat. How many kilograms of wheat is that altogether?",
    "answer": "1000 * t + 100 * q",
    "steps": [
     {
      "marks": 1,
-     "text": "Changes both: {t} tonnes = {1000 * t:num} kg and {q} quintals = {100 * q:num} kg."
+     "text": "Changes both: {t} tonnes = {1000 * t:num} kg and {q} {'quintal' if (q) == 1 else 'quintals'} = {100 * q:num} kg."
     },
     {
      "marks": 1,
@@ -4588,7 +4588,7 @@
     "(1000 * a) % v != 0",
     "1000 * a // v > x"
    ],
-   "text": "{who.name} makes {a} L of lemonade for a school fair and serves it in glasses of {v} mL at ₹{p} a glass. (a) Write {a} L in mL. (b) How many glasses can be filled completely? (c) How many mL are left over? (d) How much money does {who.name} get if every full glass is sold? (e) {who.name} keeps {x} glasses for the helpers. How much lemonade, in mL, is sold? Show your working.",
+   "text": "{who.name} makes {a} L of lemonade for a school fair and serves it in glasses of {v} mL at ₹{p} a glass. (a) Write {a} L in mL. (b) How many glasses can be filled completely? (c) How many mL are left over? (d) How much money does {who.name} get if every full glass is sold? (e) {who.name} keeps {x} {'glass' if (x) == 1 else 'glasses'} for the helpers. How much lemonade, in mL, is sold? Show your working.",
    "maxWords": 110,
    "answer": "(a) {1000 * a:num} mL. (b) {1000 * a:num} ÷ {v} = {1000 * a // v} glasses. (c) {(1000 * a) % v} mL. (d) {1000 * a // v} × ₹{p} = {1000 * a // v * p:money}. (e) {1000 * a // v - x} × {v} = {(1000 * a // v - x) * v:num} mL.",
    "steps": [
@@ -4610,11 +4610,11 @@
     },
     {
      "marks": 1,
-     "text": "(e) {1000 * a // v - x} glasses sold: {(1000 * a // v - x) * v:num} mL."
+     "text": "(e) {1000 * a // v - x} {'glass' if (1000 * a // v - x) == 1 else 'glasses'} sold: {(1000 * a // v - x) * v:num} mL."
     }
    ],
    "hint": "Change litres to millilitres first, then divide by the glass size.",
-   "explanation": "{1000 * a:num} mL makes {1000 * a // v} glasses with {(1000 * a) % v} mL over; money {1000 * a // v * p:money}; sold {(1000 * a // v - x) * v:num} mL.",
+   "explanation": "{1000 * a:num} mL makes {1000 * a // v} {'glass' if (1000 * a // v) == 1 else 'glasses'} with {(1000 * a) % v} mL over; money {1000 * a // v * p:money}; sold {(1000 * a // v - x) * v:num} mL.",
    "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
    "notes": "3 to 9 L in glasses of 150 to 400 mL (never exact), ₹10 to ₹30 a glass, 2 to 6 glasses kept.",
    "sources": [

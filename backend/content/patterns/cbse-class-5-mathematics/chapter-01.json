@@ -991,7 +991,7 @@
       "text": "Which digit is in the {pl.w} place of {n:num}?",
       "answer": "digit(n, pl.p)",
       "hint": "Start at the right with ones and move left: ones, tens, hundreds, thousands, ten-thousands.",
-      "explanation": "In {n:num}, the places are {digit(n, 10000)} ten-thousands, {digit(n, 1000)} thousands, {digit(n, 100)} hundreds, {digit(n, 10)} tens and {digit(n, 1)} ones. The {pl.w} digit is {digit(n, pl.p)}.",
+      "explanation": "In {n:num}, the places are {digit(n, 10000)} ten-thousands, {digit(n, 1000)} {'thousand' if (digit(n, 1000)) == 1 else 'thousands'}, {digit(n, 100)} {'hundred' if (digit(n, 100)) == 1 else 'hundreds'}, {digit(n, 10)} {'ten' if (digit(n, 10)) == 1 else 'tens'} and {digit(n, 1)} {'one' if (digit(n, 1)) == 1 else 'ones'}. The {pl.w} digit is {digit(n, pl.p)}.",
       "misconception": "Confuses a digit's face value with the value created by its position.",
       "notes": "n: 10,000 to 99,999; asks for the ten-thousands, thousands, hundreds or tens digit. That digit differs from the one in the mirror place (so counting from the wrong end gives a different answer) and appears only once (0 may repeat).",
       "sources": [
@@ -3865,7 +3865,7 @@
         ]
       },
       "hint": "Find how many students are left over after the full {v.many}.",
-      "explanation": "{p} ÷ {cap} = {q} remainder {rem}. The last {v.one} has {rem} {'student' if rem == 1 else 'students'}, so {cap} − {rem} = {cap - rem} seats are empty.",
+      "explanation": "{p} ÷ {cap} = {q} remainder {rem}. The last {v.one} has {rem} {'student' if rem == 1 else 'students'}, so {cap} − {rem} = {cap - rem} {'seat' if (cap - rem) == 1 else 'seats'} are empty.",
       "misconception": "Drops the remainder even when every person or object must be accommodated.",
       "notes": "A van seats 8 to 12, a bus 30 to 45, a boat 10 to 20, a minibus 15 to 25; 3 to 9 full vehicles plus one part-full (never an exact fit). Right answer: the seats left in the part-full vehicle. Wrong options come from the same division: the remainder, the full vehicles, the vehicles needed; all four always differ.",
       "sources": [
@@ -4172,7 +4172,7 @@
         },
         {
           "marks": 1,
-          "text": "Finds what is left: {amt:num} − {q * note:num} = {r} rupees."
+          "text": "Finds what is left: {amt:num} − {q * note:num} = {r} {'rupee' if (r) == 1 else 'rupees'}."
         }
       ],
       "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
@@ -4459,7 +4459,7 @@
         }
       ],
       "hint": "Find the total number of people first. What happens to the people left over after the full buses?",
-      "explanation": "{students} + {teachers} = {total} people. {total} ÷ {cap} = {q} remainder {r}, so {q} full buses leave {r} people, who need one more bus: {buses} buses. They have {buses * cap} seats, so {buses * cap} − {total} = {empty} seats are empty.",
+      "explanation": "{students} + {teachers} = {total} people. {total} ÷ {cap} = {q} remainder {r}, so {q} full buses leave {r} people, who need one more bus: {buses} buses. They have {buses * cap} {'seat' if (buses * cap) == 1 else 'seats'}, so {buses * cap} − {total} = {empty} {'seat' if (empty) == 1 else 'seats'} are empty.",
       "misconception": "Drops the remainder even when every person or object must be accommodated.",
       "notes": "150 to 380 students and 8 to 20 teachers; a bus seats 40, 45, 48, 50 or 52. The people never fill the buses exactly, so there is always a part-full bus.",
       "sources": [
