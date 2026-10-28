@@ -1,0 +1,5011 @@
+{
+ "engine": {
+  "board": "CBSE",
+  "classLevel": "5",
+  "course": "MATHEMATICS"
+ },
+ "about": "Chapter 8, Weight and Capacity: 65 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "patterns": [
+  {
+   "code": "C5-WC-S01-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S01",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "t",
+     "choice": [
+      {
+       "o": "a paper clip",
+       "c": "gram",
+       "w0": "milligram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "an eraser",
+       "c": "gram",
+       "w0": "milligram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a pencil",
+       "c": "gram",
+       "w0": "milligram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a hen's egg",
+       "c": "gram",
+       "w0": "milligram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a one-rupee coin",
+       "c": "gram",
+       "w0": "milligram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a spoon",
+       "c": "gram",
+       "w0": "milligram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a school bag full of books",
+       "c": "kilogram",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a watermelon",
+       "c": "kilogram",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a sack of rice",
+       "c": "kilogram",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a five-year-old child",
+       "c": "kilogram",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a bucket of sand",
+       "c": "kilogram",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a bicycle",
+       "c": "kilogram",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a loaded truck",
+       "c": "tonne",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "kilogram"
+      },
+      {
+       "o": "an elephant",
+       "c": "tonne",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "kilogram"
+      },
+      {
+       "o": "a railway engine",
+       "c": "tonne",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "kilogram"
+      },
+      {
+       "o": "a big ship",
+       "c": "tonne",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "kilogram"
+      },
+      {
+       "o": "a bus",
+       "c": "tonne",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "kilogram"
+      },
+      {
+       "o": "a hippopotamus",
+       "c": "tonne",
+       "w0": "milligram",
+       "w1": "gram",
+       "w2": "kilogram"
+      },
+      {
+       "o": "a grain of salt",
+       "c": "milligram",
+       "w0": "gram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a mosquito",
+       "c": "milligram",
+       "w0": "gram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a strand of hair",
+       "c": "milligram",
+       "w0": "gram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a grain of sand",
+       "c": "milligram",
+       "w0": "gram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a poppy seed",
+       "c": "milligram",
+       "w0": "gram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      },
+      {
+       "o": "a small ant",
+       "c": "milligram",
+       "w0": "gram",
+       "w1": "kilogram",
+       "w2": "tonne"
+      }
+     ]
+    }
+   ],
+   "text": "Which unit is most suitable for measuring the weight of {t.o}?",
+   "options": {
+    "correct": "t.c",
+    "wrong": [
+     {
+      "expr": "t.w0",
+      "mistake": "chooses a unit whose size does not suit the object"
+     },
+     {
+      "expr": "t.w1",
+      "mistake": "chooses a unit whose size does not suit the object"
+     },
+     {
+      "expr": "t.w2",
+      "mistake": "chooses a unit whose size does not suit the object"
+     }
+    ]
+   },
+   "hint": "Think how heavy the thing really is. Very light things need a small unit; very heavy things a large one.",
+   "explanation": "The most suitable unit for the weight of {t.o} is the {t.c}.",
+   "misconception": "Chooses a unit from the size of the numeral rather than the object and magnitude.",
+   "notes": "24 things, six for each of milligram, gram, kilogram and tonne, so the right unit changes; the wrong options are the other three units.",
+   "sources": [
+    "CBSE-C5-CH08-Q001",
+    "CBSE-C5-CH08-Q029"
+   ]
+  },
+  {
+   "code": "C5-WC-S01-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S01",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "t",
+     "choice": [
+      {
+       "o": "a hen's egg",
+       "c": "about 50 grams",
+       "w0": "about 50 milligrams",
+       "w1": "about 50 kilograms",
+       "w2": "about 50 tonnes"
+      },
+      {
+       "o": "a pencil",
+       "c": "about 5 grams",
+       "w0": "about 5 milligrams",
+       "w1": "about 5 kilograms",
+       "w2": "about 5 tonnes"
+      },
+      {
+       "o": "an apple",
+       "c": "about 150 grams",
+       "w0": "about 150 milligrams",
+       "w1": "about 150 kilograms",
+       "w2": "about 150 tonnes"
+      },
+      {
+       "o": "a cricket ball",
+       "c": "about 160 grams",
+       "w0": "about 160 milligrams",
+       "w1": "about 160 kilograms",
+       "w2": "about 160 tonnes"
+      },
+      {
+       "o": "a school bag full of books",
+       "c": "about 5 kilograms",
+       "w0": "about 5 milligrams",
+       "w1": "about 5 grams",
+       "w2": "about 5 tonnes"
+      },
+      {
+       "o": "an adult",
+       "c": "about 60 kilograms",
+       "w0": "about 60 milligrams",
+       "w1": "about 60 grams",
+       "w2": "about 60 tonnes"
+      },
+      {
+       "o": "a watermelon",
+       "c": "about 4 kilograms",
+       "w0": "about 4 milligrams",
+       "w1": "about 4 grams",
+       "w2": "about 4 tonnes"
+      },
+      {
+       "o": "a gas cylinder",
+       "c": "about 30 kilograms",
+       "w0": "about 30 milligrams",
+       "w1": "about 30 grams",
+       "w2": "about 30 tonnes"
+      },
+      {
+       "o": "a loaded truck",
+       "c": "about 10 tonnes",
+       "w0": "about 10 milligrams",
+       "w1": "about 10 grams",
+       "w2": "about 10 kilograms"
+      },
+      {
+       "o": "an elephant",
+       "c": "about 5 tonnes",
+       "w0": "about 5 milligrams",
+       "w1": "about 5 grams",
+       "w2": "about 5 kilograms"
+      },
+      {
+       "o": "a railway engine",
+       "c": "about 100 tonnes",
+       "w0": "about 100 milligrams",
+       "w1": "about 100 grams",
+       "w2": "about 100 kilograms"
+      },
+      {
+       "o": "a bus",
+       "c": "about 12 tonnes",
+       "w0": "about 12 milligrams",
+       "w1": "about 12 grams",
+       "w2": "about 12 kilograms"
+      },
+      {
+       "o": "a grain of rice",
+       "c": "about 20 milligrams",
+       "w0": "about 20 grams",
+       "w1": "about 20 kilograms",
+       "w2": "about 20 tonnes"
+      },
+      {
+       "o": "a mosquito",
+       "c": "about 2 milligrams",
+       "w0": "about 2 grams",
+       "w1": "about 2 kilograms",
+       "w2": "about 2 tonnes"
+      },
+      {
+       "o": "a housefly",
+       "c": "about 12 milligrams",
+       "w0": "about 12 grams",
+       "w1": "about 12 kilograms",
+       "w2": "about 12 tonnes"
+      },
+      {
+       "o": "a honeybee",
+       "c": "about 100 milligrams",
+       "w0": "about 100 grams",
+       "w1": "about 100 kilograms",
+       "w2": "about 100 tonnes"
+      }
+     ]
+    },
+    {
+     "name": "s",
+     "choice": [
+      "Which is a sensible estimate of the weight of",
+      "Which weight makes sense for"
+     ]
+    }
+   ],
+   "text": "{s} {t.o}?",
+   "options": {
+    "correct": "t.c",
+    "wrong": [
+     {
+      "expr": "t.w0",
+      "mistake": "keeps a sensible number but chooses a unit of the wrong size"
+     },
+     {
+      "expr": "t.w1",
+      "mistake": "keeps a sensible number but chooses a unit of the wrong size"
+     },
+     {
+      "expr": "t.w2",
+      "mistake": "keeps a sensible number but chooses a unit of the wrong size"
+     }
+    ]
+   },
+   "hint": "Picture the real thing. Which unit makes the number sensible?",
+   "explanation": "{t.o} weighs {t.c}. The same number in a bigger or smaller unit would be far too heavy or far too light.",
+   "misconception": "Chooses a unit from the size of the numeral rather than the object and magnitude.",
+   "notes": "16 things, four for each of mg, g, kg and tonne, asked two ways; the wrong options keep the number and change the unit.",
+   "sources": [
+    "CBSE-C5-CH08-Q005",
+    "CBSE-C5-CH08-Q009",
+    "CBSE-C5-CH08-Q033"
+   ]
+  },
+  {
+   "code": "C5-WC-S01-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S01",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "kg",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 3,
+      "max": 15
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 50
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 50
+     }
+    }
+   ],
+   "require": [
+    "b != 500",
+    "d != 500"
+   ],
+   "text": "{who.name} has two bags weighing {a} kg {b} g and {c} kg {d} g. Round each to the nearest kilogram. What is the estimated total weight in kilograms?",
+   "answer": "a + (1 if b > 500 else 0) + c + (1 if d > 500 else 0)",
+   "hint": "More than 500 g rounds up to the next kilogram; less than 500 g rounds down.",
+   "explanation": "{a} kg {b} g is about {a + (1 if b > 500 else 0)} kg and {c} kg {d} g is about {c + (1 if d > 500 else 0)} kg. Estimated total: {a + (1 if b > 500 else 0) + c + (1 if d > 500 else 0)} kg.",
+   "misconception": "Chooses a unit from the size of the numeral rather than the object and magnitude.",
+   "notes": "Bags of 2 to 15 kg with 100 to 900 g (never exactly 500 g, so the rounding is clear).",
+   "sources": [
+    "CBSE-C5-CH08-Q013"
+   ]
+  },
+  {
+   "code": "C5-WC-S02-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S02",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      10,
+      20,
+      25,
+      50,
+      100,
+      200,
+      250,
+      500
+     ]
+    },
+    {
+     "name": "n",
+     "choice": [
+      4,
+      5,
+      8,
+      10
+     ]
+    }
+   ],
+   "text": "A weighing scale runs from 0 g to {n * s:num} g in {n} equal spaces. How many grams does each space stand for?",
+   "answer": "s",
+   "hint": "Share the whole range equally among the spaces.",
+   "explanation": "{n * s:num} ÷ {n} = {s}, so each space is {s} g.",
+   "misconception": "Counts marks instead of spaces or assumes every small division has the same value.",
+   "notes": "4, 5, 8 or 10 spaces of 10 to 500 g, said in words (no picture).",
+   "sources": [
+    "CBSE-C5-CH08-Q034",
+    "CBSE-C5-CH08-Q062"
+   ]
+  },
+  {
+   "code": "C5-WC-S02-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S02",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      50,
+      100,
+      200,
+      250
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "lo",
+     "choice": [
+      0,
+      100,
+      200,
+      500,
+      1000,
+      2000
+     ]
+    }
+   ],
+   "require": [
+    "lo % s == 0"
+   ],
+   "text": "On a weighing scale, each small space stands for {s} g. The pointer is {k} spaces after the {lo:num} g mark. What weight does the scale show, in grams?",
+   "answer": "lo + k * s",
+   "hint": "Count on {s} g for each space after {lo:num} g.",
+   "explanation": "{k} × {s} g = {k * s:num} g. {lo:num} g + {k * s:num} g = {lo + k * s:num} g.",
+   "misconception": "Counts marks instead of spaces or assumes every small division has the same value.",
+   "notes": "Spaces of 50 to 250 g, 2 to 9 spaces after a labelled mark, said in words.",
+   "sources": [
+    "CBSE-C5-CH08-Q042",
+    "CBSE-C5-CH08-Q046"
+   ]
+  },
+  {
+   "code": "C5-WC-S02-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S02",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      50,
+      100,
+      200,
+      250,
+      500
+     ]
+    },
+    {
+     "name": "n",
+     "choice": [
+      4,
+      5,
+      8,
+      10
+     ]
+    },
+    {
+     "name": "lo",
+     "choice": [
+      0,
+      200,
+      400,
+      500,
+      1000
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": 3
+     }
+    }
+   ],
+   "require": [
+    "k < n"
+   ],
+   "text": "A weighing scale has two labelled marks, {lo:num} g and {lo + n * s:num} g, with {n} equal spaces between them. What weight is at mark number {k} after {lo:num} g, in grams?",
+   "answer": "lo + k * s",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds each space: ({lo + n * s:num} − {lo:num}) ÷ {n} = {s} g."
+    },
+    {
+     "marks": 1,
+     "text": "Counts on {k} {'space' if k == 1 else 'spaces'}: {lo:num} + {k} × {s} = {lo + k * s:num} g."
+    }
+   ],
+   "hint": "Find the size of one space first: the difference between the labels shared by the number of spaces.",
+   "explanation": "Each space is ({lo + n * s:num} − {lo:num}) ÷ {n} = {s} g. Mark {k}: {lo:num} + {k * s:num} = {lo + k * s:num} g.",
+   "misconception": "Counts marks instead of spaces or assumes every small division has the same value.",
+   "notes": "Labels 0 to 1,000 g apart by 4 to 10 spaces of 50 to 500 g; the 1st, 2nd or 3rd mark.",
+   "sources": [
+    "CBSE-C5-CH08-Q050",
+    "CBSE-C5-CH08-Q062"
+   ]
+  },
+  {
+   "code": "C5-WC-S02-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S02",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      50,
+      100,
+      150,
+      200,
+      250,
+      500
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 100,
+      "max": 1500,
+      "step": 50
+     }
+    }
+   ],
+   "require": [
+    "a % 50 == 0"
+   ],
+   "text": "The marks on a weighing scale go up by {s} g: {a:num} g, {a + s:num} g, ___, {a + 3 * s:num} g. What weight belongs in the blank, in grams?",
+   "answer": "a + 2 * s",
+   "hint": "Add {s} g to the mark before the blank.",
+   "explanation": "{a + s:num} g + {s} g = {a + 2 * s:num} g. Check: {a + 2 * s:num} + {s} = {a + 3 * s:num}.",
+   "misconception": "Counts marks instead of spaces or assumes every small division has the same value.",
+   "notes": "Steps of 50 to 500 g starting at 100 to 1,500 g.",
+   "sources": [
+    "CBSE-C5-CH08-Q058"
+   ]
+  },
+  {
+   "code": "C5-WC-S03-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S03",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 15
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      5,
+      8,
+      20,
+      45,
+      60,
+      75,
+      92,
+      105,
+      250,
+      340,
+      500,
+      625,
+      780,
+      905,
+      950
+     ]
+    }
+   ],
+   "text": "Change {a} kg {b} g to grams.",
+   "answer": "1000 * a + b",
+   "hint": "1 kg = 1,000 g. Change the kilograms first, then add the grams.",
+   "explanation": "{a} kg = {1000 * a:num} g. {1000 * a:num} g + {b} g = {1000 * a + b:num} g.",
+   "misconception": "Treats 5 kg 50 g as 5,500 g or ignores placeholder zeroes.",
+   "notes": "1 to 15 kg and 5 to 950 g; about half the copies have fewer than 100 g, so a zero must be kept (4 kg 92 g = 4,092 g).",
+   "sources": [
+    "CBSE-C5-CH08-Q067",
+    "CBSE-C5-CH08-Q075"
+   ]
+  },
+  {
+   "code": "C5-WC-S03-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S03",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 1005,
+      "max": 15995
+     }
+    }
+   ],
+   "require": [
+    "n % 1000 != 0",
+    "n % 5 == 0"
+   ],
+   "text": "Write {n:num} g in kilograms and grams. Enter kilograms; grams.",
+   "answer": [
+    "n // 1000",
+    "n % 1000"
+   ],
+   "hint": "Every 1,000 g makes 1 kg. The grams left over stay as grams.",
+   "explanation": "{n:num} g = {n // 1000 * 1000:num} g + {n % 1000} g = {n // 1000} kg {n % 1000} g.",
+   "misconception": "Treats 5 kg 50 g as 5,500 g or ignores placeholder zeroes.",
+   "notes": "1,005 to 15,995 g in steps of 5 (not whole kilograms); two boxes, kilograms then grams.",
+   "sources": [
+    "CBSE-C5-CH08-Q083"
+   ]
+  },
+  {
+   "code": "C5-WC-S03-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S03",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 15
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      6,
+      9,
+      35,
+      48,
+      70,
+      125,
+      206,
+      310,
+      452,
+      608,
+      875,
+      990
+     ]
+    }
+   ],
+   "text": "Complete: {a} kg ___ g = {1000 * a + b:num} g. What number goes in the blank?",
+   "answer": "b",
+   "hint": "{a} kg is {1000 * a:num} g. How many more grams make {1000 * a + b:num} g?",
+   "explanation": "{a} kg = {1000 * a:num} g, and {1000 * a + b:num} − {1000 * a:num} = {b}. So {a} kg {b} g = {1000 * a + b:num} g.",
+   "misconception": "Treats 5 kg 50 g as 5,500 g or ignores placeholder zeroes.",
+   "notes": "2 to 15 kg with 6 to 990 g, often under 100 g so the zero in the gram total is a trap.",
+   "sources": [
+    "CBSE-C5-CH08-Q091"
+   ]
+  },
+  {
+   "code": "C5-WC-S03-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S03",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 11,
+      "max": 99
+     }
+    }
+   ],
+   "require": [
+    "b % 10 != 0"
+   ],
+   "text": "{who.name} says {a} kg {b} g = {100 * a + b:num} g. What is the correct number of grams? Show in your working how you changed the kilograms.",
+   "answer": "1000 * a + b",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Changes the kilograms: {a} kg = {1000 * a:num} g (the mistake wrote the digits side by side)."
+    },
+    {
+     "marks": 1,
+     "text": "Adds the grams: {1000 * a:num} + {b} = {1000 * a + b:num} g."
+    }
+   ],
+   "hint": "1 kg is 1,000 g, not 100 g. Writing the digits side by side does not work.",
+   "explanation": "{a} kg = {1000 * a:num} g, so {a} kg {b} g = {1000 * a + b:num} g, not {100 * a + b:num} g.",
+   "misconception": "Treats 5 kg 50 g as 5,500 g or ignores placeholder zeroes.",
+   "notes": "2 to 12 kg with a two-digit number of grams (11 to 99, not a multiple of 10), so the wrong total is the digits side by side.",
+   "sources": [
+    "CBSE-C5-CH08-Q087",
+    "CBSE-C5-CH08-Q099"
+   ]
+  },
+  {
+   "code": "C5-WC-S04-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S04",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 50,
+      "max": 950,
+      "step": 10
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      -900,
+      -350,
+      -120,
+      0,
+      80,
+      260,
+      700,
+      850
+     ]
+    }
+   ],
+   "require": [
+    "1000 * a + b + d > 0",
+    "(1000 * a + b + d) % 1000 != 0"
+   ],
+   "text": "Compare {a} kg {b} g and {1000 * a + b + d:num} g. Which is true?",
+   "options": {
+    "correct": "'The first weight is heavier' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) == 1 else ('The second weight is heavier' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) == 2 else 'They are equal')",
+    "wrong": [
+     {
+      "expr": "'The second weight is heavier' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) == 1 else 'The first weight is heavier'",
+      "mistake": "compares the numbers as written without changing to the same unit"
+     },
+     {
+      "expr": "'They are equal' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) != 3 else 'The second weight is heavier'",
+      "mistake": "decides without changing both measures to the same unit"
+     },
+     {
+      "expr": "'They cannot be compared'",
+      "mistake": "thinks measures in different units cannot be compared"
+     }
+    ]
+   },
+   "hint": "Change {a} kg {b} g to grams first.",
+   "explanation": "{a} kg {b} g = {1000 * a + b:num} g. Compare it with {1000 * a + b + d:num} g.",
+   "misconception": "Compares only the gram parts or only the displayed numerals without using a common unit.",
+   "notes": "A weight in kg and g against one in grams that is lighter, heavier or (about one copy in eight) equal.",
+   "sources": [
+    "CBSE-C5-CH08-Q100",
+    "CBSE-C5-CH08-Q128"
+   ]
+  },
+  {
+   "code": "C5-WC-S04-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S04",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 10,
+      "max": 490,
+      "step": 10
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 510,
+      "max": 980,
+      "step": 10
+     }
+    }
+   ],
+   "require": [
+    "a > c"
+   ],
+   "text": "How many grams heavier is {a} kg {b} g than {c} kg {d} g?",
+   "answer": "1000 * (a - c) + b - d",
+   "hint": "Change both weights to grams, then subtract.",
+   "explanation": "{a} kg {b} g = {1000 * a + b:num} g and {c} kg {d} g = {1000 * c + d:num} g. {1000 * a + b:num} − {1000 * c + d:num} = {1000 * (a - c) + b - d:num} g.",
+   "misconception": "Compares only the gram parts or only the displayed numerals without using a common unit.",
+   "notes": "The heavier weight always has fewer grams, so the child must borrow 1 kg.",
+   "sources": [
+    "CBSE-C5-CH08-Q112"
+   ]
+  },
+  {
+   "code": "C5-WC-S04-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S04",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "t",
+     "choice": [
+      {
+       "q": "lightest",
+       "list": "4 kg 250 g, 4,760 g, 3 kg 820 g, 3,430 g",
+       "c": "3,430 g",
+       "w0": "4 kg 250 g",
+       "w1": "4,760 g",
+       "w2": "3 kg 820 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 700 g, 7,990 g, 8 kg 90 g, 8,340 g",
+       "c": "8,340 g",
+       "w0": "7 kg 700 g",
+       "w1": "7,990 g",
+       "w2": "8 kg 90 g"
+      },
+      {
+       "q": "lightest",
+       "list": "8 kg 460 g, 8,700 g, 7 kg 560 g, 7,120 g",
+       "c": "7,120 g",
+       "w0": "8 kg 460 g",
+       "w1": "8,700 g",
+       "w2": "7 kg 560 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 620 g, 1,630 g, 2 kg 430 g, 1,790 g",
+       "c": "2 kg 620 g",
+       "w0": "1,630 g",
+       "w1": "2 kg 430 g",
+       "w2": "1,790 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 600 g, 7,410 g, 6 kg 180 g, 6,190 g",
+       "c": "7 kg 600 g",
+       "w0": "7,410 g",
+       "w1": "6 kg 180 g",
+       "w2": "6,190 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "8 kg 660 g, 7,720 g, 8 kg 550 g, 8,390 g",
+       "c": "8 kg 660 g",
+       "w0": "7,720 g",
+       "w1": "8 kg 550 g",
+       "w2": "8,390 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "8 kg 560 g, 8,340 g, 7 kg 120 g, 7,690 g",
+       "c": "8 kg 560 g",
+       "w0": "8,340 g",
+       "w1": "7 kg 120 g",
+       "w2": "7,690 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "1 kg 520 g, 2,410 g, 1 kg 930 g, 2,150 g",
+       "c": "2,410 g",
+       "w0": "1 kg 520 g",
+       "w1": "1 kg 930 g",
+       "w2": "2,150 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 450 g, 6,430 g, 6 kg 480 g, 6,520 g",
+       "c": "5 kg 450 g",
+       "w0": "6,430 g",
+       "w1": "6 kg 480 g",
+       "w2": "6,520 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 590 g, 6,400 g, 6 kg 550 g, 6,740 g",
+       "c": "5 kg 590 g",
+       "w0": "6,400 g",
+       "w1": "6 kg 550 g",
+       "w2": "6,740 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 110 g, 6,490 g, 6 kg 210 g, 6,560 g",
+       "c": "5 kg 110 g",
+       "w0": "6,490 g",
+       "w1": "6 kg 210 g",
+       "w2": "6,560 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 290 g, 1,450 g, 1 kg 680 g, 1,370 g",
+       "c": "2 kg 290 g",
+       "w0": "1,450 g",
+       "w1": "1 kg 680 g",
+       "w2": "1,370 g"
+      },
+      {
+       "q": "lightest",
+       "list": "3 kg 670 g, 4,670 g, 4 kg 60 g, 4,040 g",
+       "c": "3 kg 670 g",
+       "w0": "4,670 g",
+       "w1": "4 kg 60 g",
+       "w2": "4,040 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "5 kg 350 g, 4,880 g, 5 kg 560 g, 5,320 g",
+       "c": "5 kg 560 g",
+       "w0": "5 kg 350 g",
+       "w1": "4,880 g",
+       "w2": "5,320 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 540 g, 2,010 g, 2 kg 150 g, 1,540 g",
+       "c": "2 kg 540 g",
+       "w0": "2,010 g",
+       "w1": "2 kg 150 g",
+       "w2": "1,540 g"
+      },
+      {
+       "q": "lightest",
+       "list": "2 kg 110 g, 2,280 g, 3 kg 370 g, 2,780 g",
+       "c": "2 kg 110 g",
+       "w0": "2,280 g",
+       "w1": "3 kg 370 g",
+       "w2": "2,780 g"
+      },
+      {
+       "q": "lightest",
+       "list": "7 kg 10 g, 6,430 g, 7 kg 820 g, 6,730 g",
+       "c": "6,430 g",
+       "w0": "7 kg 10 g",
+       "w1": "7 kg 820 g",
+       "w2": "6,730 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 30 g, 2,570 g, 1 kg 730 g, 1,160 g",
+       "c": "2,570 g",
+       "w0": "2 kg 30 g",
+       "w1": "1 kg 730 g",
+       "w2": "1,160 g"
+      },
+      {
+       "q": "lightest",
+       "list": "6 kg 330 g, 7,390 g, 7 kg 770 g, 7,630 g",
+       "c": "6 kg 330 g",
+       "w0": "7,390 g",
+       "w1": "7 kg 770 g",
+       "w2": "7,630 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 670 g, 3,690 g, 2 kg 690 g, 3,080 g",
+       "c": "3,690 g",
+       "w0": "3 kg 670 g",
+       "w1": "2 kg 690 g",
+       "w2": "3,080 g"
+      },
+      {
+       "q": "lightest",
+       "list": "6 kg 350 g, 6,770 g, 6 kg 50 g, 5,300 g",
+       "c": "5,300 g",
+       "w0": "6 kg 350 g",
+       "w1": "6,770 g",
+       "w2": "6 kg 50 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 140 g, 3,710 g, 4 kg 390 g, 4,410 g",
+       "c": "4,410 g",
+       "w0": "3 kg 140 g",
+       "w1": "3,710 g",
+       "w2": "4 kg 390 g"
+      },
+      {
+       "q": "lightest",
+       "list": "3 kg 310 g, 2,510 g, 3 kg 340 g, 3,010 g",
+       "c": "2,510 g",
+       "w0": "3 kg 310 g",
+       "w1": "3 kg 340 g",
+       "w2": "3,010 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 690 g, 2,390 g, 3 kg 580 g, 3,730 g",
+       "c": "3,730 g",
+       "w0": "3 kg 690 g",
+       "w1": "2,390 g",
+       "w2": "3 kg 580 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 770 g, 6,150 g, 6 kg 130 g, 6,490 g",
+       "c": "5 kg 770 g",
+       "w0": "6,150 g",
+       "w1": "6 kg 130 g",
+       "w2": "6,490 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 160 g, 7,750 g, 8 kg 690 g, 8,640 g",
+       "c": "8 kg 690 g",
+       "w0": "7 kg 160 g",
+       "w1": "7,750 g",
+       "w2": "8,640 g"
+      },
+      {
+       "q": "lightest",
+       "list": "3 kg 320 g, 2,730 g, 2 kg 620 g, 2,420 g",
+       "c": "2,420 g",
+       "w0": "3 kg 320 g",
+       "w1": "2,730 g",
+       "w2": "2 kg 620 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "4 kg 180 g, 5,840 g, 4 kg 170 g, 5,430 g",
+       "c": "5,840 g",
+       "w0": "4 kg 180 g",
+       "w1": "4 kg 170 g",
+       "w2": "5,430 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "8 kg 110 g, 8,300 g, 7 kg 730 g, 7,770 g",
+       "c": "8,300 g",
+       "w0": "8 kg 110 g",
+       "w1": "7 kg 730 g",
+       "w2": "7,770 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 610 g, 3,850 g, 3 kg 810 g, 4,860 g",
+       "c": "3 kg 810 g",
+       "w0": "4 kg 610 g",
+       "w1": "3,850 g",
+       "w2": "4,860 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 630 g, 6,620 g, 5 kg 960 g, 6,060 g",
+       "c": "5 kg 630 g",
+       "w0": "6,620 g",
+       "w1": "5 kg 960 g",
+       "w2": "6,060 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 860 g, 6,950 g, 7 kg 80 g, 6,540 g",
+       "c": "7 kg 80 g",
+       "w0": "6 kg 860 g",
+       "w1": "6,950 g",
+       "w2": "6,540 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 750 g, 5,910 g, 5 kg 640 g, 5,610 g",
+       "c": "6 kg 750 g",
+       "w0": "5,910 g",
+       "w1": "5 kg 640 g",
+       "w2": "5,610 g"
+      },
+      {
+       "q": "lightest",
+       "list": "7 kg 180 g, 7,410 g, 8 kg 650 g, 7,310 g",
+       "c": "7 kg 180 g",
+       "w0": "7,410 g",
+       "w1": "8 kg 650 g",
+       "w2": "7,310 g"
+      },
+      {
+       "q": "lightest",
+       "list": "6 kg 550 g, 7,510 g, 6 kg 760 g, 6,770 g",
+       "c": "6 kg 550 g",
+       "w0": "7,510 g",
+       "w1": "6 kg 760 g",
+       "w2": "6,770 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "4 kg 520 g, 4,860 g, 4 kg 10 g, 3,880 g",
+       "c": "4,860 g",
+       "w0": "4 kg 520 g",
+       "w1": "4 kg 10 g",
+       "w2": "3,880 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "5 kg 110 g, 5,340 g, 4 kg 540 g, 4,420 g",
+       "c": "5,340 g",
+       "w0": "5 kg 110 g",
+       "w1": "4 kg 540 g",
+       "w2": "4,420 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 750 g, 2,830 g, 3 kg 140 g, 3,090 g",
+       "c": "3 kg 750 g",
+       "w0": "2,830 g",
+       "w1": "3 kg 140 g",
+       "w2": "3,090 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 490 g, 5,480 g, 6 kg 700 g, 6,540 g",
+       "c": "5,480 g",
+       "w0": "5 kg 490 g",
+       "w1": "6 kg 700 g",
+       "w2": "6,540 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 920 g, 7,220 g, 7 kg 290 g, 8,650 g",
+       "c": "8,650 g",
+       "w0": "7 kg 920 g",
+       "w1": "7,220 g",
+       "w2": "7 kg 290 g"
+      },
+      {
+       "q": "lightest",
+       "list": "3 kg 510 g, 2,570 g, 2 kg 700 g, 2,330 g",
+       "c": "2,330 g",
+       "w0": "3 kg 510 g",
+       "w1": "2,570 g",
+       "w2": "2 kg 700 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 690 g, 7,600 g, 6 kg 280 g, 6,300 g",
+       "c": "7,600 g",
+       "w0": "6 kg 690 g",
+       "w1": "6 kg 280 g",
+       "w2": "6,300 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 670 g, 3,120 g, 3 kg 690 g, 3,820 g",
+       "c": "3,120 g",
+       "w0": "4 kg 670 g",
+       "w1": "3 kg 690 g",
+       "w2": "3,820 g"
+      },
+      {
+       "q": "lightest",
+       "list": "3 kg 550 g, 4,530 g, 3 kg 130 g, 3,330 g",
+       "c": "3 kg 130 g",
+       "w0": "3 kg 550 g",
+       "w1": "4,530 g",
+       "w2": "3,330 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 360 g, 7,500 g, 7 kg 110 g, 7,640 g",
+       "c": "7,640 g",
+       "w0": "6 kg 360 g",
+       "w1": "7,500 g",
+       "w2": "7 kg 110 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 350 g, 5,060 g, 4 kg 820 g, 4,770 g",
+       "c": "4 kg 350 g",
+       "w0": "5,060 g",
+       "w1": "4 kg 820 g",
+       "w2": "4,770 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 600 g, 4,250 g, 4 kg 220 g, 3,930 g",
+       "c": "3,930 g",
+       "w0": "4 kg 600 g",
+       "w1": "4,250 g",
+       "w2": "4 kg 220 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 760 g, 4,190 g, 5 kg 380 g, 4,210 g",
+       "c": "4,190 g",
+       "w0": "5 kg 760 g",
+       "w1": "5 kg 380 g",
+       "w2": "4,210 g"
+      },
+      {
+       "q": "lightest",
+       "list": "5 kg 50 g, 4,100 g, 5 kg 850 g, 5,490 g",
+       "c": "4,100 g",
+       "w0": "5 kg 50 g",
+       "w1": "5 kg 850 g",
+       "w2": "5,490 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 260 g, 6,080 g, 5 kg 340 g, 6,640 g",
+       "c": "6,640 g",
+       "w0": "6 kg 260 g",
+       "w1": "6,080 g",
+       "w2": "5 kg 340 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 130 g, 5,410 g, 5 kg 940 g, 6,490 g",
+       "c": "6,490 g",
+       "w0": "6 kg 130 g",
+       "w1": "5,410 g",
+       "w2": "5 kg 940 g"
+      },
+      {
+       "q": "lightest",
+       "list": "8 kg 700 g, 8,720 g, 8 kg 730 g, 7,970 g",
+       "c": "7,970 g",
+       "w0": "8 kg 700 g",
+       "w1": "8,720 g",
+       "w2": "8 kg 730 g"
+      },
+      {
+       "q": "lightest",
+       "list": "8 kg 90 g, 7,150 g, 7 kg 530 g, 7,720 g",
+       "c": "7,150 g",
+       "w0": "8 kg 90 g",
+       "w1": "7 kg 530 g",
+       "w2": "7,720 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "5 kg 200 g, 5,840 g, 4 kg 860 g, 5,120 g",
+       "c": "5,840 g",
+       "w0": "5 kg 200 g",
+       "w1": "4 kg 860 g",
+       "w2": "5,120 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 840 g, 7,340 g, 7 kg 710 g, 6,530 g",
+       "c": "7 kg 710 g",
+       "w0": "6 kg 840 g",
+       "w1": "7,340 g",
+       "w2": "6,530 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "4 kg 30 g, 4,850 g, 3 kg 200 g, 3,890 g",
+       "c": "4,850 g",
+       "w0": "4 kg 30 g",
+       "w1": "3 kg 200 g",
+       "w2": "3,890 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 800 g, 3,890 g, 2 kg 640 g, 2,940 g",
+       "c": "3,890 g",
+       "w0": "3 kg 800 g",
+       "w1": "2 kg 640 g",
+       "w2": "2,940 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 840 g, 8,610 g, 8 kg 50 g, 8,840 g",
+       "c": "8,840 g",
+       "w0": "7 kg 840 g",
+       "w1": "8,610 g",
+       "w2": "8 kg 50 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 190 g, 2,350 g, 1 kg 900 g, 2,650 g",
+       "c": "2,650 g",
+       "w0": "2 kg 190 g",
+       "w1": "2,350 g",
+       "w2": "1 kg 900 g"
+      },
+      {
+       "q": "lightest",
+       "list": "8 kg 720 g, 7,600 g, 7 kg 480 g, 7,710 g",
+       "c": "7 kg 480 g",
+       "w0": "8 kg 720 g",
+       "w1": "7,600 g",
+       "w2": "7,710 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 220 g, 6,670 g, 6 kg 200 g, 7,810 g",
+       "c": "7,810 g",
+       "w0": "7 kg 220 g",
+       "w1": "6,670 g",
+       "w2": "6 kg 200 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "4 kg 200 g, 4,740 g, 5 kg 710 g, 5,350 g",
+       "c": "5 kg 710 g",
+       "w0": "4 kg 200 g",
+       "w1": "4,740 g",
+       "w2": "5,350 g"
+      },
+      {
+       "q": "lightest",
+       "list": "2 kg 950 g, 3,430 g, 2 kg 940 g, 3,790 g",
+       "c": "2 kg 940 g",
+       "w0": "2 kg 950 g",
+       "w1": "3,430 g",
+       "w2": "3,790 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 190 g, 5,770 g, 4 kg 570 g, 4,380 g",
+       "c": "4 kg 190 g",
+       "w0": "5,770 g",
+       "w1": "4 kg 570 g",
+       "w2": "4,380 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 520 g, 2,720 g, 1 kg 200 g, 1,510 g",
+       "c": "2,720 g",
+       "w0": "2 kg 520 g",
+       "w1": "1 kg 200 g",
+       "w2": "1,510 g"
+      },
+      {
+       "q": "lightest",
+       "list": "2 kg 570 g, 2,660 g, 1 kg 790 g, 1,670 g",
+       "c": "1,670 g",
+       "w0": "2 kg 570 g",
+       "w1": "2,660 g",
+       "w2": "1 kg 790 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 270 g, 8,200 g, 7 kg 590 g, 8,400 g",
+       "c": "8,400 g",
+       "w0": "7 kg 270 g",
+       "w1": "8,200 g",
+       "w2": "7 kg 590 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 740 g, 6,010 g, 6 kg 700 g, 5,360 g",
+       "c": "6 kg 740 g",
+       "w0": "6,010 g",
+       "w1": "6 kg 700 g",
+       "w2": "5,360 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "6 kg 460 g, 5,440 g, 5 kg 470 g, 6,160 g",
+       "c": "6 kg 460 g",
+       "w0": "5,440 g",
+       "w1": "5 kg 470 g",
+       "w2": "6,160 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 710 g, 4,330 g, 4 kg 430 g, 3,210 g",
+       "c": "4 kg 430 g",
+       "w0": "3 kg 710 g",
+       "w1": "4,330 g",
+       "w2": "3,210 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 740 g, 5,250 g, 5 kg 170 g, 4,380 g",
+       "c": "4,380 g",
+       "w0": "4 kg 740 g",
+       "w1": "5,250 g",
+       "w2": "5 kg 170 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "1 kg 920 g, 2,510 g, 2 kg 200 g, 2,130 g",
+       "c": "2,510 g",
+       "w0": "1 kg 920 g",
+       "w1": "2 kg 200 g",
+       "w2": "2,130 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "4 kg 680 g, 4,160 g, 4 kg 220 g, 3,400 g",
+       "c": "4 kg 680 g",
+       "w0": "4,160 g",
+       "w1": "4 kg 220 g",
+       "w2": "3,400 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 500 g, 6,410 g, 6 kg 200 g, 7,230 g",
+       "c": "7 kg 500 g",
+       "w0": "6,410 g",
+       "w1": "6 kg 200 g",
+       "w2": "7,230 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "2 kg 210 g, 2,530 g, 1 kg 140 g, 2,830 g",
+       "c": "2,830 g",
+       "w0": "2 kg 210 g",
+       "w1": "2,530 g",
+       "w2": "1 kg 140 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "8 kg 870 g, 8,500 g, 7 kg 380 g, 8,490 g",
+       "c": "8 kg 870 g",
+       "w0": "8,500 g",
+       "w1": "7 kg 380 g",
+       "w2": "8,490 g"
+      },
+      {
+       "q": "lightest",
+       "list": "4 kg 650 g, 4,080 g, 3 kg 810 g, 3,500 g",
+       "c": "3,500 g",
+       "w0": "4 kg 650 g",
+       "w1": "4,080 g",
+       "w2": "3 kg 810 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "7 kg 650 g, 7,470 g, 7 kg 110 g, 6,920 g",
+       "c": "7 kg 650 g",
+       "w0": "7,470 g",
+       "w1": "7 kg 110 g",
+       "w2": "6,920 g"
+      },
+      {
+       "q": "lightest",
+       "list": "3 kg 590 g, 3,450 g, 3 kg 720 g, 2,730 g",
+       "c": "2,730 g",
+       "w0": "3 kg 590 g",
+       "w1": "3,450 g",
+       "w2": "3 kg 720 g"
+      },
+      {
+       "q": "heaviest",
+       "list": "3 kg 620 g, 3,540 g, 3 kg 810 g, 4,650 g",
+       "c": "4,650 g",
+       "w0": "3 kg 620 g",
+       "w1": "3,540 g",
+       "w2": "3 kg 810 g"
+      }
+     ]
+    }
+   ],
+   "text": "Which of these weights is the {t.q}: {t.list}?",
+   "options": {
+    "correct": "t.c",
+    "wrong": [
+     {
+      "expr": "t.w0",
+      "mistake": "compares only the gram parts or the numerals as written"
+     },
+     {
+      "expr": "t.w1",
+      "mistake": "compares only the gram parts or the numerals as written"
+     },
+     {
+      "expr": "t.w2",
+      "mistake": "compares only the gram parts or the numerals as written"
+     }
+    ]
+   },
+   "hint": "Write every weight in grams before comparing.",
+   "explanation": "In grams the {t.q} is {t.c}.",
+   "misconception": "Compares only the gram parts or only the displayed numerals without using a common unit.",
+   "notes": "80 sets of four weights within 900 g of a whole number of kilograms, two written in kg and g and two in grams; asks for the heaviest or the lightest.",
+   "sources": [
+    "CBSE-C5-CH08-Q108",
+    "CBSE-C5-CH08-Q116"
+   ]
+  },
+  {
+   "code": "C5-WC-S05-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S05",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "mg",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 15
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      4,
+      9,
+      25,
+      60,
+      80,
+      128,
+      211,
+      375,
+      500,
+      640,
+      805,
+      990
+     ]
+    }
+   ],
+   "text": "Change {a} g {b} mg to milligrams.",
+   "answer": "1000 * a + b",
+   "hint": "1 g = 1,000 mg.",
+   "explanation": "{a} g = {1000 * a:num} mg. {1000 * a:num} mg + {b} mg = {1000 * a + b:num} mg.",
+   "misconception": "Confuses mg with g or writes 4 g 80 mg as 4,800 mg.",
+   "notes": "1 to 15 g with 4 to 990 mg; under 100 mg in about half the copies (4 g 80 mg = 4,080 mg, not 4,800 mg).",
+   "sources": [
+    "CBSE-C5-CH08-Q133",
+    "CBSE-C5-CH08-Q141"
+   ]
+  },
+  {
+   "code": "C5-WC-S05-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S05",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 1005,
+      "max": 12995
+     }
+    }
+   ],
+   "require": [
+    "n % 1000 != 0",
+    "n % 5 == 0"
+   ],
+   "text": "Write {n:num} mg in grams and milligrams. Enter grams; milligrams.",
+   "answer": [
+    "n // 1000",
+    "n % 1000"
+   ],
+   "hint": "Every 1,000 mg makes 1 g.",
+   "explanation": "{n:num} mg = {n // 1000} g {n % 1000} mg.",
+   "misconception": "Confuses mg with g or writes 4 g 80 mg as 4,800 mg.",
+   "notes": "1,005 to 12,995 mg in steps of 5; two boxes, grams then milligrams.",
+   "sources": [
+    "CBSE-C5-CH08-Q149"
+   ]
+  },
+  {
+   "code": "C5-WC-S05-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S05",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "mg",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 25
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 25
+     }
+    }
+   ],
+   "require": [
+    "a > c",
+    "b < d"
+   ],
+   "text": "A jeweller has {a} g {b} mg of silver for {who.name}'s anklet and uses {c} g {d} mg of it. How many milligrams of silver are left?",
+   "answer": "1000 * (a - c) + b - d",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Changes both to milligrams: {1000 * a + b:num} mg and {1000 * c + d:num} mg."
+    },
+    {
+     "marks": 1,
+     "text": "Subtracts: {1000 * a + b:num} − {1000 * c + d:num} = {1000 * (a - c) + b - d:num} mg."
+    }
+   ],
+   "hint": "Change both amounts to milligrams first: 1 g = 1,000 mg.",
+   "explanation": "{1000 * a + b:num} mg − {1000 * c + d:num} mg = {1000 * (a - c) + b - d:num} mg.",
+   "misconception": "Confuses mg with g or writes 4 g 80 mg as 4,800 mg.",
+   "notes": "2 to 9 g of silver, using less; the milligrams always need borrowing.",
+   "sources": [
+    "CBSE-C5-CH08-Q137",
+    "CBSE-C5-CH08-Q153",
+    "CBSE-C5-CH08-Q165"
+   ]
+  },
+  {
+   "code": "C5-WC-S06-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S06",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "kg",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 2,
+      "max": 60
+     }
+    },
+    {
+     "name": "k",
+     "choice": [
+      {
+       "w": "quintals",
+       "f": 100
+      },
+      {
+       "w": "tonnes",
+       "f": 1000
+      }
+     ]
+    }
+   ],
+   "text": "Change {n} {k.w} to kilograms.",
+   "answer": "n * k.f",
+   "hint": "1 quintal = 100 kg and 1 tonne = 1,000 kg.",
+   "explanation": "{n} × {k.f:num} = {n * k.f:num} kg.",
+   "misconception": "Uses 10 kg for a quintal or 100 kg for a tonne.",
+   "notes": "2 to 60 quintals or tonnes.",
+   "sources": [
+    "CBSE-C5-CH08-Q166",
+    "CBSE-C5-CH08-Q174",
+    "CBSE-C5-CH08-Q194"
+   ]
+  },
+  {
+   "code": "C5-WC-S06-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S06",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "t",
+     "int": {
+      "min": 2,
+      "max": 30
+     }
+    },
+    {
+     "name": "k",
+     "choice": [
+      {
+       "d": 0,
+       "a": "How many quintals are equal to ",
+       "b": " tonnes?"
+      },
+      {
+       "d": 1,
+       "a": "",
+       "b": " quintals are equal to how many tonnes?"
+      }
+     ]
+    }
+   ],
+   "text": "{k.a}{t if k.d == 0 else 10 * t}{k.b}",
+   "answer": "10 * t if k.d == 0 else t",
+   "hint": "1 tonne = 1,000 kg = 10 quintals.",
+   "explanation": "1 tonne = 10 quintals, so {t} tonnes = {10 * t} quintals.",
+   "misconception": "Uses 10 kg for a quintal or 100 kg for a tonne.",
+   "notes": "2 to 30 tonnes to quintals, or the other way; the answer is a plain number (marking has no quintal or tonne unit).",
+   "sources": [
+    "CBSE-C5-CH08-Q170",
+    "CBSE-C5-CH08-Q182",
+    "CBSE-C5-CH08-Q190",
+    "CBSE-C5-CH08-Q198"
+   ]
+  },
+  {
+   "code": "C5-WC-S06-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S06",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "q",
+     "int": {
+      "min": 4,
+      "max": 45
+     }
+    },
+    {
+     "name": "t",
+     "int": {
+      "min": 1,
+      "max": 4
+     }
+    }
+   ],
+   "require": [
+    "q % 10 != 0"
+   ],
+   "text": "Which is heavier: {q} quintals or {t} {'tonne' if t == 1 else 'tonnes'}?",
+   "options": {
+    "correct": "'The quintals are heavier' if 100 * q > 1000 * t else 'The tonnes are heavier'",
+    "wrong": [
+     {
+      "expr": "'The tonnes are heavier' if 100 * q > 1000 * t else 'The quintals are heavier'",
+      "mistake": "compares the numbers without changing to kilograms"
+     },
+     {
+      "expr": "'They weigh the same'",
+      "mistake": "uses 100 kg for a tonne, or 10 kg for a quintal"
+     },
+     {
+      "expr": "'They cannot be compared'",
+      "mistake": "thinks quintals and tonnes cannot be compared"
+     }
+    ]
+   },
+   "hint": "Change both to kilograms: 1 quintal = 100 kg, 1 tonne = 1,000 kg.",
+   "explanation": "{q} quintals = {100 * q:num} kg and {t} {'tonne' if t == 1 else 'tonnes'} = {1000 * t:num} kg.",
+   "misconception": "Uses 10 kg for a quintal or 100 kg for a tonne.",
+   "notes": "4 to 45 quintals against 1 to 4 tonnes; either can be heavier.",
+   "sources": [
+    "CBSE-C5-CH08-Q178"
+   ]
+  },
+  {
+   "code": "C5-WC-S06-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S06",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "kg",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "t",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "q",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    }
+   ],
+   "text": "A warehouse receives {t} tonnes and {q} quintals of wheat. How many kilograms of wheat is that altogether?",
+   "answer": "1000 * t + 100 * q",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Changes both: {t} tonnes = {1000 * t:num} kg and {q} quintals = {100 * q:num} kg."
+    },
+    {
+     "marks": 1,
+     "text": "Adds: {1000 * t:num} + {100 * q:num} = {1000 * t + 100 * q:num} kg."
+    }
+   ],
+   "hint": "1 tonne = 1,000 kg and 1 quintal = 100 kg.",
+   "explanation": "{1000 * t:num} kg + {100 * q:num} kg = {1000 * t + 100 * q:num} kg.",
+   "misconception": "Uses 10 kg for a quintal or 100 kg for a tonne.",
+   "notes": "2 to 9 tonnes and 1 to 9 quintals.",
+   "sources": [
+    "CBSE-C5-CH08-Q186"
+   ]
+  },
+  {
+   "code": "C5-WC-S07-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S07",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 950,
+      "step": 10
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 8
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 100,
+      "max": 950,
+      "step": 10
+     }
+    }
+   ],
+   "text": "Add {a} kg {b} g and {c} kg {d} g. Give the total in grams.",
+   "answer": "1000 * (a + c) + b + d",
+   "hint": "Change both to grams, then add.",
+   "explanation": "{1000 * a + b:num} g + {1000 * c + d:num} g = {1000 * (a + c) + b + d:num} g.",
+   "misconception": "Adds or subtracts kg and g as unrelated digits and leaves 1,000 g unregrouped.",
+   "notes": "Two weights of 1 to 8 kg with 100 to 950 g.",
+   "sources": [
+    "CBSE-C5-CH08-Q199",
+    "CBSE-C5-CH08-Q227"
+   ]
+  },
+  {
+   "code": "C5-WC-S07-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S07",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 150,
+      "max": 950,
+      "step": 5
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 150,
+      "max": 950,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "b + d > 1000"
+   ],
+   "text": "Add {a} kg {b} g and {c} kg {d} g. Enter kilograms; grams.",
+   "answer": [
+    "a + c + 1",
+    "b + d - 1000"
+   ],
+   "hint": "Add the grams. 1,000 g make 1 kg, so regroup.",
+   "explanation": "{b} g + {d} g = {b + d:num} g = 1 kg {b + d - 1000} g. Total: {a + c + 1} kg {b + d - 1000} g.",
+   "misconception": "Adds or subtracts kg and g as unrelated digits and leaves 1,000 g unregrouped.",
+   "notes": "The grams always add to more than 1,000, so the child must regroup; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q207",
+    "CBSE-C5-CH08-Q203"
+   ]
+  },
+  {
+   "code": "C5-WC-S07-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S07",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "it",
+     "choice": [
+      "rice",
+      "wheat flour",
+      "sugar",
+      "dal",
+      "grain"
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 4,
+      "max": 12
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 50,
+      "max": 600,
+      "step": 5
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 3
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 300,
+      "max": 950,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "b < d"
+   ],
+   "text": "A sack held {a} kg {b} g of {it}. After some was used, {c} kg {d} g was left. How much {it} was used? Enter kilograms; grams.",
+   "answer": [
+    "a - c - 1",
+    "1000 + b - d"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Borrows 1 kg as 1,000 g: {a - 1} kg {1000 + b:num} g."
+    },
+    {
+     "marks": 1,
+     "text": "Subtracts: {a - c - 1} kg {1000 + b - d} g."
+    }
+   ],
+   "hint": "Used = what it held − what is left. You will need to change 1 kg into 1,000 g.",
+   "explanation": "{a} kg {b} g − {c} kg {d} g = {a - 1} kg {1000 + b:num} g − {c} kg {d} g = {a - c - 1} kg {1000 + b - d} g.",
+   "misconception": "Adds or subtracts kg and g as unrelated digits and leaves 1,000 g unregrouped.",
+   "notes": "The grams left are always more than the grams held, so the child must borrow; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q223",
+    "CBSE-C5-CH08-Q215"
+   ]
+  },
+  {
+   "code": "C5-WC-S07-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S07",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "k",
+     "choice": [
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The weight of a container of flour went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount taken out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A container of flour had ",
+       "p2": " in it. Then ",
+       "p3": " more was added. Which calculation finds the new weight?"
+      },
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The weight of a sack of rice went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount taken out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A sack of rice had ",
+       "p2": " in it. Then ",
+       "p3": " more was added. Which calculation finds the new weight?"
+      },
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The weight of a tin of sugar went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount taken out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A tin of sugar had ",
+       "p2": " in it. Then ",
+       "p3": " more was added. Which calculation finds the new weight?"
+      },
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The weight of a basket of potatoes went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount taken out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A basket of potatoes had ",
+       "p2": " in it. Then ",
+       "p3": " more was added. Which calculation finds the new weight?"
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 25
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 2
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 25
+     }
+    }
+   ],
+   "text": "{k.p1}{a} kg {b} g{k.p2}{c} kg {d} g{k.p3}",
+   "options": {
+    "correct": "k.c",
+    "wrong": [
+     {
+      "expr": "k.w",
+      "mistake": "adds when the amount went down, or subtracts when more was added"
+     },
+     {
+      "expr": "'Subtract the first amount from the second'",
+      "mistake": "takes the larger amount from the smaller"
+     },
+     {
+      "expr": "'Multiply the two amounts'",
+      "mistake": "multiplies the amounts"
+     }
+    ]
+   },
+   "hint": "Did the amount go down or up?",
+   "explanation": "{k.c}: the amount {'went down' if k.d == 0 else 'went up'}.",
+   "misconception": "Adds or subtracts kg and g as unrelated digits and leaves 1,000 g unregrouped.",
+   "notes": "Half the copies ask for an amount taken out (subtract), half for a new total (add), so the right choice changes.",
+   "sources": [
+    "CBSE-C5-CH08-Q219"
+   ]
+  },
+  {
+   "code": "C5-WC-S08-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S08",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "w",
+     "choice": [
+      125,
+      150,
+      200,
+      250,
+      300,
+      350,
+      400,
+      450,
+      500,
+      750
+     ]
+    }
+   ],
+   "text": "{n} packets each weigh {w} g. What is their total weight in grams?",
+   "answer": "n * w",
+   "hint": "Multiply the weight of one packet by the number of packets.",
+   "explanation": "{n} × {w} g = {n * w:num} g.",
+   "misconception": "Multiplies the unit name but not both parts of a mixed measure, or divides by the wrong quantity.",
+   "notes": "3 to 12 packets of 125 to 750 g.",
+   "sources": [
+    "CBSE-C5-CH08-Q232",
+    "CBSE-C5-CH08-Q260"
+   ]
+  },
+  {
+   "code": "C5-WC-S08-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S08",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    },
+    {
+     "name": "w",
+     "choice": [
+      150,
+      250,
+      300,
+      350,
+      450,
+      600,
+      750,
+      850
+     ]
+    }
+   ],
+   "require": [
+    "(n * w) % 1000 != 0",
+    "n * w > 1000"
+   ],
+   "text": "{n} bags of peanuts each weigh {w} g. Write their total weight in kilograms and grams. Enter kilograms; grams.",
+   "answer": [
+    "(n * w) // 1000",
+    "(n * w) % 1000"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Multiplies: {n} × {w} = {n * w:num} g."
+    },
+    {
+     "marks": 1,
+     "text": "Changes to kilograms and grams: {(n * w) // 1000} kg {(n * w) % 1000} g."
+    }
+   ],
+   "hint": "Find the total in grams, then make kilograms from each 1,000 g.",
+   "explanation": "{n} × {w} g = {n * w:num} g = {(n * w) // 1000} kg {(n * w) % 1000} g.",
+   "misconception": "Multiplies the unit name but not both parts of a mixed measure, or divides by the wrong quantity.",
+   "notes": "3 to 12 bags of 150 to 850 g, totals over 1 kg and not whole kilograms; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q240",
+    "CBSE-C5-CH08-Q252"
+   ]
+  },
+  {
+   "code": "C5-WC-S08-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S08",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "w",
+     "choice": [
+      100,
+      125,
+      150,
+      200,
+      250,
+      300,
+      400,
+      500
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 4,
+      "max": 16
+     }
+    }
+   ],
+   "text": "How many packets of {w} g can be filled from {k * w:num} g of tea?",
+   "answer": "k",
+   "hint": "Divide the total by the weight of one packet.",
+   "explanation": "{k * w:num} ÷ {w} = {k} packets.",
+   "misconception": "Multiplies the unit name but not both parts of a mixed measure, or divides by the wrong quantity.",
+   "notes": "4 to 16 packets of 100 to 500 g, always exact.",
+   "sources": [
+    "CBSE-C5-CH08-Q244"
+   ]
+  },
+  {
+   "code": "C5-WC-S08-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S08",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "e",
+     "choice": [
+      150,
+      250,
+      300,
+      400,
+      450,
+      600,
+      800,
+      1100,
+      1250,
+      1500
+     ]
+    }
+   ],
+   "text": "{n * e:num} g of rice is packed equally into {n} bags. How many grams are in each bag?",
+   "answer": "e",
+   "hint": "Share the total equally: divide by {n}.",
+   "explanation": "{n * e:num} ÷ {n} = {e} g in each bag.",
+   "misconception": "Multiplies the unit name but not both parts of a mixed measure, or divides by the wrong quantity.",
+   "notes": "2 to 9 bags of 150 to 1,500 g each; always exact.",
+   "sources": [
+    "CBSE-C5-CH08-Q248"
+   ]
+  },
+  {
+   "code": "C5-WC-S09-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S09",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "it",
+     "choice": [
+      {
+       "x": "potatoes",
+       "lo": 24,
+       "hi": 48
+      },
+      {
+       "x": "onions",
+       "lo": 28,
+       "hi": 60
+      },
+      {
+       "x": "tomatoes",
+       "lo": 28,
+       "hi": 60
+      },
+      {
+       "x": "rice",
+       "lo": 40,
+       "hi": 88
+      },
+      {
+       "x": "apples",
+       "lo": 120,
+       "hi": 200
+      },
+      {
+       "x": "brinjals",
+       "lo": 32,
+       "hi": 68
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      250,
+      500,
+      750
+     ]
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": "it.lo",
+      "max": "it.hi",
+      "step": 4
+     }
+    }
+   ],
+   "require": [
+    "(r * b) % 1000 == 0"
+   ],
+   "text": "The price of {it.x} is ₹{r} per kg. What is the cost of {a} kg {b} g, in rupees?",
+   "answer": "a * r + r * b // 1000",
+   "hint": "{b} g is {'a quarter' if b == 250 else ('half' if b == 500 else 'three quarters')} of a kilogram.",
+   "explanation": "{a} kg cost {a * r:money}. {b} g cost {r * b // 1000:money}. Total: {a * r + r * b // 1000:money}.",
+   "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
+   "notes": "1 to 6 kg with 250, 500 or 750 g, at realistic prices per kg (potatoes ₹24 to ₹48, onions and tomatoes ₹28 to ₹60, rice ₹40 to ₹88, apples ₹120 to ₹200, brinjals ₹32 to ₹68; multiples of 4, so the cost is whole rupees).",
+   "sources": [
+    "CBSE-C5-CH08-Q269",
+    "CBSE-C5-CH08-Q297"
+   ]
+  },
+  {
+   "code": "C5-WC-S09-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S09",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "it",
+     "choice": [
+      {
+       "x": "dal",
+       "lo": 100,
+       "hi": 180
+      },
+      {
+       "x": "sugar",
+       "lo": 40,
+       "hi": 60
+      },
+      {
+       "x": "rice",
+       "lo": 40,
+       "hi": 90
+      },
+      {
+       "x": "wheat flour",
+       "lo": 40,
+       "hi": 60
+      },
+      {
+       "x": "onions",
+       "lo": 30,
+       "hi": 60
+      }
+     ]
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": "it.lo",
+      "max": "it.hi",
+      "step": 10
+     }
+    },
+    {
+     "name": "g",
+     "choice": [
+      100,
+      200,
+      250,
+      500
+     ]
+    }
+   ],
+   "require": [
+    "(r * g) % 1000 == 0"
+   ],
+   "text": "If 1 kg of {it.x} costs ₹{r}, what is the cost of {g} g, in rupees?",
+   "answer": "r * g // 1000",
+   "hint": "How many {g} g are there in 1 kg?",
+   "explanation": "1 kg = 1,000 g = {1000 // g} × {g} g. So {g} g costs ₹{r} ÷ {1000 // g} = {r * g // 1000:money}.",
+   "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
+   "notes": "Realistic prices per kg (dal ₹100 to ₹180, sugar ₹40 to ₹60, rice ₹40 to ₹90, wheat flour ₹40 to ₹60, onions ₹30 to ₹60); 100, 200, 250 or 500 g, always whole rupees.",
+   "sources": [
+    "CBSE-C5-CH08-Q273",
+    "CBSE-C5-CH08-Q281",
+    "CBSE-C5-CH08-Q289"
+   ]
+  },
+  {
+   "code": "C5-WC-S09-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S09",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "it",
+     "choice": [
+      "tomatoes",
+      "carrots",
+      "grapes",
+      "mangoes",
+      "peas"
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 20,
+      "max": 90,
+      "step": 5
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 3,
+      "max": 10
+     }
+    }
+   ],
+   "require": [
+    "b != a"
+   ],
+   "text": "{a} kg of {it} cost ₹{a * r}. What will {b} kg cost at the same rate, in rupees?",
+   "answer": "b * r",
+   "hint": "Find the cost of 1 kg first.",
+   "explanation": "1 kg costs ₹{a * r} ÷ {a} = ₹{r}. {b} kg cost {b} × ₹{r} = {b * r:money}.",
+   "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
+   "notes": "2 to 5 kg for a whole number of rupees per kg (₹20 to ₹90), then 3 to 10 kg.",
+   "sources": [
+    "CBSE-C5-CH08-Q277"
+   ]
+  },
+  {
+   "code": "C5-WC-S09-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S09",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "g",
+     "choice": [
+      250,
+      500
+     ]
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": "40 if g == 500 else 20",
+      "max": "60 if g == 500 else 30",
+      "step": 5
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      -10,
+      -5,
+      5,
+      10
+     ]
+    }
+   ],
+   "text": "Shop A sells {g} g of cashews for ₹{x * 10}. Shop B sells cashews at ₹{x * 10 * 1000 // g + d * 10:num} per kg. Which shop is cheaper per kilogram?",
+   "options": {
+    "correct": "'Shop A' if d > 0 else 'Shop B'",
+    "wrong": [
+     {
+      "expr": "'Shop B' if d > 0 else 'Shop A'",
+      "mistake": "compares the prices as written without changing to the same weight"
+     },
+     {
+      "expr": "'Both cost the same per kilogram'",
+      "mistake": "charges the same for part of a kilogram as for a whole kilogram"
+     },
+     {
+      "expr": "'It cannot be told'",
+      "mistake": "thinks prices for different weights cannot be compared"
+     }
+    ]
+   },
+   "hint": "Find what Shop A charges for 1 kg.",
+   "explanation": "1 kg is {1000 // g} × {g} g, so Shop A charges {1000 // g} × ₹{x * 10} = ₹{x * 10 * 1000 // g:num} per kg; Shop B charges ₹{x * 10 * 1000 // g + d * 10:num}.",
+   "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
+   "notes": "Cashews at ₹800 to ₹1,200 per kg: Shop A's price for 250 or 500 g against Shop B's price per kg, ₹50 or ₹100 more or less; either shop can be cheaper.",
+   "sources": [
+    "CBSE-C5-CH08-Q285"
+   ]
+  },
+  {
+   "code": "C5-WC-S10-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S10",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "t",
+     "choice": [
+      {
+       "o": "a medicine spoon",
+       "c": "about 5 mL",
+       "w0": "about 5 L",
+       "w1": "about 500 mL",
+       "w2": "about 50 L"
+      },
+      {
+       "o": "a teacup",
+       "c": "about 150 mL",
+       "w0": "about 150 L",
+       "w1": "about 15 L",
+       "w2": "about 1 mL"
+      },
+      {
+       "o": "a household bucket",
+       "c": "about 15 L",
+       "w0": "about 15 mL",
+       "w1": "about 150 mL",
+       "w2": "about 1,500 L"
+      },
+      {
+       "o": "a drinking glass",
+       "c": "about 250 mL",
+       "w0": "about 250 L",
+       "w1": "about 25 L",
+       "w2": "about 2 mL"
+      },
+      {
+       "o": "a water bottle for school",
+       "c": "about 1 L",
+       "w0": "about 1 mL",
+       "w1": "about 100 L",
+       "w2": "about 10 mL"
+      },
+      {
+       "o": "a bathtub",
+       "c": "about 200 L",
+       "w0": "about 200 mL",
+       "w1": "about 2 mL",
+       "w2": "about 20 mL"
+      },
+      {
+       "o": "a perfume bottle",
+       "c": "about 30 mL",
+       "w0": "about 30 L",
+       "w1": "about 300 L",
+       "w2": "about 3,000 mL"
+      },
+      {
+       "o": "an eye-drop bottle",
+       "c": "about 10 mL",
+       "w0": "about 10 L",
+       "w1": "about 1,000 mL",
+       "w2": "about 100 L"
+      },
+      {
+       "o": "an overhead water tank",
+       "c": "about 1,000 L",
+       "w0": "about 1,000 mL",
+       "w1": "about 10 mL",
+       "w2": "about 100 mL"
+      },
+      {
+       "o": "a soup bowl",
+       "c": "about 300 mL",
+       "w0": "about 300 L",
+       "w1": "about 30 L",
+       "w2": "about 3 mL"
+      },
+      {
+       "o": "a car's fuel tank",
+       "c": "about 40 L",
+       "w0": "about 40 mL",
+       "w1": "about 400 mL",
+       "w2": "about 4,000 L"
+      },
+      {
+       "o": "a milk packet",
+       "c": "about 500 mL",
+       "w0": "about 500 L",
+       "w1": "about 50 L",
+       "w2": "about 5 mL"
+      },
+      {
+       "o": "a pressure cooker",
+       "c": "about 5 L",
+       "w0": "about 5 mL",
+       "w1": "about 50 mL",
+       "w2": "about 500 L"
+      },
+      {
+       "o": "a tablespoon",
+       "c": "about 15 mL",
+       "w0": "about 15 L",
+       "w1": "about 150 L",
+       "w2": "about 1,500 mL"
+      },
+      {
+       "o": "a swimming pool",
+       "c": "about 400,000 L",
+       "w0": "about 400 mL",
+       "w1": "about 4,000 mL",
+       "w2": "about 40 L"
+      },
+      {
+       "o": "a big cooking pot for a wedding",
+       "c": "about 100 L",
+       "w0": "about 100 mL",
+       "w1": "about 10 mL",
+       "w2": "about 1 mL"
+      }
+     ]
+    },
+    {
+     "name": "s",
+     "choice": [
+      "Which is a sensible capacity for",
+      "How much can be held by"
+     ]
+    }
+   ],
+   "text": "{s} {t.o}?",
+   "options": {
+    "correct": "t.c",
+    "wrong": [
+     {
+      "expr": "t.w0",
+      "mistake": "chooses millilitres for a large container or litres for a small one"
+     },
+     {
+      "expr": "t.w1",
+      "mistake": "chooses an amount far too large or too small for the container"
+     },
+     {
+      "expr": "t.w2",
+      "mistake": "chooses an amount far too large or too small for the container"
+     }
+    ]
+   },
+   "hint": "1 L is about a big water bottle; 5 mL is about a small spoon.",
+   "explanation": "{t.o} holds {t.c}.",
+   "misconception": "Chooses millilitres for large containers or litres for tiny medicine quantities.",
+   "notes": "16 containers from a medicine spoon to a swimming pool, asked two ways; each wrong option is far too big or too small.",
+   "sources": [
+    "CBSE-C5-CH08-Q298",
+    "CBSE-C5-CH08-Q306",
+    "CBSE-C5-CH08-Q314"
+   ]
+  },
+  {
+   "code": "C5-WC-S10-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S10",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "l",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "cont",
+     "choice": [
+      {
+       "x": "bucket",
+       "v": 10
+      },
+      {
+       "x": "bucket",
+       "v": 12
+      },
+      {
+       "x": "bucket",
+       "v": 15
+      },
+      {
+       "x": "pot",
+       "v": 8
+      },
+      {
+       "x": "jerry can",
+       "v": 20
+      },
+      {
+       "x": "pot",
+       "v": 5
+      }
+     ]
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 6,
+      "max": 40
+     }
+    }
+   ],
+   "text": "A tank is filled with {n} {cont.x}s of water. Each {cont.x} holds {cont.v} L. How many litres does the tank hold?",
+   "answer": "n * cont.v",
+   "hint": "Multiply the number of {cont.x}s by what one holds.",
+   "explanation": "{n} × {cont.v} L = {n * cont.v:num} L.",
+   "misconception": "Chooses millilitres for large containers or litres for tiny medicine quantities.",
+   "notes": "6 to 40 containers of 5 to 20 L.",
+   "sources": [
+    "CBSE-C5-CH08-Q318",
+    "CBSE-C5-CH08-Q322"
+   ]
+  },
+  {
+   "code": "C5-WC-S10-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S10",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      -800,
+      -450,
+      -250,
+      0,
+      150,
+      300,
+      700
+     ]
+    },
+    {
+     "name": "thing",
+     "choice": [
+      "jug",
+      "bottle",
+      "can",
+      "flask"
+     ]
+    }
+   ],
+   "require": [
+    "1000 * a + d > 0"
+   ],
+   "text": "One {thing} holds {a} L. Another holds {1000 * a + d:num} mL. Which is true?",
+   "options": {
+    "correct": "'The first container holds more' if (1 if 1000 * a > 1000 * a + d else (2 if 1000 * a < 1000 * a + d else 3)) == 1 else ('The second container holds more' if (1 if 1000 * a > 1000 * a + d else (2 if 1000 * a < 1000 * a + d else 3)) == 2 else 'They hold the same amount')",
+    "wrong": [
+     {
+      "expr": "'The second container holds more' if (1 if 1000 * a > 1000 * a + d else (2 if 1000 * a < 1000 * a + d else 3)) == 1 else 'The first container holds more'",
+      "mistake": "compares the numbers as written without changing to the same unit"
+     },
+     {
+      "expr": "'They hold the same amount' if (1 if 1000 * a > 1000 * a + d else (2 if 1000 * a < 1000 * a + d else 3)) != 3 else 'The second container holds more'",
+      "mistake": "decides without changing both measures to the same unit"
+     },
+     {
+      "expr": "'They cannot be compared'",
+      "mistake": "thinks measures in different units cannot be compared"
+     }
+    ]
+   },
+   "hint": "Change {a} L to millilitres: 1 L = 1,000 mL.",
+   "explanation": "{a} L = {1000 * a:num} mL. Compare it with {1000 * a + d:num} mL.",
+   "misconception": "Chooses millilitres for large containers or litres for tiny medicine quantities.",
+   "notes": "1 to 6 L against a number of millilitres that is less, more or (about one copy in seven) equal.",
+   "sources": [
+    "CBSE-C5-CH08-Q310"
+   ]
+  },
+  {
+   "code": "C5-WC-S11-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      10,
+      20,
+      25,
+      50,
+      100,
+      200,
+      250
+     ]
+    },
+    {
+     "name": "n",
+     "choice": [
+      4,
+      5,
+      8,
+      10
+     ]
+    }
+   ],
+   "text": "A measuring jug is marked from 0 mL to {n * s:num} mL in {n} equal spaces. How many millilitres does each space stand for?",
+   "answer": "s",
+   "hint": "Share the whole range equally among the spaces.",
+   "explanation": "{n * s:num} ÷ {n} = {s} mL for each space.",
+   "misconception": "Counts scale lines rather than intervals or reads from the wrong labelled mark.",
+   "notes": "4, 5, 8 or 10 spaces of 10 to 250 mL, said in words.",
+   "sources": [
+    "CBSE-C5-CH08-Q331",
+    "CBSE-C5-CH08-Q359"
+   ]
+  },
+  {
+   "code": "C5-WC-S11-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      25,
+      50,
+      100,
+      200
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 2,
+      "max": 9
+     }
+    },
+    {
+     "name": "lo",
+     "choice": [
+      0,
+      100,
+      200,
+      500,
+      1000
+     ]
+    }
+   ],
+   "require": [
+    "lo % s == 0"
+   ],
+   "text": "Each mark on a measuring jug is {s} mL more than the one below it. The water is {k} marks above the {lo:num} mL mark. How many millilitres of water are in the jug?",
+   "answer": "lo + k * s",
+   "hint": "Count on {s} mL for each mark above {lo:num} mL.",
+   "explanation": "{k} × {s} mL = {k * s:num} mL. {lo:num} + {k * s:num} = {lo + k * s:num} mL.",
+   "misconception": "Counts scale lines rather than intervals or reads from the wrong labelled mark.",
+   "notes": "Marks of 25 to 200 mL, 2 to 9 marks above a labelled mark.",
+   "sources": [
+    "CBSE-C5-CH08-Q339"
+   ]
+  },
+  {
+   "code": "C5-WC-S11-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S11",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "s",
+     "choice": [
+      50,
+      100,
+      200,
+      250
+     ]
+    },
+    {
+     "name": "n",
+     "choice": [
+      4,
+      5,
+      8,
+      10
+     ]
+    },
+    {
+     "name": "lo",
+     "choice": [
+      0,
+      200,
+      400,
+      500,
+      1000
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 1,
+      "max": 3
+     }
+    }
+   ],
+   "require": [
+    "k < n"
+   ],
+   "text": "A measuring jug has two labelled lines, {lo:num} mL and {lo + n * s:num} mL, with {n} equal spaces between them. What amount is at line number {k} above {lo:num} mL, in millilitres?",
+   "answer": "lo + k * s",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds each space: ({lo + n * s:num} − {lo:num}) ÷ {n} = {s} mL (counting spaces, not lines)."
+    },
+    {
+     "marks": 1,
+     "text": "Counts on: {lo:num} + {k} × {s} = {lo + k * s:num} mL."
+    }
+   ],
+   "hint": "Count the spaces between the labelled lines, not the lines.",
+   "explanation": "Each space is {s} mL, so line {k} is {lo:num} + {k * s:num} = {lo + k * s:num} mL.",
+   "misconception": "Counts scale lines rather than intervals or reads from the wrong labelled mark.",
+   "notes": "Labels 0 to 1,000 mL with 4 to 10 spaces of 50 to 250 mL between them; the 1st to 3rd line.",
+   "sources": [
+    "CBSE-C5-CH08-Q343",
+    "CBSE-C5-CH08-Q351"
+   ]
+  },
+  {
+   "code": "C5-WC-S11-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S11",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "full",
+     "choice": [
+      1000,
+      1500,
+      1800,
+      2000,
+      2500,
+      3000
+     ]
+    },
+    {
+     "name": "now",
+     "int": {
+      "min": 150,
+      "max": 2850,
+      "step": 50
+     }
+    }
+   ],
+   "require": [
+    "now < full"
+   ],
+   "text": "A jug holds {full:num} mL when full. It now shows {now:num} mL. How many more millilitres will fill it?",
+   "answer": "full - now",
+   "hint": "Full amount − amount now.",
+   "explanation": "{full:num} − {now:num} = {full - now:num} mL.",
+   "misconception": "Counts scale lines rather than intervals or reads from the wrong labelled mark.",
+   "notes": "Jugs of 1,000 to 3,000 mL, partly full.",
+   "sources": [
+    "CBSE-C5-CH08-Q355"
+   ]
+  },
+  {
+   "code": "C5-WC-S12-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S12",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 15
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      8,
+      25,
+      40,
+      75,
+      108,
+      150,
+      250,
+      375,
+      500,
+      640,
+      800,
+      955
+     ]
+    }
+   ],
+   "text": "Change {a} L {b} mL to millilitres.",
+   "answer": "1000 * a + b",
+   "hint": "1 L = 1,000 mL.",
+   "explanation": "{a} L = {1000 * a:num} mL. {1000 * a:num} + {b} = {1000 * a + b:num} mL.",
+   "misconception": "Writes 3 l 8 ml as 3,800 ml or drops placeholder zeroes.",
+   "notes": "1 to 15 L with 8 to 955 mL; under 100 mL in about a third of copies (3 L 8 mL = 3,008 mL).",
+   "sources": [
+    "CBSE-C5-CH08-Q364",
+    "CBSE-C5-CH08-Q372"
+   ]
+  },
+  {
+   "code": "C5-WC-S12-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S12",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 1005,
+      "max": 14995
+     }
+    }
+   ],
+   "require": [
+    "n % 1000 != 0",
+    "n % 5 == 0"
+   ],
+   "text": "Write {n:num} mL in litres and millilitres. Enter litres; millilitres.",
+   "answer": [
+    "n // 1000",
+    "n % 1000"
+   ],
+   "hint": "Every 1,000 mL makes 1 L.",
+   "explanation": "{n:num} mL = {n // 1000} L {n % 1000} mL.",
+   "misconception": "Writes 3 l 8 ml as 3,800 ml or drops placeholder zeroes.",
+   "notes": "1,005 to 14,995 mL in steps of 5; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q380"
+   ]
+  },
+  {
+   "code": "C5-WC-S12-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S12",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 1050,
+      "max": 8950,
+      "step": 25
+     }
+    }
+   ],
+   "require": [
+    "m < 1000 * a",
+    "m % 1000 != 0"
+   ],
+   "text": "How many millilitres more is {a} L than {m:num} mL? Show in your working how you changed the litres.",
+   "answer": "1000 * a - m",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Changes {a} L to {1000 * a:num} mL."
+    },
+    {
+     "marks": 1,
+     "text": "Subtracts: {1000 * a:num} − {m:num} = {1000 * a - m:num} mL."
+    }
+   ],
+   "hint": "Change the litres to millilitres first.",
+   "explanation": "{a} L = {1000 * a:num} mL. {1000 * a:num} − {m:num} = {1000 * a - m:num} mL.",
+   "misconception": "Writes 3 l 8 ml as 3,800 ml or drops placeholder zeroes.",
+   "notes": "3 to 9 L against a smaller number of millilitres.",
+   "sources": [
+    "CBSE-C5-CH08-Q376"
+   ]
+  },
+  {
+   "code": "C5-WC-S12-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S12",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 50,
+      "max": 950,
+      "step": 5
+     }
+    },
+    {
+     "name": "d",
+     "choice": [
+      -500,
+      -300,
+      -40,
+      0,
+      30,
+      200,
+      600
+     ]
+    }
+   ],
+   "require": [
+    "1000 * a + b + d > 0",
+    "(1000 * a + b + d) % 1000 != 0"
+   ],
+   "text": "Compare {a} L {b} mL with {1000 * a + b + d:num} mL. Which is true?",
+   "options": {
+    "correct": "'The first amount is more' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) == 1 else ('The second amount is more' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) == 2 else 'They are the same amount')",
+    "wrong": [
+     {
+      "expr": "'The second amount is more' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) == 1 else 'The first amount is more'",
+      "mistake": "compares the numbers as written without changing to the same unit"
+     },
+     {
+      "expr": "'They are the same amount' if (1 if 1000 * a + b > 1000 * a + b + d else (2 if 1000 * a + b < 1000 * a + b + d else 3)) != 3 else 'The second amount is more'",
+      "mistake": "decides without changing both measures to the same unit"
+     },
+     {
+      "expr": "'They cannot be compared'",
+      "mistake": "thinks measures in different units cannot be compared"
+     }
+    ]
+   },
+   "hint": "Change {a} L {b} mL to millilitres first.",
+   "explanation": "{a} L {b} mL = {1000 * a + b:num} mL. Compare it with {1000 * a + b + d:num} mL.",
+   "misconception": "Writes 3 l 8 ml as 3,800 ml or drops placeholder zeroes.",
+   "notes": "A capacity in L and mL against one in mL that is less, more or (about one copy in seven) equal.",
+   "sources": [
+    "CBSE-C5-CH08-Q388"
+   ]
+  },
+  {
+   "code": "C5-WC-S13-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S13",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 950,
+      "step": 10
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 6
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 100,
+      "max": 950,
+      "step": 10
+     }
+    }
+   ],
+   "text": "Add {a} L {b} mL and {c} L {d} mL. Give the total in millilitres.",
+   "answer": "1000 * (a + c) + b + d",
+   "hint": "Change both to millilitres, then add.",
+   "explanation": "{1000 * a + b:num} mL + {1000 * c + d:num} mL = {1000 * (a + c) + b + d:num} mL.",
+   "misconception": "Does not exchange 1,000 ml for 1 l or subtracts the smaller displayed ml part from the larger regardless of place.",
+   "notes": "Two amounts of 1 to 6 L with 100 to 950 mL.",
+   "sources": [
+    "CBSE-C5-CH08-Q397",
+    "CBSE-C5-CH08-Q425"
+   ]
+  },
+  {
+   "code": "C5-WC-S13-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S13",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 150,
+      "max": 950,
+      "step": 5
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 9
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 150,
+      "max": 950,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "b + d > 1000"
+   ],
+   "text": "Add {a} L {b} mL and {c} L {d} mL. Enter litres; millilitres.",
+   "answer": [
+    "a + c + 1",
+    "b + d - 1000"
+   ],
+   "hint": "Add the millilitres. 1,000 mL make 1 L.",
+   "explanation": "{b} + {d} = {b + d:num} mL = 1 L {b + d - 1000} mL. Total: {a + c + 1} L {b + d - 1000} mL.",
+   "misconception": "Does not exchange 1,000 ml for 1 l or subtracts the smaller displayed ml part from the larger regardless of place.",
+   "notes": "The millilitres always add to more than 1,000, so the child regroups; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q405",
+    "CBSE-C5-CH08-Q401"
+   ]
+  },
+  {
+   "code": "C5-WC-S13-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S13",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "it",
+     "choice": [
+      "juice",
+      "milk",
+      "lemonade",
+      "buttermilk"
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 50,
+      "max": 600,
+      "step": 5
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 2
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 300,
+      "max": 950,
+      "step": 5
+     }
+    }
+   ],
+   "require": [
+    "b < d"
+   ],
+   "text": "A stall had {a} L {b} mL of {it}. It sold {c} L {d} mL. How much {it} is left? Enter litres; millilitres.",
+   "answer": [
+    "a - c - 1",
+    "1000 + b - d"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Borrows 1 L as 1,000 mL: {a - 1} L {1000 + b:num} mL."
+    },
+    {
+     "marks": 1,
+     "text": "Subtracts: {a - c - 1} L {1000 + b - d} mL."
+    }
+   ],
+   "hint": "Left = had − sold. Change 1 L into 1,000 mL when the millilitres are too few.",
+   "explanation": "{a} L {b} mL − {c} L {d} mL = {a - c - 1} L {1000 + b - d} mL.",
+   "misconception": "Does not exchange 1,000 ml for 1 l or subtracts the smaller displayed ml part from the larger regardless of place.",
+   "notes": "The millilitres sold are always more than those held, so the child borrows; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q421",
+    "CBSE-C5-CH08-Q413",
+    "CBSE-C5-CH08-Q409"
+   ]
+  },
+  {
+   "code": "C5-WC-S13-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S13",
+   "questionType": "Single Select",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Choice or short text",
+   "values": [
+    {
+     "name": "k",
+     "choice": [
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The water in a water can went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount poured out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A water can had ",
+       "p2": " in it. Then ",
+       "p3": " more was poured in. Which calculation finds the new amount?"
+      },
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The water in a bucket went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount poured out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A bucket had ",
+       "p2": " in it. Then ",
+       "p3": " more was poured in. Which calculation finds the new amount?"
+      },
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The water in a cooking pot went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount poured out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A cooking pot had ",
+       "p2": " in it. Then ",
+       "p3": " more was poured in. Which calculation finds the new amount?"
+      },
+      {
+       "d": 0,
+       "c": "Subtract the second amount from the first",
+       "w": "Add the two amounts",
+       "p1": "The water in a big jug went from ",
+       "p2": " to ",
+       "p3": ". Which calculation finds the amount poured out?"
+      },
+      {
+       "d": 1,
+       "c": "Add the two amounts",
+       "w": "Subtract the second amount from the first",
+       "p1": "A big jug had ",
+       "p2": " in it. Then ",
+       "p3": " more was poured in. Which calculation finds the new amount?"
+      }
+     ]
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 25
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 2
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 25
+     }
+    }
+   ],
+   "text": "{k.p1}{a} L {b} mL{k.p2}{c} L {d} mL{k.p3}",
+   "options": {
+    "correct": "k.c",
+    "wrong": [
+     {
+      "expr": "k.w",
+      "mistake": "adds when the amount went down, or subtracts when more was added"
+     },
+     {
+      "expr": "'Subtract the first amount from the second'",
+      "mistake": "takes the larger amount from the smaller"
+     },
+     {
+      "expr": "'Multiply the two amounts'",
+      "mistake": "multiplies the amounts"
+     }
+    ]
+   },
+   "hint": "Did the amount go down or up?",
+   "explanation": "{k.c}: the amount {'went down' if k.d == 0 else 'went up'}.",
+   "misconception": "Does not exchange 1,000 ml for 1 l or subtracts the smaller displayed ml part from the larger regardless of place.",
+   "notes": "Half the copies ask for an amount taken out (subtract), half for a new total (add), so the right choice changes.",
+   "sources": [
+    "CBSE-C5-CH08-Q417"
+   ]
+  },
+  {
+   "code": "C5-WC-S14-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S14",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 1,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "ml",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 3,
+      "max": 16
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      100,
+      150,
+      180,
+      200,
+      250,
+      300
+     ]
+    }
+   ],
+   "text": "{n} glasses each hold {v} mL. How much juice is needed to fill them all, in millilitres?",
+   "answer": "n * v",
+   "hint": "Multiply what one glass holds by the number of glasses.",
+   "explanation": "{n} × {v} mL = {n * v:num} mL.",
+   "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
+   "notes": "3 to 16 glasses of 100 to 300 mL.",
+   "sources": [
+    "CBSE-C5-CH08-Q430",
+    "CBSE-C5-CH08-Q458"
+   ]
+  },
+  {
+   "code": "C5-WC-S14-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S14",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Conceptual understanding and fluency",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 5,
+      "max": 16
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      150,
+      200,
+      250,
+      300,
+      350,
+      400,
+      750
+     ]
+    }
+   ],
+   "require": [
+    "(n * v) % 1000 != 0",
+    "n * v > 1000"
+   ],
+   "text": "{n} bottles each hold {v} mL. Write their total capacity in litres and millilitres. Enter litres; millilitres.",
+   "answer": [
+    "(n * v) // 1000",
+    "(n * v) % 1000"
+   ],
+   "hint": "Find the total in millilitres, then make litres from each 1,000 mL.",
+   "explanation": "{n} × {v} = {n * v:num} mL = {(n * v) // 1000} L {(n * v) % 1000} mL.",
+   "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
+   "notes": "5 to 16 bottles of 150 to 750 mL; totals over 1 L and not whole litres; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q438"
+   ]
+  },
+  {
+   "code": "C5-WC-S14-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S14",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      100,
+      200,
+      250,
+      500
+     ]
+    }
+   ],
+   "text": "How many {v} mL bottles can be filled from {a} L of water?",
+   "answer": "1000 * a // v",
+   "hint": "Change {a} L to millilitres, then divide by {v}.",
+   "explanation": "{a} L = {1000 * a:num} mL. {1000 * a:num} ÷ {v} = {1000 * a // v} bottles.",
+   "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
+   "notes": "2 to 12 L into 100, 200, 250 or 500 mL bottles, always exact.",
+   "sources": [
+    "CBSE-C5-CH08-Q446",
+    "CBSE-C5-CH08-Q450"
+   ]
+  },
+  {
+   "code": "C5-WC-S14-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S14",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 12
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      150,
+      300,
+      350,
+      400,
+      450,
+      600,
+      700,
+      800
+     ]
+    }
+   ],
+   "require": [
+    "(1000 * a) % v != 0"
+   ],
+   "text": "{a} L of juice is poured into glasses of {v} mL each. How many glasses can be filled completely, and how many millilitres are left over? Enter glasses; millilitres left.",
+   "answer": [
+    "1000 * a // v",
+    "(1000 * a) % v"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Changes to millilitres and divides: {1000 * a:num} ÷ {v} = {1000 * a // v} full glasses."
+    },
+    {
+     "marks": 1,
+     "text": "Finds what is left: {1000 * a:num} − {1000 * a // v * v:num} = {(1000 * a) % v} mL."
+    }
+   ],
+   "hint": "Change litres to millilitres first, then divide.",
+   "explanation": "{1000 * a:num} mL ÷ {v} mL = {1000 * a // v} glasses, with {(1000 * a) % v} mL left over.",
+   "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
+   "notes": "2 to 12 L into glasses of 150 to 800 mL that do not divide it exactly; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q454",
+    "CBSE-C5-CH08-Q434",
+    "CBSE-C5-CH08-Q462"
+   ]
+  },
+  {
+   "code": "C5-WC-S15-P1",
+   "chapter": 8,
+   "skill": "C5-WC-S15",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Mixed-unit measure in two boxes",
+   "values": [
+    {
+     "name": "n",
+     "int": {
+      "min": 4,
+      "max": 10
+     }
+    },
+    {
+     "name": "w",
+     "choice": [
+      1250,
+      1500,
+      1750,
+      2500
+     ]
+    },
+    {
+     "name": "u",
+     "int": {
+      "min": 1100,
+      "max": 2900,
+      "step": 100
+     }
+    }
+   ],
+   "require": [
+    "(n * w - u) % 1000 != 0"
+   ],
+   "text": "A school kitchen buys {n} bags of rice weighing {w:num} g each and uses {u:num} g. How much rice is left? Enter kilograms; grams.",
+   "answer": [
+    "(n * w - u) // 1000",
+    "(n * w - u) % 1000"
+   ],
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds the rice bought: {n} × {w:num} = {n * w:num} g; subtracts {u:num} g: {n * w - u:num} g."
+    },
+    {
+     "marks": 1,
+     "text": "Writes it as {(n * w - u) // 1000} kg {(n * w - u) % 1000} g."
+    }
+   ],
+   "hint": "Find the total bought, then take away what was used.",
+   "explanation": "{n} × {w:num} = {n * w:num} g. {n * w:num} − {u:num} = {n * w - u:num} g = {(n * w - u) // 1000} kg {(n * w - u) % 1000} g.",
+   "misconception": "Mixes weight and capacity units, uses every number without planning, or stops after an intermediate result.",
+   "notes": "4 to 10 bags of 1,250 to 2,500 g, using 1,100 to 2,900 g; two boxes.",
+   "sources": [
+    "CBSE-C5-CH08-Q463",
+    "CBSE-C5-CH08-Q491"
+   ]
+  },
+  {
+   "code": "C5-WC-S15-P2",
+   "chapter": 8,
+   "skill": "C5-WC-S15",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Application in context",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "l",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "n1",
+     "int": {
+      "min": 5,
+      "max": 15
+     }
+    },
+    {
+     "name": "f1",
+     "choice": [
+      30,
+      35,
+      40,
+      45,
+      50
+     ]
+    },
+    {
+     "name": "n2",
+     "int": {
+      "min": 4,
+      "max": 12
+     }
+    },
+    {
+     "name": "f2",
+     "choice": [
+      15,
+      20,
+      25
+     ]
+    }
+   ],
+   "text": "A fuel pump fills {n1} buses with {f1} L each and {n2} vans with {f2} L each. How many litres of fuel is that altogether?",
+   "answer": "n1 * f1 + n2 * f2",
+   "hint": "Find the fuel for the buses and for the vans, then add.",
+   "explanation": "{n1} × {f1} = {n1 * f1} L; {n2} × {f2} = {n2 * f2} L. Total: {n1 * f1 + n2 * f2:num} L.",
+   "misconception": "Mixes weight and capacity units, uses every number without planning, or stops after an intermediate result.",
+   "notes": "5 to 15 buses of 30 to 50 L and 4 to 12 vans of 15 to 25 L.",
+   "sources": [
+    "CBSE-C5-CH08-Q471"
+   ]
+  },
+  {
+   "code": "C5-WC-S15-P3",
+   "chapter": 8,
+   "skill": "C5-WC-S15",
+   "questionType": "Numeric Entry",
+   "marks": 1,
+   "difficulty": 2,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Integer; unit stated in question",
+   "unit": "g",
+   "unitRule": "STATED",
+   "values": [
+    {
+     "name": "k",
+     "choice": [
+      2,
+      4,
+      5
+     ]
+    },
+    {
+     "name": "w",
+     "choice": [
+      250,
+      300,
+      400,
+      500
+     ]
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 3,
+      "max": 12
+     }
+    }
+   ],
+   "text": "{k} people need {w} g of rice for a meal. How many grams of rice are needed for {k * m} people at the same rate?",
+   "answer": "m * w",
+   "hint": "How many groups of {k} people are there in {k * m} people?",
+   "explanation": "{k * m} ÷ {k} = {m} groups. {m} × {w} g = {m * w:num} g.",
+   "misconception": "Mixes weight and capacity units, uses every number without planning, or stops after an intermediate result.",
+   "notes": "Groups of 2, 4 or 5 people, 3 to 12 groups.",
+   "sources": [
+    "CBSE-C5-CH08-Q479"
+   ]
+  },
+  {
+   "code": "C5-WC-S15-P4",
+   "chapter": 8,
+   "skill": "C5-WC-S15",
+   "questionType": "Numeric Entry",
+   "marks": 2,
+   "difficulty": 4,
+   "competency": "Application in context",
+   "responseFormat": "Integer",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 10
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      200,
+      250
+     ]
+    },
+    {
+     "name": "p",
+     "int": {
+      "min": 10,
+      "max": 40,
+      "step": 5
+     }
+    }
+   ],
+   "text": "A vendor sells {a} L of sugarcane juice in glasses of {v} mL at ₹{p} a glass. How much does the vendor earn if all of it is sold, in rupees?",
+   "answer": "1000 * a // v * p",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Finds the glasses: {1000 * a:num} mL ÷ {v} = {1000 * a // v} glasses."
+    },
+    {
+     "marks": 1,
+     "text": "Finds the earning: {1000 * a // v} × ₹{p} = {1000 * a // v * p:money}."
+    }
+   ],
+   "hint": "Change litres to millilitres, find the number of glasses, then the money.",
+   "explanation": "{1000 * a:num} ÷ {v} = {1000 * a // v} glasses. {1000 * a // v} × ₹{p} = {1000 * a // v * p:money}.",
+   "misconception": "Mixes weight and capacity units, uses every number without planning, or stops after an intermediate result.",
+   "notes": "2 to 10 L in 200 or 250 mL glasses at ₹10 to ₹40.",
+   "sources": [
+    "CBSE-C5-CH08-Q487"
+   ]
+  },
+  {
+   "code": "C5-WC-L3-1",
+   "chapter": 8,
+   "skill": "C5-WC-S09",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Written explanation or working",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 1,
+      "max": 4
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      250,
+      500,
+      750
+     ]
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 40,
+      "max": 120,
+      "step": 4
+     }
+    },
+    {
+     "name": "c",
+     "choice": [
+      250,
+      500
+     ]
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 60,
+      "max": 200,
+      "step": 4
+     }
+    }
+   ],
+   "require": [
+    "(r * b) % 1000 == 0",
+    "(s * c) % 1000 == 0"
+   ],
+   "text": "{who.name} buys {a} kg {b} g of tomatoes at ₹{r} per kg and {c} g of ginger at ₹{s} per kg. What is the total cost? Show your working.",
+   "answer": "Tomatoes: {a} × ₹{r} + {b} g at ₹{r} per kg = {a * r:money} + {r * b // 1000:money} = {a * r + r * b // 1000:money}. Ginger: {c} g at ₹{s} per kg = {s * c // 1000:money}. Total: {a * r + r * b // 1000 + s * c // 1000:money}.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Tomatoes: {a * r:money} + {r * b // 1000:money} = {a * r + r * b // 1000:money}."
+    },
+    {
+     "marks": 1,
+     "text": "Ginger: {c} g is {'a quarter' if c == 250 else 'half'} of a kilogram, so {s * c // 1000:money}."
+    },
+    {
+     "marks": 1,
+     "text": "Adds: {a * r + r * b // 1000 + s * c // 1000:money}."
+    }
+   ],
+   "hint": "Work out each item separately. 500 g is half a kilogram and 250 g a quarter.",
+   "explanation": "{a * r + r * b // 1000:money} + {s * c // 1000:money} = {a * r + r * b // 1000 + s * c // 1000:money}.",
+   "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
+   "notes": "1 to 4 kg and a part kilogram of tomatoes at ₹40 to ₹120 per kg; 250 or 500 g of ginger at ₹60 to ₹200 per kg; whole rupees.",
+   "sources": [
+    "CBSE-C5-CH08-Q269",
+    "CBSE-C5-CH08-Q273",
+    "CBSE-C5-CH08-Q281"
+   ]
+  },
+  {
+   "code": "C5-WC-L3-2",
+   "chapter": 8,
+   "skill": "C5-WC-S13",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "responseFormat": "Written explanation or working",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 15,
+      "max": 40
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 100,
+      "max": 900,
+      "step": 50
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 300,
+      "max": 950,
+      "step": 50
+     }
+    }
+   ],
+   "require": [
+    "(c + d) % 1000 != 0",
+    "(1000 * a - 1000 * b - c - d) % 1000 != 0"
+   ],
+   "text": "A family's water tank has {a} L of water. In the morning they use {b} L {c} mL and in the evening {d} mL. How much water is left in the tank? Show your working.",
+   "answer": "Used: {b} L {c} mL + {d} mL = {(1000 * b + c + d) // 1000} L {(1000 * b + c + d) % 1000} mL. Left: {a} L − that = {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Adds the water used: {(1000 * b + c + d) // 1000} L {(1000 * b + c + d) % 1000} mL (or {1000 * b + c + d:num} mL)."
+    },
+    {
+     "marks": 1,
+     "text": "Subtracts from {a} L ({1000 * a:num} mL), borrowing or working in millilitres."
+    },
+    {
+     "marks": 1,
+     "text": "Gives {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL left."
+    }
+   ],
+   "hint": "Find the total used first. Working in millilitres can help.",
+   "explanation": "Used {1000 * b + c + d:num} mL. Left: {1000 * a:num} − {1000 * b + c + d:num} = {1000 * a - 1000 * b - c - d:num} mL = {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL.",
+   "misconception": "Does not exchange 1,000 ml for 1 l or subtracts the smaller displayed ml part from the larger regardless of place.",
+   "notes": "A tank of 15 to 40 L; uses of 2 to 6 L with 100 to 900 mL and 300 to 950 mL.",
+   "sources": [
+    "CBSE-C5-CH08-Q409",
+    "CBSE-C5-CH08-Q421",
+    "CBSE-C5-CH08-Q401"
+   ]
+  },
+  {
+   "code": "C5-WC-L3-3",
+   "chapter": 8,
+   "skill": "C5-WC-S04",
+   "questionType": "Constructed Response",
+   "marks": 3,
+   "difficulty": 3,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written explanation or working",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      5,
+      8,
+      20,
+      40,
+      60,
+      75,
+      90
+     ]
+    },
+    {
+     "name": "e",
+     "int": {
+      "min": 150,
+      "max": 850,
+      "step": 50
+     }
+    }
+   ],
+   "require": [
+    "1000 * a + b < 1000 * a + e",
+    "(1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b) > 1000 * a + e"
+   ],
+   "text": "{who.name} says that {a} kg {b} g is the same as {1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b:num} g, so it is heavier than {1000 * a + e:num} g. Is {who.name} right? Explain, giving both weights in grams.",
+   "answer": "No. {a} kg {b} g = {1000 * a:num} g + {b} g = {1000 * a + b:num} g, not {1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b:num} g. {1000 * a + b:num} g is lighter than {1000 * a + e:num} g.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "Changes correctly: {a} kg {b} g = {1000 * a + b:num} g (keeps the zero in the hundreds place)."
+    },
+    {
+     "marks": 1,
+     "text": "Compares: {1000 * a + b:num} g is less than {1000 * a + e:num} g."
+    },
+    {
+     "marks": 1,
+     "text": "Says {who.name} is not right and explains the mistake: the grams were put in the wrong place."
+    }
+   ],
+   "hint": "Write {b} g in a weight of more than 1 kg carefully: {a} kg = {1000 * a:num} g.",
+   "explanation": "{a} kg {b} g = {1000 * a + b:num} g, which is lighter than {1000 * a + e:num} g. {who.name} moved the {b} g into the wrong place.",
+   "misconception": "Compares only the gram parts or only the displayed numerals without using a common unit.",
+   "notes": "2 to 6 kg with fewer than 100 g; the wrong conversion pushes the grams into the hundreds, which makes it look heavier than a weight that is really heavier.",
+   "sources": [
+    "CBSE-C5-CH08-Q100",
+    "CBSE-C5-CH08-Q120",
+    "CBSE-C5-CH08-Q087"
+   ]
+  },
+  {
+   "code": "C5-WC-L5-1",
+   "chapter": 8,
+   "skill": "C5-WC-S15",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Reasoning and problem solving",
+   "responseFormat": "Written explanation or working",
+   "values": [
+    {
+     "name": "k",
+     "choice": [
+      4,
+      5
+     ]
+    },
+    {
+     "name": "w",
+     "choice": [
+      400,
+      500,
+      600
+     ]
+    },
+    {
+     "name": "v",
+     "choice": [
+      100,
+      150,
+      200
+     ]
+    },
+    {
+     "name": "m",
+     "int": {
+      "min": 6,
+      "max": 15
+     }
+    }
+   ],
+   "require": [
+    "(m * w) % 1000 != 0",
+    "(m * v) % 1000 != 0",
+    "m * v > 1000"
+   ],
+   "text": "A recipe for {k} people needs {w} g of rice and {v} mL of oil. A school camp cooks for {k * m} people. (a) How many grams of rice are needed? (b) Write this in kg and g. (c) How many millilitres of oil are needed? (d) Write this in L and mL. (e) Rice comes in 1 kg packets. How many packets must be bought? Show your working.",
+   "maxWords": 110,
+   "answer": "{k * m} ÷ {k} = {m} times the recipe. (a) {m} × {w} = {m * w:num} g. (b) {(m * w) // 1000} kg {(m * w) % 1000} g. (c) {m} × {v} = {m * v:num} mL. (d) {(m * v) // 1000} L {(m * v) % 1000} mL. (e) {(m * w) // 1000 + 1} packets ({(m * w) // 1000} packets are not enough).",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) Finds {m} times the recipe and {m * w:num} g of rice."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {(m * w) // 1000} kg {(m * w) % 1000} g."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {m * v:num} mL of oil."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {(m * v) // 1000} L {(m * v) % 1000} mL."
+    },
+    {
+     "marks": 1,
+     "text": "(e) Rounds up: {(m * w) // 1000 + 1} packets, since a part packet cannot be bought."
+    }
+   ],
+   "hint": "First find how many times the recipe must be made.",
+   "explanation": "{m} times the recipe: {m * w:num} g rice, {m * v:num} mL oil, and {(m * w) // 1000 + 1} packets of rice.",
+   "misconception": "Mixes weight and capacity units, uses every number without planning, or stops after an intermediate result.",
+   "notes": "A recipe for 4 or 5 people scaled 6 to 15 times; totals are never whole kilograms or litres, so (e) always rounds up.",
+   "sources": [
+    "CBSE-C5-CH08-Q479",
+    "CBSE-C5-CH08-Q483",
+    "CBSE-C5-CH08-Q252"
+   ]
+  },
+  {
+   "code": "C5-WC-L5-2",
+   "chapter": 8,
+   "skill": "C5-WC-S14",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Application in context",
+   "responseFormat": "Written explanation or working",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    },
+    {
+     "name": "v",
+     "choice": [
+      150,
+      200,
+      300,
+      400
+     ]
+    },
+    {
+     "name": "p",
+     "int": {
+      "min": 10,
+      "max": 30,
+      "step": 5
+     }
+    },
+    {
+     "name": "x",
+     "int": {
+      "min": 2,
+      "max": 6
+     }
+    }
+   ],
+   "require": [
+    "(1000 * a) % v != 0",
+    "1000 * a // v > x"
+   ],
+   "text": "{who.name} makes {a} L of lemonade for a school fair and serves it in glasses of {v} mL at ₹{p} a glass. (a) Write {a} L in mL. (b) How many glasses can be filled completely? (c) How many mL are left over? (d) How much money does {who.name} get if every full glass is sold? (e) {who.name} keeps {x} glasses for the helpers. How much lemonade, in mL, is sold? Show your working.",
+   "maxWords": 110,
+   "answer": "(a) {1000 * a:num} mL. (b) {1000 * a:num} ÷ {v} = {1000 * a // v} glasses. (c) {(1000 * a) % v} mL. (d) {1000 * a // v} × ₹{p} = {1000 * a // v * p:money}. (e) {1000 * a // v - x} × {v} = {(1000 * a // v - x) * v:num} mL.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {1000 * a:num} mL."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {1000 * a // v} full glasses."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {(1000 * a) % v} mL left over."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {1000 * a // v * p:money}."
+    },
+    {
+     "marks": 1,
+     "text": "(e) {1000 * a // v - x} glasses sold: {(1000 * a // v - x) * v:num} mL."
+    }
+   ],
+   "hint": "Change litres to millilitres first, then divide by the glass size.",
+   "explanation": "{1000 * a:num} mL makes {1000 * a // v} glasses with {(1000 * a) % v} mL over; money {1000 * a // v * p:money}; sold {(1000 * a // v - x) * v:num} mL.",
+   "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
+   "notes": "3 to 9 L in glasses of 150 to 400 mL (never exact), ₹10 to ₹30 a glass, 2 to 6 glasses kept.",
+   "sources": [
+    "CBSE-C5-CH08-Q454",
+    "CBSE-C5-CH08-Q487",
+    "CBSE-C5-CH08-Q438"
+   ]
+  },
+  {
+   "code": "C5-WC-L5-3",
+   "chapter": 8,
+   "skill": "C5-WC-S06",
+   "questionType": "Constructed Response",
+   "marks": 5,
+   "difficulty": 4,
+   "competency": "Application in context",
+   "responseFormat": "Written explanation or working",
+   "values": [
+    {
+     "name": "t",
+     "int": {
+      "min": 2,
+      "max": 8
+     }
+    },
+    {
+     "name": "w",
+     "choice": [
+      25,
+      50,
+      100
+     ]
+    },
+    {
+     "name": "q",
+     "int": {
+      "min": 3,
+      "max": 9
+     }
+    }
+   ],
+   "require": [
+    "q < 10 * t"
+   ],
+   "text": "A truck carries {t} tonnes of potatoes. (a) How many kilograms is that? (b) How many quintals is that? (c) The potatoes are packed into sacks of {w} kg. How many sacks are there? (d) {q} quintals are unloaded at the first shop. How many kilograms are left on the truck? (e) How many sacks are left? Show your working.",
+   "maxWords": 100,
+   "answer": "(a) {1000 * t:num} kg. (b) {10 * t} quintals. (c) {1000 * t:num} ÷ {w} = {1000 * t // w} sacks. (d) {q} quintals = {100 * q} kg; {1000 * t:num} − {100 * q} = {1000 * t - 100 * q:num} kg. (e) {1000 * t - 100 * q:num} ÷ {w} = {(1000 * t - 100 * q) // w} sacks.",
+   "steps": [
+    {
+     "marks": 1,
+     "text": "(a) {t} × 1,000 = {1000 * t:num} kg."
+    },
+    {
+     "marks": 1,
+     "text": "(b) {t} × 10 = {10 * t} quintals."
+    },
+    {
+     "marks": 1,
+     "text": "(c) {1000 * t // w} sacks."
+    },
+    {
+     "marks": 1,
+     "text": "(d) {1000 * t - 100 * q:num} kg left."
+    },
+    {
+     "marks": 1,
+     "text": "(e) {(1000 * t - 100 * q) // w} sacks left."
+    }
+   ],
+   "hint": "1 tonne = 1,000 kg = 10 quintals; 1 quintal = 100 kg.",
+   "explanation": "{1000 * t:num} kg = {10 * t} quintals = {1000 * t // w} sacks. After {q} quintals: {1000 * t - 100 * q:num} kg, {(1000 * t - 100 * q) // w} sacks.",
+   "misconception": "Uses 10 kg for a quintal or 100 kg for a tonne.",
+   "notes": "2 to 8 tonnes, sacks of 25, 50 or 100 kg (always exact), 3 to 9 quintals unloaded.",
+   "sources": [
+    "CBSE-C5-CH08-Q166",
+    "CBSE-C5-CH08-Q186",
+    "CBSE-C5-CH08-Q174"
+   ]
+  },
+  {
+   "code": "C5-WC-CS-1",
+   "chapter": 8,
+   "skill": "C5-WC-S09",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "r",
+     "int": {
+      "min": 100,
+      "max": 180,
+      "step": 4
+     }
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "b",
+     "choice": [
+      250,
+      500,
+      750
+     ]
+    },
+    {
+     "name": "s",
+     "int": {
+      "min": 10,
+      "max": 15
+     }
+    },
+    {
+     "name": "n",
+     "int": {
+      "min": 3,
+      "max": 8
+     }
+    }
+   ],
+   "require": [
+    "(r * b) % 1000 == 0"
+   ],
+   "stimulus": "Case study: {who.name} helps at a grocery shop. Dal costs ₹{r} per kg. Salt comes in packets of 500 g at ₹{s} each.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) A customer buys {a} kg {b} g of dal. Write this in grams.",
+     "answer": "1000 * a + b",
+     "unit": "g",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a} kg {b} g = {1000 * a + b:num} g."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) What does the customer pay for the dal, in rupees?",
+     "answer": "a * r + r * b // 1000",
+     "responseFormat": "Integer",
+     "explanation": "{a} × ₹{r} + {b} g at ₹{r} per kg = {a * r:money} + {r * b // 1000:money} = {a * r + r * b // 1000:money}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) How many kilograms of salt are there in {2 * n} packets?",
+     "answer": "n",
+     "unit": "kg",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "Two 500 g packets make 1 kg, so {2 * n} packets make {n} kg."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(d) What do {2 * n} packets of salt cost, in rupees?",
+     "answer": "2 * n * s",
+     "responseFormat": "Integer",
+     "explanation": "{2 * n} × ₹{s} = {2 * n * s:money}."
+    }
+   ],
+   "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
+   "notes": "Dal at ₹100 to ₹180 per kg (2 to 5 kg and a part kilogram), salt at ₹10 to ₹15 a 500 g packet (₹20 to ₹30 per kg); whole rupees.",
+   "sources": [
+    "CBSE-C5-CH08-Q269",
+    "CBSE-C5-CH08-Q285",
+    "CBSE-C5-CH08-Q075",
+    "CBSE-C5-CH08-Q248"
+   ]
+  },
+  {
+   "code": "C5-WC-CS-2",
+   "chapter": 8,
+   "skill": "C5-WC-S14",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "a",
+     "int": {
+      "min": 10,
+      "max": 25
+     }
+    },
+    {
+     "name": "g",
+     "choice": [
+      200,
+      250
+     ]
+    },
+    {
+     "name": "k",
+     "int": {
+      "min": 20,
+      "max": 40
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    }
+   ],
+   "require": [
+    "k * g < 1000 * a"
+   ],
+   "stimulus": "Case study: For sports day, a school fills a water cooler with {a} L of water. Each paper cup holds {g} mL. The children also have {c} spare bottles, each full with 1 L of water.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) How many millilitres of water are in the cooler?",
+     "answer": "1000 * a",
+     "unit": "ml",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a} L = {a} × 1,000 = {1000 * a:num} mL."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) How many cups can be filled from the cooler?",
+     "answer": "1000 * a // g",
+     "responseFormat": "Integer",
+     "explanation": "{1000 * a:num} ÷ {g} = {1000 * a // g} cups."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) After {k} cups are used, how many millilitres are left in the cooler?",
+     "answer": "1000 * a - k * g",
+     "unit": "ml",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{k} × {g} = {k * g:num} mL used. {1000 * a:num} − {k * g:num} = {1000 * a - k * g:num} mL."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(d) How many cups can be filled from the water in the {c} full spare bottles?",
+     "answer": "c * 1000 // g",
+     "responseFormat": "Integer",
+     "explanation": "{c} L = {1000 * c:num} mL. {1000 * c:num} ÷ {g} = {1000 * c // g} cups."
+    }
+   ],
+   "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
+   "notes": "A cooler of 10 to 25 L, cups of 200 or 250 mL, 20 to 40 cups used, 2 to 5 spare 1 L bottles.",
+   "sources": [
+    "CBSE-C5-CH08-Q430",
+    "CBSE-C5-CH08-Q446",
+    "CBSE-C5-CH08-Q434",
+    "CBSE-C5-CH08-Q454"
+   ]
+  },
+  {
+   "code": "C5-WC-CS-3",
+   "chapter": 8,
+   "skill": "C5-WC-S07",
+   "marks": 4,
+   "difficulty": 3,
+   "competency": "Application in context",
+   "values": [
+    {
+     "name": "who",
+     "list": "names"
+    },
+    {
+     "name": "a",
+     "int": {
+      "min": 2,
+      "max": 5
+     }
+    },
+    {
+     "name": "b",
+     "int": {
+      "min": 100,
+      "max": 450,
+      "step": 10
+     }
+    },
+    {
+     "name": "c",
+     "int": {
+      "min": 1,
+      "max": 4
+     }
+    },
+    {
+     "name": "d",
+     "int": {
+      "min": 560,
+      "max": 940,
+      "step": 10
+     }
+    },
+    {
+     "name": "lim",
+     "choice": [
+      5,
+      6,
+      7,
+      8
+     ]
+    }
+   ],
+   "require": [
+    "b + d > 1000",
+    "1000 * (a + c) + b + d != 1000 * lim",
+    "a != c",
+    "1000 * a + b > 1000 * c + d"
+   ],
+   "stimulus": "Case study: {who.name} sends two parcels to a cousin. The first weighs {a} kg {b} g and the second {c} kg {d} g. The courier takes parcels together only if they weigh {lim} kg or less in all.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) What do the two parcels weigh together? Enter kilograms; grams.",
+     "answer": [
+      "a + c + 1",
+      "b + d - 1000"
+     ],
+     "responseFormat": "Mixed-unit measure in two boxes",
+     "explanation": "{a} kg {b} g + {c} kg {d} g = {a + c + 1} kg {b + d - 1000} g."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) Write the total weight in grams.",
+     "answer": "1000 * (a + c) + b + d",
+     "unit": "g",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a + c + 1} kg {b + d - 1000} g = {1000 * (a + c) + b + d:num} g."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(c) Can the courier take them together?",
+     "options": {
+      "correct": "'Yes, they are within the limit' if 1000 * (a + c) + b + d < 1000 * lim else 'No, they are over the limit'",
+      "wrong": [
+       {
+        "expr": "'No, they are over the limit' if 1000 * (a + c) + b + d < 1000 * lim else 'Yes, they are within the limit'",
+        "mistake": "adds only the kilograms and forgets the 1 kg made by the grams"
+       },
+       {
+        "expr": "'They weigh exactly the limit'",
+        "mistake": "adds the kilograms and grams as unrelated numbers"
+       },
+       {
+        "expr": "'It cannot be told'",
+        "mistake": "thinks kilograms and grams cannot be compared"
+       }
+      ]
+     },
+     "explanation": "{1000 * (a + c) + b + d:num} g against {lim} kg = {1000 * lim:num} g."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(d) How many grams heavier is the first parcel than the second?",
+     "answer": "1000 * a + b - 1000 * c - d",
+     "unit": "g",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{1000 * a + b:num} − {1000 * c + d:num} = {1000 * a + b - 1000 * c - d:num} g."
+    }
+   ],
+   "misconception": "Adds or subtracts kg and g as unrelated digits and leaves 1,000 g unregrouped.",
+   "notes": "Parcels of 2 to 5 kg and 1 to 4 kg whose grams add to more than 1,000 g; a limit of 5 to 8 kg.",
+   "sources": [
+    "CBSE-C5-CH08-Q199",
+    "CBSE-C5-CH08-Q207",
+    "CBSE-C5-CH08-Q112",
+    "CBSE-C5-CH08-Q100"
+   ]
+  }
+ ]
+}
