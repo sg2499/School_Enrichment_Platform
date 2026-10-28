@@ -117,16 +117,18 @@ def test_every_chapter_1_pattern_works():
     assert kinds["3"] >= 3 and kinds["4"] >= 3 and kinds["5"] >= 3 and kinds["2"] >= 15
 
 
-def test_chapters_2_to_10_patterns_work():
+def test_chapters_2_to_13_patterns_work():
     """#166 step 5: Chapters 2 (Fractions), 3 (Angles as Turns), 4 (We the
     Travellers II), 5 (Far and Near), 6 (The Dairy Farm), 7 (Shapes and
-    Patterns), 8 (Weight and Capacity), 9 (Coconut Farm) and 10
-    (Symmetrical Designs). Each pattern loads, belongs to its chapter and
+    Patterns), 8 (Weight and Capacity), 9 (Coconut Farm), 10
+    (Symmetrical Designs), 11 (Grandmother's Quilt), 12 (Racing
+    Seconds) and 13 (Animal Jumps). Each pattern loads, belongs to its chapter and
     skill, makes a valid question every time with at least 20 different
     ones, adds up its marks, and its key gets full marks from the
     platform's own marking."""
     prefixes = {2: "C5-FR2-", 3: "C5-AT-", 4: "C5-WT2-", 5: "C5-FN-", 6: "C5-DF-", 7: "C5-SP-",
-                8: "C5-WC-", 9: "C5-CF-", 10: "C5-SD-"}
+                8: "C5-WC-", 9: "C5-CF-", 10: "C5-SD-",
+                11: "C5-GQ-", 12: "C5-RS-", 13: "C5-AJ-"}
     seen = set(_content_specs())
     for chapter, prefix in prefixes.items():
         data = json.loads((CONTENT / f"chapter-{chapter:02d}.json").read_text(encoding="utf-8"))

@@ -20,6 +20,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
+def _summary(plan) -> tuple:
+    """What the person confirmed: the codes to add and to change."""
+    return (sorted(f["code"] for f in plan.add), sorted(p.code for p, _ in plan.change), plan.unchanged)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("paths", nargs="+", help="Pattern files, or folders of them.")
@@ -54,9 +59,20 @@ def main() -> int:
         if not plan.add and not plan.change:
             print("\nNothing to change.")
             return 0
-        if not args.yes and input("\nType YES to load these patterns: ").strip() != "YES":
-            print("Stopped: nothing was written.")
-            return 1
+        if not args.yes:
+            # Hand the connection back while waiting: Render closes one left
+            # idle at the prompt, and the write then fails (28 Oct 2026).
+            confirmed = _summary(plan)
+            db.close()
+            if input("\nType YES to load these patterns: ").strip() != "YES":
+                print("Stopped: nothing was written.")
+                return 1
+            print("Checking again on a fresh connection before writing ...")
+            db = SessionLocal()
+            plan = pattern_store.make_plan(db, entries)
+            if _summary(plan) != confirmed:
+                print("\nStopped: the database changed since the report above. Nothing was written; run it again.")
+                return 1
         pattern_store.apply_plan(db, plan)
         print("\nDone. New and changed patterns are DRAFT until approved.")
         return 0
