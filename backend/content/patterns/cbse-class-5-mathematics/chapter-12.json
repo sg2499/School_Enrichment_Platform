@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 12, Racing Seconds: 68 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. Clock times are HH:MM (24-hour) unless a.m. or p.m. is written; a clock-time answer is two boxes, hours and minutes. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 12, Racing Seconds: 68 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. Clock times are HH:MM (24-hour) unless a.m. or p.m. is written; a clock-time answer is two boxes, hours and minutes. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-RS-S01-P1",
@@ -13028,11 +13028,10 @@
    "code": "C5-RS-L3-1",
    "chapter": 12,
    "skill": "C5-RS-S14",
-   "questionType": "Constructed Response",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "who",
@@ -13074,26 +13073,55 @@
    "require": [
     "who.name != who2.name"
    ],
-   "text": "In a race {who.name} takes {m} {'minute' if m == 1 else 'minutes'} {r} seconds and {who2.name} takes {60 * m + r + d} seconds. Who is faster, and by how many seconds? Explain how you compared the times.",
-   "answer": "{m} min {r} sec = {60 * m + r} seconds. {who2.name} takes {60 * m + r + d} seconds. {who.name if d > 0 else who2.name} is faster, by {abs(d)} seconds, because the smaller time is faster.",
-   "steps": [
+   "stimulus": "In a race {who.name} takes {m} {'minute' if m == 1 else 'minutes'} {r} seconds and {who2.name} takes {60 * m + r + d} seconds. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Changes {m} min {r} sec to {60 * m + r} seconds."
+     "text": "(a) How many seconds is {m} {'minute' if m == 1 else 'minutes'} {r} seconds?",
+     "answer": "60 * m + r",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{m} × 60 + {r} = {60 * m + r} seconds.",
+     "unit": "s",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Says {who.name if d > 0 else who2.name} is faster, since less time is faster."
+     "text": "(b) Who is faster?",
+     "responseFormat": "Choice or short text",
+     "options": {
+      "correct": "who.name if d > 0 else who2.name",
+      "wrong": [
+       {
+        "expr": "who2.name if d > 0 else who.name",
+        "mistake": "thinks the greater time is the faster runner"
+       },
+       {
+        "expr": "'They take the same time'",
+        "mistake": "compares the seconds parts without changing the minutes to seconds"
+       },
+       {
+        "expr": "'You cannot tell, as the times are in different units'",
+        "mistake": "does not change both times to seconds to compare"
+       }
+      ]
+     },
+     "explanation": "{60 * m + r} and {60 * m + r + d} seconds: less time is faster, so {who.name if d > 0 else who2.name} is faster."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Finds the difference: {abs(d)} seconds."
+     "text": "(c) By how many seconds is the faster runner ahead?",
+     "answer": "abs(d)",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{max(60 * m + r, 60 * m + r + d)} − {min(60 * m + r, 60 * m + r + d)} = {abs(d)} seconds.",
+     "unit": "s",
+     "unitRule": "STATED"
     }
    ],
-   "hint": "Write both times in seconds. Remember: less time means faster.",
-   "explanation": "{60 * m + r} and {60 * m + r + d} seconds: {who.name if d > 0 else who2.name} is faster by {abs(d)} seconds.",
    "misconception": "Treats the greatest time as the winner or compares seconds parts without converting the whole duration.",
-   "notes": "Times 4 to 14 seconds apart; which runner is faster changes with the copy.",
+   "notes": "Times 4 to 14 seconds apart; which runner is faster changes with the copy. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH12-Q442",
     "CBSE-C5-CH12-Q460",
@@ -13104,11 +13132,10 @@
    "code": "C5-RS-L3-2",
    "chapter": 12,
    "skill": "C5-RS-S15",
-   "questionType": "Constructed Response",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "h",
@@ -13153,26 +13180,43 @@
      ]
     }
    ],
-   "text": "A workshop starts at {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}. It has a {x}-minute talk, a {y}-minute tea break and a {z}-minute activity. (a) How many minutes does it last? (b) At what time does it end? Show your working.",
-   "answer": "(a) {x} + {y} + {z} = {x + y + z} minutes. (b) {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} + {x + y + z} minutes = {'0' if (h + (a + x + y + z) // 60) < 10 else ''}{h + (a + x + y + z) // 60}:{'0' if ((a + x + y + z) % 60) < 10 else ''}{(a + x + y + z) % 60}.",
-   "steps": [
+   "stimulus": "A workshop starts at {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}. It has a {x}-minute talk, a {y}-minute tea break and a {z}-minute activity, one after the other. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Adds the parts: {x + y + z} minutes."
+     "text": "(a) How many minutes does the workshop last?",
+     "answer": "(x + y + z)",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{x} + {y} + {z} = {x + y + z} minutes.",
+     "unit": "min",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Changes it to {(x + y + z) // 60} h {(x + y + z) % 60} min, or adds in steps."
+     "text": "(b) Write this in hours and minutes. Enter hours; minutes.",
+     "answer": [
+      "(x + y + z) // 60",
+      "(x + y + z) % 60"
+     ],
+     "responseFormat": "Mixed duration in two boxes",
+     "explanation": "{x + y + z} minutes = {(x + y + z) // 60} hour {(x + y + z) % 60} minutes."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Ends at {'0' if (h + (a + x + y + z) // 60) < 10 else ''}{h + (a + x + y + z) // 60}:{'0' if ((a + x + y + z) % 60) < 10 else ''}{(a + x + y + z) % 60}."
+     "text": "(c) At what time does it end? Enter hours; minutes.",
+     "answer": [
+      "h + (a + (x + y + z)) // 60",
+      "(a + (x + y + z)) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "{x + y + z} minutes after {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} is {'0' if (h + (a + (x + y + z)) // 60) < 10 else ''}{h + (a + (x + y + z)) // 60}:{'0' if ((a + (x + y + z)) % 60) < 10 else ''}{(a + (x + y + z)) % 60}."
     }
    ],
-   "hint": "Add all the parts, then add the total to the start time.",
-   "explanation": "{x + y + z} minutes after {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} is {'0' if (h + (a + x + y + z) // 60) < 10 else ''}{h + (a + x + y + z) // 60}:{'0' if ((a + x + y + z) % 60) < 10 else ''}{(a + x + y + z) % 60}.",
    "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-   "notes": "Morning start; three parts adding to 75 to 110 minutes.",
+   "notes": "Morning start; three parts adding to 75 to 110 minutes. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH12-Q463",
     "CBSE-C5-CH12-Q493",
@@ -13183,60 +13227,3430 @@
    "code": "C5-RS-L3-3",
    "chapter": 12,
    "skill": "C5-RS-S10",
-   "questionType": "Constructed Response",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "who",
      "list": "names"
     },
     {
-     "name": "h",
-     "int": {
-      "min": 7,
-      "max": 14
-     }
-    },
-    {
-     "name": "a",
-     "int": {
-      "min": 25,
-      "max": 55,
-      "step": 5
-     }
-    },
-    {
-     "name": "b",
-     "int": {
-      "min": 5,
-      "max": 20,
-      "step": 5
-     }
+     "name": "t",
+     "choice": [
+      {
+       "h": 7,
+       "a": 25,
+       "b": 5,
+       "s": "07:25",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "725",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 805 − 725 is not the number of minutes",
+       "w1": "Yes. 805 − 725 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 725 gives the minutes",
+       "w3": "Yes. 07:25 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 25,
+       "b": 10,
+       "s": "07:25",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "725",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 810 − 725 is not the number of minutes",
+       "w1": "Yes. 810 − 725 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 725 gives the minutes",
+       "w3": "Yes. 07:25 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 25,
+       "b": 15,
+       "s": "07:25",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "725",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 815 − 725 is not the number of minutes",
+       "w1": "Yes. 815 − 725 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 725 gives the minutes",
+       "w3": "Yes. 07:25 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 25,
+       "b": 20,
+       "s": "07:25",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "725",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 820 − 725 is not the number of minutes",
+       "w1": "Yes. 820 − 725 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 725 gives the minutes",
+       "w3": "Yes. 07:25 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 30,
+       "b": 5,
+       "s": "07:30",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "730",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 805 − 730 is not the number of minutes",
+       "w1": "Yes. 805 − 730 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 730 gives the minutes",
+       "w3": "Yes. 07:30 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 30,
+       "b": 10,
+       "s": "07:30",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "730",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 810 − 730 is not the number of minutes",
+       "w1": "Yes. 810 − 730 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 730 gives the minutes",
+       "w3": "Yes. 07:30 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 30,
+       "b": 15,
+       "s": "07:30",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "730",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 815 − 730 is not the number of minutes",
+       "w1": "Yes. 815 − 730 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 730 gives the minutes",
+       "w3": "Yes. 07:30 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 30,
+       "b": 20,
+       "s": "07:30",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "730",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 820 − 730 is not the number of minutes",
+       "w1": "Yes. 820 − 730 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 730 gives the minutes",
+       "w3": "Yes. 07:30 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 35,
+       "b": 5,
+       "s": "07:35",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "735",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 805 − 735 is not the number of minutes",
+       "w1": "Yes. 805 − 735 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 735 gives the minutes",
+       "w3": "Yes. 07:35 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 35,
+       "b": 10,
+       "s": "07:35",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "735",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 810 − 735 is not the number of minutes",
+       "w1": "Yes. 810 − 735 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 735 gives the minutes",
+       "w3": "Yes. 07:35 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 35,
+       "b": 15,
+       "s": "07:35",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "735",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 815 − 735 is not the number of minutes",
+       "w1": "Yes. 815 − 735 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 735 gives the minutes",
+       "w3": "Yes. 07:35 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 35,
+       "b": 20,
+       "s": "07:35",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "735",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 820 − 735 is not the number of minutes",
+       "w1": "Yes. 820 − 735 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 735 gives the minutes",
+       "w3": "Yes. 07:35 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 40,
+       "b": 5,
+       "s": "07:40",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "740",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 805 − 740 is not the number of minutes",
+       "w1": "Yes. 805 − 740 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 740 gives the minutes",
+       "w3": "Yes. 07:40 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 40,
+       "b": 10,
+       "s": "07:40",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "740",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 810 − 740 is not the number of minutes",
+       "w1": "Yes. 810 − 740 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 740 gives the minutes",
+       "w3": "Yes. 07:40 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 40,
+       "b": 15,
+       "s": "07:40",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "740",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 815 − 740 is not the number of minutes",
+       "w1": "Yes. 815 − 740 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 740 gives the minutes",
+       "w3": "Yes. 07:40 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 40,
+       "b": 20,
+       "s": "07:40",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "740",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 820 − 740 is not the number of minutes",
+       "w1": "Yes. 820 − 740 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 740 gives the minutes",
+       "w3": "Yes. 07:40 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 45,
+       "b": 5,
+       "s": "07:45",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "745",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 805 − 745 is not the number of minutes",
+       "w1": "Yes. 805 − 745 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 745 gives the minutes",
+       "w3": "Yes. 07:45 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 45,
+       "b": 10,
+       "s": "07:45",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "745",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 810 − 745 is not the number of minutes",
+       "w1": "Yes. 810 − 745 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 745 gives the minutes",
+       "w3": "Yes. 07:45 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 45,
+       "b": 15,
+       "s": "07:45",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "745",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 815 − 745 is not the number of minutes",
+       "w1": "Yes. 815 − 745 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 745 gives the minutes",
+       "w3": "Yes. 07:45 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 45,
+       "b": 20,
+       "s": "07:45",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "745",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 820 − 745 is not the number of minutes",
+       "w1": "Yes. 820 − 745 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 745 gives the minutes",
+       "w3": "Yes. 07:45 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 50,
+       "b": 5,
+       "s": "07:50",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "750",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 805 − 750 is not the number of minutes",
+       "w1": "Yes. 805 − 750 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 750 gives the minutes",
+       "w3": "Yes. 07:50 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 50,
+       "b": 10,
+       "s": "07:50",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "750",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 810 − 750 is not the number of minutes",
+       "w1": "Yes. 810 − 750 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 750 gives the minutes",
+       "w3": "Yes. 07:50 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 50,
+       "b": 15,
+       "s": "07:50",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "750",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 815 − 750 is not the number of minutes",
+       "w1": "Yes. 815 − 750 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 750 gives the minutes",
+       "w3": "Yes. 07:50 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 50,
+       "b": 20,
+       "s": "07:50",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "750",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 820 − 750 is not the number of minutes",
+       "w1": "Yes. 820 − 750 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 750 gives the minutes",
+       "w3": "Yes. 07:50 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 55,
+       "b": 5,
+       "s": "07:55",
+       "e": "08:05",
+       "e0": "08:00",
+       "n1": "805",
+       "n0": "755",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 805 − 755 is not the number of minutes",
+       "w1": "Yes. 805 − 755 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 805 + 755 gives the minutes",
+       "w3": "Yes. 07:55 and 08:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 55,
+       "b": 10,
+       "s": "07:55",
+       "e": "08:10",
+       "e0": "08:00",
+       "n1": "810",
+       "n0": "755",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 810 − 755 is not the number of minutes",
+       "w1": "Yes. 810 − 755 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 810 + 755 gives the minutes",
+       "w3": "Yes. 07:55 and 08:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 55,
+       "b": 15,
+       "s": "07:55",
+       "e": "08:15",
+       "e0": "08:00",
+       "n1": "815",
+       "n0": "755",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 815 − 755 is not the number of minutes",
+       "w1": "Yes. 815 − 755 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 815 + 755 gives the minutes",
+       "w3": "Yes. 07:55 and 08:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 7,
+       "a": 55,
+       "b": 20,
+       "s": "07:55",
+       "e": "08:20",
+       "e0": "08:00",
+       "n1": "820",
+       "n0": "755",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 820 − 755 is not the number of minutes",
+       "w1": "Yes. 820 − 755 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 820 + 755 gives the minutes",
+       "w3": "Yes. 07:55 and 08:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 25,
+       "b": 5,
+       "s": "08:25",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "825",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 905 − 825 is not the number of minutes",
+       "w1": "Yes. 905 − 825 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 825 gives the minutes",
+       "w3": "Yes. 08:25 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 25,
+       "b": 10,
+       "s": "08:25",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "825",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 910 − 825 is not the number of minutes",
+       "w1": "Yes. 910 − 825 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 825 gives the minutes",
+       "w3": "Yes. 08:25 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 25,
+       "b": 15,
+       "s": "08:25",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "825",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 915 − 825 is not the number of minutes",
+       "w1": "Yes. 915 − 825 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 825 gives the minutes",
+       "w3": "Yes. 08:25 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 25,
+       "b": 20,
+       "s": "08:25",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "825",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 920 − 825 is not the number of minutes",
+       "w1": "Yes. 920 − 825 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 825 gives the minutes",
+       "w3": "Yes. 08:25 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 30,
+       "b": 5,
+       "s": "08:30",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "830",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 905 − 830 is not the number of minutes",
+       "w1": "Yes. 905 − 830 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 830 gives the minutes",
+       "w3": "Yes. 08:30 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 30,
+       "b": 10,
+       "s": "08:30",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "830",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 910 − 830 is not the number of minutes",
+       "w1": "Yes. 910 − 830 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 830 gives the minutes",
+       "w3": "Yes. 08:30 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 30,
+       "b": 15,
+       "s": "08:30",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "830",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 915 − 830 is not the number of minutes",
+       "w1": "Yes. 915 − 830 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 830 gives the minutes",
+       "w3": "Yes. 08:30 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 30,
+       "b": 20,
+       "s": "08:30",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "830",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 920 − 830 is not the number of minutes",
+       "w1": "Yes. 920 − 830 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 830 gives the minutes",
+       "w3": "Yes. 08:30 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 35,
+       "b": 5,
+       "s": "08:35",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "835",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 905 − 835 is not the number of minutes",
+       "w1": "Yes. 905 − 835 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 835 gives the minutes",
+       "w3": "Yes. 08:35 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 35,
+       "b": 10,
+       "s": "08:35",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "835",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 910 − 835 is not the number of minutes",
+       "w1": "Yes. 910 − 835 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 835 gives the minutes",
+       "w3": "Yes. 08:35 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 35,
+       "b": 15,
+       "s": "08:35",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "835",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 915 − 835 is not the number of minutes",
+       "w1": "Yes. 915 − 835 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 835 gives the minutes",
+       "w3": "Yes. 08:35 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 35,
+       "b": 20,
+       "s": "08:35",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "835",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 920 − 835 is not the number of minutes",
+       "w1": "Yes. 920 − 835 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 835 gives the minutes",
+       "w3": "Yes. 08:35 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 40,
+       "b": 5,
+       "s": "08:40",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "840",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 905 − 840 is not the number of minutes",
+       "w1": "Yes. 905 − 840 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 840 gives the minutes",
+       "w3": "Yes. 08:40 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 40,
+       "b": 10,
+       "s": "08:40",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "840",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 910 − 840 is not the number of minutes",
+       "w1": "Yes. 910 − 840 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 840 gives the minutes",
+       "w3": "Yes. 08:40 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 40,
+       "b": 15,
+       "s": "08:40",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "840",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 915 − 840 is not the number of minutes",
+       "w1": "Yes. 915 − 840 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 840 gives the minutes",
+       "w3": "Yes. 08:40 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 40,
+       "b": 20,
+       "s": "08:40",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "840",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 920 − 840 is not the number of minutes",
+       "w1": "Yes. 920 − 840 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 840 gives the minutes",
+       "w3": "Yes. 08:40 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 45,
+       "b": 5,
+       "s": "08:45",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "845",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 905 − 845 is not the number of minutes",
+       "w1": "Yes. 905 − 845 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 845 gives the minutes",
+       "w3": "Yes. 08:45 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 45,
+       "b": 10,
+       "s": "08:45",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "845",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 910 − 845 is not the number of minutes",
+       "w1": "Yes. 910 − 845 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 845 gives the minutes",
+       "w3": "Yes. 08:45 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 45,
+       "b": 15,
+       "s": "08:45",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "845",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 915 − 845 is not the number of minutes",
+       "w1": "Yes. 915 − 845 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 845 gives the minutes",
+       "w3": "Yes. 08:45 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 45,
+       "b": 20,
+       "s": "08:45",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "845",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 920 − 845 is not the number of minutes",
+       "w1": "Yes. 920 − 845 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 845 gives the minutes",
+       "w3": "Yes. 08:45 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 50,
+       "b": 5,
+       "s": "08:50",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "850",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 905 − 850 is not the number of minutes",
+       "w1": "Yes. 905 − 850 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 850 gives the minutes",
+       "w3": "Yes. 08:50 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 50,
+       "b": 10,
+       "s": "08:50",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "850",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 910 − 850 is not the number of minutes",
+       "w1": "Yes. 910 − 850 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 850 gives the minutes",
+       "w3": "Yes. 08:50 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 50,
+       "b": 15,
+       "s": "08:50",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "850",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 915 − 850 is not the number of minutes",
+       "w1": "Yes. 915 − 850 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 850 gives the minutes",
+       "w3": "Yes. 08:50 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 50,
+       "b": 20,
+       "s": "08:50",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "850",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 920 − 850 is not the number of minutes",
+       "w1": "Yes. 920 − 850 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 850 gives the minutes",
+       "w3": "Yes. 08:50 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 55,
+       "b": 5,
+       "s": "08:55",
+       "e": "09:05",
+       "e0": "09:00",
+       "n1": "905",
+       "n0": "855",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 905 − 855 is not the number of minutes",
+       "w1": "Yes. 905 − 855 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 905 + 855 gives the minutes",
+       "w3": "Yes. 08:55 and 09:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 55,
+       "b": 10,
+       "s": "08:55",
+       "e": "09:10",
+       "e0": "09:00",
+       "n1": "910",
+       "n0": "855",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 910 − 855 is not the number of minutes",
+       "w1": "Yes. 910 − 855 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 910 + 855 gives the minutes",
+       "w3": "Yes. 08:55 and 09:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 55,
+       "b": 15,
+       "s": "08:55",
+       "e": "09:15",
+       "e0": "09:00",
+       "n1": "915",
+       "n0": "855",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 915 − 855 is not the number of minutes",
+       "w1": "Yes. 915 − 855 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 915 + 855 gives the minutes",
+       "w3": "Yes. 08:55 and 09:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 8,
+       "a": 55,
+       "b": 20,
+       "s": "08:55",
+       "e": "09:20",
+       "e0": "09:00",
+       "n1": "920",
+       "n0": "855",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 920 − 855 is not the number of minutes",
+       "w1": "Yes. 920 − 855 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 920 + 855 gives the minutes",
+       "w3": "Yes. 08:55 and 09:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 25,
+       "b": 5,
+       "s": "09:25",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "925",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1005 − 925 is not the number of minutes",
+       "w1": "Yes. 1005 − 925 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 925 gives the minutes",
+       "w3": "Yes. 09:25 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 25,
+       "b": 10,
+       "s": "09:25",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "925",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1010 − 925 is not the number of minutes",
+       "w1": "Yes. 1010 − 925 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 925 gives the minutes",
+       "w3": "Yes. 09:25 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 25,
+       "b": 15,
+       "s": "09:25",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "925",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1015 − 925 is not the number of minutes",
+       "w1": "Yes. 1015 − 925 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 925 gives the minutes",
+       "w3": "Yes. 09:25 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 25,
+       "b": 20,
+       "s": "09:25",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "925",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 1020 − 925 is not the number of minutes",
+       "w1": "Yes. 1020 − 925 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 925 gives the minutes",
+       "w3": "Yes. 09:25 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 30,
+       "b": 5,
+       "s": "09:30",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "930",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1005 − 930 is not the number of minutes",
+       "w1": "Yes. 1005 − 930 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 930 gives the minutes",
+       "w3": "Yes. 09:30 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 30,
+       "b": 10,
+       "s": "09:30",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "930",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1010 − 930 is not the number of minutes",
+       "w1": "Yes. 1010 − 930 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 930 gives the minutes",
+       "w3": "Yes. 09:30 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 30,
+       "b": 15,
+       "s": "09:30",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "930",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1015 − 930 is not the number of minutes",
+       "w1": "Yes. 1015 − 930 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 930 gives the minutes",
+       "w3": "Yes. 09:30 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 30,
+       "b": 20,
+       "s": "09:30",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "930",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1020 − 930 is not the number of minutes",
+       "w1": "Yes. 1020 − 930 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 930 gives the minutes",
+       "w3": "Yes. 09:30 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 35,
+       "b": 5,
+       "s": "09:35",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "935",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1005 − 935 is not the number of minutes",
+       "w1": "Yes. 1005 − 935 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 935 gives the minutes",
+       "w3": "Yes. 09:35 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 35,
+       "b": 10,
+       "s": "09:35",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "935",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1010 − 935 is not the number of minutes",
+       "w1": "Yes. 1010 − 935 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 935 gives the minutes",
+       "w3": "Yes. 09:35 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 35,
+       "b": 15,
+       "s": "09:35",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "935",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1015 − 935 is not the number of minutes",
+       "w1": "Yes. 1015 − 935 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 935 gives the minutes",
+       "w3": "Yes. 09:35 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 35,
+       "b": 20,
+       "s": "09:35",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "935",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1020 − 935 is not the number of minutes",
+       "w1": "Yes. 1020 − 935 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 935 gives the minutes",
+       "w3": "Yes. 09:35 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 40,
+       "b": 5,
+       "s": "09:40",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "940",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1005 − 940 is not the number of minutes",
+       "w1": "Yes. 1005 − 940 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 940 gives the minutes",
+       "w3": "Yes. 09:40 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 40,
+       "b": 10,
+       "s": "09:40",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "940",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1010 − 940 is not the number of minutes",
+       "w1": "Yes. 1010 − 940 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 940 gives the minutes",
+       "w3": "Yes. 09:40 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 40,
+       "b": 15,
+       "s": "09:40",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "940",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1015 − 940 is not the number of minutes",
+       "w1": "Yes. 1015 − 940 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 940 gives the minutes",
+       "w3": "Yes. 09:40 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 40,
+       "b": 20,
+       "s": "09:40",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "940",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1020 − 940 is not the number of minutes",
+       "w1": "Yes. 1020 − 940 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 940 gives the minutes",
+       "w3": "Yes. 09:40 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 45,
+       "b": 5,
+       "s": "09:45",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "945",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1005 − 945 is not the number of minutes",
+       "w1": "Yes. 1005 − 945 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 945 gives the minutes",
+       "w3": "Yes. 09:45 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 45,
+       "b": 10,
+       "s": "09:45",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "945",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1010 − 945 is not the number of minutes",
+       "w1": "Yes. 1010 − 945 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 945 gives the minutes",
+       "w3": "Yes. 09:45 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 45,
+       "b": 15,
+       "s": "09:45",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "945",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1015 − 945 is not the number of minutes",
+       "w1": "Yes. 1015 − 945 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 945 gives the minutes",
+       "w3": "Yes. 09:45 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 45,
+       "b": 20,
+       "s": "09:45",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "945",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1020 − 945 is not the number of minutes",
+       "w1": "Yes. 1020 − 945 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 945 gives the minutes",
+       "w3": "Yes. 09:45 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 50,
+       "b": 5,
+       "s": "09:50",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "950",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1005 − 950 is not the number of minutes",
+       "w1": "Yes. 1005 − 950 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 950 gives the minutes",
+       "w3": "Yes. 09:50 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 50,
+       "b": 10,
+       "s": "09:50",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "950",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1010 − 950 is not the number of minutes",
+       "w1": "Yes. 1010 − 950 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 950 gives the minutes",
+       "w3": "Yes. 09:50 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 50,
+       "b": 15,
+       "s": "09:50",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "950",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1015 − 950 is not the number of minutes",
+       "w1": "Yes. 1015 − 950 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 950 gives the minutes",
+       "w3": "Yes. 09:50 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 50,
+       "b": 20,
+       "s": "09:50",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "950",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1020 − 950 is not the number of minutes",
+       "w1": "Yes. 1020 − 950 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 950 gives the minutes",
+       "w3": "Yes. 09:50 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 55,
+       "b": 5,
+       "s": "09:55",
+       "e": "10:05",
+       "e0": "10:00",
+       "n1": "1005",
+       "n0": "955",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 1005 − 955 is not the number of minutes",
+       "w1": "Yes. 1005 − 955 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1005 + 955 gives the minutes",
+       "w3": "Yes. 09:55 and 10:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 55,
+       "b": 10,
+       "s": "09:55",
+       "e": "10:10",
+       "e0": "10:00",
+       "n1": "1010",
+       "n0": "955",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1010 − 955 is not the number of minutes",
+       "w1": "Yes. 1010 − 955 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1010 + 955 gives the minutes",
+       "w3": "Yes. 09:55 and 10:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 55,
+       "b": 15,
+       "s": "09:55",
+       "e": "10:15",
+       "e0": "10:00",
+       "n1": "1015",
+       "n0": "955",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1015 − 955 is not the number of minutes",
+       "w1": "Yes. 1015 − 955 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1015 + 955 gives the minutes",
+       "w3": "Yes. 09:55 and 10:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 9,
+       "a": 55,
+       "b": 20,
+       "s": "09:55",
+       "e": "10:20",
+       "e0": "10:00",
+       "n1": "1020",
+       "n0": "955",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1020 − 955 is not the number of minutes",
+       "w1": "Yes. 1020 − 955 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1020 + 955 gives the minutes",
+       "w3": "Yes. 09:55 and 10:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 25,
+       "b": 5,
+       "s": "10:25",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1025",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1025 is not the number of minutes",
+       "w1": "Yes. 1105 − 1025 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1025 gives the minutes",
+       "w3": "Yes. 10:25 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 25,
+       "b": 10,
+       "s": "10:25",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1025",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1025 is not the number of minutes",
+       "w1": "Yes. 1110 − 1025 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1025 gives the minutes",
+       "w3": "Yes. 10:25 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 25,
+       "b": 15,
+       "s": "10:25",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1025",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1025 is not the number of minutes",
+       "w1": "Yes. 1115 − 1025 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1025 gives the minutes",
+       "w3": "Yes. 10:25 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 25,
+       "b": 20,
+       "s": "10:25",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1025",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1025 is not the number of minutes",
+       "w1": "Yes. 1120 − 1025 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1025 gives the minutes",
+       "w3": "Yes. 10:25 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 30,
+       "b": 5,
+       "s": "10:30",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1030",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1030 is not the number of minutes",
+       "w1": "Yes. 1105 − 1030 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1030 gives the minutes",
+       "w3": "Yes. 10:30 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 30,
+       "b": 10,
+       "s": "10:30",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1030",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1030 is not the number of minutes",
+       "w1": "Yes. 1110 − 1030 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1030 gives the minutes",
+       "w3": "Yes. 10:30 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 30,
+       "b": 15,
+       "s": "10:30",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1030",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1030 is not the number of minutes",
+       "w1": "Yes. 1115 − 1030 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1030 gives the minutes",
+       "w3": "Yes. 10:30 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 30,
+       "b": 20,
+       "s": "10:30",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1030",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1030 is not the number of minutes",
+       "w1": "Yes. 1120 − 1030 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1030 gives the minutes",
+       "w3": "Yes. 10:30 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 35,
+       "b": 5,
+       "s": "10:35",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1035",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1035 is not the number of minutes",
+       "w1": "Yes. 1105 − 1035 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1035 gives the minutes",
+       "w3": "Yes. 10:35 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 35,
+       "b": 10,
+       "s": "10:35",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1035",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1035 is not the number of minutes",
+       "w1": "Yes. 1110 − 1035 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1035 gives the minutes",
+       "w3": "Yes. 10:35 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 35,
+       "b": 15,
+       "s": "10:35",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1035",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1035 is not the number of minutes",
+       "w1": "Yes. 1115 − 1035 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1035 gives the minutes",
+       "w3": "Yes. 10:35 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 35,
+       "b": 20,
+       "s": "10:35",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1035",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1035 is not the number of minutes",
+       "w1": "Yes. 1120 − 1035 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1035 gives the minutes",
+       "w3": "Yes. 10:35 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 40,
+       "b": 5,
+       "s": "10:40",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1040",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1040 is not the number of minutes",
+       "w1": "Yes. 1105 − 1040 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1040 gives the minutes",
+       "w3": "Yes. 10:40 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 40,
+       "b": 10,
+       "s": "10:40",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1040",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1040 is not the number of minutes",
+       "w1": "Yes. 1110 − 1040 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1040 gives the minutes",
+       "w3": "Yes. 10:40 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 40,
+       "b": 15,
+       "s": "10:40",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1040",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1040 is not the number of minutes",
+       "w1": "Yes. 1115 − 1040 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1040 gives the minutes",
+       "w3": "Yes. 10:40 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 40,
+       "b": 20,
+       "s": "10:40",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1040",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1040 is not the number of minutes",
+       "w1": "Yes. 1120 − 1040 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1040 gives the minutes",
+       "w3": "Yes. 10:40 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 45,
+       "b": 5,
+       "s": "10:45",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1045",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1045 is not the number of minutes",
+       "w1": "Yes. 1105 − 1045 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1045 gives the minutes",
+       "w3": "Yes. 10:45 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 45,
+       "b": 10,
+       "s": "10:45",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1045",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1045 is not the number of minutes",
+       "w1": "Yes. 1110 − 1045 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1045 gives the minutes",
+       "w3": "Yes. 10:45 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 45,
+       "b": 15,
+       "s": "10:45",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1045",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1045 is not the number of minutes",
+       "w1": "Yes. 1115 − 1045 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1045 gives the minutes",
+       "w3": "Yes. 10:45 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 45,
+       "b": 20,
+       "s": "10:45",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1045",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1045 is not the number of minutes",
+       "w1": "Yes. 1120 − 1045 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1045 gives the minutes",
+       "w3": "Yes. 10:45 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 50,
+       "b": 5,
+       "s": "10:50",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1050",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1050 is not the number of minutes",
+       "w1": "Yes. 1105 − 1050 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1050 gives the minutes",
+       "w3": "Yes. 10:50 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 50,
+       "b": 10,
+       "s": "10:50",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1050",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1050 is not the number of minutes",
+       "w1": "Yes. 1110 − 1050 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1050 gives the minutes",
+       "w3": "Yes. 10:50 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 50,
+       "b": 15,
+       "s": "10:50",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1050",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1050 is not the number of minutes",
+       "w1": "Yes. 1115 − 1050 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1050 gives the minutes",
+       "w3": "Yes. 10:50 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 50,
+       "b": 20,
+       "s": "10:50",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1050",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1050 is not the number of minutes",
+       "w1": "Yes. 1120 − 1050 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1050 gives the minutes",
+       "w3": "Yes. 10:50 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 55,
+       "b": 5,
+       "s": "10:55",
+       "e": "11:05",
+       "e0": "11:00",
+       "n1": "1105",
+       "n0": "1055",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 1105 − 1055 is not the number of minutes",
+       "w1": "Yes. 1105 − 1055 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1105 + 1055 gives the minutes",
+       "w3": "Yes. 10:55 and 11:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 55,
+       "b": 10,
+       "s": "10:55",
+       "e": "11:10",
+       "e0": "11:00",
+       "n1": "1110",
+       "n0": "1055",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1110 − 1055 is not the number of minutes",
+       "w1": "Yes. 1110 − 1055 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1110 + 1055 gives the minutes",
+       "w3": "Yes. 10:55 and 11:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 55,
+       "b": 15,
+       "s": "10:55",
+       "e": "11:15",
+       "e0": "11:00",
+       "n1": "1115",
+       "n0": "1055",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1115 − 1055 is not the number of minutes",
+       "w1": "Yes. 1115 − 1055 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1115 + 1055 gives the minutes",
+       "w3": "Yes. 10:55 and 11:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 10,
+       "a": 55,
+       "b": 20,
+       "s": "10:55",
+       "e": "11:20",
+       "e0": "11:00",
+       "n1": "1120",
+       "n0": "1055",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1120 − 1055 is not the number of minutes",
+       "w1": "Yes. 1120 − 1055 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1120 + 1055 gives the minutes",
+       "w3": "Yes. 10:55 and 11:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 25,
+       "b": 5,
+       "s": "11:25",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1125",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1125 is not the number of minutes",
+       "w1": "Yes. 1205 − 1125 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1125 gives the minutes",
+       "w3": "Yes. 11:25 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 25,
+       "b": 10,
+       "s": "11:25",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1125",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1125 is not the number of minutes",
+       "w1": "Yes. 1210 − 1125 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1125 gives the minutes",
+       "w3": "Yes. 11:25 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 25,
+       "b": 15,
+       "s": "11:25",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1125",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1125 is not the number of minutes",
+       "w1": "Yes. 1215 − 1125 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1125 gives the minutes",
+       "w3": "Yes. 11:25 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 25,
+       "b": 20,
+       "s": "11:25",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1125",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1125 is not the number of minutes",
+       "w1": "Yes. 1220 − 1125 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1125 gives the minutes",
+       "w3": "Yes. 11:25 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 30,
+       "b": 5,
+       "s": "11:30",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1130",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1130 is not the number of minutes",
+       "w1": "Yes. 1205 − 1130 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1130 gives the minutes",
+       "w3": "Yes. 11:30 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 30,
+       "b": 10,
+       "s": "11:30",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1130",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1130 is not the number of minutes",
+       "w1": "Yes. 1210 − 1130 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1130 gives the minutes",
+       "w3": "Yes. 11:30 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 30,
+       "b": 15,
+       "s": "11:30",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1130",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1130 is not the number of minutes",
+       "w1": "Yes. 1215 − 1130 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1130 gives the minutes",
+       "w3": "Yes. 11:30 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 30,
+       "b": 20,
+       "s": "11:30",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1130",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1130 is not the number of minutes",
+       "w1": "Yes. 1220 − 1130 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1130 gives the minutes",
+       "w3": "Yes. 11:30 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 35,
+       "b": 5,
+       "s": "11:35",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1135",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1135 is not the number of minutes",
+       "w1": "Yes. 1205 − 1135 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1135 gives the minutes",
+       "w3": "Yes. 11:35 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 35,
+       "b": 10,
+       "s": "11:35",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1135",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1135 is not the number of minutes",
+       "w1": "Yes. 1210 − 1135 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1135 gives the minutes",
+       "w3": "Yes. 11:35 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 35,
+       "b": 15,
+       "s": "11:35",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1135",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1135 is not the number of minutes",
+       "w1": "Yes. 1215 − 1135 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1135 gives the minutes",
+       "w3": "Yes. 11:35 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 35,
+       "b": 20,
+       "s": "11:35",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1135",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1135 is not the number of minutes",
+       "w1": "Yes. 1220 − 1135 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1135 gives the minutes",
+       "w3": "Yes. 11:35 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 40,
+       "b": 5,
+       "s": "11:40",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1140",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1140 is not the number of minutes",
+       "w1": "Yes. 1205 − 1140 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1140 gives the minutes",
+       "w3": "Yes. 11:40 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 40,
+       "b": 10,
+       "s": "11:40",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1140",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1140 is not the number of minutes",
+       "w1": "Yes. 1210 − 1140 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1140 gives the minutes",
+       "w3": "Yes. 11:40 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 40,
+       "b": 15,
+       "s": "11:40",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1140",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1140 is not the number of minutes",
+       "w1": "Yes. 1215 − 1140 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1140 gives the minutes",
+       "w3": "Yes. 11:40 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 40,
+       "b": 20,
+       "s": "11:40",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1140",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1140 is not the number of minutes",
+       "w1": "Yes. 1220 − 1140 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1140 gives the minutes",
+       "w3": "Yes. 11:40 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 45,
+       "b": 5,
+       "s": "11:45",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1145",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1145 is not the number of minutes",
+       "w1": "Yes. 1205 − 1145 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1145 gives the minutes",
+       "w3": "Yes. 11:45 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 45,
+       "b": 10,
+       "s": "11:45",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1145",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1145 is not the number of minutes",
+       "w1": "Yes. 1210 − 1145 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1145 gives the minutes",
+       "w3": "Yes. 11:45 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 45,
+       "b": 15,
+       "s": "11:45",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1145",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1145 is not the number of minutes",
+       "w1": "Yes. 1215 − 1145 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1145 gives the minutes",
+       "w3": "Yes. 11:45 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 45,
+       "b": 20,
+       "s": "11:45",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1145",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1145 is not the number of minutes",
+       "w1": "Yes. 1220 − 1145 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1145 gives the minutes",
+       "w3": "Yes. 11:45 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 50,
+       "b": 5,
+       "s": "11:50",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1150",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1150 is not the number of minutes",
+       "w1": "Yes. 1205 − 1150 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1150 gives the minutes",
+       "w3": "Yes. 11:50 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 50,
+       "b": 10,
+       "s": "11:50",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1150",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1150 is not the number of minutes",
+       "w1": "Yes. 1210 − 1150 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1150 gives the minutes",
+       "w3": "Yes. 11:50 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 50,
+       "b": 15,
+       "s": "11:50",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1150",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1150 is not the number of minutes",
+       "w1": "Yes. 1215 − 1150 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1150 gives the minutes",
+       "w3": "Yes. 11:50 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 50,
+       "b": 20,
+       "s": "11:50",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1150",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1150 is not the number of minutes",
+       "w1": "Yes. 1220 − 1150 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1150 gives the minutes",
+       "w3": "Yes. 11:50 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 55,
+       "b": 5,
+       "s": "11:55",
+       "e": "12:05",
+       "e0": "12:00",
+       "n1": "1205",
+       "n0": "1155",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 1205 − 1155 is not the number of minutes",
+       "w1": "Yes. 1205 − 1155 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1205 + 1155 gives the minutes",
+       "w3": "Yes. 11:55 and 12:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 55,
+       "b": 10,
+       "s": "11:55",
+       "e": "12:10",
+       "e0": "12:00",
+       "n1": "1210",
+       "n0": "1155",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1210 − 1155 is not the number of minutes",
+       "w1": "Yes. 1210 − 1155 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1210 + 1155 gives the minutes",
+       "w3": "Yes. 11:55 and 12:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 55,
+       "b": 15,
+       "s": "11:55",
+       "e": "12:15",
+       "e0": "12:00",
+       "n1": "1215",
+       "n0": "1155",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1215 − 1155 is not the number of minutes",
+       "w1": "Yes. 1215 − 1155 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1215 + 1155 gives the minutes",
+       "w3": "Yes. 11:55 and 12:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 11,
+       "a": 55,
+       "b": 20,
+       "s": "11:55",
+       "e": "12:20",
+       "e0": "12:00",
+       "n1": "1220",
+       "n0": "1155",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1220 − 1155 is not the number of minutes",
+       "w1": "Yes. 1220 − 1155 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1220 + 1155 gives the minutes",
+       "w3": "Yes. 11:55 and 12:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 25,
+       "b": 5,
+       "s": "12:25",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1225",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1225 is not the number of minutes",
+       "w1": "Yes. 1305 − 1225 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1225 gives the minutes",
+       "w3": "Yes. 12:25 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 25,
+       "b": 10,
+       "s": "12:25",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1225",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1225 is not the number of minutes",
+       "w1": "Yes. 1310 − 1225 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1225 gives the minutes",
+       "w3": "Yes. 12:25 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 25,
+       "b": 15,
+       "s": "12:25",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1225",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1225 is not the number of minutes",
+       "w1": "Yes. 1315 − 1225 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1225 gives the minutes",
+       "w3": "Yes. 12:25 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 25,
+       "b": 20,
+       "s": "12:25",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1225",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1225 is not the number of minutes",
+       "w1": "Yes. 1320 − 1225 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1225 gives the minutes",
+       "w3": "Yes. 12:25 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 30,
+       "b": 5,
+       "s": "12:30",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1230",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1230 is not the number of minutes",
+       "w1": "Yes. 1305 − 1230 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1230 gives the minutes",
+       "w3": "Yes. 12:30 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 30,
+       "b": 10,
+       "s": "12:30",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1230",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1230 is not the number of minutes",
+       "w1": "Yes. 1310 − 1230 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1230 gives the minutes",
+       "w3": "Yes. 12:30 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 30,
+       "b": 15,
+       "s": "12:30",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1230",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1230 is not the number of minutes",
+       "w1": "Yes. 1315 − 1230 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1230 gives the minutes",
+       "w3": "Yes. 12:30 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 30,
+       "b": 20,
+       "s": "12:30",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1230",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1230 is not the number of minutes",
+       "w1": "Yes. 1320 − 1230 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1230 gives the minutes",
+       "w3": "Yes. 12:30 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 35,
+       "b": 5,
+       "s": "12:35",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1235",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1235 is not the number of minutes",
+       "w1": "Yes. 1305 − 1235 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1235 gives the minutes",
+       "w3": "Yes. 12:35 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 35,
+       "b": 10,
+       "s": "12:35",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1235",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1235 is not the number of minutes",
+       "w1": "Yes. 1310 − 1235 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1235 gives the minutes",
+       "w3": "Yes. 12:35 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 35,
+       "b": 15,
+       "s": "12:35",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1235",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1235 is not the number of minutes",
+       "w1": "Yes. 1315 − 1235 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1235 gives the minutes",
+       "w3": "Yes. 12:35 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 35,
+       "b": 20,
+       "s": "12:35",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1235",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1235 is not the number of minutes",
+       "w1": "Yes. 1320 − 1235 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1235 gives the minutes",
+       "w3": "Yes. 12:35 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 40,
+       "b": 5,
+       "s": "12:40",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1240",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1240 is not the number of minutes",
+       "w1": "Yes. 1305 − 1240 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1240 gives the minutes",
+       "w3": "Yes. 12:40 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 40,
+       "b": 10,
+       "s": "12:40",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1240",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1240 is not the number of minutes",
+       "w1": "Yes. 1310 − 1240 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1240 gives the minutes",
+       "w3": "Yes. 12:40 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 40,
+       "b": 15,
+       "s": "12:40",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1240",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1240 is not the number of minutes",
+       "w1": "Yes. 1315 − 1240 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1240 gives the minutes",
+       "w3": "Yes. 12:40 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 40,
+       "b": 20,
+       "s": "12:40",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1240",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1240 is not the number of minutes",
+       "w1": "Yes. 1320 − 1240 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1240 gives the minutes",
+       "w3": "Yes. 12:40 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 45,
+       "b": 5,
+       "s": "12:45",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1245",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1245 is not the number of minutes",
+       "w1": "Yes. 1305 − 1245 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1245 gives the minutes",
+       "w3": "Yes. 12:45 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 45,
+       "b": 10,
+       "s": "12:45",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1245",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1245 is not the number of minutes",
+       "w1": "Yes. 1310 − 1245 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1245 gives the minutes",
+       "w3": "Yes. 12:45 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 45,
+       "b": 15,
+       "s": "12:45",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1245",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1245 is not the number of minutes",
+       "w1": "Yes. 1315 − 1245 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1245 gives the minutes",
+       "w3": "Yes. 12:45 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 45,
+       "b": 20,
+       "s": "12:45",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1245",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1245 is not the number of minutes",
+       "w1": "Yes. 1320 − 1245 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1245 gives the minutes",
+       "w3": "Yes. 12:45 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 50,
+       "b": 5,
+       "s": "12:50",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1250",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1250 is not the number of minutes",
+       "w1": "Yes. 1305 − 1250 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1250 gives the minutes",
+       "w3": "Yes. 12:50 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 50,
+       "b": 10,
+       "s": "12:50",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1250",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1250 is not the number of minutes",
+       "w1": "Yes. 1310 − 1250 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1250 gives the minutes",
+       "w3": "Yes. 12:50 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 50,
+       "b": 15,
+       "s": "12:50",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1250",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1250 is not the number of minutes",
+       "w1": "Yes. 1315 − 1250 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1250 gives the minutes",
+       "w3": "Yes. 12:50 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 50,
+       "b": 20,
+       "s": "12:50",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1250",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1250 is not the number of minutes",
+       "w1": "Yes. 1320 − 1250 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1250 gives the minutes",
+       "w3": "Yes. 12:50 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 55,
+       "b": 5,
+       "s": "12:55",
+       "e": "13:05",
+       "e0": "13:00",
+       "n1": "1305",
+       "n0": "1255",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 1305 − 1255 is not the number of minutes",
+       "w1": "Yes. 1305 − 1255 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1305 + 1255 gives the minutes",
+       "w3": "Yes. 12:55 and 13:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 55,
+       "b": 10,
+       "s": "12:55",
+       "e": "13:10",
+       "e0": "13:00",
+       "n1": "1310",
+       "n0": "1255",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1310 − 1255 is not the number of minutes",
+       "w1": "Yes. 1310 − 1255 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1310 + 1255 gives the minutes",
+       "w3": "Yes. 12:55 and 13:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 55,
+       "b": 15,
+       "s": "12:55",
+       "e": "13:15",
+       "e0": "13:00",
+       "n1": "1315",
+       "n0": "1255",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1315 − 1255 is not the number of minutes",
+       "w1": "Yes. 1315 − 1255 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1315 + 1255 gives the minutes",
+       "w3": "Yes. 12:55 and 13:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 12,
+       "a": 55,
+       "b": 20,
+       "s": "12:55",
+       "e": "13:20",
+       "e0": "13:00",
+       "n1": "1320",
+       "n0": "1255",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1320 − 1255 is not the number of minutes",
+       "w1": "Yes. 1320 − 1255 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1320 + 1255 gives the minutes",
+       "w3": "Yes. 12:55 and 13:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 25,
+       "b": 5,
+       "s": "13:25",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1325",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1325 is not the number of minutes",
+       "w1": "Yes. 1405 − 1325 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1325 gives the minutes",
+       "w3": "Yes. 13:25 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 25,
+       "b": 10,
+       "s": "13:25",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1325",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1325 is not the number of minutes",
+       "w1": "Yes. 1410 − 1325 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1325 gives the minutes",
+       "w3": "Yes. 13:25 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 25,
+       "b": 15,
+       "s": "13:25",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1325",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1325 is not the number of minutes",
+       "w1": "Yes. 1415 − 1325 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1325 gives the minutes",
+       "w3": "Yes. 13:25 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 25,
+       "b": 20,
+       "s": "13:25",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1325",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1325 is not the number of minutes",
+       "w1": "Yes. 1420 − 1325 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1325 gives the minutes",
+       "w3": "Yes. 13:25 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 30,
+       "b": 5,
+       "s": "13:30",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1330",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1330 is not the number of minutes",
+       "w1": "Yes. 1405 − 1330 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1330 gives the minutes",
+       "w3": "Yes. 13:30 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 30,
+       "b": 10,
+       "s": "13:30",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1330",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1330 is not the number of minutes",
+       "w1": "Yes. 1410 − 1330 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1330 gives the minutes",
+       "w3": "Yes. 13:30 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 30,
+       "b": 15,
+       "s": "13:30",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1330",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1330 is not the number of minutes",
+       "w1": "Yes. 1415 − 1330 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1330 gives the minutes",
+       "w3": "Yes. 13:30 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 30,
+       "b": 20,
+       "s": "13:30",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1330",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1330 is not the number of minutes",
+       "w1": "Yes. 1420 − 1330 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1330 gives the minutes",
+       "w3": "Yes. 13:30 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 35,
+       "b": 5,
+       "s": "13:35",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1335",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1335 is not the number of minutes",
+       "w1": "Yes. 1405 − 1335 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1335 gives the minutes",
+       "w3": "Yes. 13:35 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 35,
+       "b": 10,
+       "s": "13:35",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1335",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1335 is not the number of minutes",
+       "w1": "Yes. 1410 − 1335 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1335 gives the minutes",
+       "w3": "Yes. 13:35 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 35,
+       "b": 15,
+       "s": "13:35",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1335",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1335 is not the number of minutes",
+       "w1": "Yes. 1415 − 1335 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1335 gives the minutes",
+       "w3": "Yes. 13:35 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 35,
+       "b": 20,
+       "s": "13:35",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1335",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1335 is not the number of minutes",
+       "w1": "Yes. 1420 − 1335 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1335 gives the minutes",
+       "w3": "Yes. 13:35 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 40,
+       "b": 5,
+       "s": "13:40",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1340",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1340 is not the number of minutes",
+       "w1": "Yes. 1405 − 1340 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1340 gives the minutes",
+       "w3": "Yes. 13:40 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 40,
+       "b": 10,
+       "s": "13:40",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1340",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1340 is not the number of minutes",
+       "w1": "Yes. 1410 − 1340 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1340 gives the minutes",
+       "w3": "Yes. 13:40 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 40,
+       "b": 15,
+       "s": "13:40",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1340",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1340 is not the number of minutes",
+       "w1": "Yes. 1415 − 1340 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1340 gives the minutes",
+       "w3": "Yes. 13:40 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 40,
+       "b": 20,
+       "s": "13:40",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1340",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1340 is not the number of minutes",
+       "w1": "Yes. 1420 − 1340 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1340 gives the minutes",
+       "w3": "Yes. 13:40 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 45,
+       "b": 5,
+       "s": "13:45",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1345",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1345 is not the number of minutes",
+       "w1": "Yes. 1405 − 1345 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1345 gives the minutes",
+       "w3": "Yes. 13:45 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 45,
+       "b": 10,
+       "s": "13:45",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1345",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1345 is not the number of minutes",
+       "w1": "Yes. 1410 − 1345 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1345 gives the minutes",
+       "w3": "Yes. 13:45 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 45,
+       "b": 15,
+       "s": "13:45",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1345",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1345 is not the number of minutes",
+       "w1": "Yes. 1415 − 1345 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1345 gives the minutes",
+       "w3": "Yes. 13:45 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 45,
+       "b": 20,
+       "s": "13:45",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1345",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1345 is not the number of minutes",
+       "w1": "Yes. 1420 − 1345 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1345 gives the minutes",
+       "w3": "Yes. 13:45 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 50,
+       "b": 5,
+       "s": "13:50",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1350",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1350 is not the number of minutes",
+       "w1": "Yes. 1405 − 1350 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1350 gives the minutes",
+       "w3": "Yes. 13:50 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 50,
+       "b": 10,
+       "s": "13:50",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1350",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1350 is not the number of minutes",
+       "w1": "Yes. 1410 − 1350 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1350 gives the minutes",
+       "w3": "Yes. 13:50 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 50,
+       "b": 15,
+       "s": "13:50",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1350",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1350 is not the number of minutes",
+       "w1": "Yes. 1415 − 1350 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1350 gives the minutes",
+       "w3": "Yes. 13:50 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 50,
+       "b": 20,
+       "s": "13:50",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1350",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1350 is not the number of minutes",
+       "w1": "Yes. 1420 − 1350 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1350 gives the minutes",
+       "w3": "Yes. 13:50 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 55,
+       "b": 5,
+       "s": "13:55",
+       "e": "14:05",
+       "e0": "14:00",
+       "n1": "1405",
+       "n0": "1355",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 1405 − 1355 is not the number of minutes",
+       "w1": "Yes. 1405 − 1355 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1405 + 1355 gives the minutes",
+       "w3": "Yes. 13:55 and 14:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 55,
+       "b": 10,
+       "s": "13:55",
+       "e": "14:10",
+       "e0": "14:00",
+       "n1": "1410",
+       "n0": "1355",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1410 − 1355 is not the number of minutes",
+       "w1": "Yes. 1410 − 1355 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1410 + 1355 gives the minutes",
+       "w3": "Yes. 13:55 and 14:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 55,
+       "b": 15,
+       "s": "13:55",
+       "e": "14:15",
+       "e0": "14:00",
+       "n1": "1415",
+       "n0": "1355",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1415 − 1355 is not the number of minutes",
+       "w1": "Yes. 1415 − 1355 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1415 + 1355 gives the minutes",
+       "w3": "Yes. 13:55 and 14:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 13,
+       "a": 55,
+       "b": 20,
+       "s": "13:55",
+       "e": "14:20",
+       "e0": "14:00",
+       "n1": "1420",
+       "n0": "1355",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1420 − 1355 is not the number of minutes",
+       "w1": "Yes. 1420 − 1355 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1420 + 1355 gives the minutes",
+       "w3": "Yes. 13:55 and 14:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 25,
+       "b": 5,
+       "s": "14:25",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1425",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1425 is not the number of minutes",
+       "w1": "Yes. 1505 − 1425 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1425 gives the minutes",
+       "w3": "Yes. 14:25 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 25,
+       "b": 10,
+       "s": "14:25",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1425",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1425 is not the number of minutes",
+       "w1": "Yes. 1510 − 1425 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1425 gives the minutes",
+       "w3": "Yes. 14:25 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 25,
+       "b": 15,
+       "s": "14:25",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1425",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1425 is not the number of minutes",
+       "w1": "Yes. 1515 − 1425 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1425 gives the minutes",
+       "w3": "Yes. 14:25 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 25,
+       "b": 20,
+       "s": "14:25",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1425",
+       "bad": 95,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1425 is not the number of minutes",
+       "w1": "Yes. 1520 − 1425 = 95, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1425 gives the minutes",
+       "w3": "Yes. 14:25 and 15:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 30,
+       "b": 5,
+       "s": "14:30",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1430",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1430 is not the number of minutes",
+       "w1": "Yes. 1505 − 1430 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1430 gives the minutes",
+       "w3": "Yes. 14:30 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 30,
+       "b": 10,
+       "s": "14:30",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1430",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1430 is not the number of minutes",
+       "w1": "Yes. 1510 − 1430 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1430 gives the minutes",
+       "w3": "Yes. 14:30 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 30,
+       "b": 15,
+       "s": "14:30",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1430",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1430 is not the number of minutes",
+       "w1": "Yes. 1515 − 1430 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1430 gives the minutes",
+       "w3": "Yes. 14:30 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 30,
+       "b": 20,
+       "s": "14:30",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1430",
+       "bad": 90,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1430 is not the number of minutes",
+       "w1": "Yes. 1520 − 1430 = 90, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1430 gives the minutes",
+       "w3": "Yes. 14:30 and 15:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 35,
+       "b": 5,
+       "s": "14:35",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1435",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1435 is not the number of minutes",
+       "w1": "Yes. 1505 − 1435 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1435 gives the minutes",
+       "w3": "Yes. 14:35 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 35,
+       "b": 10,
+       "s": "14:35",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1435",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1435 is not the number of minutes",
+       "w1": "Yes. 1510 − 1435 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1435 gives the minutes",
+       "w3": "Yes. 14:35 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 35,
+       "b": 15,
+       "s": "14:35",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1435",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1435 is not the number of minutes",
+       "w1": "Yes. 1515 − 1435 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1435 gives the minutes",
+       "w3": "Yes. 14:35 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 35,
+       "b": 20,
+       "s": "14:35",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1435",
+       "bad": 85,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1435 is not the number of minutes",
+       "w1": "Yes. 1520 − 1435 = 85, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1435 gives the minutes",
+       "w3": "Yes. 14:35 and 15:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 40,
+       "b": 5,
+       "s": "14:40",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1440",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1440 is not the number of minutes",
+       "w1": "Yes. 1505 − 1440 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1440 gives the minutes",
+       "w3": "Yes. 14:40 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 40,
+       "b": 10,
+       "s": "14:40",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1440",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1440 is not the number of minutes",
+       "w1": "Yes. 1510 − 1440 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1440 gives the minutes",
+       "w3": "Yes. 14:40 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 40,
+       "b": 15,
+       "s": "14:40",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1440",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1440 is not the number of minutes",
+       "w1": "Yes. 1515 − 1440 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1440 gives the minutes",
+       "w3": "Yes. 14:40 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 40,
+       "b": 20,
+       "s": "14:40",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1440",
+       "bad": 80,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1440 is not the number of minutes",
+       "w1": "Yes. 1520 − 1440 = 80, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1440 gives the minutes",
+       "w3": "Yes. 14:40 and 15:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 45,
+       "b": 5,
+       "s": "14:45",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1445",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1445 is not the number of minutes",
+       "w1": "Yes. 1505 − 1445 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1445 gives the minutes",
+       "w3": "Yes. 14:45 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 45,
+       "b": 10,
+       "s": "14:45",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1445",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1445 is not the number of minutes",
+       "w1": "Yes. 1510 − 1445 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1445 gives the minutes",
+       "w3": "Yes. 14:45 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 45,
+       "b": 15,
+       "s": "14:45",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1445",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1445 is not the number of minutes",
+       "w1": "Yes. 1515 − 1445 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1445 gives the minutes",
+       "w3": "Yes. 14:45 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 45,
+       "b": 20,
+       "s": "14:45",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1445",
+       "bad": 75,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1445 is not the number of minutes",
+       "w1": "Yes. 1520 − 1445 = 75, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1445 gives the minutes",
+       "w3": "Yes. 14:45 and 15:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 50,
+       "b": 5,
+       "s": "14:50",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1450",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1450 is not the number of minutes",
+       "w1": "Yes. 1505 − 1450 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1450 gives the minutes",
+       "w3": "Yes. 14:50 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 50,
+       "b": 10,
+       "s": "14:50",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1450",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1450 is not the number of minutes",
+       "w1": "Yes. 1510 − 1450 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1450 gives the minutes",
+       "w3": "Yes. 14:50 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 50,
+       "b": 15,
+       "s": "14:50",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1450",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1450 is not the number of minutes",
+       "w1": "Yes. 1515 − 1450 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1450 gives the minutes",
+       "w3": "Yes. 14:50 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 50,
+       "b": 20,
+       "s": "14:50",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1450",
+       "bad": 70,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1450 is not the number of minutes",
+       "w1": "Yes. 1520 − 1450 = 70, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1450 gives the minutes",
+       "w3": "Yes. 14:50 and 15:20 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 55,
+       "b": 5,
+       "s": "14:55",
+       "e": "15:05",
+       "e0": "15:00",
+       "n1": "1505",
+       "n0": "1455",
+       "bad": 50,
+       "ok": "No. An hour has 60 minutes, so 1505 − 1455 is not the number of minutes",
+       "w1": "Yes. 1505 − 1455 = 50, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1505 + 1455 gives the minutes",
+       "w3": "Yes. 14:55 and 15:05 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 55,
+       "b": 10,
+       "s": "14:55",
+       "e": "15:10",
+       "e0": "15:00",
+       "n1": "1510",
+       "n0": "1455",
+       "bad": 55,
+       "ok": "No. An hour has 60 minutes, so 1510 − 1455 is not the number of minutes",
+       "w1": "Yes. 1510 − 1455 = 55, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1510 + 1455 gives the minutes",
+       "w3": "Yes. 14:55 and 15:10 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 55,
+       "b": 15,
+       "s": "14:55",
+       "e": "15:15",
+       "e0": "15:00",
+       "n1": "1515",
+       "n0": "1455",
+       "bad": 60,
+       "ok": "No. An hour has 60 minutes, so 1515 − 1455 is not the number of minutes",
+       "w1": "Yes. 1515 − 1455 = 60, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1515 + 1455 gives the minutes",
+       "w3": "Yes. 14:55 and 15:15 are in the same hour, so the numbers can be subtracted"
+      },
+      {
+       "h": 14,
+       "a": 55,
+       "b": 20,
+       "s": "14:55",
+       "e": "15:20",
+       "e0": "15:00",
+       "n1": "1520",
+       "n0": "1455",
+       "bad": 65,
+       "ok": "No. An hour has 60 minutes, so 1520 − 1455 is not the number of minutes",
+       "w1": "Yes. 1520 − 1455 = 65, and that is how many minutes there are",
+       "w2": "No. The two times should be added instead: 1520 + 1455 gives the minutes",
+       "w3": "Yes. 14:55 and 15:20 are in the same hour, so the numbers can be subtracted"
+      }
+     ]
     }
    ],
-   "text": "{who.name} says that from {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} to {'0' if (h + 1) < 10 else ''}{h + 1}:{'0' if (b) < 10 else ''}{b} is {100 + b - a} minutes, because {h + 1}{'0' if b < 10 else ''}{b} − {h}{a} = {100 + b - a}. Is {who.name} right? Explain, and find the correct time.",
-   "answer": "No. An hour has 60 minutes, not 100, so the clock times cannot be subtracted like whole numbers. From {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} to {'0' if (h + 1) < 10 else ''}{h + 1}:{'0' if (0) < 10 else ''}{0} is {60 - a} minutes, and then {b} more: {60 - a + b} minutes.",
-   "steps": [
+   "stimulus": "{who.name} says that from {t.s} to {t.e} is {t.bad} minutes, because {t.n1} − {t.n0} = {t.bad}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Says {who.name} is not right."
+     "text": "(a) Is {who.name} right?",
+     "responseFormat": "Choice or short text",
+     "options": {
+      "correct": "t.ok",
+      "wrong": [
+       {
+        "expr": "t.w1",
+        "mistake": "treats one hour as 100 minutes"
+       },
+       {
+        "expr": "t.w2",
+        "mistake": "adds clock times instead of finding the time between them"
+       },
+       {
+        "expr": "t.w3",
+        "mistake": "misses that the time crosses into the next hour"
+       }
+      ]
+     },
+     "explanation": "An hour has 60 minutes, not 100, so clock times cannot be subtracted like whole numbers."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Explains that an hour is 60 minutes, so clock times are not whole numbers to subtract."
+     "text": "(b) How many minutes are there from {t.s} to {t.e0}?",
+     "answer": "60 - t.a",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "60 − {t.a} = {60 - t.a} minutes.",
+     "unit": "min",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Finds the correct time: {60 - a + b} minutes."
+     "text": "(c) How many minutes are there from {t.s} to {t.e}?",
+     "answer": "60 - t.a + t.b",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{60 - t.a} + {t.b} = {60 - t.a + t.b} minutes, not {t.bad}.",
+     "unit": "min",
+     "unitRule": "STATED"
     }
    ],
-   "hint": "Count up to the next full hour first.",
-   "explanation": "{60 - a} + {b} = {60 - a + b} minutes, not {100 + b - a}.",
    "misconception": "Subtracts minutes without regrouping or treats one hour as 100 minutes.",
-   "notes": "Crossing one hour; the whole-number subtraction is always 40 minutes too many.",
+   "notes": "Start 07:25 to 14:55, crossing one hour by 5 to 20 minutes; the whole-number subtraction is always 40 minutes too many. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH12-Q310",
     "CBSE-C5-CH12-Q316",
@@ -13247,11 +16661,10 @@
    "code": "C5-RS-L5-1",
    "chapter": 12,
    "skill": "C5-RS-S08",
-   "questionType": "Constructed Response",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "h",
@@ -13301,37 +16714,70 @@
    ],
    "require": [
     "h + x + (a + y + late) // 60 >= 13",
-    "h + x + (a + y + late) // 60 <= 23"
+    "h + x + (a + y + late) // 60 <= 23",
+    "h + x + (a + y) // 60 >= 13"
    ],
-   "text": "A train leaves at {h}:{'0' if (a) < 10 else ''}{a} a.m. The journey takes {x} hours {y} minutes. (a) Write the leaving time in 24-hour time. (b) At what time does the train arrive, in 24-hour time? (c) Write the arrival time in 12-hour time. (d) The train is {late} minutes late. When does it really arrive, in 24-hour time? (e) How long did the journey really take? Show your working.",
-   "maxWords": 100,
-   "answer": "(a) {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}. (b) {'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60}. (c) {(h + x + (a + y) // 60 - 1) % 12 + 1}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} {'p.m.' if h + x + (a + y) // 60 >= 12 else 'a.m.'} (d) {'0' if (h + x + (a + y + late) // 60) < 10 else ''}{h + x + (a + y + late) // 60}:{'0' if ((a + y + late) % 60) < 10 else ''}{(a + y + late) % 60}. (e) {x + (y + late) // 60} hours {(y + late) % 60} minutes.",
-   "steps": [
+   "stimulus": "A train leaves at {h}:{'0' if (a) < 10 else ''}{a} a.m. The journey takes {x} hours {y} minutes, but the train is {late} minutes late. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}."
+     "text": "(a) Write the leaving time in 24-hour time. Enter hours; minutes.",
+     "answer": [
+      "h",
+      "a"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "Morning times stay the same: {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Adds {x} h {y} min: {'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60}."
+     "text": "(b) At what time should the train arrive, in 24-hour time? Enter hours; minutes.",
+     "answer": [
+      "h + x + (a + y) // 60",
+      "(a + y) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "{'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} + {x} h {y} min = {'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {(h + x + (a + y) // 60 - 1) % 12 + 1}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} {'p.m.' if h + x + (a + y) // 60 >= 12 else 'a.m.'}"
+     "text": "(c) Write that arrival time in 12-hour time (it is p.m.). Enter hours; minutes.",
+     "answer": [
+      "h + x + (a + y) // 60 - 12",
+      "(a + y) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "{'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} is {h + x + (a + y) // 60 - 12}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} p.m."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) Adds {late} min: {'0' if (h + x + (a + y + late) // 60) < 10 else ''}{h + x + (a + y + late) // 60}:{'0' if ((a + y + late) % 60) < 10 else ''}{(a + y + late) % 60}."
+     "text": "(d) When does it really arrive, in 24-hour time? Enter hours; minutes.",
+     "answer": [
+      "h + x + (a + y + late) // 60",
+      "(a + y + late) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "{late} minutes after {'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} is {'0' if (h + x + (a + y + late) // 60) < 10 else ''}{h + x + (a + y + late) // 60}:{'0' if ((a + y + late) % 60) < 10 else ''}{(a + y + late) % 60}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {x} h {y} min + {late} min = {x + (y + late) // 60} h {(y + late) % 60} min."
+     "text": "(e) How long did the journey really take? Enter hours; minutes.",
+     "answer": [
+      "x + (y + late) // 60",
+      "(y + late) % 60"
+     ],
+     "responseFormat": "Mixed duration in two boxes",
+     "explanation": "{x} h {y} min + {late} min = {x + (y + late) // 60} h {(y + late) % 60} min."
     }
    ],
-   "hint": "Add the hours first, then the minutes; 60 minutes make an hour.",
-   "explanation": "Arrives at {'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60}, really at {'0' if (h + x + (a + y + late) // 60) < 10 else ''}{h + x + (a + y + late) // 60}:{'0' if ((a + y + late) % 60) < 10 else ''}{(a + y + late) % 60}.",
+   "maxWords": 80,
    "misconception": "Adds 12 to morning times, writes p.m. with 24-hour time, or confuses 12 noon with 12 midnight.",
-   "notes": "Morning departures 6 to 10 a.m., journeys of 5 to 8 hours and some minutes, arriving in the afternoon or evening.",
+   "notes": "Morning departures 6 to 10 a.m., journeys of 5 to 8 hours and some minutes, due after 1 p.m. so the 12-hour time is p.m. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH12-Q232",
     "CBSE-C5-CH12-Q262",
@@ -13343,11 +16789,10 @@
    "code": "C5-RS-L5-2",
    "chapter": 12,
    "skill": "C5-RS-S14",
-   "questionType": "Constructed Response",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "r",
@@ -13366,7 +16811,8 @@
        "w1": "Lakshmi",
        "w2": "Rohan",
        "lo": 94,
-       "hi": 103
+       "hi": 103,
+       "s2": 95
       },
       {
        "a": "Rohan",
@@ -13382,7 +16828,8 @@
        "w1": "Tenzin",
        "w2": "Lakshmi",
        "lo": 78,
-       "hi": 101
+       "hi": 101,
+       "s2": 79
       },
       {
        "a": "Harpreet",
@@ -13398,7 +16845,8 @@
        "w1": "Neha",
        "w2": "Joseph",
        "lo": 79,
-       "hi": 103
+       "hi": 103,
+       "s2": 90
       },
       {
        "a": "Neha",
@@ -13414,7 +16862,8 @@
        "w1": "Neha",
        "w2": "Aarav",
        "lo": 79,
-       "hi": 97
+       "hi": 97,
+       "s2": 80
       },
       {
        "a": "Karthik",
@@ -13430,7 +16879,8 @@
        "w1": "Karthik",
        "w2": "Vikram",
        "lo": 83,
-       "hi": 94
+       "hi": 94,
+       "s2": 90
       },
       {
        "a": "Harpreet",
@@ -13446,7 +16896,8 @@
        "w1": "Aarav",
        "w2": "Ayesha",
        "lo": 90,
-       "hi": 97
+       "hi": 97,
+       "s2": 91
       },
       {
        "a": "Meera",
@@ -13462,7 +16913,8 @@
        "w1": "Meera",
        "w2": "Aarav",
        "lo": 91,
-       "hi": 104
+       "hi": 104,
+       "s2": 96
       },
       {
        "a": "Neha",
@@ -13478,7 +16930,8 @@
        "w1": "Neha",
        "w2": "Kabir",
        "lo": 78,
-       "hi": 90
+       "hi": 90,
+       "s2": 84
       },
       {
        "a": "Rohan",
@@ -13494,7 +16947,8 @@
        "w1": "Rohan",
        "w2": "Joseph",
        "lo": 79,
-       "hi": 100
+       "hi": 100,
+       "s2": 85
       },
       {
        "a": "Neha",
@@ -13510,7 +16964,8 @@
        "w1": "Aarav",
        "w2": "Priya",
        "lo": 94,
-       "hi": 104
+       "hi": 104,
+       "s2": 96
       },
       {
        "a": "Divya",
@@ -13526,7 +16981,8 @@
        "w1": "Divya",
        "w2": "Vikram",
        "lo": 79,
-       "hi": 95
+       "hi": 95,
+       "s2": 81
       },
       {
        "a": "Rohan",
@@ -13542,7 +16998,8 @@
        "w1": "Rohan",
        "w2": "Imran",
        "lo": 87,
-       "hi": 101
+       "hi": 101,
+       "s2": 91
       },
       {
        "a": "Neha",
@@ -13558,7 +17015,8 @@
        "w1": "Neha",
        "w2": "Kabir",
        "lo": 80,
-       "hi": 103
+       "hi": 103,
+       "s2": 90
       },
       {
        "a": "Ananya",
@@ -13574,7 +17032,8 @@
        "w1": "Ananya",
        "w2": "Ayesha",
        "lo": 80,
-       "hi": 97
+       "hi": 97,
+       "s2": 81
       },
       {
        "a": "Divya",
@@ -13590,7 +17049,8 @@
        "w1": "Rohan",
        "w2": "Ayesha",
        "lo": 82,
-       "hi": 104
+       "hi": 104,
+       "s2": 91
       },
       {
        "a": "Ananya",
@@ -13606,7 +17066,8 @@
        "w1": "Ananya",
        "w2": "Kabir",
        "lo": 86,
-       "hi": 104
+       "hi": 104,
+       "s2": 96
       },
       {
        "a": "Ananya",
@@ -13622,7 +17083,8 @@
        "w1": "Aarav",
        "w2": "Priya",
        "lo": 78,
-       "hi": 94
+       "hi": 94,
+       "s2": 82
       },
       {
        "a": "Tenzin",
@@ -13638,7 +17100,8 @@
        "w1": "Tenzin",
        "w2": "Neha",
        "lo": 81,
-       "hi": 104
+       "hi": 104,
+       "s2": 96
       },
       {
        "a": "Sana",
@@ -13654,7 +17117,8 @@
        "w1": "Fatima",
        "w2": "Neha",
        "lo": 83,
-       "hi": 102
+       "hi": 102,
+       "s2": 94
       },
       {
        "a": "Imran",
@@ -13670,7 +17134,8 @@
        "w1": "Imran",
        "w2": "Harpreet",
        "lo": 90,
-       "hi": 103
+       "hi": 103,
+       "s2": 97
       },
       {
        "a": "Rohan",
@@ -13686,7 +17151,8 @@
        "w1": "Rohan",
        "w2": "Tenzin",
        "lo": 83,
-       "hi": 92
+       "hi": 92,
+       "s2": 90
       },
       {
        "a": "Ayesha",
@@ -13702,7 +17168,8 @@
        "w1": "Ayesha",
        "w2": "Rohan",
        "lo": 82,
-       "hi": 97
+       "hi": 97,
+       "s2": 85
       },
       {
        "a": "Karthik",
@@ -13718,7 +17185,8 @@
        "w1": "Divya",
        "w2": "Lakshmi",
        "lo": 89,
-       "hi": 104
+       "hi": 104,
+       "s2": 92
       },
       {
        "a": "Karthik",
@@ -13734,7 +17202,8 @@
        "w1": "Karthik",
        "w2": "Rahul",
        "lo": 93,
-       "hi": 104
+       "hi": 104,
+       "s2": 98
       },
       {
        "a": "Neha",
@@ -13750,7 +17219,8 @@
        "w1": "Ayesha",
        "w2": "Rohan",
        "lo": 82,
-       "hi": 100
+       "hi": 100,
+       "s2": 87
       },
       {
        "a": "Arjun",
@@ -13766,7 +17236,8 @@
        "w1": "Arjun",
        "w2": "Fatima",
        "lo": 91,
-       "hi": 104
+       "hi": 104,
+       "s2": 92
       },
       {
        "a": "Joseph",
@@ -13782,7 +17253,8 @@
        "w1": "Harpreet",
        "w2": "Lakshmi",
        "lo": 87,
-       "hi": 99
+       "hi": 99,
+       "s2": 90
       },
       {
        "a": "Harpreet",
@@ -13798,7 +17270,8 @@
        "w1": "Harpreet",
        "w2": "Joseph",
        "lo": 79,
-       "hi": 94
+       "hi": 94,
+       "s2": 86
       },
       {
        "a": "Lakshmi",
@@ -13814,7 +17287,8 @@
        "w1": "Kabir",
        "w2": "Rohan",
        "lo": 86,
-       "hi": 104
+       "hi": 104,
+       "s2": 94
       },
       {
        "a": "Harpreet",
@@ -13830,7 +17304,8 @@
        "w1": "Kabir",
        "w2": "Karthik",
        "lo": 85,
-       "hi": 102
+       "hi": 102,
+       "s2": 89
       },
       {
        "a": "Karthik",
@@ -13846,7 +17321,8 @@
        "w1": "Ananya",
        "w2": "Vikram",
        "lo": 82,
-       "hi": 97
+       "hi": 97,
+       "s2": 88
       },
       {
        "a": "Rahul",
@@ -13862,7 +17338,8 @@
        "w1": "Tenzin",
        "w2": "Kabir",
        "lo": 79,
-       "hi": 104
+       "hi": 104,
+       "s2": 81
       },
       {
        "a": "Ayesha",
@@ -13878,7 +17355,8 @@
        "w1": "Tenzin",
        "w2": "Arjun",
        "lo": 78,
-       "hi": 95
+       "hi": 95,
+       "s2": 87
       },
       {
        "a": "Ayesha",
@@ -13894,7 +17372,8 @@
        "w1": "Ayesha",
        "w2": "Tenzin",
        "lo": 83,
-       "hi": 103
+       "hi": 103,
+       "s2": 90
       },
       {
        "a": "Lakshmi",
@@ -13910,7 +17389,8 @@
        "w1": "Lakshmi",
        "w2": "Harpreet",
        "lo": 78,
-       "hi": 96
+       "hi": 96,
+       "s2": 85
       },
       {
        "a": "Aarav",
@@ -13926,7 +17406,8 @@
        "w1": "Aarav",
        "w2": "Rohan",
        "lo": 81,
-       "hi": 100
+       "hi": 100,
+       "s2": 82
       },
       {
        "a": "Tenzin",
@@ -13942,7 +17423,8 @@
        "w1": "Tenzin",
        "w2": "Vikram",
        "lo": 79,
-       "hi": 93
+       "hi": 93,
+       "s2": 81
       },
       {
        "a": "Neha",
@@ -13958,7 +17440,8 @@
        "w1": "Harpreet",
        "w2": "Imran",
        "lo": 82,
-       "hi": 99
+       "hi": 99,
+       "s2": 90
       },
       {
        "a": "Rahul",
@@ -13974,7 +17457,8 @@
        "w1": "Rahul",
        "w2": "Kabir",
        "lo": 81,
-       "hi": 90
+       "hi": 90,
+       "s2": 82
       },
       {
        "a": "Joseph",
@@ -13990,7 +17474,8 @@
        "w1": "Joseph",
        "w2": "Arjun",
        "lo": 88,
-       "hi": 104
+       "hi": 104,
+       "s2": 99
       },
       {
        "a": "Kabir",
@@ -14006,7 +17491,8 @@
        "w1": "Imran",
        "w2": "Aarav",
        "lo": 80,
-       "hi": 99
+       "hi": 99,
+       "s2": 92
       },
       {
        "a": "Joseph",
@@ -14022,7 +17508,8 @@
        "w1": "Priya",
        "w2": "Ayesha",
        "lo": 90,
-       "hi": 103
+       "hi": 103,
+       "s2": 95
       },
       {
        "a": "Arjun",
@@ -14038,7 +17525,8 @@
        "w1": "Arjun",
        "w2": "Vikram",
        "lo": 80,
-       "hi": 102
+       "hi": 102,
+       "s2": 97
       },
       {
        "a": "Ayesha",
@@ -14054,7 +17542,8 @@
        "w1": "Ananya",
        "w2": "Lakshmi",
        "lo": 81,
-       "hi": 95
+       "hi": 95,
+       "s2": 86
       },
       {
        "a": "Tenzin",
@@ -14070,7 +17559,8 @@
        "w1": "Tenzin",
        "w2": "Kabir",
        "lo": 84,
-       "hi": 104
+       "hi": 104,
+       "s2": 87
       },
       {
        "a": "Fatima",
@@ -14086,7 +17576,8 @@
        "w1": "Tenzin",
        "w2": "Joseph",
        "lo": 85,
-       "hi": 100
+       "hi": 100,
+       "s2": 95
       },
       {
        "a": "Ayesha",
@@ -14102,7 +17593,8 @@
        "w1": "Neha",
        "w2": "Karthik",
        "lo": 89,
-       "hi": 100
+       "hi": 100,
+       "s2": 91
       },
       {
        "a": "Joseph",
@@ -14118,7 +17610,8 @@
        "w1": "Imran",
        "w2": "Lakshmi",
        "lo": 78,
-       "hi": 103
+       "hi": 103,
+       "s2": 88
       },
       {
        "a": "Harpreet",
@@ -14134,7 +17627,8 @@
        "w1": "Harpreet",
        "w2": "Neha",
        "lo": 84,
-       "hi": 94
+       "hi": 94,
+       "s2": 87
       },
       {
        "a": "Karthik",
@@ -14150,7 +17644,8 @@
        "w1": "Neha",
        "w2": "Joseph",
        "lo": 84,
-       "hi": 103
+       "hi": 103,
+       "s2": 97
       },
       {
        "a": "Karthik",
@@ -14166,7 +17661,8 @@
        "w1": "Karthik",
        "w2": "Ananya",
        "lo": 78,
-       "hi": 101
+       "hi": 101,
+       "s2": 90
       },
       {
        "a": "Priya",
@@ -14182,7 +17678,8 @@
        "w1": "Neha",
        "w2": "Sana",
        "lo": 79,
-       "hi": 104
+       "hi": 104,
+       "s2": 81
       },
       {
        "a": "Aarav",
@@ -14198,7 +17695,8 @@
        "w1": "Karthik",
        "w2": "Ayesha",
        "lo": 81,
-       "hi": 101
+       "hi": 101,
+       "s2": 82
       },
       {
        "a": "Sana",
@@ -14214,7 +17712,8 @@
        "w1": "Aarav",
        "w2": "Meera",
        "lo": 83,
-       "hi": 98
+       "hi": 98,
+       "s2": 88
       },
       {
        "a": "Imran",
@@ -14230,7 +17729,8 @@
        "w1": "Imran",
        "w2": "Joseph",
        "lo": 79,
-       "hi": 98
+       "hi": 98,
+       "s2": 90
       },
       {
        "a": "Arjun",
@@ -14246,7 +17746,8 @@
        "w1": "Imran",
        "w2": "Neha",
        "lo": 78,
-       "hi": 93
+       "hi": 93,
+       "s2": 79
       },
       {
        "a": "Neha",
@@ -14262,7 +17763,8 @@
        "w1": "Neha",
        "w2": "Ananya",
        "lo": 79,
-       "hi": 102
+       "hi": 102,
+       "s2": 80
       },
       {
        "a": "Arjun",
@@ -14278,7 +17780,8 @@
        "w1": "Arjun",
        "w2": "Rahul",
        "lo": 84,
-       "hi": 96
+       "hi": 96,
+       "s2": 87
       },
       {
        "a": "Ananya",
@@ -14294,7 +17797,8 @@
        "w1": "Ananya",
        "w2": "Karthik",
        "lo": 78,
-       "hi": 99
+       "hi": 99,
+       "s2": 87
       },
       {
        "a": "Aarav",
@@ -14310,40 +17814,97 @@
        "w1": "Aarav",
        "w2": "Arjun",
        "lo": 87,
-       "hi": 94
+       "hi": 94,
+       "s2": 90
       }
      ]
     }
    ],
-   "text": "Four runners {r.a}, {r.b}, {r.c} and {r.d} finish a race in {r.t1}, {r.t2}, {r.t3} and {r.t4} seconds, in that order. (a) Who wins? (b) Who comes last? (c) By how many seconds does the winner beat the last runner? (d) Write the winning time in minutes and seconds. (e) Explain why the winner is the runner with the smallest time.",
-   "maxWords": 100,
-   "answer": "(a) {r.c0} ({r.lo} seconds). (b) {r.w0} ({r.hi} seconds). (c) {r.hi} − {r.lo} = {r.hi - r.lo} seconds. (d) {r.lo} seconds = 1 min {r.lo - 60} sec. (e) The smallest time means the runner reached the finish first.",
-   "steps": [
+   "stimulus": "Four runners {r.a}, {r.b}, {r.c} and {r.d} finish a race in {r.t1}, {r.t2}, {r.t3} and {r.t4} seconds, in that order. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(a) {r.c0}."
+     "text": "(a) Who wins?",
+     "responseFormat": "Choice or short text",
+     "options": {
+      "correct": "r.c0",
+      "wrong": [
+       {
+        "expr": "r.w0",
+        "mistake": "thinks the greatest time wins"
+       },
+       {
+        "expr": "r.w1",
+        "mistake": "does not compare all four times"
+       },
+       {
+        "expr": "r.w2",
+        "mistake": "does not compare all four times"
+       }
+      ]
+     },
+     "explanation": "The winner takes the least time: {r.c0}, {r.lo} seconds."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(b) {r.w0}."
+     "text": "(b) Who comes last?",
+     "responseFormat": "Choice or short text",
+     "options": {
+      "correct": "r.w0",
+      "wrong": [
+       {
+        "expr": "r.c0",
+        "mistake": "thinks the least time comes last"
+       },
+       {
+        "expr": "r.w1",
+        "mistake": "does not compare all four times"
+       },
+       {
+        "expr": "r.w2",
+        "mistake": "does not compare all four times"
+       }
+      ]
+     },
+     "explanation": "Last takes the most time: {r.w0}, {r.hi} seconds."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {r.hi - r.lo} seconds."
+     "text": "(c) By how many seconds does the winner beat the last runner?",
+     "answer": "r.hi - r.lo",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{r.hi} − {r.lo} = {r.hi - r.lo} {'second' if r.hi - r.lo == 1 else 'seconds'}.",
+     "unit": "s",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) 1 min {r.lo - 60} sec."
+     "text": "(d) Write the winning time in minutes and seconds. Enter minutes; seconds.",
+     "answer": [
+      "r.lo // 60",
+      "r.lo % 60"
+     ],
+     "responseFormat": "Mixed duration in two boxes",
+     "explanation": "{r.lo} seconds = {r.lo // 60} minute {r.lo % 60} seconds."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) Says the least time means finishing first (fastest)."
+     "text": "(e) How many seconds behind the winner is the runner who comes second?",
+     "answer": "r.s2 - r.lo",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "Second takes the next least time, {r.s2} seconds: {r.s2} − {r.lo} = {r.s2 - r.lo} {'second' if r.s2 - r.lo == 1 else 'seconds'}.",
+     "unit": "s",
+     "unitRule": "STATED"
     }
    ],
-   "hint": "Faster means less time.",
-   "explanation": "{r.c0} wins in {r.lo} seconds; {r.w0} is last in {r.hi} seconds; the gap is {r.hi - r.lo} seconds.",
+   "maxWords": 80,
    "misconception": "Treats the greatest time as the winner or compares seconds parts without converting the whole duration.",
-   "notes": "The same 60 races (78 to 104 seconds, all different).",
+   "notes": "The same 60 races (78 to 104 seconds, all different). Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH12-Q430",
     "CBSE-C5-CH12-Q448",
@@ -14355,11 +17916,10 @@
    "code": "C5-RS-L5-3",
    "chapter": 12,
    "skill": "C5-RS-S15",
-   "questionType": "Constructed Response",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "h",
@@ -14395,48 +17955,81 @@
      "name": "b",
      "choice": [
       20,
+      25,
       30
      ]
     },
     {
      "name": "k",
      "choice": [
-      5
+      5,
+      10
      ]
     }
    ],
    "require": [
-    "h + (a + n * p + b) // 60 >= 12"
+    "h + (a + n * p + b) // 60 >= 13"
    ],
-   "text": "A school starts at {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}. It has {n} periods of {p} minutes and one lunch break of {b} minutes. (a) How many minutes of teaching are there? (b) Write this in hours and minutes. (c) At what time does school end, in 24-hour time? (d) Write the end time in 12-hour time. (e) If every period is {k} minutes shorter, when does school end? Show your working.",
-   "maxWords": 100,
-   "answer": "(a) {n} × {p} = {n * p} minutes. (b) {(n * p) // 60} h {(n * p) % 60} min. (c) {'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60}. (d) {(h + (a + n * p + b) // 60 - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} p.m. (e) {'0' if (h + (a + n * (p - k) + b) // 60) < 10 else ''}{h + (a + n * (p - k) + b) // 60}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60}.",
-   "steps": [
+   "stimulus": "A school starts at {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}. It has {n} periods of {p} minutes and one lunch break of {b} minutes. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {n * p} minutes."
+     "text": "(a) How many minutes of teaching are there?",
+     "answer": "n * p",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{n} × {p} = {n * p} minutes.",
+     "unit": "min",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {(n * p) // 60} h {(n * p) % 60} min."
+     "text": "(b) Write the teaching time in hours and minutes. Enter hours; minutes.",
+     "answer": [
+      "(n * p) // 60",
+      "(n * p) % 60"
+     ],
+     "responseFormat": "Mixed duration in two boxes",
+     "explanation": "{n * p} minutes = {(n * p) // 60} hours {(n * p) % 60} minutes."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) Adds {n * p + b} minutes to the start: {'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60}."
+     "text": "(c) At what time does school end, in 24-hour time? Enter hours; minutes.",
+     "answer": [
+      "h + (a + n * p + b) // 60",
+      "(a + n * p + b) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "The day is {n * p} + {b} = {n * p + b} minutes after {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}: {'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {(h + (a + n * p + b) // 60 - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} p.m."
+     "text": "(d) Write the end time in 12-hour time (it is p.m.). Enter hours; minutes.",
+     "answer": [
+      "(h + (a + n * p + b) // 60 - 1) % 12 + 1",
+      "(a + n * p + b) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "{'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} is {(h + (a + n * p + b) // 60 - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} p.m."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {n} × {k} = {n * k} minutes earlier: {'0' if (h + (a + n * (p - k) + b) // 60) < 10 else ''}{h + (a + n * (p - k) + b) // 60}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60}."
+     "text": "(e) If every period is {k} minutes shorter, when does school end, in 24-hour time? Enter hours; minutes.",
+     "answer": [
+      "h + (a + n * (p - k) + b) // 60",
+      "(a + n * (p - k) + b) % 60"
+     ],
+     "responseFormat": "Clock time in two boxes (hours; minutes)",
+     "explanation": "{n} × {k} = {n * k} minutes earlier: {'0' if (h + (a + n * (p - k) + b) // 60) < 10 else ''}{h + (a + n * (p - k) + b) // 60}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60}."
     }
    ],
-   "hint": "Teaching time is the periods only. The end time adds the break too.",
-   "explanation": "Teaching {n * p} minutes; the day is {n * p + b} minutes, ending at {'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60}.",
+   "maxWords": 80,
    "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-   "notes": "Starts 07:30 to 08:50; 5 to 7 periods; ends after 12 noon, so the 12-hour time is p.m.",
+   "notes": "Starts 07:30 to 08:50; 5 to 7 periods of 35 or 40 minutes; lunch 20, 25 or 30 minutes; periods 5 or 10 minutes shorter in (e); ends after 1 p.m., so the 12-hour time differs from the 24-hour time. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH12-Q493",
     "CBSE-C5-CH12-Q463",

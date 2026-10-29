@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 11, Grandmother's Quilt (perimeter and area): 69 patterns, four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 11, Grandmother's Quilt (perimeter and area): 69 patterns, four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-GQ-S01-P1",
@@ -14004,11 +14004,10 @@
    "code": "C5-GQ-L3-1",
    "chapter": 11,
    "skill": "C5-GQ-S10",
-   "questionType": "Constructed Response",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "ln",
@@ -14045,26 +14044,41 @@
     "ln > br",
     "a > b"
    ],
-   "text": "An L-shaped flower bed is made from a rectangle {ln} m long and {br} m wide by cutting off a rectangle {a} m long and {b} m wide from one corner. Find the area of the flower bed and the length of fencing needed to go all the way around it. Show your working.",
-   "answer": "Area: {ln} × {br} − {a} × {b} = {ln * br} − {a * b} = {ln * br - a * b} m². Fencing: the six sides are {ln}, {br}, {ln - a}, {b}, {a} and {br - b} m, which add up to {2 * (ln + br)} m (the same as the whole rectangle).",
-   "steps": [
+   "stimulus": "An L-shaped flower bed is made from a rectangle {ln} m long and {br} m wide by cutting off a rectangle {a} m long and {b} m wide from one corner. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Finds the areas of the whole rectangle and the corner: {ln * br} m² and {a * b} m²."
+     "text": "(a) What is the area of the whole rectangle before the corner is cut off, in m²?",
+     "answer": "ln * br",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{ln} × {br} = {ln * br} m².",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Subtracts: {ln * br - a * b} m² (or splits the L-shape into two rectangles and adds)."
+     "text": "(b) What is the area of the flower bed, in m²?",
+     "answer": "ln * br - a * b",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{ln * br} − {a} × {b} = {ln * br} − {a * b} = {ln * br - a * b} m².",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Fencing: adds the six sides to get {2 * (ln + br)} m."
+     "text": "(c) How many metres of fencing go all the way around the flower bed?",
+     "answer": "2 * (ln + br)",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "The six sides are {ln}, {br}, {ln - a}, {b}, {a} and {br - b} m: {2 * (ln + br)} m, the same as the whole rectangle.",
+     "unit": "m",
+     "unitRule": "STATED"
     }
    ],
-   "hint": "For the area, take the corner away. For the fencing, list all six sides of the L-shape.",
-   "explanation": "Area {ln * br - a * b} m². The cut edges replace the parts of the sides that were removed, so the fencing is {2 * (ln + br)} m.",
    "misconception": "Adds overlapping regions twice or subtracts a cut-out length instead of its area.",
-   "notes": "Rectangles 8 to 20 m by 6 to 15 m with a corner of 2 to 6 m by 2 to 6 m cut away; the perimeter equals the whole rectangle's.",
+   "notes": "Rectangles 8 to 20 m by 6 to 15 m with a corner of 2 to 6 m by 2 to 6 m cut away; the perimeter equals the whole rectangle's. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH11-Q299",
     "CBSE-C5-CH11-Q329",
@@ -14075,11 +14089,10 @@
    "code": "C5-GQ-L3-2",
    "chapter": 11,
    "skill": "C5-GQ-S12",
-   "questionType": "Constructed Response",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "who",
@@ -14094,7 +14107,9 @@
        "b": 12,
        "c": 2,
        "d": 6,
-       "w": "2 × 6"
+       "w": "2 × 6",
+       "ok": "The 2 × 6 rectangle",
+       "no": "The 1 × 12 rectangle"
       },
       {
        "n": 12,
@@ -14102,7 +14117,9 @@
        "b": 12,
        "c": 3,
        "d": 4,
-       "w": "3 × 4"
+       "w": "3 × 4",
+       "ok": "The 3 × 4 rectangle",
+       "no": "The 1 × 12 rectangle"
       },
       {
        "n": 12,
@@ -14110,7 +14127,9 @@
        "b": 6,
        "c": 3,
        "d": 4,
-       "w": "3 × 4"
+       "w": "3 × 4",
+       "ok": "The 3 × 4 rectangle",
+       "no": "The 2 × 6 rectangle"
       },
       {
        "n": 14,
@@ -14118,7 +14137,9 @@
        "b": 14,
        "c": 2,
        "d": 7,
-       "w": "2 × 7"
+       "w": "2 × 7",
+       "ok": "The 2 × 7 rectangle",
+       "no": "The 1 × 14 rectangle"
       },
       {
        "n": 15,
@@ -14126,7 +14147,9 @@
        "b": 15,
        "c": 3,
        "d": 5,
-       "w": "3 × 5"
+       "w": "3 × 5",
+       "ok": "The 3 × 5 rectangle",
+       "no": "The 1 × 15 rectangle"
       },
       {
        "n": 16,
@@ -14134,7 +14157,9 @@
        "b": 16,
        "c": 2,
        "d": 8,
-       "w": "2 × 8"
+       "w": "2 × 8",
+       "ok": "The 2 × 8 rectangle",
+       "no": "The 1 × 16 rectangle"
       },
       {
        "n": 18,
@@ -14142,7 +14167,9 @@
        "b": 18,
        "c": 2,
        "d": 9,
-       "w": "2 × 9"
+       "w": "2 × 9",
+       "ok": "The 2 × 9 rectangle",
+       "no": "The 1 × 18 rectangle"
       },
       {
        "n": 18,
@@ -14150,7 +14177,9 @@
        "b": 18,
        "c": 3,
        "d": 6,
-       "w": "3 × 6"
+       "w": "3 × 6",
+       "ok": "The 3 × 6 rectangle",
+       "no": "The 1 × 18 rectangle"
       },
       {
        "n": 18,
@@ -14158,7 +14187,9 @@
        "b": 9,
        "c": 3,
        "d": 6,
-       "w": "3 × 6"
+       "w": "3 × 6",
+       "ok": "The 3 × 6 rectangle",
+       "no": "The 2 × 9 rectangle"
       },
       {
        "n": 20,
@@ -14166,7 +14197,9 @@
        "b": 20,
        "c": 2,
        "d": 10,
-       "w": "2 × 10"
+       "w": "2 × 10",
+       "ok": "The 2 × 10 rectangle",
+       "no": "The 1 × 20 rectangle"
       },
       {
        "n": 20,
@@ -14174,7 +14207,9 @@
        "b": 20,
        "c": 4,
        "d": 5,
-       "w": "4 × 5"
+       "w": "4 × 5",
+       "ok": "The 4 × 5 rectangle",
+       "no": "The 1 × 20 rectangle"
       },
       {
        "n": 20,
@@ -14182,7 +14217,9 @@
        "b": 10,
        "c": 4,
        "d": 5,
-       "w": "4 × 5"
+       "w": "4 × 5",
+       "ok": "The 4 × 5 rectangle",
+       "no": "The 2 × 10 rectangle"
       },
       {
        "n": 21,
@@ -14190,7 +14227,9 @@
        "b": 21,
        "c": 3,
        "d": 7,
-       "w": "3 × 7"
+       "w": "3 × 7",
+       "ok": "The 3 × 7 rectangle",
+       "no": "The 1 × 21 rectangle"
       },
       {
        "n": 22,
@@ -14198,7 +14237,9 @@
        "b": 22,
        "c": 2,
        "d": 11,
-       "w": "2 × 11"
+       "w": "2 × 11",
+       "ok": "The 2 × 11 rectangle",
+       "no": "The 1 × 22 rectangle"
       },
       {
        "n": 24,
@@ -14206,7 +14247,9 @@
        "b": 24,
        "c": 2,
        "d": 12,
-       "w": "2 × 12"
+       "w": "2 × 12",
+       "ok": "The 2 × 12 rectangle",
+       "no": "The 1 × 24 rectangle"
       },
       {
        "n": 24,
@@ -14214,7 +14257,9 @@
        "b": 24,
        "c": 3,
        "d": 8,
-       "w": "3 × 8"
+       "w": "3 × 8",
+       "ok": "The 3 × 8 rectangle",
+       "no": "The 1 × 24 rectangle"
       },
       {
        "n": 24,
@@ -14222,7 +14267,9 @@
        "b": 24,
        "c": 4,
        "d": 6,
-       "w": "4 × 6"
+       "w": "4 × 6",
+       "ok": "The 4 × 6 rectangle",
+       "no": "The 1 × 24 rectangle"
       },
       {
        "n": 24,
@@ -14230,7 +14277,9 @@
        "b": 12,
        "c": 3,
        "d": 8,
-       "w": "3 × 8"
+       "w": "3 × 8",
+       "ok": "The 3 × 8 rectangle",
+       "no": "The 2 × 12 rectangle"
       },
       {
        "n": 24,
@@ -14238,7 +14287,9 @@
        "b": 12,
        "c": 4,
        "d": 6,
-       "w": "4 × 6"
+       "w": "4 × 6",
+       "ok": "The 4 × 6 rectangle",
+       "no": "The 2 × 12 rectangle"
       },
       {
        "n": 24,
@@ -14246,7 +14297,9 @@
        "b": 8,
        "c": 4,
        "d": 6,
-       "w": "4 × 6"
+       "w": "4 × 6",
+       "ok": "The 4 × 6 rectangle",
+       "no": "The 3 × 8 rectangle"
       },
       {
        "n": 26,
@@ -14254,7 +14307,9 @@
        "b": 26,
        "c": 2,
        "d": 13,
-       "w": "2 × 13"
+       "w": "2 × 13",
+       "ok": "The 2 × 13 rectangle",
+       "no": "The 1 × 26 rectangle"
       },
       {
        "n": 27,
@@ -14262,7 +14317,9 @@
        "b": 27,
        "c": 3,
        "d": 9,
-       "w": "3 × 9"
+       "w": "3 × 9",
+       "ok": "The 3 × 9 rectangle",
+       "no": "The 1 × 27 rectangle"
       },
       {
        "n": 28,
@@ -14270,7 +14327,9 @@
        "b": 28,
        "c": 2,
        "d": 14,
-       "w": "2 × 14"
+       "w": "2 × 14",
+       "ok": "The 2 × 14 rectangle",
+       "no": "The 1 × 28 rectangle"
       },
       {
        "n": 28,
@@ -14278,7 +14337,9 @@
        "b": 28,
        "c": 4,
        "d": 7,
-       "w": "4 × 7"
+       "w": "4 × 7",
+       "ok": "The 4 × 7 rectangle",
+       "no": "The 1 × 28 rectangle"
       },
       {
        "n": 28,
@@ -14286,7 +14347,9 @@
        "b": 14,
        "c": 4,
        "d": 7,
-       "w": "4 × 7"
+       "w": "4 × 7",
+       "ok": "The 4 × 7 rectangle",
+       "no": "The 2 × 14 rectangle"
       },
       {
        "n": 30,
@@ -14294,7 +14357,9 @@
        "b": 30,
        "c": 2,
        "d": 15,
-       "w": "2 × 15"
+       "w": "2 × 15",
+       "ok": "The 2 × 15 rectangle",
+       "no": "The 1 × 30 rectangle"
       },
       {
        "n": 30,
@@ -14302,7 +14367,9 @@
        "b": 30,
        "c": 3,
        "d": 10,
-       "w": "3 × 10"
+       "w": "3 × 10",
+       "ok": "The 3 × 10 rectangle",
+       "no": "The 1 × 30 rectangle"
       },
       {
        "n": 30,
@@ -14310,7 +14377,9 @@
        "b": 30,
        "c": 5,
        "d": 6,
-       "w": "5 × 6"
+       "w": "5 × 6",
+       "ok": "The 5 × 6 rectangle",
+       "no": "The 1 × 30 rectangle"
       },
       {
        "n": 30,
@@ -14318,7 +14387,9 @@
        "b": 15,
        "c": 3,
        "d": 10,
-       "w": "3 × 10"
+       "w": "3 × 10",
+       "ok": "The 3 × 10 rectangle",
+       "no": "The 2 × 15 rectangle"
       },
       {
        "n": 30,
@@ -14326,7 +14397,9 @@
        "b": 15,
        "c": 5,
        "d": 6,
-       "w": "5 × 6"
+       "w": "5 × 6",
+       "ok": "The 5 × 6 rectangle",
+       "no": "The 2 × 15 rectangle"
       },
       {
        "n": 30,
@@ -14334,7 +14407,9 @@
        "b": 10,
        "c": 5,
        "d": 6,
-       "w": "5 × 6"
+       "w": "5 × 6",
+       "ok": "The 5 × 6 rectangle",
+       "no": "The 3 × 10 rectangle"
       },
       {
        "n": 32,
@@ -14342,7 +14417,9 @@
        "b": 32,
        "c": 2,
        "d": 16,
-       "w": "2 × 16"
+       "w": "2 × 16",
+       "ok": "The 2 × 16 rectangle",
+       "no": "The 1 × 32 rectangle"
       },
       {
        "n": 32,
@@ -14350,7 +14427,9 @@
        "b": 32,
        "c": 4,
        "d": 8,
-       "w": "4 × 8"
+       "w": "4 × 8",
+       "ok": "The 4 × 8 rectangle",
+       "no": "The 1 × 32 rectangle"
       },
       {
        "n": 32,
@@ -14358,7 +14437,9 @@
        "b": 16,
        "c": 4,
        "d": 8,
-       "w": "4 × 8"
+       "w": "4 × 8",
+       "ok": "The 4 × 8 rectangle",
+       "no": "The 2 × 16 rectangle"
       },
       {
        "n": 33,
@@ -14366,7 +14447,9 @@
        "b": 33,
        "c": 3,
        "d": 11,
-       "w": "3 × 11"
+       "w": "3 × 11",
+       "ok": "The 3 × 11 rectangle",
+       "no": "The 1 × 33 rectangle"
       },
       {
        "n": 34,
@@ -14374,7 +14457,9 @@
        "b": 34,
        "c": 2,
        "d": 17,
-       "w": "2 × 17"
+       "w": "2 × 17",
+       "ok": "The 2 × 17 rectangle",
+       "no": "The 1 × 34 rectangle"
       },
       {
        "n": 35,
@@ -14382,7 +14467,9 @@
        "b": 35,
        "c": 5,
        "d": 7,
-       "w": "5 × 7"
+       "w": "5 × 7",
+       "ok": "The 5 × 7 rectangle",
+       "no": "The 1 × 35 rectangle"
       },
       {
        "n": 36,
@@ -14390,7 +14477,9 @@
        "b": 36,
        "c": 2,
        "d": 18,
-       "w": "2 × 18"
+       "w": "2 × 18",
+       "ok": "The 2 × 18 rectangle",
+       "no": "The 1 × 36 rectangle"
       },
       {
        "n": 36,
@@ -14398,7 +14487,9 @@
        "b": 36,
        "c": 3,
        "d": 12,
-       "w": "3 × 12"
+       "w": "3 × 12",
+       "ok": "The 3 × 12 rectangle",
+       "no": "The 1 × 36 rectangle"
       },
       {
        "n": 36,
@@ -14406,7 +14497,9 @@
        "b": 36,
        "c": 4,
        "d": 9,
-       "w": "4 × 9"
+       "w": "4 × 9",
+       "ok": "The 4 × 9 rectangle",
+       "no": "The 1 × 36 rectangle"
       },
       {
        "n": 36,
@@ -14414,7 +14507,9 @@
        "b": 18,
        "c": 3,
        "d": 12,
-       "w": "3 × 12"
+       "w": "3 × 12",
+       "ok": "The 3 × 12 rectangle",
+       "no": "The 2 × 18 rectangle"
       },
       {
        "n": 36,
@@ -14422,7 +14517,9 @@
        "b": 18,
        "c": 4,
        "d": 9,
-       "w": "4 × 9"
+       "w": "4 × 9",
+       "ok": "The 4 × 9 rectangle",
+       "no": "The 2 × 18 rectangle"
       },
       {
        "n": 36,
@@ -14430,7 +14527,9 @@
        "b": 12,
        "c": 4,
        "d": 9,
-       "w": "4 × 9"
+       "w": "4 × 9",
+       "ok": "The 4 × 9 rectangle",
+       "no": "The 3 × 12 rectangle"
       },
       {
        "n": 38,
@@ -14438,7 +14537,9 @@
        "b": 38,
        "c": 2,
        "d": 19,
-       "w": "2 × 19"
+       "w": "2 × 19",
+       "ok": "The 2 × 19 rectangle",
+       "no": "The 1 × 38 rectangle"
       },
       {
        "n": 39,
@@ -14446,7 +14547,9 @@
        "b": 39,
        "c": 3,
        "d": 13,
-       "w": "3 × 13"
+       "w": "3 × 13",
+       "ok": "The 3 × 13 rectangle",
+       "no": "The 1 × 39 rectangle"
       },
       {
        "n": 40,
@@ -14454,7 +14557,9 @@
        "b": 40,
        "c": 2,
        "d": 20,
-       "w": "2 × 20"
+       "w": "2 × 20",
+       "ok": "The 2 × 20 rectangle",
+       "no": "The 1 × 40 rectangle"
       },
       {
        "n": 40,
@@ -14462,7 +14567,9 @@
        "b": 40,
        "c": 4,
        "d": 10,
-       "w": "4 × 10"
+       "w": "4 × 10",
+       "ok": "The 4 × 10 rectangle",
+       "no": "The 1 × 40 rectangle"
       },
       {
        "n": 40,
@@ -14470,7 +14577,9 @@
        "b": 40,
        "c": 5,
        "d": 8,
-       "w": "5 × 8"
+       "w": "5 × 8",
+       "ok": "The 5 × 8 rectangle",
+       "no": "The 1 × 40 rectangle"
       },
       {
        "n": 40,
@@ -14478,7 +14587,9 @@
        "b": 20,
        "c": 4,
        "d": 10,
-       "w": "4 × 10"
+       "w": "4 × 10",
+       "ok": "The 4 × 10 rectangle",
+       "no": "The 2 × 20 rectangle"
       },
       {
        "n": 40,
@@ -14486,7 +14597,9 @@
        "b": 20,
        "c": 5,
        "d": 8,
-       "w": "5 × 8"
+       "w": "5 × 8",
+       "ok": "The 5 × 8 rectangle",
+       "no": "The 2 × 20 rectangle"
       },
       {
        "n": 40,
@@ -14494,7 +14607,9 @@
        "b": 10,
        "c": 5,
        "d": 8,
-       "w": "5 × 8"
+       "w": "5 × 8",
+       "ok": "The 5 × 8 rectangle",
+       "no": "The 4 × 10 rectangle"
       },
       {
        "n": 42,
@@ -14502,7 +14617,9 @@
        "b": 42,
        "c": 2,
        "d": 21,
-       "w": "2 × 21"
+       "w": "2 × 21",
+       "ok": "The 2 × 21 rectangle",
+       "no": "The 1 × 42 rectangle"
       },
       {
        "n": 42,
@@ -14510,7 +14627,9 @@
        "b": 42,
        "c": 3,
        "d": 14,
-       "w": "3 × 14"
+       "w": "3 × 14",
+       "ok": "The 3 × 14 rectangle",
+       "no": "The 1 × 42 rectangle"
       },
       {
        "n": 42,
@@ -14518,7 +14637,9 @@
        "b": 42,
        "c": 6,
        "d": 7,
-       "w": "6 × 7"
+       "w": "6 × 7",
+       "ok": "The 6 × 7 rectangle",
+       "no": "The 1 × 42 rectangle"
       },
       {
        "n": 42,
@@ -14526,7 +14647,9 @@
        "b": 21,
        "c": 3,
        "d": 14,
-       "w": "3 × 14"
+       "w": "3 × 14",
+       "ok": "The 3 × 14 rectangle",
+       "no": "The 2 × 21 rectangle"
       },
       {
        "n": 42,
@@ -14534,7 +14657,9 @@
        "b": 21,
        "c": 6,
        "d": 7,
-       "w": "6 × 7"
+       "w": "6 × 7",
+       "ok": "The 6 × 7 rectangle",
+       "no": "The 2 × 21 rectangle"
       },
       {
        "n": 42,
@@ -14542,7 +14667,9 @@
        "b": 14,
        "c": 6,
        "d": 7,
-       "w": "6 × 7"
+       "w": "6 × 7",
+       "ok": "The 6 × 7 rectangle",
+       "no": "The 3 × 14 rectangle"
       },
       {
        "n": 44,
@@ -14550,7 +14677,9 @@
        "b": 44,
        "c": 2,
        "d": 22,
-       "w": "2 × 22"
+       "w": "2 × 22",
+       "ok": "The 2 × 22 rectangle",
+       "no": "The 1 × 44 rectangle"
       },
       {
        "n": 44,
@@ -14558,7 +14687,9 @@
        "b": 44,
        "c": 4,
        "d": 11,
-       "w": "4 × 11"
+       "w": "4 × 11",
+       "ok": "The 4 × 11 rectangle",
+       "no": "The 1 × 44 rectangle"
       },
       {
        "n": 44,
@@ -14566,7 +14697,9 @@
        "b": 22,
        "c": 4,
        "d": 11,
-       "w": "4 × 11"
+       "w": "4 × 11",
+       "ok": "The 4 × 11 rectangle",
+       "no": "The 2 × 22 rectangle"
       },
       {
        "n": 45,
@@ -14574,7 +14707,9 @@
        "b": 45,
        "c": 3,
        "d": 15,
-       "w": "3 × 15"
+       "w": "3 × 15",
+       "ok": "The 3 × 15 rectangle",
+       "no": "The 1 × 45 rectangle"
       },
       {
        "n": 45,
@@ -14582,7 +14717,9 @@
        "b": 45,
        "c": 5,
        "d": 9,
-       "w": "5 × 9"
+       "w": "5 × 9",
+       "ok": "The 5 × 9 rectangle",
+       "no": "The 1 × 45 rectangle"
       },
       {
        "n": 45,
@@ -14590,7 +14727,9 @@
        "b": 15,
        "c": 5,
        "d": 9,
-       "w": "5 × 9"
+       "w": "5 × 9",
+       "ok": "The 5 × 9 rectangle",
+       "no": "The 3 × 15 rectangle"
       },
       {
        "n": 46,
@@ -14598,7 +14737,9 @@
        "b": 46,
        "c": 2,
        "d": 23,
-       "w": "2 × 23"
+       "w": "2 × 23",
+       "ok": "The 2 × 23 rectangle",
+       "no": "The 1 × 46 rectangle"
       },
       {
        "n": 48,
@@ -14606,7 +14747,9 @@
        "b": 48,
        "c": 2,
        "d": 24,
-       "w": "2 × 24"
+       "w": "2 × 24",
+       "ok": "The 2 × 24 rectangle",
+       "no": "The 1 × 48 rectangle"
       },
       {
        "n": 48,
@@ -14614,7 +14757,9 @@
        "b": 48,
        "c": 3,
        "d": 16,
-       "w": "3 × 16"
+       "w": "3 × 16",
+       "ok": "The 3 × 16 rectangle",
+       "no": "The 1 × 48 rectangle"
       },
       {
        "n": 48,
@@ -14622,7 +14767,9 @@
        "b": 48,
        "c": 4,
        "d": 12,
-       "w": "4 × 12"
+       "w": "4 × 12",
+       "ok": "The 4 × 12 rectangle",
+       "no": "The 1 × 48 rectangle"
       },
       {
        "n": 48,
@@ -14630,7 +14777,9 @@
        "b": 48,
        "c": 6,
        "d": 8,
-       "w": "6 × 8"
+       "w": "6 × 8",
+       "ok": "The 6 × 8 rectangle",
+       "no": "The 1 × 48 rectangle"
       },
       {
        "n": 48,
@@ -14638,7 +14787,9 @@
        "b": 24,
        "c": 3,
        "d": 16,
-       "w": "3 × 16"
+       "w": "3 × 16",
+       "ok": "The 3 × 16 rectangle",
+       "no": "The 2 × 24 rectangle"
       },
       {
        "n": 48,
@@ -14646,7 +14797,9 @@
        "b": 24,
        "c": 4,
        "d": 12,
-       "w": "4 × 12"
+       "w": "4 × 12",
+       "ok": "The 4 × 12 rectangle",
+       "no": "The 2 × 24 rectangle"
       },
       {
        "n": 48,
@@ -14654,7 +14807,9 @@
        "b": 24,
        "c": 6,
        "d": 8,
-       "w": "6 × 8"
+       "w": "6 × 8",
+       "ok": "The 6 × 8 rectangle",
+       "no": "The 2 × 24 rectangle"
       },
       {
        "n": 48,
@@ -14662,7 +14817,9 @@
        "b": 16,
        "c": 4,
        "d": 12,
-       "w": "4 × 12"
+       "w": "4 × 12",
+       "ok": "The 4 × 12 rectangle",
+       "no": "The 3 × 16 rectangle"
       },
       {
        "n": 48,
@@ -14670,7 +14827,9 @@
        "b": 16,
        "c": 6,
        "d": 8,
-       "w": "6 × 8"
+       "w": "6 × 8",
+       "ok": "The 6 × 8 rectangle",
+       "no": "The 3 × 16 rectangle"
       },
       {
        "n": 48,
@@ -14678,7 +14837,9 @@
        "b": 12,
        "c": 6,
        "d": 8,
-       "w": "6 × 8"
+       "w": "6 × 8",
+       "ok": "The 6 × 8 rectangle",
+       "no": "The 4 × 12 rectangle"
       },
       {
        "n": 50,
@@ -14686,7 +14847,9 @@
        "b": 50,
        "c": 2,
        "d": 25,
-       "w": "2 × 25"
+       "w": "2 × 25",
+       "ok": "The 2 × 25 rectangle",
+       "no": "The 1 × 50 rectangle"
       },
       {
        "n": 50,
@@ -14694,7 +14857,9 @@
        "b": 50,
        "c": 5,
        "d": 10,
-       "w": "5 × 10"
+       "w": "5 × 10",
+       "ok": "The 5 × 10 rectangle",
+       "no": "The 1 × 50 rectangle"
       },
       {
        "n": 50,
@@ -14702,7 +14867,9 @@
        "b": 25,
        "c": 5,
        "d": 10,
-       "w": "5 × 10"
+       "w": "5 × 10",
+       "ok": "The 5 × 10 rectangle",
+       "no": "The 2 × 25 rectangle"
       },
       {
        "n": 51,
@@ -14710,7 +14877,9 @@
        "b": 51,
        "c": 3,
        "d": 17,
-       "w": "3 × 17"
+       "w": "3 × 17",
+       "ok": "The 3 × 17 rectangle",
+       "no": "The 1 × 51 rectangle"
       },
       {
        "n": 52,
@@ -14718,7 +14887,9 @@
        "b": 52,
        "c": 2,
        "d": 26,
-       "w": "2 × 26"
+       "w": "2 × 26",
+       "ok": "The 2 × 26 rectangle",
+       "no": "The 1 × 52 rectangle"
       },
       {
        "n": 52,
@@ -14726,7 +14897,9 @@
        "b": 52,
        "c": 4,
        "d": 13,
-       "w": "4 × 13"
+       "w": "4 × 13",
+       "ok": "The 4 × 13 rectangle",
+       "no": "The 1 × 52 rectangle"
       },
       {
        "n": 52,
@@ -14734,7 +14907,9 @@
        "b": 26,
        "c": 4,
        "d": 13,
-       "w": "4 × 13"
+       "w": "4 × 13",
+       "ok": "The 4 × 13 rectangle",
+       "no": "The 2 × 26 rectangle"
       },
       {
        "n": 54,
@@ -14742,7 +14917,9 @@
        "b": 54,
        "c": 2,
        "d": 27,
-       "w": "2 × 27"
+       "w": "2 × 27",
+       "ok": "The 2 × 27 rectangle",
+       "no": "The 1 × 54 rectangle"
       },
       {
        "n": 54,
@@ -14750,7 +14927,9 @@
        "b": 54,
        "c": 3,
        "d": 18,
-       "w": "3 × 18"
+       "w": "3 × 18",
+       "ok": "The 3 × 18 rectangle",
+       "no": "The 1 × 54 rectangle"
       },
       {
        "n": 54,
@@ -14758,7 +14937,9 @@
        "b": 54,
        "c": 6,
        "d": 9,
-       "w": "6 × 9"
+       "w": "6 × 9",
+       "ok": "The 6 × 9 rectangle",
+       "no": "The 1 × 54 rectangle"
       },
       {
        "n": 54,
@@ -14766,7 +14947,9 @@
        "b": 27,
        "c": 3,
        "d": 18,
-       "w": "3 × 18"
+       "w": "3 × 18",
+       "ok": "The 3 × 18 rectangle",
+       "no": "The 2 × 27 rectangle"
       },
       {
        "n": 54,
@@ -14774,7 +14957,9 @@
        "b": 27,
        "c": 6,
        "d": 9,
-       "w": "6 × 9"
+       "w": "6 × 9",
+       "ok": "The 6 × 9 rectangle",
+       "no": "The 2 × 27 rectangle"
       },
       {
        "n": 54,
@@ -14782,7 +14967,9 @@
        "b": 18,
        "c": 6,
        "d": 9,
-       "w": "6 × 9"
+       "w": "6 × 9",
+       "ok": "The 6 × 9 rectangle",
+       "no": "The 3 × 18 rectangle"
       },
       {
        "n": 55,
@@ -14790,7 +14977,9 @@
        "b": 55,
        "c": 5,
        "d": 11,
-       "w": "5 × 11"
+       "w": "5 × 11",
+       "ok": "The 5 × 11 rectangle",
+       "no": "The 1 × 55 rectangle"
       },
       {
        "n": 56,
@@ -14798,7 +14987,9 @@
        "b": 56,
        "c": 2,
        "d": 28,
-       "w": "2 × 28"
+       "w": "2 × 28",
+       "ok": "The 2 × 28 rectangle",
+       "no": "The 1 × 56 rectangle"
       },
       {
        "n": 56,
@@ -14806,7 +14997,9 @@
        "b": 56,
        "c": 4,
        "d": 14,
-       "w": "4 × 14"
+       "w": "4 × 14",
+       "ok": "The 4 × 14 rectangle",
+       "no": "The 1 × 56 rectangle"
       },
       {
        "n": 56,
@@ -14814,7 +15007,9 @@
        "b": 56,
        "c": 7,
        "d": 8,
-       "w": "7 × 8"
+       "w": "7 × 8",
+       "ok": "The 7 × 8 rectangle",
+       "no": "The 1 × 56 rectangle"
       },
       {
        "n": 56,
@@ -14822,7 +15017,9 @@
        "b": 28,
        "c": 4,
        "d": 14,
-       "w": "4 × 14"
+       "w": "4 × 14",
+       "ok": "The 4 × 14 rectangle",
+       "no": "The 2 × 28 rectangle"
       },
       {
        "n": 56,
@@ -14830,7 +15027,9 @@
        "b": 28,
        "c": 7,
        "d": 8,
-       "w": "7 × 8"
+       "w": "7 × 8",
+       "ok": "The 7 × 8 rectangle",
+       "no": "The 2 × 28 rectangle"
       },
       {
        "n": 56,
@@ -14838,7 +15037,9 @@
        "b": 14,
        "c": 7,
        "d": 8,
-       "w": "7 × 8"
+       "w": "7 × 8",
+       "ok": "The 7 × 8 rectangle",
+       "no": "The 4 × 14 rectangle"
       },
       {
        "n": 57,
@@ -14846,7 +15047,9 @@
        "b": 57,
        "c": 3,
        "d": 19,
-       "w": "3 × 19"
+       "w": "3 × 19",
+       "ok": "The 3 × 19 rectangle",
+       "no": "The 1 × 57 rectangle"
       },
       {
        "n": 58,
@@ -14854,7 +15057,9 @@
        "b": 58,
        "c": 2,
        "d": 29,
-       "w": "2 × 29"
+       "w": "2 × 29",
+       "ok": "The 2 × 29 rectangle",
+       "no": "The 1 × 58 rectangle"
       },
       {
        "n": 60,
@@ -14862,7 +15067,9 @@
        "b": 60,
        "c": 2,
        "d": 30,
-       "w": "2 × 30"
+       "w": "2 × 30",
+       "ok": "The 2 × 30 rectangle",
+       "no": "The 1 × 60 rectangle"
       },
       {
        "n": 60,
@@ -14870,7 +15077,9 @@
        "b": 60,
        "c": 3,
        "d": 20,
-       "w": "3 × 20"
+       "w": "3 × 20",
+       "ok": "The 3 × 20 rectangle",
+       "no": "The 1 × 60 rectangle"
       },
       {
        "n": 60,
@@ -14878,7 +15087,9 @@
        "b": 60,
        "c": 4,
        "d": 15,
-       "w": "4 × 15"
+       "w": "4 × 15",
+       "ok": "The 4 × 15 rectangle",
+       "no": "The 1 × 60 rectangle"
       },
       {
        "n": 60,
@@ -14886,7 +15097,9 @@
        "b": 60,
        "c": 5,
        "d": 12,
-       "w": "5 × 12"
+       "w": "5 × 12",
+       "ok": "The 5 × 12 rectangle",
+       "no": "The 1 × 60 rectangle"
       },
       {
        "n": 60,
@@ -14894,7 +15107,9 @@
        "b": 60,
        "c": 6,
        "d": 10,
-       "w": "6 × 10"
+       "w": "6 × 10",
+       "ok": "The 6 × 10 rectangle",
+       "no": "The 1 × 60 rectangle"
       },
       {
        "n": 60,
@@ -14902,7 +15117,9 @@
        "b": 30,
        "c": 3,
        "d": 20,
-       "w": "3 × 20"
+       "w": "3 × 20",
+       "ok": "The 3 × 20 rectangle",
+       "no": "The 2 × 30 rectangle"
       },
       {
        "n": 60,
@@ -14910,7 +15127,9 @@
        "b": 30,
        "c": 4,
        "d": 15,
-       "w": "4 × 15"
+       "w": "4 × 15",
+       "ok": "The 4 × 15 rectangle",
+       "no": "The 2 × 30 rectangle"
       },
       {
        "n": 60,
@@ -14918,7 +15137,9 @@
        "b": 30,
        "c": 5,
        "d": 12,
-       "w": "5 × 12"
+       "w": "5 × 12",
+       "ok": "The 5 × 12 rectangle",
+       "no": "The 2 × 30 rectangle"
       },
       {
        "n": 60,
@@ -14926,7 +15147,9 @@
        "b": 30,
        "c": 6,
        "d": 10,
-       "w": "6 × 10"
+       "w": "6 × 10",
+       "ok": "The 6 × 10 rectangle",
+       "no": "The 2 × 30 rectangle"
       },
       {
        "n": 60,
@@ -14934,7 +15157,9 @@
        "b": 20,
        "c": 4,
        "d": 15,
-       "w": "4 × 15"
+       "w": "4 × 15",
+       "ok": "The 4 × 15 rectangle",
+       "no": "The 3 × 20 rectangle"
       },
       {
        "n": 60,
@@ -14942,7 +15167,9 @@
        "b": 20,
        "c": 5,
        "d": 12,
-       "w": "5 × 12"
+       "w": "5 × 12",
+       "ok": "The 5 × 12 rectangle",
+       "no": "The 3 × 20 rectangle"
       },
       {
        "n": 60,
@@ -14950,7 +15177,9 @@
        "b": 20,
        "c": 6,
        "d": 10,
-       "w": "6 × 10"
+       "w": "6 × 10",
+       "ok": "The 6 × 10 rectangle",
+       "no": "The 3 × 20 rectangle"
       },
       {
        "n": 60,
@@ -14958,7 +15187,9 @@
        "b": 15,
        "c": 5,
        "d": 12,
-       "w": "5 × 12"
+       "w": "5 × 12",
+       "ok": "The 5 × 12 rectangle",
+       "no": "The 4 × 15 rectangle"
       },
       {
        "n": 60,
@@ -14966,7 +15197,9 @@
        "b": 15,
        "c": 6,
        "d": 10,
-       "w": "6 × 10"
+       "w": "6 × 10",
+       "ok": "The 6 × 10 rectangle",
+       "no": "The 4 × 15 rectangle"
       },
       {
        "n": 60,
@@ -14974,7 +15207,9 @@
        "b": 12,
        "c": 6,
        "d": 10,
-       "w": "6 × 10"
+       "w": "6 × 10",
+       "ok": "The 6 × 10 rectangle",
+       "no": "The 5 × 12 rectangle"
       },
       {
        "n": 62,
@@ -14982,7 +15217,9 @@
        "b": 62,
        "c": 2,
        "d": 31,
-       "w": "2 × 31"
+       "w": "2 × 31",
+       "ok": "The 2 × 31 rectangle",
+       "no": "The 1 × 62 rectangle"
       },
       {
        "n": 63,
@@ -14990,7 +15227,9 @@
        "b": 63,
        "c": 3,
        "d": 21,
-       "w": "3 × 21"
+       "w": "3 × 21",
+       "ok": "The 3 × 21 rectangle",
+       "no": "The 1 × 63 rectangle"
       },
       {
        "n": 63,
@@ -14998,7 +15237,9 @@
        "b": 63,
        "c": 7,
        "d": 9,
-       "w": "7 × 9"
+       "w": "7 × 9",
+       "ok": "The 7 × 9 rectangle",
+       "no": "The 1 × 63 rectangle"
       },
       {
        "n": 63,
@@ -15006,7 +15247,9 @@
        "b": 21,
        "c": 7,
        "d": 9,
-       "w": "7 × 9"
+       "w": "7 × 9",
+       "ok": "The 7 × 9 rectangle",
+       "no": "The 3 × 21 rectangle"
       },
       {
        "n": 64,
@@ -15014,7 +15257,9 @@
        "b": 64,
        "c": 2,
        "d": 32,
-       "w": "2 × 32"
+       "w": "2 × 32",
+       "ok": "The 2 × 32 rectangle",
+       "no": "The 1 × 64 rectangle"
       },
       {
        "n": 64,
@@ -15022,7 +15267,9 @@
        "b": 64,
        "c": 4,
        "d": 16,
-       "w": "4 × 16"
+       "w": "4 × 16",
+       "ok": "The 4 × 16 rectangle",
+       "no": "The 1 × 64 rectangle"
       },
       {
        "n": 64,
@@ -15030,7 +15277,9 @@
        "b": 32,
        "c": 4,
        "d": 16,
-       "w": "4 × 16"
+       "w": "4 × 16",
+       "ok": "The 4 × 16 rectangle",
+       "no": "The 2 × 32 rectangle"
       },
       {
        "n": 65,
@@ -15038,7 +15287,9 @@
        "b": 65,
        "c": 5,
        "d": 13,
-       "w": "5 × 13"
+       "w": "5 × 13",
+       "ok": "The 5 × 13 rectangle",
+       "no": "The 1 × 65 rectangle"
       },
       {
        "n": 66,
@@ -15046,7 +15297,9 @@
        "b": 66,
        "c": 2,
        "d": 33,
-       "w": "2 × 33"
+       "w": "2 × 33",
+       "ok": "The 2 × 33 rectangle",
+       "no": "The 1 × 66 rectangle"
       },
       {
        "n": 66,
@@ -15054,7 +15307,9 @@
        "b": 66,
        "c": 3,
        "d": 22,
-       "w": "3 × 22"
+       "w": "3 × 22",
+       "ok": "The 3 × 22 rectangle",
+       "no": "The 1 × 66 rectangle"
       },
       {
        "n": 66,
@@ -15062,7 +15317,9 @@
        "b": 66,
        "c": 6,
        "d": 11,
-       "w": "6 × 11"
+       "w": "6 × 11",
+       "ok": "The 6 × 11 rectangle",
+       "no": "The 1 × 66 rectangle"
       },
       {
        "n": 66,
@@ -15070,7 +15327,9 @@
        "b": 33,
        "c": 3,
        "d": 22,
-       "w": "3 × 22"
+       "w": "3 × 22",
+       "ok": "The 3 × 22 rectangle",
+       "no": "The 2 × 33 rectangle"
       },
       {
        "n": 66,
@@ -15078,7 +15337,9 @@
        "b": 33,
        "c": 6,
        "d": 11,
-       "w": "6 × 11"
+       "w": "6 × 11",
+       "ok": "The 6 × 11 rectangle",
+       "no": "The 2 × 33 rectangle"
       },
       {
        "n": 66,
@@ -15086,7 +15347,9 @@
        "b": 22,
        "c": 6,
        "d": 11,
-       "w": "6 × 11"
+       "w": "6 × 11",
+       "ok": "The 6 × 11 rectangle",
+       "no": "The 3 × 22 rectangle"
       },
       {
        "n": 68,
@@ -15094,7 +15357,9 @@
        "b": 68,
        "c": 2,
        "d": 34,
-       "w": "2 × 34"
+       "w": "2 × 34",
+       "ok": "The 2 × 34 rectangle",
+       "no": "The 1 × 68 rectangle"
       },
       {
        "n": 68,
@@ -15102,7 +15367,9 @@
        "b": 68,
        "c": 4,
        "d": 17,
-       "w": "4 × 17"
+       "w": "4 × 17",
+       "ok": "The 4 × 17 rectangle",
+       "no": "The 1 × 68 rectangle"
       },
       {
        "n": 68,
@@ -15110,7 +15377,9 @@
        "b": 34,
        "c": 4,
        "d": 17,
-       "w": "4 × 17"
+       "w": "4 × 17",
+       "ok": "The 4 × 17 rectangle",
+       "no": "The 2 × 34 rectangle"
       },
       {
        "n": 69,
@@ -15118,7 +15387,9 @@
        "b": 69,
        "c": 3,
        "d": 23,
-       "w": "3 × 23"
+       "w": "3 × 23",
+       "ok": "The 3 × 23 rectangle",
+       "no": "The 1 × 69 rectangle"
       },
       {
        "n": 70,
@@ -15126,7 +15397,9 @@
        "b": 70,
        "c": 2,
        "d": 35,
-       "w": "2 × 35"
+       "w": "2 × 35",
+       "ok": "The 2 × 35 rectangle",
+       "no": "The 1 × 70 rectangle"
       },
       {
        "n": 70,
@@ -15134,7 +15407,9 @@
        "b": 70,
        "c": 5,
        "d": 14,
-       "w": "5 × 14"
+       "w": "5 × 14",
+       "ok": "The 5 × 14 rectangle",
+       "no": "The 1 × 70 rectangle"
       },
       {
        "n": 70,
@@ -15142,7 +15417,9 @@
        "b": 70,
        "c": 7,
        "d": 10,
-       "w": "7 × 10"
+       "w": "7 × 10",
+       "ok": "The 7 × 10 rectangle",
+       "no": "The 1 × 70 rectangle"
       },
       {
        "n": 70,
@@ -15150,7 +15427,9 @@
        "b": 35,
        "c": 5,
        "d": 14,
-       "w": "5 × 14"
+       "w": "5 × 14",
+       "ok": "The 5 × 14 rectangle",
+       "no": "The 2 × 35 rectangle"
       },
       {
        "n": 70,
@@ -15158,7 +15437,9 @@
        "b": 35,
        "c": 7,
        "d": 10,
-       "w": "7 × 10"
+       "w": "7 × 10",
+       "ok": "The 7 × 10 rectangle",
+       "no": "The 2 × 35 rectangle"
       },
       {
        "n": 70,
@@ -15166,7 +15447,9 @@
        "b": 14,
        "c": 7,
        "d": 10,
-       "w": "7 × 10"
+       "w": "7 × 10",
+       "ok": "The 7 × 10 rectangle",
+       "no": "The 5 × 14 rectangle"
       },
       {
        "n": 72,
@@ -15174,7 +15457,9 @@
        "b": 72,
        "c": 2,
        "d": 36,
-       "w": "2 × 36"
+       "w": "2 × 36",
+       "ok": "The 2 × 36 rectangle",
+       "no": "The 1 × 72 rectangle"
       },
       {
        "n": 72,
@@ -15182,7 +15467,9 @@
        "b": 72,
        "c": 3,
        "d": 24,
-       "w": "3 × 24"
+       "w": "3 × 24",
+       "ok": "The 3 × 24 rectangle",
+       "no": "The 1 × 72 rectangle"
       },
       {
        "n": 72,
@@ -15190,7 +15477,9 @@
        "b": 72,
        "c": 4,
        "d": 18,
-       "w": "4 × 18"
+       "w": "4 × 18",
+       "ok": "The 4 × 18 rectangle",
+       "no": "The 1 × 72 rectangle"
       },
       {
        "n": 72,
@@ -15198,7 +15487,9 @@
        "b": 72,
        "c": 6,
        "d": 12,
-       "w": "6 × 12"
+       "w": "6 × 12",
+       "ok": "The 6 × 12 rectangle",
+       "no": "The 1 × 72 rectangle"
       },
       {
        "n": 72,
@@ -15206,7 +15497,9 @@
        "b": 72,
        "c": 8,
        "d": 9,
-       "w": "8 × 9"
+       "w": "8 × 9",
+       "ok": "The 8 × 9 rectangle",
+       "no": "The 1 × 72 rectangle"
       },
       {
        "n": 72,
@@ -15214,7 +15507,9 @@
        "b": 36,
        "c": 3,
        "d": 24,
-       "w": "3 × 24"
+       "w": "3 × 24",
+       "ok": "The 3 × 24 rectangle",
+       "no": "The 2 × 36 rectangle"
       },
       {
        "n": 72,
@@ -15222,7 +15517,9 @@
        "b": 36,
        "c": 4,
        "d": 18,
-       "w": "4 × 18"
+       "w": "4 × 18",
+       "ok": "The 4 × 18 rectangle",
+       "no": "The 2 × 36 rectangle"
       },
       {
        "n": 72,
@@ -15230,7 +15527,9 @@
        "b": 36,
        "c": 6,
        "d": 12,
-       "w": "6 × 12"
+       "w": "6 × 12",
+       "ok": "The 6 × 12 rectangle",
+       "no": "The 2 × 36 rectangle"
       },
       {
        "n": 72,
@@ -15238,7 +15537,9 @@
        "b": 36,
        "c": 8,
        "d": 9,
-       "w": "8 × 9"
+       "w": "8 × 9",
+       "ok": "The 8 × 9 rectangle",
+       "no": "The 2 × 36 rectangle"
       },
       {
        "n": 72,
@@ -15246,7 +15547,9 @@
        "b": 24,
        "c": 4,
        "d": 18,
-       "w": "4 × 18"
+       "w": "4 × 18",
+       "ok": "The 4 × 18 rectangle",
+       "no": "The 3 × 24 rectangle"
       },
       {
        "n": 72,
@@ -15254,7 +15557,9 @@
        "b": 24,
        "c": 6,
        "d": 12,
-       "w": "6 × 12"
+       "w": "6 × 12",
+       "ok": "The 6 × 12 rectangle",
+       "no": "The 3 × 24 rectangle"
       },
       {
        "n": 72,
@@ -15262,7 +15567,9 @@
        "b": 24,
        "c": 8,
        "d": 9,
-       "w": "8 × 9"
+       "w": "8 × 9",
+       "ok": "The 8 × 9 rectangle",
+       "no": "The 3 × 24 rectangle"
       },
       {
        "n": 72,
@@ -15270,7 +15577,9 @@
        "b": 18,
        "c": 6,
        "d": 12,
-       "w": "6 × 12"
+       "w": "6 × 12",
+       "ok": "The 6 × 12 rectangle",
+       "no": "The 4 × 18 rectangle"
       },
       {
        "n": 72,
@@ -15278,7 +15587,9 @@
        "b": 18,
        "c": 8,
        "d": 9,
-       "w": "8 × 9"
+       "w": "8 × 9",
+       "ok": "The 8 × 9 rectangle",
+       "no": "The 4 × 18 rectangle"
       },
       {
        "n": 72,
@@ -15286,7 +15597,9 @@
        "b": 12,
        "c": 8,
        "d": 9,
-       "w": "8 × 9"
+       "w": "8 × 9",
+       "ok": "The 8 × 9 rectangle",
+       "no": "The 6 × 12 rectangle"
       },
       {
        "n": 74,
@@ -15294,7 +15607,9 @@
        "b": 74,
        "c": 2,
        "d": 37,
-       "w": "2 × 37"
+       "w": "2 × 37",
+       "ok": "The 2 × 37 rectangle",
+       "no": "The 1 × 74 rectangle"
       },
       {
        "n": 75,
@@ -15302,7 +15617,9 @@
        "b": 75,
        "c": 3,
        "d": 25,
-       "w": "3 × 25"
+       "w": "3 × 25",
+       "ok": "The 3 × 25 rectangle",
+       "no": "The 1 × 75 rectangle"
       },
       {
        "n": 75,
@@ -15310,7 +15627,9 @@
        "b": 75,
        "c": 5,
        "d": 15,
-       "w": "5 × 15"
+       "w": "5 × 15",
+       "ok": "The 5 × 15 rectangle",
+       "no": "The 1 × 75 rectangle"
       },
       {
        "n": 75,
@@ -15318,7 +15637,9 @@
        "b": 25,
        "c": 5,
        "d": 15,
-       "w": "5 × 15"
+       "w": "5 × 15",
+       "ok": "The 5 × 15 rectangle",
+       "no": "The 3 × 25 rectangle"
       },
       {
        "n": 76,
@@ -15326,7 +15647,9 @@
        "b": 76,
        "c": 2,
        "d": 38,
-       "w": "2 × 38"
+       "w": "2 × 38",
+       "ok": "The 2 × 38 rectangle",
+       "no": "The 1 × 76 rectangle"
       },
       {
        "n": 76,
@@ -15334,7 +15657,9 @@
        "b": 76,
        "c": 4,
        "d": 19,
-       "w": "4 × 19"
+       "w": "4 × 19",
+       "ok": "The 4 × 19 rectangle",
+       "no": "The 1 × 76 rectangle"
       },
       {
        "n": 76,
@@ -15342,7 +15667,9 @@
        "b": 38,
        "c": 4,
        "d": 19,
-       "w": "4 × 19"
+       "w": "4 × 19",
+       "ok": "The 4 × 19 rectangle",
+       "no": "The 2 × 38 rectangle"
       },
       {
        "n": 77,
@@ -15350,7 +15677,9 @@
        "b": 77,
        "c": 7,
        "d": 11,
-       "w": "7 × 11"
+       "w": "7 × 11",
+       "ok": "The 7 × 11 rectangle",
+       "no": "The 1 × 77 rectangle"
       },
       {
        "n": 78,
@@ -15358,7 +15687,9 @@
        "b": 78,
        "c": 2,
        "d": 39,
-       "w": "2 × 39"
+       "w": "2 × 39",
+       "ok": "The 2 × 39 rectangle",
+       "no": "The 1 × 78 rectangle"
       },
       {
        "n": 78,
@@ -15366,7 +15697,9 @@
        "b": 78,
        "c": 3,
        "d": 26,
-       "w": "3 × 26"
+       "w": "3 × 26",
+       "ok": "The 3 × 26 rectangle",
+       "no": "The 1 × 78 rectangle"
       },
       {
        "n": 78,
@@ -15374,7 +15707,9 @@
        "b": 78,
        "c": 6,
        "d": 13,
-       "w": "6 × 13"
+       "w": "6 × 13",
+       "ok": "The 6 × 13 rectangle",
+       "no": "The 1 × 78 rectangle"
       },
       {
        "n": 78,
@@ -15382,7 +15717,9 @@
        "b": 39,
        "c": 3,
        "d": 26,
-       "w": "3 × 26"
+       "w": "3 × 26",
+       "ok": "The 3 × 26 rectangle",
+       "no": "The 2 × 39 rectangle"
       },
       {
        "n": 78,
@@ -15390,7 +15727,9 @@
        "b": 39,
        "c": 6,
        "d": 13,
-       "w": "6 × 13"
+       "w": "6 × 13",
+       "ok": "The 6 × 13 rectangle",
+       "no": "The 2 × 39 rectangle"
       },
       {
        "n": 78,
@@ -15398,7 +15737,9 @@
        "b": 26,
        "c": 6,
        "d": 13,
-       "w": "6 × 13"
+       "w": "6 × 13",
+       "ok": "The 6 × 13 rectangle",
+       "no": "The 3 × 26 rectangle"
       },
       {
        "n": 80,
@@ -15406,7 +15747,9 @@
        "b": 80,
        "c": 2,
        "d": 40,
-       "w": "2 × 40"
+       "w": "2 × 40",
+       "ok": "The 2 × 40 rectangle",
+       "no": "The 1 × 80 rectangle"
       },
       {
        "n": 80,
@@ -15414,7 +15757,9 @@
        "b": 80,
        "c": 4,
        "d": 20,
-       "w": "4 × 20"
+       "w": "4 × 20",
+       "ok": "The 4 × 20 rectangle",
+       "no": "The 1 × 80 rectangle"
       },
       {
        "n": 80,
@@ -15422,7 +15767,9 @@
        "b": 80,
        "c": 5,
        "d": 16,
-       "w": "5 × 16"
+       "w": "5 × 16",
+       "ok": "The 5 × 16 rectangle",
+       "no": "The 1 × 80 rectangle"
       },
       {
        "n": 80,
@@ -15430,7 +15777,9 @@
        "b": 80,
        "c": 8,
        "d": 10,
-       "w": "8 × 10"
+       "w": "8 × 10",
+       "ok": "The 8 × 10 rectangle",
+       "no": "The 1 × 80 rectangle"
       },
       {
        "n": 80,
@@ -15438,7 +15787,9 @@
        "b": 40,
        "c": 4,
        "d": 20,
-       "w": "4 × 20"
+       "w": "4 × 20",
+       "ok": "The 4 × 20 rectangle",
+       "no": "The 2 × 40 rectangle"
       },
       {
        "n": 80,
@@ -15446,7 +15797,9 @@
        "b": 40,
        "c": 5,
        "d": 16,
-       "w": "5 × 16"
+       "w": "5 × 16",
+       "ok": "The 5 × 16 rectangle",
+       "no": "The 2 × 40 rectangle"
       },
       {
        "n": 80,
@@ -15454,7 +15807,9 @@
        "b": 40,
        "c": 8,
        "d": 10,
-       "w": "8 × 10"
+       "w": "8 × 10",
+       "ok": "The 8 × 10 rectangle",
+       "no": "The 2 × 40 rectangle"
       },
       {
        "n": 80,
@@ -15462,7 +15817,9 @@
        "b": 20,
        "c": 5,
        "d": 16,
-       "w": "5 × 16"
+       "w": "5 × 16",
+       "ok": "The 5 × 16 rectangle",
+       "no": "The 4 × 20 rectangle"
       },
       {
        "n": 80,
@@ -15470,7 +15827,9 @@
        "b": 20,
        "c": 8,
        "d": 10,
-       "w": "8 × 10"
+       "w": "8 × 10",
+       "ok": "The 8 × 10 rectangle",
+       "no": "The 4 × 20 rectangle"
       },
       {
        "n": 80,
@@ -15478,7 +15837,9 @@
        "b": 16,
        "c": 8,
        "d": 10,
-       "w": "8 × 10"
+       "w": "8 × 10",
+       "ok": "The 8 × 10 rectangle",
+       "no": "The 5 × 16 rectangle"
       },
       {
        "n": 81,
@@ -15486,7 +15847,9 @@
        "b": 81,
        "c": 3,
        "d": 27,
-       "w": "3 × 27"
+       "w": "3 × 27",
+       "ok": "The 3 × 27 rectangle",
+       "no": "The 1 × 81 rectangle"
       },
       {
        "n": 82,
@@ -15494,7 +15857,9 @@
        "b": 82,
        "c": 2,
        "d": 41,
-       "w": "2 × 41"
+       "w": "2 × 41",
+       "ok": "The 2 × 41 rectangle",
+       "no": "The 1 × 82 rectangle"
       },
       {
        "n": 84,
@@ -15502,7 +15867,9 @@
        "b": 84,
        "c": 2,
        "d": 42,
-       "w": "2 × 42"
+       "w": "2 × 42",
+       "ok": "The 2 × 42 rectangle",
+       "no": "The 1 × 84 rectangle"
       },
       {
        "n": 84,
@@ -15510,7 +15877,9 @@
        "b": 84,
        "c": 3,
        "d": 28,
-       "w": "3 × 28"
+       "w": "3 × 28",
+       "ok": "The 3 × 28 rectangle",
+       "no": "The 1 × 84 rectangle"
       },
       {
        "n": 84,
@@ -15518,7 +15887,9 @@
        "b": 84,
        "c": 4,
        "d": 21,
-       "w": "4 × 21"
+       "w": "4 × 21",
+       "ok": "The 4 × 21 rectangle",
+       "no": "The 1 × 84 rectangle"
       },
       {
        "n": 84,
@@ -15526,7 +15897,9 @@
        "b": 84,
        "c": 6,
        "d": 14,
-       "w": "6 × 14"
+       "w": "6 × 14",
+       "ok": "The 6 × 14 rectangle",
+       "no": "The 1 × 84 rectangle"
       },
       {
        "n": 84,
@@ -15534,7 +15907,9 @@
        "b": 84,
        "c": 7,
        "d": 12,
-       "w": "7 × 12"
+       "w": "7 × 12",
+       "ok": "The 7 × 12 rectangle",
+       "no": "The 1 × 84 rectangle"
       },
       {
        "n": 84,
@@ -15542,7 +15917,9 @@
        "b": 42,
        "c": 3,
        "d": 28,
-       "w": "3 × 28"
+       "w": "3 × 28",
+       "ok": "The 3 × 28 rectangle",
+       "no": "The 2 × 42 rectangle"
       },
       {
        "n": 84,
@@ -15550,7 +15927,9 @@
        "b": 42,
        "c": 4,
        "d": 21,
-       "w": "4 × 21"
+       "w": "4 × 21",
+       "ok": "The 4 × 21 rectangle",
+       "no": "The 2 × 42 rectangle"
       },
       {
        "n": 84,
@@ -15558,7 +15937,9 @@
        "b": 42,
        "c": 6,
        "d": 14,
-       "w": "6 × 14"
+       "w": "6 × 14",
+       "ok": "The 6 × 14 rectangle",
+       "no": "The 2 × 42 rectangle"
       },
       {
        "n": 84,
@@ -15566,7 +15947,9 @@
        "b": 42,
        "c": 7,
        "d": 12,
-       "w": "7 × 12"
+       "w": "7 × 12",
+       "ok": "The 7 × 12 rectangle",
+       "no": "The 2 × 42 rectangle"
       },
       {
        "n": 84,
@@ -15574,7 +15957,9 @@
        "b": 28,
        "c": 4,
        "d": 21,
-       "w": "4 × 21"
+       "w": "4 × 21",
+       "ok": "The 4 × 21 rectangle",
+       "no": "The 3 × 28 rectangle"
       },
       {
        "n": 84,
@@ -15582,7 +15967,9 @@
        "b": 28,
        "c": 6,
        "d": 14,
-       "w": "6 × 14"
+       "w": "6 × 14",
+       "ok": "The 6 × 14 rectangle",
+       "no": "The 3 × 28 rectangle"
       },
       {
        "n": 84,
@@ -15590,7 +15977,9 @@
        "b": 28,
        "c": 7,
        "d": 12,
-       "w": "7 × 12"
+       "w": "7 × 12",
+       "ok": "The 7 × 12 rectangle",
+       "no": "The 3 × 28 rectangle"
       },
       {
        "n": 84,
@@ -15598,7 +15987,9 @@
        "b": 21,
        "c": 6,
        "d": 14,
-       "w": "6 × 14"
+       "w": "6 × 14",
+       "ok": "The 6 × 14 rectangle",
+       "no": "The 4 × 21 rectangle"
       },
       {
        "n": 84,
@@ -15606,7 +15997,9 @@
        "b": 21,
        "c": 7,
        "d": 12,
-       "w": "7 × 12"
+       "w": "7 × 12",
+       "ok": "The 7 × 12 rectangle",
+       "no": "The 4 × 21 rectangle"
       },
       {
        "n": 84,
@@ -15614,7 +16007,9 @@
        "b": 14,
        "c": 7,
        "d": 12,
-       "w": "7 × 12"
+       "w": "7 × 12",
+       "ok": "The 7 × 12 rectangle",
+       "no": "The 6 × 14 rectangle"
       },
       {
        "n": 85,
@@ -15622,7 +16017,9 @@
        "b": 85,
        "c": 5,
        "d": 17,
-       "w": "5 × 17"
+       "w": "5 × 17",
+       "ok": "The 5 × 17 rectangle",
+       "no": "The 1 × 85 rectangle"
       },
       {
        "n": 86,
@@ -15630,7 +16027,9 @@
        "b": 86,
        "c": 2,
        "d": 43,
-       "w": "2 × 43"
+       "w": "2 × 43",
+       "ok": "The 2 × 43 rectangle",
+       "no": "The 1 × 86 rectangle"
       },
       {
        "n": 87,
@@ -15638,7 +16037,9 @@
        "b": 87,
        "c": 3,
        "d": 29,
-       "w": "3 × 29"
+       "w": "3 × 29",
+       "ok": "The 3 × 29 rectangle",
+       "no": "The 1 × 87 rectangle"
       },
       {
        "n": 88,
@@ -15646,7 +16047,9 @@
        "b": 88,
        "c": 2,
        "d": 44,
-       "w": "2 × 44"
+       "w": "2 × 44",
+       "ok": "The 2 × 44 rectangle",
+       "no": "The 1 × 88 rectangle"
       },
       {
        "n": 88,
@@ -15654,7 +16057,9 @@
        "b": 88,
        "c": 4,
        "d": 22,
-       "w": "4 × 22"
+       "w": "4 × 22",
+       "ok": "The 4 × 22 rectangle",
+       "no": "The 1 × 88 rectangle"
       },
       {
        "n": 88,
@@ -15662,7 +16067,9 @@
        "b": 88,
        "c": 8,
        "d": 11,
-       "w": "8 × 11"
+       "w": "8 × 11",
+       "ok": "The 8 × 11 rectangle",
+       "no": "The 1 × 88 rectangle"
       },
       {
        "n": 88,
@@ -15670,7 +16077,9 @@
        "b": 44,
        "c": 4,
        "d": 22,
-       "w": "4 × 22"
+       "w": "4 × 22",
+       "ok": "The 4 × 22 rectangle",
+       "no": "The 2 × 44 rectangle"
       },
       {
        "n": 88,
@@ -15678,7 +16087,9 @@
        "b": 44,
        "c": 8,
        "d": 11,
-       "w": "8 × 11"
+       "w": "8 × 11",
+       "ok": "The 8 × 11 rectangle",
+       "no": "The 2 × 44 rectangle"
       },
       {
        "n": 88,
@@ -15686,7 +16097,9 @@
        "b": 22,
        "c": 8,
        "d": 11,
-       "w": "8 × 11"
+       "w": "8 × 11",
+       "ok": "The 8 × 11 rectangle",
+       "no": "The 4 × 22 rectangle"
       },
       {
        "n": 90,
@@ -15694,7 +16107,9 @@
        "b": 90,
        "c": 2,
        "d": 45,
-       "w": "2 × 45"
+       "w": "2 × 45",
+       "ok": "The 2 × 45 rectangle",
+       "no": "The 1 × 90 rectangle"
       },
       {
        "n": 90,
@@ -15702,7 +16117,9 @@
        "b": 90,
        "c": 3,
        "d": 30,
-       "w": "3 × 30"
+       "w": "3 × 30",
+       "ok": "The 3 × 30 rectangle",
+       "no": "The 1 × 90 rectangle"
       },
       {
        "n": 90,
@@ -15710,7 +16127,9 @@
        "b": 90,
        "c": 5,
        "d": 18,
-       "w": "5 × 18"
+       "w": "5 × 18",
+       "ok": "The 5 × 18 rectangle",
+       "no": "The 1 × 90 rectangle"
       },
       {
        "n": 90,
@@ -15718,7 +16137,9 @@
        "b": 90,
        "c": 6,
        "d": 15,
-       "w": "6 × 15"
+       "w": "6 × 15",
+       "ok": "The 6 × 15 rectangle",
+       "no": "The 1 × 90 rectangle"
       },
       {
        "n": 90,
@@ -15726,7 +16147,9 @@
        "b": 90,
        "c": 9,
        "d": 10,
-       "w": "9 × 10"
+       "w": "9 × 10",
+       "ok": "The 9 × 10 rectangle",
+       "no": "The 1 × 90 rectangle"
       },
       {
        "n": 90,
@@ -15734,7 +16157,9 @@
        "b": 45,
        "c": 3,
        "d": 30,
-       "w": "3 × 30"
+       "w": "3 × 30",
+       "ok": "The 3 × 30 rectangle",
+       "no": "The 2 × 45 rectangle"
       },
       {
        "n": 90,
@@ -15742,7 +16167,9 @@
        "b": 45,
        "c": 5,
        "d": 18,
-       "w": "5 × 18"
+       "w": "5 × 18",
+       "ok": "The 5 × 18 rectangle",
+       "no": "The 2 × 45 rectangle"
       },
       {
        "n": 90,
@@ -15750,7 +16177,9 @@
        "b": 45,
        "c": 6,
        "d": 15,
-       "w": "6 × 15"
+       "w": "6 × 15",
+       "ok": "The 6 × 15 rectangle",
+       "no": "The 2 × 45 rectangle"
       },
       {
        "n": 90,
@@ -15758,7 +16187,9 @@
        "b": 45,
        "c": 9,
        "d": 10,
-       "w": "9 × 10"
+       "w": "9 × 10",
+       "ok": "The 9 × 10 rectangle",
+       "no": "The 2 × 45 rectangle"
       },
       {
        "n": 90,
@@ -15766,7 +16197,9 @@
        "b": 30,
        "c": 5,
        "d": 18,
-       "w": "5 × 18"
+       "w": "5 × 18",
+       "ok": "The 5 × 18 rectangle",
+       "no": "The 3 × 30 rectangle"
       },
       {
        "n": 90,
@@ -15774,7 +16207,9 @@
        "b": 30,
        "c": 6,
        "d": 15,
-       "w": "6 × 15"
+       "w": "6 × 15",
+       "ok": "The 6 × 15 rectangle",
+       "no": "The 3 × 30 rectangle"
       },
       {
        "n": 90,
@@ -15782,7 +16217,9 @@
        "b": 30,
        "c": 9,
        "d": 10,
-       "w": "9 × 10"
+       "w": "9 × 10",
+       "ok": "The 9 × 10 rectangle",
+       "no": "The 3 × 30 rectangle"
       },
       {
        "n": 90,
@@ -15790,7 +16227,9 @@
        "b": 18,
        "c": 6,
        "d": 15,
-       "w": "6 × 15"
+       "w": "6 × 15",
+       "ok": "The 6 × 15 rectangle",
+       "no": "The 5 × 18 rectangle"
       },
       {
        "n": 90,
@@ -15798,7 +16237,9 @@
        "b": 18,
        "c": 9,
        "d": 10,
-       "w": "9 × 10"
+       "w": "9 × 10",
+       "ok": "The 9 × 10 rectangle",
+       "no": "The 5 × 18 rectangle"
       },
       {
        "n": 90,
@@ -15806,7 +16247,9 @@
        "b": 15,
        "c": 9,
        "d": 10,
-       "w": "9 × 10"
+       "w": "9 × 10",
+       "ok": "The 9 × 10 rectangle",
+       "no": "The 6 × 15 rectangle"
       },
       {
        "n": 91,
@@ -15814,7 +16257,9 @@
        "b": 91,
        "c": 7,
        "d": 13,
-       "w": "7 × 13"
+       "w": "7 × 13",
+       "ok": "The 7 × 13 rectangle",
+       "no": "The 1 × 91 rectangle"
       },
       {
        "n": 92,
@@ -15822,7 +16267,9 @@
        "b": 92,
        "c": 2,
        "d": 46,
-       "w": "2 × 46"
+       "w": "2 × 46",
+       "ok": "The 2 × 46 rectangle",
+       "no": "The 1 × 92 rectangle"
       },
       {
        "n": 92,
@@ -15830,7 +16277,9 @@
        "b": 92,
        "c": 4,
        "d": 23,
-       "w": "4 × 23"
+       "w": "4 × 23",
+       "ok": "The 4 × 23 rectangle",
+       "no": "The 1 × 92 rectangle"
       },
       {
        "n": 92,
@@ -15838,7 +16287,9 @@
        "b": 46,
        "c": 4,
        "d": 23,
-       "w": "4 × 23"
+       "w": "4 × 23",
+       "ok": "The 4 × 23 rectangle",
+       "no": "The 2 × 46 rectangle"
       },
       {
        "n": 93,
@@ -15846,7 +16297,9 @@
        "b": 93,
        "c": 3,
        "d": 31,
-       "w": "3 × 31"
+       "w": "3 × 31",
+       "ok": "The 3 × 31 rectangle",
+       "no": "The 1 × 93 rectangle"
       },
       {
        "n": 94,
@@ -15854,7 +16307,9 @@
        "b": 94,
        "c": 2,
        "d": 47,
-       "w": "2 × 47"
+       "w": "2 × 47",
+       "ok": "The 2 × 47 rectangle",
+       "no": "The 1 × 94 rectangle"
       },
       {
        "n": 95,
@@ -15862,7 +16317,9 @@
        "b": 95,
        "c": 5,
        "d": 19,
-       "w": "5 × 19"
+       "w": "5 × 19",
+       "ok": "The 5 × 19 rectangle",
+       "no": "The 1 × 95 rectangle"
       },
       {
        "n": 96,
@@ -15870,7 +16327,9 @@
        "b": 96,
        "c": 2,
        "d": 48,
-       "w": "2 × 48"
+       "w": "2 × 48",
+       "ok": "The 2 × 48 rectangle",
+       "no": "The 1 × 96 rectangle"
       },
       {
        "n": 96,
@@ -15878,7 +16337,9 @@
        "b": 96,
        "c": 3,
        "d": 32,
-       "w": "3 × 32"
+       "w": "3 × 32",
+       "ok": "The 3 × 32 rectangle",
+       "no": "The 1 × 96 rectangle"
       },
       {
        "n": 96,
@@ -15886,7 +16347,9 @@
        "b": 96,
        "c": 4,
        "d": 24,
-       "w": "4 × 24"
+       "w": "4 × 24",
+       "ok": "The 4 × 24 rectangle",
+       "no": "The 1 × 96 rectangle"
       },
       {
        "n": 96,
@@ -15894,7 +16357,9 @@
        "b": 96,
        "c": 6,
        "d": 16,
-       "w": "6 × 16"
+       "w": "6 × 16",
+       "ok": "The 6 × 16 rectangle",
+       "no": "The 1 × 96 rectangle"
       },
       {
        "n": 96,
@@ -15902,7 +16367,9 @@
        "b": 96,
        "c": 8,
        "d": 12,
-       "w": "8 × 12"
+       "w": "8 × 12",
+       "ok": "The 8 × 12 rectangle",
+       "no": "The 1 × 96 rectangle"
       },
       {
        "n": 96,
@@ -15910,7 +16377,9 @@
        "b": 48,
        "c": 3,
        "d": 32,
-       "w": "3 × 32"
+       "w": "3 × 32",
+       "ok": "The 3 × 32 rectangle",
+       "no": "The 2 × 48 rectangle"
       },
       {
        "n": 96,
@@ -15918,7 +16387,9 @@
        "b": 48,
        "c": 4,
        "d": 24,
-       "w": "4 × 24"
+       "w": "4 × 24",
+       "ok": "The 4 × 24 rectangle",
+       "no": "The 2 × 48 rectangle"
       },
       {
        "n": 96,
@@ -15926,7 +16397,9 @@
        "b": 48,
        "c": 6,
        "d": 16,
-       "w": "6 × 16"
+       "w": "6 × 16",
+       "ok": "The 6 × 16 rectangle",
+       "no": "The 2 × 48 rectangle"
       },
       {
        "n": 96,
@@ -15934,7 +16407,9 @@
        "b": 48,
        "c": 8,
        "d": 12,
-       "w": "8 × 12"
+       "w": "8 × 12",
+       "ok": "The 8 × 12 rectangle",
+       "no": "The 2 × 48 rectangle"
       },
       {
        "n": 96,
@@ -15942,7 +16417,9 @@
        "b": 32,
        "c": 4,
        "d": 24,
-       "w": "4 × 24"
+       "w": "4 × 24",
+       "ok": "The 4 × 24 rectangle",
+       "no": "The 3 × 32 rectangle"
       },
       {
        "n": 96,
@@ -15950,7 +16427,9 @@
        "b": 32,
        "c": 6,
        "d": 16,
-       "w": "6 × 16"
+       "w": "6 × 16",
+       "ok": "The 6 × 16 rectangle",
+       "no": "The 3 × 32 rectangle"
       },
       {
        "n": 96,
@@ -15958,7 +16437,9 @@
        "b": 32,
        "c": 8,
        "d": 12,
-       "w": "8 × 12"
+       "w": "8 × 12",
+       "ok": "The 8 × 12 rectangle",
+       "no": "The 3 × 32 rectangle"
       },
       {
        "n": 96,
@@ -15966,7 +16447,9 @@
        "b": 24,
        "c": 6,
        "d": 16,
-       "w": "6 × 16"
+       "w": "6 × 16",
+       "ok": "The 6 × 16 rectangle",
+       "no": "The 4 × 24 rectangle"
       },
       {
        "n": 96,
@@ -15974,7 +16457,9 @@
        "b": 24,
        "c": 8,
        "d": 12,
-       "w": "8 × 12"
+       "w": "8 × 12",
+       "ok": "The 8 × 12 rectangle",
+       "no": "The 4 × 24 rectangle"
       },
       {
        "n": 96,
@@ -15982,7 +16467,9 @@
        "b": 16,
        "c": 8,
        "d": 12,
-       "w": "8 × 12"
+       "w": "8 × 12",
+       "ok": "The 8 × 12 rectangle",
+       "no": "The 6 × 16 rectangle"
       },
       {
        "n": 98,
@@ -15990,7 +16477,9 @@
        "b": 98,
        "c": 2,
        "d": 49,
-       "w": "2 × 49"
+       "w": "2 × 49",
+       "ok": "The 2 × 49 rectangle",
+       "no": "The 1 × 98 rectangle"
       },
       {
        "n": 98,
@@ -15998,7 +16487,9 @@
        "b": 98,
        "c": 7,
        "d": 14,
-       "w": "7 × 14"
+       "w": "7 × 14",
+       "ok": "The 7 × 14 rectangle",
+       "no": "The 1 × 98 rectangle"
       },
       {
        "n": 98,
@@ -16006,7 +16497,9 @@
        "b": 49,
        "c": 7,
        "d": 14,
-       "w": "7 × 14"
+       "w": "7 × 14",
+       "ok": "The 7 × 14 rectangle",
+       "no": "The 2 × 49 rectangle"
       },
       {
        "n": 99,
@@ -16014,7 +16507,9 @@
        "b": 99,
        "c": 3,
        "d": 33,
-       "w": "3 × 33"
+       "w": "3 × 33",
+       "ok": "The 3 × 33 rectangle",
+       "no": "The 1 × 99 rectangle"
       },
       {
        "n": 99,
@@ -16022,7 +16517,9 @@
        "b": 99,
        "c": 9,
        "d": 11,
-       "w": "9 × 11"
+       "w": "9 × 11",
+       "ok": "The 9 × 11 rectangle",
+       "no": "The 1 × 99 rectangle"
       },
       {
        "n": 99,
@@ -16030,7 +16527,9 @@
        "b": 33,
        "c": 9,
        "d": 11,
-       "w": "9 × 11"
+       "w": "9 × 11",
+       "ok": "The 9 × 11 rectangle",
+       "no": "The 3 × 33 rectangle"
       },
       {
        "n": 100,
@@ -16038,7 +16537,9 @@
        "b": 100,
        "c": 2,
        "d": 50,
-       "w": "2 × 50"
+       "w": "2 × 50",
+       "ok": "The 2 × 50 rectangle",
+       "no": "The 1 × 100 rectangle"
       },
       {
        "n": 100,
@@ -16046,7 +16547,9 @@
        "b": 100,
        "c": 4,
        "d": 25,
-       "w": "4 × 25"
+       "w": "4 × 25",
+       "ok": "The 4 × 25 rectangle",
+       "no": "The 1 × 100 rectangle"
       },
       {
        "n": 100,
@@ -16054,7 +16557,9 @@
        "b": 100,
        "c": 5,
        "d": 20,
-       "w": "5 × 20"
+       "w": "5 × 20",
+       "ok": "The 5 × 20 rectangle",
+       "no": "The 1 × 100 rectangle"
       },
       {
        "n": 100,
@@ -16062,7 +16567,9 @@
        "b": 50,
        "c": 4,
        "d": 25,
-       "w": "4 × 25"
+       "w": "4 × 25",
+       "ok": "The 4 × 25 rectangle",
+       "no": "The 2 × 50 rectangle"
       },
       {
        "n": 100,
@@ -16070,7 +16577,9 @@
        "b": 50,
        "c": 5,
        "d": 20,
-       "w": "5 × 20"
+       "w": "5 × 20",
+       "ok": "The 5 × 20 rectangle",
+       "no": "The 2 × 50 rectangle"
       },
       {
        "n": 100,
@@ -16078,31 +16587,58 @@
        "b": 25,
        "c": 5,
        "d": 20,
-       "w": "5 × 20"
+       "w": "5 × 20",
+       "ok": "The 5 × 20 rectangle",
+       "no": "The 4 × 25 rectangle"
       }
      ]
     }
    ],
-   "text": "{who.name} has {t.n} square quilt patches, each 1 unit by 1 unit. {who.name} can sew them into a {t.a} × {t.b} rectangle or a {t.c} × {t.d} rectangle. Which needs less border ribbon? Show your working and explain.",
-   "answer": "Both have an area of {t.n} square units. Perimeters: 2 × ({t.a} + {t.b}) = {2 * (t.a + t.b)} and 2 × ({t.c} + {t.d}) = {2 * (t.c + t.d)} unit lengths. The {t.w} rectangle needs less ribbon: the same area can have different perimeters, and the more square shape has the shorter edge.",
-   "steps": [
+   "stimulus": "{who.name} has {t.n} square quilt patches, each 1 unit by 1 unit. {who.name} can sew them into a {t.a} × {t.b} rectangle or a {t.c} × {t.d} rectangle, and will put border ribbon all around it. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Perimeter of the {t.a} × {t.b} rectangle: {2 * (t.a + t.b)} unit lengths."
+     "text": "(a) How many unit lengths of ribbon go around the {t.a} × {t.b} rectangle?",
+     "answer": "2 * (t.a + t.b)",
+     "responseFormat": "Integer",
+     "explanation": "2 × ({t.a} + {t.b}) = {2 * (t.a + t.b)} unit lengths."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Perimeter of the {t.c} × {t.d} rectangle: {2 * (t.c + t.d)} unit lengths."
+     "text": "(b) How many unit lengths of ribbon go around the {t.c} × {t.d} rectangle?",
+     "answer": "2 * (t.c + t.d)",
+     "responseFormat": "Integer",
+     "explanation": "2 × ({t.c} + {t.d}) = {2 * (t.c + t.d)} unit lengths."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Chooses the one with the smaller perimeter and explains: the same area can have different perimeters; the more square one needs less ribbon."
+     "text": "(c) Which needs less ribbon?",
+     "responseFormat": "Choice or short text",
+     "options": {
+      "correct": "t.ok",
+      "wrong": [
+       {
+        "expr": "t.no",
+        "mistake": "picks the shape with the longer border"
+       },
+       {
+        "expr": "'Both need the same, as the area is the same'",
+        "mistake": "thinks the same area always means the same perimeter"
+       },
+       {
+        "expr": "'You cannot tell without measuring the patches'",
+        "mistake": "does not use the unit lengths to compare"
+       }
+      ]
+     },
+     "explanation": "{2 * (t.a + t.b)} and {2 * (t.c + t.d)} unit lengths: the {t.w} rectangle needs less. The same area can have different perimeters."
     }
    ],
-   "hint": "Same number of patches means the same area, but not always the same perimeter.",
-   "explanation": "{2 * (t.a + t.b)} and {2 * (t.c + t.d)} unit lengths: the {t.w} rectangle needs less ribbon.",
    "misconception": "Assumes equal area forces equal perimeter.",
-   "notes": "Pairs of different rectangles with the same area (12 to 100 square units).",
+   "notes": "Pairs of different rectangles with the same area (12 to 100 square units). Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH11-Q364",
     "CBSE-C5-CH11-Q370",
@@ -16113,11 +16649,10 @@
    "code": "C5-GQ-L3-3",
    "chapter": 11,
    "skill": "C5-GQ-S15",
-   "questionType": "Constructed Response",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "l",
@@ -16145,26 +16680,37 @@
    "require": [
     "l > b"
    ],
-   "text": "A verandah {l} m long and {b} m wide is to be covered with square tiles with sides of 50 cm. Each tile costs ₹{p}. How many tiles are needed, and what do they cost? Show your working.",
-   "answer": "Area: {l} × {b} = {l * b} m². A 50 cm tile is half a metre each way, so 4 tiles cover 1 m². Tiles: {l * b} × 4 = {4 * l * b}. Cost: {4 * l * b} × ₹{p} = {4 * l * b * p:money}.",
-   "steps": [
+   "stimulus": "A verandah {l} m long and {b} m wide is to be covered with square tiles with sides of 50 cm. Each tile costs ₹{p}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Area: {l * b} m² (or {2 * l} tiles by {2 * b} tiles)."
+     "text": "(a) What is the area of the verandah, in m²?",
+     "answer": "l * b",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{l} × {b} = {l * b} m².",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Tiles: 4 to each square metre, {4 * l * b} tiles."
+     "text": "(b) How many tiles are needed?",
+     "answer": "4 * l * b",
+     "responseFormat": "Integer",
+     "explanation": "A 50 cm tile is half a metre each way, so 4 tiles cover 1 m²: {l * b} × 4 = {4 * l * b} tiles."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Cost: {4 * l * b} × ₹{p} = {4 * l * b * p:money}."
+     "text": "(c) What do the tiles cost, in rupees?",
+     "answer": "4 * l * b * p",
+     "responseFormat": "Integer",
+     "explanation": "{4 * l * b} × ₹{p} = {4 * l * b * p:money}."
     }
    ],
-   "hint": "How many 50 cm tiles fit along 1 m? So how many cover 1 m²?",
-   "explanation": "{2 * l} tiles along the length and {2 * b} along the width: {4 * l * b} tiles, costing {4 * l * b * p:money}.",
    "misconception": "Uses perimeter to price covering material or area to price a border, and mixes linear and square units.",
-   "notes": "Verandahs 4 to 12 m long and 2 to 4 m wide; 50 cm tiles at ₹20 to ₹60 each.",
+   "notes": "Verandahs 4 to 12 m long and 2 to 4 m wide; 50 cm tiles at ₹20 to ₹60 each. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH11-Q467",
     "CBSE-C5-CH11-Q500",
@@ -16175,11 +16721,10 @@
    "code": "C5-GQ-L5-1",
    "chapter": 11,
    "skill": "C5-GQ-S15",
-   "questionType": "Constructed Response",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step measurement application and reasoning",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "r",
@@ -16218,35 +16763,58 @@
     "r * s >= 100",
     "c * s >= 100"
    ],
-   "text": "Grandmother makes a quilt with {r} rows of square patches and {c} patches in each row. Each patch has sides of {s} cm. (a) How many patches does she need? (b) How long and how wide is the quilt? (c) What is its area in cm²? (d) How long is its border in cm? (e) Lace for the border costs ₹{p} a metre. What does the lace cost? Show your working.",
-   "maxWords": 110,
-   "answer": "(a) {r} × {c} = {r * c} patches. (b) {c} × {s} = {c * s} cm by {r} × {s} = {r * s} cm. (c) {c * s} × {r * s} = {c * s * r * s:num} cm². (d) 2 × ({c * s} + {r * s}) = {2 * s * (r + c)} cm. (e) {2 * s * (r + c)} cm = {2 * s * (r + c) // 100} m, so {2 * s * (r + c) // 100} × ₹{p} = {2 * s * (r + c) // 100 * p:money}.",
-   "steps": [
+   "stimulus": "Grandmother makes a quilt with {r} rows of square patches and {c} patches in each row. Each patch has sides of {s} cm. Lace for the border costs ₹{p} a metre. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {r * c} patches."
+     "text": "(a) How many patches does she need?",
+     "answer": "r * c",
+     "responseFormat": "Integer",
+     "explanation": "{r} × {c} = {r * c} patches."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {c * s} cm by {r * s} cm."
+     "text": "(b) How long is one row of patches, in cm?",
+     "answer": "c * s",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{c} × {s} = {c * s} cm.",
+     "unit": "cm",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {c * s * r * s:num} cm² (or {r * c} patches × {s * s} cm²)."
+     "text": "(c) What is the area of the quilt, in cm²?",
+     "answer": "c * s * r * s",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{c * s} cm by {r} × {s} = {r * s} cm: {c * s} × {r * s} = {c * s * r * s:num} cm².",
+     "unit": "cm2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {2 * s * (r + c)} cm."
+     "text": "(d) How long is the border of the quilt, in cm?",
+     "answer": "2 * s * (r + c)",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "2 × ({c * s} + {r * s}) = {2 * s * (r + c):num} cm.",
+     "unit": "cm",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {2 * s * (r + c) // 100} m of lace: {2 * s * (r + c) // 100 * p:money}."
+     "text": "(e) What does the lace for the border cost, in rupees?",
+     "answer": "2 * s * (r + c) // 100 * p",
+     "responseFormat": "Integer",
+     "explanation": "{2 * s * (r + c):num} cm = {2 * s * (r + c) // 100} m, so {2 * s * (r + c) // 100} × ₹{p} = {2 * s * (r + c) // 100 * p:money}."
     }
    ],
-   "hint": "Find the quilt's length and width from the patches first. Area covers; the border goes around.",
-   "explanation": "{r * c} patches; {c * s} cm by {r * s} cm; {c * s * r * s:num} cm²; border {2 * s * (r + c)} cm = {2 * s * (r + c) // 100} m; lace {2 * s * (r + c) // 100 * p:money}.",
+   "maxWords": 80,
    "misconception": "Uses perimeter to price covering material or area to price a border, and mixes linear and square units.",
-   "notes": "4 to 10 rows and columns (not equal) of 20 or 25 cm patches, chosen so the quilt is at least 100 cm each way and the border is a whole number of metres.",
+   "notes": "4 to 10 rows and columns (not equal) of 20 or 25 cm patches, chosen so the quilt is at least 100 cm each way and the border is a whole number of metres. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH11-Q463",
     "CBSE-C5-CH11-Q464",
@@ -16258,11 +16826,10 @@
    "code": "C5-GQ-L5-2",
    "chapter": 11,
    "skill": "C5-GQ-S13",
-   "questionType": "Constructed Response",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "s",
@@ -16290,35 +16857,65 @@
    "require": [
     "l1 > l2"
    ],
-   "text": "A farmer has {2 * s} m of fencing for a goat pen shaped like a rectangle (a square counts too) and will use all of it. (a) If the pen is {l1} m long, how wide is it and what is its area? (b) If it is {l2} m long, how wide is it and what is its area? (c) If it is a square, how long is each side and what is its area? (d) Which of the three pens has the largest area? (e) What do you notice about pens with the same perimeter? Show your working.",
-   "maxWords": 110,
-   "answer": "Length + breadth = {s} m. (a) {s - l1} m wide, {l1} × {s - l1} = {l1 * (s - l1)} m². (b) {s - l2} m wide, {l2} × {s - l2} = {l2 * (s - l2)} m². (c) {s // 2} m sides, {s // 2 * (s // 2)} m². (d) The square. (e) The same perimeter can give different areas; the closer the pen is to a square, the larger its area.",
-   "steps": [
+   "stimulus": "A farmer has {2 * s} m of fencing for a goat pen shaped like a rectangle (a square counts too) and will use all of it. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {s - l1} m wide, {l1 * (s - l1)} m²."
+     "text": "(a) If the pen is {l1} m long, how wide is it, in m, and what is its area, in m²? Enter width; area.",
+     "answer": [
+      "s - l1",
+      "l1 * (s - l1)"
+     ],
+     "responseFormat": "Two integers separated by a semicolon",
+     "explanation": "Length + width = {s} m, so it is {s - l1} m wide: {l1} × {s - l1} = {l1 * (s - l1)} m²."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {s - l2} m wide, {l2 * (s - l2)} m²."
+     "text": "(b) If the pen is {l2} m long, how wide is it, in m, and what is its area, in m²? Enter width; area.",
+     "answer": [
+      "s - l2",
+      "l2 * (s - l2)"
+     ],
+     "responseFormat": "Two integers separated by a semicolon",
+     "explanation": "{s} − {l2} = {s - l2} m wide: {l2} × {s - l2} = {l2 * (s - l2)} m²."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {s // 2} m sides, {s // 2 * (s // 2)} m²."
+     "text": "(c) If the pen is a square, how long is each side, in m, and what is its area, in m²? Enter side; area.",
+     "answer": [
+      "s // 2",
+      "(s // 2) * (s // 2)"
+     ],
+     "responseFormat": "Two integers separated by a semicolon",
+     "explanation": "{2 * s} ÷ 4 = {s // 2} m sides: {s // 2} × {s // 2} = {(s // 2) * (s // 2)} m²."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) The square pen."
+     "text": "(d) How many m² more is the square pen's area than the {l1} m long pen's?",
+     "answer": "(s // 2) * (s // 2) - l1 * (s - l1)",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{(s // 2) * (s // 2)} − {l1 * (s - l1)} = {(s // 2) * (s // 2) - l1 * (s - l1)} m²: the more square the pen, the larger its area.",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) Same perimeter, different areas; the more square, the larger."
+     "text": "(e) Another pen with the same {2 * s} m of fencing is {s - 1} m long and 1 m wide. What is its area, in m²?",
+     "answer": "s - 1",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{s - 1} × 1 = {s - 1} m²: the same perimeter can give a very different area.",
+     "unit": "m2",
+     "unitRule": "STATED"
     }
    ],
-   "hint": "Half the fencing is length + breadth.",
-   "explanation": "Areas {l1 * (s - l1)}, {l2 * (s - l2)} and {s // 2 * (s // 2)} m²: the square is largest.",
+   "maxWords": 80,
    "misconception": "Assumes equal perimeter forces equal area or that the longest rectangle always has greatest area.",
-   "notes": "20 to 48 m of fencing (a multiple of 4, so the square has whole-number sides); two different rectangles longer than wide, each at least 2 m wide.",
+   "notes": "20 to 48 m of fencing (a multiple of 4, so the square has whole-number sides); two different rectangles longer than wide, each at least 2 m wide. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH11-Q397",
     "CBSE-C5-CH11-Q400",
@@ -16330,11 +16927,10 @@
    "code": "C5-GQ-L5-3",
    "chapter": 11,
    "skill": "C5-GQ-S10",
-   "questionType": "Constructed Response",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step measurement application and reasoning",
-   "responseFormat": "Written explanation or working",
+   "questionType": "Long Answer",
    "values": [
     {
      "name": "ln",
@@ -16377,35 +16973,60 @@
     "ln > br",
     "a > b"
    ],
-   "text": "A school hall is {ln} m long and {br} m wide. A stage {a} m long and {b} m wide stands in one corner. The rest of the floor is to be carpeted. (a) What is the area of the hall floor? (b) What is the area of the stage? (c) What area is carpeted? (d) Carpet costs ₹{p} per m². What does it cost? (e) How long is a strip of skirting that runs once around the walls of the hall? Show your working.",
-   "maxWords": 110,
-   "answer": "(a) {ln} × {br} = {ln * br} m². (b) {a} × {b} = {a * b} m². (c) {ln * br} − {a * b} = {ln * br - a * b} m². (d) {ln * br - a * b} × ₹{p} = {(ln * br - a * b) * p:money}. (e) 2 × ({ln} + {br}) = {2 * (ln + br)} m.",
-   "steps": [
+   "stimulus": "A school hall is {ln} m long and {br} m wide. A stage {a} m long and {b} m wide stands in one corner. The rest of the floor is to be carpeted, and carpet costs ₹{p} per m². Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {ln * br} m²."
+     "text": "(a) What is the area of the hall floor, in m²?",
+     "answer": "ln * br",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{ln} × {br} = {ln * br} m².",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {a * b} m²."
+     "text": "(b) What is the area of the stage, in m²?",
+     "answer": "a * b",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a} × {b} = {a * b} m².",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {ln * br - a * b} m²."
+     "text": "(c) What area is carpeted, in m²?",
+     "answer": "ln * br - a * b",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{ln * br} − {a * b} = {ln * br - a * b} m².",
+     "unit": "m2",
+     "unitRule": "STATED"
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {(ln * br - a * b) * p:money}."
+     "text": "(d) What does the carpet cost, in rupees?",
+     "answer": "(ln * br - a * b) * p",
+     "responseFormat": "Integer",
+     "explanation": "{ln * br - a * b} × ₹{p} = {(ln * br - a * b) * p:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {2 * (ln + br)} m (a length: the perimeter of the hall)."
+     "text": "(e) How many metres long is a strip of skirting that runs once around the walls of the hall?",
+     "answer": "2 * (ln + br)",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "Skirting runs around the edge: 2 × ({ln} + {br}) = {2 * (ln + br)} m.",
+     "unit": "m",
+     "unitRule": "STATED"
     }
    ],
-   "hint": "Carpet covers a surface (area); skirting runs around the edge (perimeter).",
-   "explanation": "Carpet {ln * br - a * b} m² costs {(ln * br - a * b) * p:money}; skirting {2 * (ln + br)} m.",
+   "maxWords": 80,
    "misconception": "Adds overlapping regions twice or subtracts a cut-out length instead of its area.",
-   "notes": "Halls 10 to 20 m by 8 to 15 m, a stage of 2 to 5 m by 2 to 4 m, carpet ₹150 to ₹400 per m².",
+   "notes": "Halls 10 to 20 m by 8 to 15 m, a stage of 2 to 5 m by 2 to 4 m, carpet ₹150 to ₹400 per m². Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH11-Q301",
     "CBSE-C5-CH11-Q466",

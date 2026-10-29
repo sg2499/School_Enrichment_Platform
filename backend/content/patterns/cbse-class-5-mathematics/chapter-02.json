@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 2, Fractions: 63 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 2, Fractions: 63 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-FR2-S01-P1",
@@ -5432,12 +5432,12 @@
   },
   {
    "code": "C5-FR2-L3-1",
+   "chapter": 2,
    "skill": "C5-FR2-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "b",
@@ -5499,43 +5499,52 @@
     "gcd(a, b) == 1",
     "gcd(c, d) == 1",
     "t >= 40",
-    "t <= 400"
+    "t <= 400",
+    "walk != cyc"
    ],
-   "text": "A school has {t} students. {a}/{b} of them come by bus. {c}/{d} of the rest walk to school, and the others come by cycle. How many students come by cycle? Show your working.",
-   "answer": "By bus: {t} ÷ {b} × {a} = {bus}. The rest: {t} − {bus} = {rest}. Walk: {rest} ÷ {d} × {c} = {walk}. By cycle: {rest} − {walk} = {cyc}.",
-   "steps": [
+   "stimulus": "A school has {t} students. {a}/{b} of them come by bus. {c}/{d} of the rest walk to school, and the others come by cycle. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "By bus: {a}/{b} of {t} = {bus}, so {rest} are left."
+     "text": "(a) How many students come by bus?",
+     "answer": "bus",
+     "responseFormat": "Integer",
+     "explanation": "{a}/{b} of {t} = {t} ÷ {b} × {a} = {bus}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Walk: {c}/{d} of the {rest} left = {walk} (not {c}/{d} of {t})."
+     "text": "(b) How many students walk to school?",
+     "answer": "walk",
+     "responseFormat": "Integer",
+     "explanation": "The rest are {t} − {bus} = {rest}. {c}/{d} of {rest} = {walk}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "By cycle: {rest} − {walk} = {cyc} students."
+     "text": "(c) How many students come by cycle?",
+     "answer": "cyc",
+     "responseFormat": "Integer",
+     "explanation": "{rest} − {walk} = {cyc}."
     }
    ],
-   "hint": "The second fraction is of the students left, not of the whole school.",
-   "explanation": "{bus} come by bus, leaving {rest}. {walk} of those walk, so {cyc} come by cycle.",
    "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
-   "notes": "40 to 400 students; denominators 2 to 5; every step is a whole number of students.",
+   "notes": "40 to 400 students; denominators 2 to 5; every step is a whole number of students. Step question (#208): (a) bus, (b) walk (a fraction of the rest), (c) cycle. Walkers and cyclists always differ in number.",
    "sources": [
     "CBSE-C5-CH02-Q495",
     "CBSE-C5-CH02-Q494",
     "CBSE-C5-CH02-Q478"
-   ],
-   "chapter": 2
+   ]
   },
   {
    "code": "C5-FR2-L3-2",
+   "chapter": 2,
    "skill": "C5-FR2-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "b",
@@ -5587,43 +5596,52 @@
     "l != d",
     "l <= 40"
    ],
-   "text": "Compare {a}/{b} and {c}/{d} by writing them as equivalent fractions with the same denominator. Which is greater, and by how much? Show your working.",
-   "answer": "A common denominator is {l}. {a}/{b} = {x}/{l} and {c}/{d} = {y}/{l}. {max(x, y)}/{l} > {min(x, y)}/{l}, so {a if x > y else c}/{b if x > y else d} is greater, by {max(x, y) - min(x, y)}/{l}.",
-   "steps": [
+   "stimulus": "Compare {a}/{b} and {c}/{d} by writing them as fractions with the denominator {l}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Chooses a common denominator such as {l} (any common multiple is fine)."
+     "text": "(a) {a}/{b} = ?/{l}. What number goes in place of ?",
+     "answer": "x",
+     "responseFormat": "Integer",
+     "explanation": "{a}/{b} = {a} × {l // b}/{b} × {l // b} = {x}/{l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Writes {a}/{b} = {x}/{l} and {c}/{d} = {y}/{l}, and says {a if x > y else c}/{b if x > y else d} is greater."
+     "text": "(b) {c}/{d} = ?/{l}. What number goes in place of ?",
+     "answer": "y",
+     "responseFormat": "Integer",
+     "explanation": "{c}/{d} = {c} × {l // d}/{d} × {l // d} = {y}/{l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Difference: {max(x, y) - min(x, y)}/{l} (or the same amount in another form, e.g. simplified)."
+     "text": "(c) By how much is the greater of {a}/{b} and {c}/{d} more than the smaller? Give the answer as a fraction in simplest form.",
+     "answer": "frac(abs(x - y), l)",
+     "answerFormat": "fraction",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{max(x, y)}/{l} − {min(x, y)}/{l} = {abs(x - y)}/{l} = {frac(abs(x - y), l):fraction}."
     }
    ],
-   "hint": "Find a number that both {b} and {d} divide into.",
-   "explanation": "With denominator {l}: {x}/{l} and {y}/{l}. The difference is {max(x, y) - min(x, y)}/{l}.",
    "misconception": "Compares numerators or denominators separately without creating a common basis.",
-   "notes": "Two proper fractions in simplest form, denominators 2 to 9 where neither divides the other; common denominator up to 40.",
+   "notes": "Two proper fractions in simplest form, denominators 2 to 9 where neither divides the other; common denominator up to 40. Step question (#208): (a) and (b) the new numerators over {l} (the common denominator is given, the lowest one), (c) the difference in simplest form. Saying which is greater is no longer a separate step.",
    "sources": [
     "CBSE-C5-CH02-Q450",
     "CBSE-C5-CH02-Q451",
     "CBSE-C5-CH02-Q452",
     "CBSE-C5-CH02-Q461",
     "CBSE-C5-CH02-Q462"
-   ],
-   "chapter": 2
+   ]
   },
   {
    "code": "C5-FR2-L3-3",
+   "chapter": 2,
    "skill": "C5-FR2-S11",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "who",
@@ -5666,46 +5684,73 @@
     }
    ],
    "require": [
-    "gcd(r, d) == 1"
+    "gcd(r, d) == 1",
+    "w < d",
+    "r != w",
+    "d != 2 * r"
    ],
-   "text": "Each {item} is cut into {d} equal pieces. {who.name} has {n} pieces. (a) Write the amount as an improper fraction of a {item}. (b) Write it as a mixed number. (c) How many more pieces would {who.name} need to have {w + 1} whole {item}s? Show your working.",
-   "answer": "(a) {n}/{d}. (b) {n} ÷ {d} = {w} remainder {r}, so {w} {r}/{d}. (c) {w + 1} wholes = {(w + 1) * d} pieces, so {(w + 1) * d} − {n} = {d - r} more {'piece' if d - r == 1 else 'pieces'}.",
-   "steps": [
+   "stimulus": "Each {item} is cut into {d} equal pieces. {who.name} has {n} pieces. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {n}/{d}."
+     "text": "(a) Write the amount {who.name} has as an improper fraction of a {item}.",
+     "answer": "frac(n, d)",
+     "answerFormat": "fraction",
+     "responseFormat": "Fraction",
+     "explanation": "{n} pieces of 1/{d} is {n}/{d}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(b) {w} {r}/{d} (the remainder {r} stays over {d})."
+     "text": "(b) Which mixed number is the same amount?",
+     "options": {
+      "correct": "frac(n, d)",
+      "wrong": [
+       {
+        "expr": "r + frac(w, d)",
+        "mistake": "uses the remainder as the whole number part"
+       },
+       {
+        "expr": "w + frac(r, n)",
+        "mistake": "changes the denominator to the number of pieces"
+       },
+       {
+        "expr": "w + frac(d - r, d)",
+        "mistake": "writes the pieces still needed instead of the pieces left over"
+       }
+      ],
+      "format": "mixed"
+     },
+     "explanation": "{n} ÷ {d} = {w} remainder {r}, so {n}/{d} = {w} {r}/{d}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {(w + 1) * d} − {n} = {d - r} more {'piece' if d - r == 1 else 'pieces'}."
+     "text": "(c) How many more pieces would {who.name} need to have {w + 1} whole {item}s?",
+     "answer": "d - r",
+     "responseFormat": "Integer",
+     "explanation": "{w + 1} wholes are {(w + 1) * d} pieces, so {(w + 1) * d} − {n} = {d - r} more."
     }
    ],
-   "hint": "Each whole {item} is {d} pieces.",
-   "explanation": "{n} pieces of 1/{d} is {n}/{d} = {w} {r}/{d}. {w + 1} wholes need {(w + 1) * d} pieces, so {d - r} more.",
    "misconception": "Uses the remainder as a whole-number part or changes the denominator during conversion.",
-   "notes": "3 to 8 pieces in each whole; 1 to 4 wholes and some left over.",
+   "notes": "3 to 8 pieces in each whole; 1 to 4 wholes and some left over. The whole-number part is less than the pieces in each whole, so every option reads as a mixed number. Step question (#208): (a) improper fraction, (b) mixed number (multiple choice), (c) pieces needed.",
    "sources": [
     "CBSE-C5-CH02-Q359",
     "CBSE-C5-CH02-Q360",
     "CBSE-C5-CH02-Q361",
     "CBSE-C5-CH02-Q362",
     "CBSE-C5-CH02-Q363"
-   ],
-   "chapter": 2
+   ]
   },
   {
    "code": "C5-FR2-L5-1",
+   "chapter": 2,
    "skill": "C5-FR2-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written working",
-   "maxWords": 90,
    "values": [
     {
      "name": "who",
@@ -5778,51 +5823,67 @@
     "t <= 2000",
     "t >= 100"
    ],
-   "text": "{who.name} has ₹{t:num}. {who.name} spends {a}/{b} of it on a storybook and {c}/{d} of it on stationery. (a) How much does the storybook cost? (b) How much does the stationery cost? (c) How much is spent in all? (d) What fraction of the money is left? (e) How much money is left? Show your working.",
-   "answer": "(a) ₹{t:num} ÷ {b} × {a} = ₹{book}. (b) ₹{t:num} ÷ {d} × {c} = ₹{stat}. (c) ₹{book} + ₹{stat} = ₹{spent}. (d) {left}/{t} = {frac(left, t):fraction} of the money is left. (e) ₹{t:num} − ₹{spent} = ₹{left}.",
-   "steps": [
+   "stimulus": "{who.name} has ₹{t:num}. {who.name} spends {a}/{b} of it on a storybook and {c}/{d} of it on stationery. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {a}/{b} of ₹{t:num} = ₹{book}."
+     "text": "(a) How much does the storybook cost, in rupees?",
+     "answer": "book",
+     "responseFormat": "Integer",
+     "explanation": "{a}/{b} of ₹{t:num} = ₹{t:num} ÷ {b} × {a} = ₹{book:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {c}/{d} of ₹{t:num} = ₹{stat}."
+     "text": "(b) How much does the stationery cost, in rupees?",
+     "answer": "stat",
+     "responseFormat": "Integer",
+     "explanation": "{c}/{d} of ₹{t:num} = ₹{stat:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) ₹{book} + ₹{stat} = ₹{spent}."
+     "text": "(c) How much is spent in all, in rupees?",
+     "answer": "spent",
+     "responseFormat": "Integer",
+     "explanation": "₹{book:num} + ₹{stat:num} = ₹{spent:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {frac(left, t):fraction} (accept {left}/{t} or any equivalent fraction, e.g. 1 − {a}/{b} − {c}/{d} worked with a common denominator)."
+     "text": "(d) How much money is left, in rupees?",
+     "answer": "left",
+     "responseFormat": "Integer",
+     "explanation": "₹{t:num} − ₹{spent:num} = ₹{left:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) ₹{left} (follow through from a wrong (c))."
+     "text": "(e) What fraction of the money is left? Give it in simplest form.",
+     "answer": "frac(left, t)",
+     "answerFormat": "fraction",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{left}/{t} = {frac(left, t):fraction}."
     }
    ],
-   "hint": "Both fractions are of the same ₹{t:num}.",
-   "explanation": "Storybook ₹{book}, stationery ₹{stat}, spent ₹{spent}, left ₹{left}, which is {frac(left, t):fraction} of ₹{t:num}.",
    "misconception": "Applies a remembered rule without checking the whole, equality of parts or the meaning of the answer.",
-   "notes": "Amounts from ₹100 to ₹2,000 that both denominators divide; the two fractions together are less than the whole.",
+   "notes": "Amounts from ₹100 to ₹2,000 that both denominators divide; the two fractions together are less than the whole. Step question (#208): (a) storybook, (b) stationery, (c) spent, (d) money left, (e) fraction left in simplest form.",
    "sources": [
     "CBSE-C5-CH02-Q495",
     "CBSE-C5-CH02-Q494",
     "CBSE-C5-CH02-Q500",
     "CBSE-C5-CH02-Q478"
-   ],
-   "chapter": 2
+   ]
   },
   {
    "code": "C5-FR2-L5-2",
+   "chapter": 2,
    "skill": "C5-FR2-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
-   "maxWords": 90,
    "values": [
     {
      "name": "p",
@@ -5850,29 +5911,9 @@
      "name": "trio",
      "choice": [
       {
-       "b": 2,
-       "d": 3,
-       "f": 6
-      },
-      {
        "b": 3,
        "d": 4,
        "f": 6
-      },
-      {
-       "b": 2,
-       "d": 5,
-       "f": 10
-      },
-      {
-       "b": 3,
-       "d": 4,
-       "f": 12
-      },
-      {
-       "b": 4,
-       "d": 6,
-       "f": 12
       },
       {
        "b": 2,
@@ -5886,16 +5927,36 @@
       },
       {
        "b": 3,
-       "d": 5,
-       "f": 15
+       "d": 6,
+       "f": 9
       },
       {
        "b": 2,
-       "d": 4,
-       "f": 8
+       "d": 5,
+       "f": 4
       },
       {
        "b": 3,
+       "d": 8,
+       "f": 6
+      },
+      {
+       "b": 2,
+       "d": 3,
+       "f": 5
+      },
+      {
+       "b": 4,
+       "d": 6,
+       "f": 8
+      },
+      {
+       "b": 5,
+       "d": 6,
+       "f": 10
+      },
+      {
+       "b": 2,
        "d": 6,
        "f": 9
       }
@@ -5957,50 +6018,73 @@
     "x != y",
     "y != z",
     "x != z",
-    "l <= 60"
+    "l <= 60",
+    "trio.b != l",
+    "trio.d != l",
+    "trio.f != l"
    ],
-   "text": "Three equal {item}s are shared. {p.name} eats {a}/{trio.b} of one, {q.name} eats {c}/{trio.d} of another and {r.name} eats {e}/{trio.f} of the third. (a) Write all three fractions with the same denominator. (b) Put the three amounts in order from least to greatest. (c) Who ate the most? (d) How much more did that child eat than the child who ate the least? Show your working.",
-   "answer": "(a) Common denominator {l}: {a}/{trio.b} = {x}/{l}, {c}/{trio.d} = {y}/{l}, {e}/{trio.f} = {z}/{l}. (b) In order: {bot}/{l}, {x + y + z - top - bot}/{l}, {top}/{l}. (c) {p.name if top == x else (q.name if top == y else r.name)} ate the most. (d) {top}/{l} − {bot}/{l} = {top - bot}/{l} of a {item} more.",
-   "steps": [
+   "stimulus": "Three equal {item}s are shared. {p.name} eats {a}/{trio.b} of one, {q.name} eats {c}/{trio.d} of another and {r.name} eats {e}/{trio.f} of the third. Write each amount with the denominator {l}. Answer each step in its own box.",
+   "parts": [
     {
-     "marks": 2,
-     "text": "(a) 1 mark for a common denominator such as {l}; 1 mark for all three: {x}/{l}, {y}/{l}, {z}/{l}."
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) {a}/{trio.b} = ?/{l}. What number goes in place of ?",
+     "answer": "x",
+     "responseFormat": "Integer",
+     "explanation": "{a}/{trio.b} = {x}/{l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {bot}/{l}, {x + y + z - top - bot}/{l}, {top}/{l} (or the original fractions in that order)."
+     "text": "(b) {c}/{trio.d} = ?/{l}. What number goes in place of ?",
+     "answer": "y",
+     "responseFormat": "Integer",
+     "explanation": "{c}/{trio.d} = {y}/{l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {p.name if top == x else (q.name if top == y else r.name)}."
+     "text": "(c) {e}/{trio.f} = ?/{l}. What number goes in place of ?",
+     "answer": "z",
+     "responseFormat": "Integer",
+     "explanation": "{e}/{trio.f} = {z}/{l}."
     },
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "(d) {top - bot}/{l} of a {item} (accept an equivalent fraction)."
+     "text": "(d) Who ate the most? Write the name.",
+     "answer": "p.name if top == x else (q.name if top == y else r.name)",
+     "responseFormat": "A name",
+     "explanation": "The greatest of {x}/{l}, {y}/{l} and {z}/{l} is {top}/{l}, eaten by {p.name if top == x else (q.name if top == y else r.name)}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(e) How much more did that child eat than the child who ate the least? Give the answer as a fraction of a {item} in simplest form.",
+     "answer": "frac(top - bot, l)",
+     "answerFormat": "fraction",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{top}/{l} − {bot}/{l} = {top - bot}/{l} = {frac(top - bot, l):fraction}."
     }
    ],
-   "hint": "Find a number that {trio.b}, {trio.d} and {trio.f} all divide into.",
-   "explanation": "With denominator {l} the amounts are {x}/{l}, {y}/{l} and {z}/{l}; the most is {top}/{l} and the least {bot}/{l}.",
    "misconception": "Compares numerators or denominators separately without creating a common basis.",
-   "notes": "Ten sets of three denominators (2 to 15) with a common denominator up to 60; three different amounts; three different children.",
+   "notes": "Ten sets of three denominators (2 to 15) with a common denominator up to 60; three different amounts; three different children. Step question (#208): (a) to (c) the numerators over the lowest common denominator {l}, (d) who ate the most (a name), (e) the difference in simplest form. Ten sets of denominators where none is the common denominator itself, so every step is a real conversion (common denominator 12 to 30). Putting all three in order is no longer a separate step.",
    "sources": [
     "CBSE-C5-CH02-Q455",
     "CBSE-C5-CH02-Q456",
     "CBSE-C5-CH02-Q460",
     "CBSE-C5-CH02-Q461",
     "CBSE-C5-CH02-Q462"
-   ],
-   "chapter": 2
+   ]
   },
   {
    "code": "C5-FR2-L5-3",
+   "chapter": 2,
    "skill": "C5-FR2-S04",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written working",
-   "maxWords": 90,
    "values": [
     {
      "name": "b",
@@ -6067,44 +6151,62 @@
     "tu > 0",
     "2 * tu != t",
     "t >= 24",
-    "t <= 240"
+    "t <= 240",
+    "2 * tu < t"
    ],
-   "text": "A school garden has {t} plants. {a}/{b} of them are roses and {c}/{d} of them are marigolds. The rest are tulsi plants. (a) How many roses are there? (b) How many marigolds? (c) How many tulsi plants? (d) What fraction of the plants are tulsi, in simplest form? (e) Are the tulsi plants more or less than half of the garden? Explain. Show your working.",
-   "answer": "(a) {t} ÷ {b} × {a} = {ro} roses. (b) {t} ÷ {d} × {c} = {ma} marigolds. (c) {t} − {ro} − {ma} = {tu} tulsi plants. (d) {tu}/{t} = {frac(tu, t):fraction}. (e) Half of {t} is {t // 2}; {tu} is {'more' if 2 * tu > t else 'less'} than {t // 2}, so the tulsi plants are {'more' if 2 * tu > t else 'less'} than half.",
-   "steps": [
+   "stimulus": "A school garden has {t} plants. {a}/{b} of them are roses and {c}/{d} of them are marigolds. The rest are tulsi plants. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {a}/{b} of {t} = {ro} roses."
+     "text": "(a) How many roses are there?",
+     "answer": "ro",
+     "responseFormat": "Integer",
+     "explanation": "{a}/{b} of {t} = {ro}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {c}/{d} of {t} = {ma} marigolds."
+     "text": "(b) How many marigolds are there?",
+     "answer": "ma",
+     "responseFormat": "Integer",
+     "explanation": "{c}/{d} of {t} = {ma}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {t} − {ro} − {ma} = {tu} tulsi plants (follow through)."
+     "text": "(c) How many tulsi plants are there?",
+     "answer": "tu",
+     "responseFormat": "Integer",
+     "explanation": "{t} − {ro} − {ma} = {tu}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {frac(tu, t):fraction} (from {tu}/{t})."
+     "text": "(d) What fraction of the plants are tulsi? Give it in simplest form.",
+     "answer": "frac(tu, t)",
+     "answerFormat": "fraction",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{tu}/{t} = {frac(tu, t):fraction}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) Compares {tu} with half of {t} ({t // 2}): {'more' if 2 * tu > t else 'less'} than half, with the reason."
+     "text": "(e) How many fewer tulsi plants are there than half of the {t} plants?",
+     "answer": "t // 2 - tu",
+     "responseFormat": "Integer",
+     "explanation": "Half of {t} is {t // 2}, and {t // 2} − {tu} = {t // 2 - tu}."
     }
    ],
-   "hint": "Find each kind of plant from the whole {t}; the rest are tulsi.",
-   "explanation": "{ro} roses + {ma} marigolds leaves {tu} tulsi plants, which is {frac(tu, t):fraction} of the garden.",
    "misconception": "Multiplies by the denominator instead of dividing the whole into equal groups first.",
-   "notes": "24 to 240 plants (an even number that both denominators divide); never exactly half tulsi.",
+   "notes": "24 to 240 plants (an even number that both denominators divide); never exactly half tulsi. Step question (#208): (a) roses, (b) marigolds, (c) tulsi, (d) fraction in simplest form, (e) how many fewer tulsi plants than half. Tulsi is always less than half (the original asked more or less, which was nearly always less).",
    "sources": [
     "CBSE-C5-CH02-Q128",
     "CBSE-C5-CH02-Q129",
     "CBSE-C5-CH02-Q130",
     "CBSE-C5-CH02-Q131",
     "CBSE-C5-CH02-Q132"
-   ],
-   "chapter": 2
+   ]
   },
   {
    "code": "C5-FR2-CS-1",

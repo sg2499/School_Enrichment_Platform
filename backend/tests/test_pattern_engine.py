@@ -270,6 +270,56 @@ def test_case_studies_and_long_answers():
         pattern_engine.clean_spec({**LONG_ANSWER, "steps": LONG_ANSWER["steps"][:2]})
 
 
+STEPS = {
+    "code": "T-STEPS-1", "chapter": 1, "skill": "C5-WT1-S01", "questionType": "Long Answer", "marks": 3,
+    "values": [{"name": "a", "int": {"min": 12, "max": 40}}, {"name": "b", "int": {"min": 3, "max": 9}}],
+    "stimulus": "{a} boxes hold {b} pens each. Answer each step in its own box.",
+    "parts": [
+        {"questionType": "Numeric Entry", "marks": 1, "text": "(a) How many pens are there?", "answer": "a * b"},
+        {"questionType": "Numeric Entry", "marks": 2, "text": "(b) Two more pens go in each box. How many pens now?",
+         "answer": "a * (b + 2)", "steps": [{"marks": 1, "text": "{b + 2} in a box."}, {"marks": 1, "text": "{a * (b + 2)}."}]},
+    ],
+}
+
+
+def test_long_answers_in_steps_mark_themselves():
+    """#208: a 3- or 5-mark question in steps, each step its own box the
+    platform marks; it fills a paper's written places."""
+    spec = pattern_engine.clean_spec(STEPS)
+    assert spec.is_group and spec.question_type == "Long Answer"
+    made = pattern_engine.make(spec, "s")
+    assert len(made.questions) == 2 and all(q["auto_gradable"] for q in made.questions)
+    assert sum(q["marks"] for q in made.questions) == 3
+    assert all(q["stem"].startswith(made.stimulus) for q in made.questions)
+    a, b = made.values["a"], made.values["b"]
+    assert made.questions[1]["correct_answer"] == str(a * (b + 2))
+    from types import SimpleNamespace
+
+    from app.services import mock_paper_service
+
+    assert mock_paper_service.pattern_kind(SimpleNamespace(question_type="Long Answer")) == "WRITTEN"
+    assert mock_paper_service.fits("ANY", SimpleNamespace(question_type="Long Answer"))
+    # A written step, a 4-mark total, a 3-mark step or a wrong total is refused.
+    written = {**STEPS["parts"][0], "questionType": "Constructed Response", "answer": "{a * b}"}
+    for bad, words in (
+        ({**STEPS, "parts": [written, STEPS["parts"][1]]}, "must be marked by the platform"),
+        ({**STEPS, "marks": 4}, "worth 3 or 5 marks"),
+        ({**STEPS, "parts": [STEPS["parts"][0], {**STEPS["parts"][1], "marks": 3}]}, "worth 1 or 2 marks"),
+        ({**STEPS, "marks": 5}, "total of its steps (3)"),
+        ({**STEPS, "stimulus": None}, "needs its problem"),
+        ({**STEPS, "hint": "Multiply."}, "hint belongs on its steps"),
+        ({**STEPS, "parts": [{**STEPS["parts"][0], "text": "How many pens are there?"}, STEPS["parts"][1]]}, 'must start with "(a) "'),
+        ({**STEPS, "parts": [STEPS["parts"][1], STEPS["parts"][0]]}, 'must start with "(a) "'),
+        ({**STEPS, "parts": [STEPS["parts"][0]] * 7}, "2 to 6 steps"),
+        ({**STEPS, "parts": [STEPS["parts"][0], {k: v for k, v in STEPS["parts"][1].items() if k != "steps"}]}, "needs marking steps"),
+        ({**STEPS, "parts": [{k: v for k, v in STEPS["parts"][0].items() if k != "questionType"}, STEPS["parts"][1]]},
+         "must be marked by the platform"),
+    ):
+        with pytest.raises(PatternError) as err:
+            pattern_engine.clean_spec(bad)
+        assert any(words in p for p in err.value.problems), (words, err.value.problems)
+
+
 def test_fraction_answers_are_marked_in_every_right_form():
     from app.models import Question
 

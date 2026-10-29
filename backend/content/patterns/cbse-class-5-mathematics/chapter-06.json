@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 6, The Dairy Farm: 69 patterns, four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 6, The Dairy Farm: 69 patterns, four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-DF-S01-P1",
@@ -15884,11 +15884,10 @@
    "code": "C5-DF-L3-1",
    "chapter": 6,
    "skill": "C5-DF-S11",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "a",
@@ -15919,26 +15918,36 @@
    "require": [
     "a % 10 != 0"
    ],
-   "text": "Find {a} × {b} by splitting {b} into tens and ones. Show both partial products and add them.",
-   "answer": "{a} × {bo} = {a * bo:num}. {a} × {10 * bt} = {a * 10 * bt:num}. {a * bo:num} + {a * 10 * bt:num} = {a * b:num}.",
-   "steps": [
+   "stimulus": "Find {a} × {b} by splitting {b} into {10 * bt} and {bo}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Ones partial product: {a} × {bo} = {a * bo:num}."
+     "text": "(a) What is {a} × {bo}?",
+     "answer": "a * bo",
+     "responseFormat": "Integer",
+     "explanation": "{a} × {bo} = {a * bo:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Tens partial product: {a} × {10 * bt} = {a * 10 * bt:num} (ending in zero)."
+     "text": "(b) What is {a} × {10 * bt}?",
+     "answer": "a * 10 * bt",
+     "responseFormat": "Integer",
+     "hint": "Multiply by {bt}, then by 10.",
+     "explanation": "{a} × {10 * bt} = {a * 10 * bt:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds: {a * b:num}. Follow through from a slip in one partial product if the method is right."
+     "text": "(c) What is {a} × {b}?",
+     "answer": "a * b",
+     "responseFormat": "Integer",
+     "explanation": "{a * bo:num} + {a * 10 * bt:num} = {a * b:num}."
     }
    ],
-   "hint": "{b} = {10 * bt} + {bo}.",
-   "explanation": "{a} × {b} = {a * bo:num} + {a * 10 * bt:num} = {a * b:num}.",
    "misconception": "Treats tens or hundreds in the multiplier as ones.",
-   "notes": "105 to 499 times 22 to 49 (not a multiple of 10).",
+   "notes": "105 to 499 times 22 to 49 (not a multiple of 10). Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH06-Q331",
     "CBSE-C5-CH06-Q339",
@@ -15949,11 +15958,10 @@
    "code": "C5-DF-L3-2",
    "chapter": 6,
    "skill": "C5-DF-S12",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "who",
@@ -15996,28 +16004,54 @@
    "require": [
     "a % 5 != 0",
     "b % 5 != 0",
-    "pr % 10 != 0"
+    "pr % 10 != 0",
+    "(8 * claim <= est and est * 2 <= 25 * claim) if k == 0 else (8 * est <= claim and claim * 2 <= 25 * est)"
    ],
-   "text": "{who.name} says {a} × {b} = {claim:num}. Estimate the product, explain why {who.his} answer is not reasonable, and find the correct product.",
-   "answer": "Estimate: {round_half_up(a, 10)} × {round_half_up(b, 10)} = {est:num}. {claim:num} is about ten times {'smaller' if k == 0 else 'bigger'} than the estimate, so it can't be right. Correct product: {a} × {b} = {pr:num}.",
-   "steps": [
+   "stimulus": "{who.name} says {a} × {b} = {claim:num}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Estimate by rounding: {round_half_up(a, 10)} × {round_half_up(b, 10)} = {est:num}."
+     "text": "(a) Estimate {a} × {b} by rounding both numbers to the nearest ten. What is the estimate?",
+     "answer": "est",
+     "responseFormat": "Integer",
+     "explanation": "{round_half_up(a, 10)} × {round_half_up(b, 10)} = {est:num}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Explains: {claim:num} is about ten times {'smaller' if k == 0 else 'bigger'} than {est:num}, so a place value has been {'lost' if k == 0 else 'added'}."
+     "text": "(b) Why is {who.name}'s answer not reasonable?",
+     "options": {
+      "correct": "'It is only about a tenth of the estimate.' if k == 0 else 'It is about ten times the estimate.'",
+      "wrong": [
+       {
+        "expr": "'It is about ten times the estimate.' if k == 0 else 'It is only about a tenth of the estimate.'",
+        "mistake": "compares the sizes the wrong way round"
+       },
+       {
+        "expr": "'It is close to the estimate, so it is right.'",
+        "mistake": "does not compare the answer's size with the estimate"
+       },
+       {
+        "expr": "'It is an odd number, so it is wrong.'",
+        "mistake": "judges an answer by whether it is odd or even"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "The estimate is {est:num}; {claim:num} is {'only about a tenth of it' if k == 0 else 'about ten times as much'}, so a place value has been {'lost' if k == 0 else 'added'}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Correct product: {pr:num}."
+     "text": "(c) What is the correct product {a} × {b}?",
+     "answer": "pr",
+     "responseFormat": "Integer",
+     "explanation": "{a} × {b} = {pr:num}."
     }
    ],
-   "hint": "Round both numbers to the nearest ten and multiply. Is {claim:num} close?",
-   "explanation": "{a} × {b} is about {est:num}, so {claim:num} is far off. The product is {pr:num}.",
    "misconception": "Accepts an exact-looking answer without comparing its size with an estimate.",
-   "notes": "Two-digit factors 21 to 98 not ending in 0 or 5; the claim is ten times too small or too big.",
+   "notes": "Two-digit factors 21 to 98 not ending in 0 or 5; the claim is ten times too small or too big. The claim is kept within 8 to 12.5 times the estimate either way, so 'about ten times' is true in every copy. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH06-Q395",
     "CBSE-C5-CH06-Q374",
@@ -16028,11 +16062,10 @@
    "code": "C5-DF-L3-3",
    "chapter": 6,
    "skill": "C5-DF-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Multi-step application and reasoning",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "c1",
@@ -16067,26 +16100,41 @@
     "c1 != c2",
     "l1 != l2"
    ],
-   "text": "A farm has {c1} cows giving {l1} litres of milk each a day and {c2} buffaloes giving {l2} litres each a day. How many litres of milk does the farm get in a day? Show your working.",
-   "answer": "Cows: {c1} × {l1} = {c1 * l1} litres. Buffaloes: {c2} × {l2} = {c2 * l2} litres. Total: {c1 * l1} + {c2 * l2} = {c1 * l1 + c2 * l2:num} litres.",
-   "steps": [
+   "stimulus": "A farm has {c1} cows giving {l1} litres of milk each a day and {c2} buffaloes giving {l2} litres each a day. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Cows: {c1} × {l1} = {c1 * l1} litres."
+     "text": "(a) How many litres do the cows give in a day?",
+     "answer": "c1 * l1",
+     "unit": "litres",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{c1} × {l1} = {c1 * l1} litres."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Buffaloes: {c2} × {l2} = {c2 * l2} litres."
+     "text": "(b) How many litres do the buffaloes give in a day?",
+     "answer": "c2 * l2",
+     "unit": "litres",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{c2} × {l2} = {c2 * l2} litres."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds: {c1 * l1 + c2 * l2:num} litres, with the unit. Follow through from a slip."
+     "text": "(c) How many litres of milk does the farm get in a day?",
+     "answer": "c1 * l1 + c2 * l2",
+     "unit": "litres",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{c1 * l1} + {c2 * l2} = {c1 * l1 + c2 * l2:num} litres."
     }
    ],
-   "hint": "Find the cows' milk and the buffaloes' milk separately, then add.",
-   "explanation": "{c1 * l1} + {c2 * l2} = {c1 * l1 + c2 * l2:num} litres.",
    "misconception": "Multiplies every number shown or stops before completing all requested steps.",
-   "notes": "12 to 48 cows at 8 to 14 litres; 6 to 25 buffaloes at 5 to 9 litres.",
+   "notes": "12 to 48 cows at 8 to 14 litres; 6 to 25 buffaloes at 5 to 9 litres. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH06-Q463",
     "CBSE-C5-CH06-Q494",
@@ -16097,11 +16145,10 @@
    "code": "C5-DF-L5-1",
    "chapter": 6,
    "skill": "C5-DF-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application and reasoning",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "c",
@@ -16143,37 +16190,56 @@
    ],
    "require": [
     "c * l * p - e >= 1000",
-    "c % 10 != 5"
+    "c % 10 != 5",
+    "round_half_up(c * l, 10) * round_half_up(p, 10) != c * l * p"
    ],
-   "text": "A dairy has {c} cows. Each gives {l} litres of milk a day. Milk sells at ₹{p} a litre, and the dairy spends {e:money} a day on feed. (a) How many litres does it get in a day? (b) How much money does that milk bring? (c) How much is left after paying for feed? (d) How much is left in {d} days? (e) Check (b) with an estimate. Show your working.",
-   "maxWords": 95,
-   "answer": "(a) {c} × {l} = {c * l} litres. (b) {c * l} × ₹{p} = {c * l * p:money}. (c) {c * l * p:money} − {e:money} = {c * l * p - e:money}. (d) {c * l * p - e:money} × {d} = {(c * l * p - e) * d:money}. (e) About {round_half_up(c * l, 10)} × {round_half_up(p, 10)} = {round_half_up(c * l, 10) * round_half_up(p, 10):money}, close to {c * l * p:money}.",
-   "steps": [
+   "stimulus": "A dairy has {c} cows. Each gives {l} litres of milk a day. Milk sells at ₹{p} a litre, and the dairy spends {e:money} a day on feed. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {c} × {l} = {c * l} litres."
+     "text": "(a) How many litres does it get in a day?",
+     "answer": "c * l",
+     "unit": "litres",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{c} × {l} = {c * l} litres."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {c * l} × ₹{p} = {c * l * p:money} (follow through from (a))."
+     "text": "(b) How much money does one day's milk bring, in rupees?",
+     "answer": "c * l * p",
+     "responseFormat": "Integer",
+     "explanation": "{c * l} × ₹{p} = {c * l * p:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {c * l * p:money} − {e:money} = {c * l * p - e:money}."
+     "text": "(c) How much is left each day after paying for feed, in rupees?",
+     "answer": "c * l * p - e",
+     "responseFormat": "Integer",
+     "explanation": "{c * l * p:money} − {e:money} = {c * l * p - e:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {c * l * p - e:money} × {d} = {(c * l * p - e) * d:money}."
+     "text": "(d) How much is left in {d} days, in rupees?",
+     "answer": "(c * l * p - e) * d",
+     "responseFormat": "Integer",
+     "explanation": "{c * l * p - e:money} × {d} = {(c * l * p - e) * d:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) A sensible estimate, such as {round_half_up(c * l, 10)} × {round_half_up(p, 10)} = {round_half_up(c * l, 10) * round_half_up(p, 10):money}, compared with (b)."
+     "text": "(e) Check (b): round the litres and the price to the nearest ten and multiply. What is the estimate, in rupees?",
+     "answer": "round_half_up(c * l, 10) * round_half_up(p, 10)",
+     "responseFormat": "Integer",
+     "explanation": "{round_half_up(c * l, 10)} × {round_half_up(p, 10)} = {round_half_up(c * l, 10) * round_half_up(p, 10):money}, close to {c * l * p:money}."
     }
    ],
-   "hint": "Work in order: litres, then money, then take away the feed, then multiply by the days.",
-   "explanation": "{c * l} litres bring {c * l * p:money}; after feed, {c * l * p - e:money} a day; in {d} days, {(c * l * p - e) * d:money}.",
    "misconception": "Multiplies every number shown or stops before completing all requested steps.",
-   "notes": "15 to 45 cows at 8 to 12 litres; ₹40 to ₹56 a litre; feed ₹2,000 to ₹6,000 a day (at least ₹1,000 left); 3 to 7 days.",
+   "notes": "15 to 45 cows at 8 to 12 litres; ₹40 to ₹56 a litre; feed ₹2,000 to ₹6,000 a day (at least ₹1,000 left); 3 to 7 days. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH06-Q463",
     "CBSE-C5-CH06-Q469",
@@ -16185,11 +16251,10 @@
    "code": "C5-DF-L5-2",
    "chapter": 6,
    "skill": "C5-DF-S09",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "a",
@@ -16204,41 +16269,66 @@
       "min": 23,
       "max": 98
      }
+    },
+    {
+     "name": "ea",
+     "expr": "round_half_up(a, 10)"
+    },
+    {
+     "name": "eb",
+     "expr": "round_half_up(b, 10)"
     }
    ],
    "require": [
     "a % 5 != 0",
     "b % 5 != 0"
    ],
-   "text": "For {a} × {b}: (a) estimate the product by rounding both numbers to the nearest ten; (b) find {a} × {b % 10}; (c) find {a} × {b - b % 10}; (d) add them to get the exact product; (e) find the difference between the estimate and the exact product. Show your working.",
-   "maxWords": 80,
-   "answer": "(a) {round_half_up(a, 10)} × {round_half_up(b, 10)} = {round_half_up(a, 10) * round_half_up(b, 10):num}. (b) {a} × {b % 10} = {a * (b % 10)}. (c) {a} × {b - b % 10} = {a * (b - b % 10):num}. (d) {a * (b % 10)} + {a * (b - b % 10):num} = {a * b:num}. (e) {abs(a * b - round_half_up(a, 10) * round_half_up(b, 10)):num}.",
-   "steps": [
+   "stimulus": "Work out {a} × {b} in steps. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {round_half_up(a, 10)} × {round_half_up(b, 10)} = {round_half_up(a, 10) * round_half_up(b, 10):num}."
+     "text": "(a) Round both numbers to the nearest ten and multiply. What is the estimate?",
+     "answer": "ea * eb",
+     "responseFormat": "Integer",
+     "explanation": "{ea} × {eb} = {ea * eb:num}.",
+     "hint": "Do the estimate first. Then the two partial products."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {a} × {b % 10} = {a * (b % 10)}."
+     "text": "(b) What is {a} × {b % 10}?",
+     "answer": "a * (b % 10)",
+     "responseFormat": "Integer",
+     "explanation": "{a} × {b % 10} = {a * (b % 10):num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {a} × {b - b % 10} = {a * (b - b % 10):num}."
+     "text": "(c) What is {a} × {b - b % 10}?",
+     "answer": "a * (b - b % 10)",
+     "responseFormat": "Integer",
+     "explanation": "{a} × {b - b % 10} = {a * (b - b % 10):num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {a * b:num} (follow through from (b) and (c))."
+     "text": "(d) Add your answers to (b) and (c). What is the exact product {a} × {b}?",
+     "answer": "a * b",
+     "responseFormat": "Integer",
+     "explanation": "{a * (b % 10):num} + {a * (b - b % 10):num} = {a * b:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) Difference: {abs(a * b - round_half_up(a, 10) * round_half_up(b, 10)):num}."
+     "text": "(e) What is the difference between your estimate and the exact product?",
+     "answer": "abs(a * b - ea * eb)",
+     "responseFormat": "Integer",
+     "explanation": "The difference between {ea * eb:num} and {a * b:num} is {abs(a * b - ea * eb):num}."
     }
    ],
-   "hint": "Do the estimate first. Then the two partial products.",
-   "explanation": "Estimate {round_half_up(a, 10) * round_half_up(b, 10):num}; exact {a * b:num}; difference {abs(a * b - round_half_up(a, 10) * round_half_up(b, 10)):num}.",
    "misconception": "Omits the tens partial product or fails to shift it one place left.",
-   "notes": "Two-digit factors 23 to 98, not ending in 0 or 5.",
+   "notes": "Two-digit factors 23 to 98, not ending in 0 or 5. A step question (#208): each step marked by the platform.",
    "sources": [
     "CBSE-C5-CH06-Q265",
     "CBSE-C5-CH06-Q293",
@@ -16250,11 +16340,10 @@
    "code": "C5-DF-L5-3",
    "chapter": 6,
    "skill": "C5-DF-S13",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "a",
@@ -16278,35 +16367,52 @@
    "require": [
     "a != b"
    ],
-   "text": "Given {a} × {b} = {a * b:num}, find each of these without multiplying from the beginning, and say in one line how you got it: (a) {b} × {a} (b) {a} × {b + 1} (c) {a + 1} × {b} (d) {2 * a} × {h} (e) {a} × {b * 10}.",
-   "maxWords": 80,
-   "answer": "(a) {a * b:num}: order doesn't change the product. (b) {a * b:num} + {a} = {a * b + a:num}: one more group of {a}. (c) {a * b:num} + {b} = {a * b + b:num}: one more group of {b}. (d) {a * b:num}: double one factor, halve the other. (e) {a * b * 10:num}: ten times the product.",
-   "steps": [
+   "stimulus": "You know that {a} × {b} = {a * b:num}. Use it to answer each step, without multiplying from the beginning. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {a * b:num}, because order doesn't change the product."
+     "text": "(a) What is {b} × {a}?",
+     "answer": "a * b",
+     "responseFormat": "Integer",
+     "explanation": "Changing the order doesn't change the product: {a * b:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {a * b + a:num}: adds {a}."
+     "text": "(b) What must you add to {a * b:num} to get {a} × {b + 1}?",
+     "answer": "a",
+     "responseFormat": "Integer",
+     "hint": "Think about what changed compared with {a} × {b}.",
+     "explanation": "{a} × {b + 1} is one more group of {a}: add {a}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {a * b + b:num}: adds {b}."
+     "text": "(c) What must you add to {a * b:num} to get {a + 1} × {b}?",
+     "answer": "b",
+     "responseFormat": "Integer",
+     "explanation": "{a + 1} × {b} is one more group of {b}: add {b}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {a * b:num}: doubling and halving keep the product."
+     "text": "(d) What is {2 * a} × {b}?",
+     "answer": "2 * a * b",
+     "responseFormat": "Integer",
+     "explanation": "Doubling one factor doubles the product: 2 × {a * b:num} = {2 * a * b:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {a * b * 10:num}: ten times as much."
+     "text": "(e) What is {a} × {b * 10}?",
+     "answer": "a * b * 10",
+     "responseFormat": "Integer",
+     "explanation": "Ten times the product: {a * b * 10:num}."
     }
    ],
-   "hint": "Think about what changed in each one compared with {a} × {b}.",
-   "explanation": "(a) {a * b:num}, (b) {a * b + a:num}, (c) {a * b + b:num}, (d) {a * b:num}, (e) {a * b * 10:num}.",
    "misconception": "Adds the changed factor instead of the unchanged factor when one factor increases by one.",
-   "notes": "12 to 29 times an even number 14 to 34.",
+   "notes": "12 to 29 times an even number 14 to 34. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH06-Q397",
     "CBSE-C5-CH06-Q399",

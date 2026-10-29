@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 4, We the Travellers II: 71 patterns, three to five for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 4, We the Travellers II: 71 patterns, three to five for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-WT2-S01-P1",
@@ -3871,11 +3871,10 @@
    "code": "C5-WT2-L3-1",
    "chapter": 4,
    "skill": "C5-WT2-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "m",
@@ -3913,26 +3912,37 @@
    "require": [
     "m - a - b >= 2000"
    ],
-   "text": "A school has {m:money}. It spends {a:money} on books and {b:money} on sports kits, and then receives a donation of {d:money}. How much money does it have now? Show your working.",
-   "answer": "Money after spending = {m:money} − {a:money} − {b:money} = {m - a - b:money}. After the donation: {m - a - b:money} + {d:money} = {m - a - b + d:money}.",
-   "steps": [
+   "stimulus": "A school has {m:money}. It spends {a:money} on books and {b:money} on sports kits, and then receives a donation of {d:money}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Subtracts the spending: {m:money} − {a:money} − {b:money} = {m - a - b:money} (or finds the total spent, {a + b:money}, and subtracts it)."
+     "text": "(a) How much does the school spend in all, in rupees?",
+     "answer": "a + b",
+     "responseFormat": "Integer",
+     "explanation": "{a:money} + {b:money} = {a + b:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds the donation: {m - a - b:money} + {d:money} = {m - a - b + d:money}."
+     "text": "(b) How much money is left after the spending, in rupees?",
+     "answer": "m - a - b",
+     "responseFormat": "Integer",
+     "hint": "Spending takes money away.",
+     "explanation": "{m:money} − {a + b:money} = {m - a - b:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Correct final answer with ₹, and the order of operations matches the story. Follow through from an arithmetic slip if the method is right."
+     "text": "(c) How much money does the school have after the donation, in rupees?",
+     "answer": "m - a - b + d",
+     "responseFormat": "Integer",
+     "hint": "A donation adds money.",
+     "explanation": "{m - a - b:money} + {d:money} = {m - a - b + d:money}."
     }
    ],
-   "hint": "Follow the story in order: spending takes money away, a donation adds it.",
-   "explanation": "{m:money} − {a:money} = {m - a:money}; − {b:money} = {m - a - b:money}; + {d:money} = {m - a - b + d:money}.",
    "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
-   "notes": "Budget ₹25,000 to ₹60,000; two costs; a donation of ₹2,000 to ₹8,000.",
+   "notes": "Budget ₹25,000 to ₹60,000; two costs; a donation of ₹2,000 to ₹8,000. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH04-Q494",
     "CBSE-C5-CH04-Q491",
@@ -3943,44 +3953,54 @@
    "code": "C5-WT2-L3-2",
    "chapter": 4,
    "skill": "C5-WT2-S10",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "pl",
      "choice": [
       {
        "a": "Delhi",
-       "b": "Mumbai"
-      },
-      {
-       "a": "Chennai",
-       "b": "Kolkata"
-      },
-      {
-       "a": "Jaipur",
-       "b": "Bengaluru"
+       "b": "Mumbai",
+       "total": 1420
       },
       {
        "a": "Lucknow",
-       "b": "Pune"
+       "b": "Pune",
+       "total": 1450
+      },
+      {
+       "a": "Chennai",
+       "b": "Kolkata",
+       "total": 1670
+      },
+      {
+       "a": "Mumbai",
+       "b": "Kolkata",
+       "total": 1950
+      },
+      {
+       "a": "Jaipur",
+       "b": "Bengaluru",
+       "total": 2050
+      },
+      {
+       "a": "Delhi",
+       "b": "Chennai",
+       "total": 2200
       },
       {
        "a": "Guwahati",
-       "b": "Hyderabad"
+       "b": "Hyderabad",
+       "total": 2250
       }
      ]
     },
     {
      "name": "total",
-     "int": {
-      "min": 1150,
-      "max": 2400,
-      "step": 5
-     }
+     "expr": "pl.total"
     },
     {
      "name": "done",
@@ -3997,31 +4017,83 @@
       "max": 700,
       "step": 5
      }
+    },
+    {
+     "name": "chk",
+     "choice": [
+      {
+       "r": "Distance left + distance travelled = whole journey",
+       "w1": "Distance left + whole journey = distance travelled",
+       "w2": "First part + second part = distance left",
+       "w3": "Whole journey + first part = distance left"
+      },
+      {
+       "r": "Add what is left to what was travelled; you get the whole journey",
+       "w1": "Add what is left to the whole journey; you get what was travelled",
+       "w2": "Add the two parts travelled; you get what is left",
+       "w3": "Add what is left to the first part; you get the whole journey"
+      },
+      {
+       "r": "The two parts travelled plus the distance left make the whole journey",
+       "w1": "The two parts travelled plus the whole journey make the distance left",
+       "w2": "The distance left plus the first part makes the whole journey",
+       "w3": "The two parts travelled make the distance left"
+      }
+     ]
     }
    ],
    "require": [
     "total - done - more >= 100"
    ],
-   "text": "A bus is going {total:num} km from {pl.a} to {pl.b}. It travels {done} km, stops for lunch, and then travels {more} km more. How far is still left? Check your answer by addition. Show your working.",
-   "answer": "Distance travelled = {done} + {more} = {done + more:num} km. Left = {total:num} − {done + more:num} = {total - done - more:num} km. Check: {done + more:num} + {total - done - more:num} = {total:num}.",
-   "steps": [
+   "stimulus": "A bus is going {total:num} km from {pl.a} to {pl.b}. It travels {done} km, stops for the night, and then travels {more} km more. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Finds the distance travelled: {done} + {more} = {done + more:num} km (or subtracts {done} and then {more})."
+     "text": "(a) How far has the bus travelled in all, in km?",
+     "answer": "done + more",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{done} + {more} = {done + more:num} km."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Distance left: {total:num} − {done + more:num} = {total - done - more:num} km."
+     "text": "(b) How far is still left, in km?",
+     "answer": "total - done - more",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{total:num} − {done + more:num} = {total - done - more:num} km."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Checks by adding: {done + more:num} + {total - done - more:num} = {total:num}."
+     "text": "(c) Which addition checks your answer to (b)?",
+     "options": {
+      "correct": "chk.r",
+      "wrong": [
+       {
+        "expr": "chk.w1",
+        "mistake": "adds the distance left to the whole journey instead of to the distance travelled"
+       },
+       {
+        "expr": "chk.w2",
+        "mistake": "thinks the parts travelled add up to the distance left"
+       },
+       {
+        "expr": "chk.w3",
+        "mistake": "leaves out one part of the journey in the check"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "The distance travelled ({done + more:num} km) and the distance left ({total - done - more:num} km) add up to the whole journey, {total:num} km."
     }
    ],
-   "hint": "Add the two parts of the journey first.",
-   "explanation": "Travelled: {done} + {more} = {done + more:num} km. Left: {total:num} − {done + more:num} = {total - done - more:num} km.",
    "misconception": "Uses the same operation for every blank regardless of its position.",
-   "notes": "Journeys 1,150 to 2,400 km; two legs of 250 to 900 and 150 to 700 km; at least 100 km left.",
+   "notes": "Seven city pairs at about their real road distance (1,420 to 2,250 km); two legs of 250 to 900 and 150 to 700 km; at least 100 km left. Step question (#208): every step marked by the platform. The bus stops for the night between the legs (up to 900 km in one go is a day’s drive, not a morning’s).",
    "sources": [
     "CBSE-C5-CH04-Q303",
     "CBSE-C5-CH04-Q310",
@@ -4033,11 +4105,10 @@
    "code": "C5-WT2-L3-3",
    "chapter": 4,
    "skill": "C5-WT2-S01",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "k",
@@ -4116,26 +4187,42 @@
     "x - b1 != k",
     "x - b2 != k"
    ],
-   "text": "Group A has {a1}, {a2} and {x}. Group B has {b1}, {b2} and {y}. (a) Find the sum of each group. (b) Which two numbers, one from each group, can be interchanged to make the sums equal? (c) Explain why the swap works.",
-   "answer": "(a) Group A: {a1} + {a2} + {x} = {sa}. Group B: {b1} + {b2} + {y} = {sb}. (b) Interchange {x} and {y}. (c) The gap is {sa} − {sb} = {2 * k}. Swapping takes {x} out of A and puts {y} in, so A goes down by {k}; B goes up by {k}. Both sums become {sa - k}.",
-   "steps": [
+   "stimulus": "Group A has {a1}, {a2} and {x}. Group B has {b1}, {b2} and {y}. One number from each group can be interchanged to make the two sums equal. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Both sums correct: {sa} and {sb}."
+     "text": "(a) Find the sum of each group. Enter Group A; Group B.",
+     "answer": [
+      "sa",
+      "sb"
+     ],
+     "responseFormat": "Two integers separated by a semicolon",
+     "explanation": "Group A: {a1} + {a2} + {x} = {sa}. Group B: {b1} + {b2} + {y} = {sb}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Names the swap {x} and {y}."
+     "text": "(b) Which two numbers should be interchanged? Enter Group A number; Group B number.",
+     "answer": [
+      "x",
+      "y"
+     ],
+     "responseFormat": "Two integers separated by a semicolon",
+     "hint": "The two numbers you swap must differ by half of the gap between the sums.",
+     "explanation": "The gap is {sa} − {sb} = {2 * k}. {x} − {y} = {k}, half the gap, so swap {x} and {y}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) Explains that A loses {k} and B gains {k} (half of the gap {2 * k}), or shows both new sums are {sa - k}."
+     "text": "(c) After the swap, what is the sum of each group?",
+     "answer": "sa - k",
+     "responseFormat": "Integer",
+     "explanation": "Group A loses {k} and Group B gains {k}: both sums become {sa - k}."
     }
    ],
-   "hint": "Find the gap between the sums. The two numbers you swap must differ by half of it.",
-   "explanation": "A = {sa}, B = {sb}; the gap is {2 * k}. {x} − {y} = {k}, half the gap, so swapping them makes both sums {sa - k}.",
    "misconception": "Swaps any pair without tracking how both group sums change.",
-   "notes": "As S01-P1: exactly one swap works.",
+   "notes": "As S01-P1: exactly one swap works. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH04-Q032",
     "CBSE-C5-CH04-Q008",
@@ -4146,11 +4233,10 @@
    "code": "C5-WT2-L5-1",
    "chapter": 4,
    "skill": "C5-WT2-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "who",
@@ -4219,35 +4305,71 @@
     "bud - f1 - f2 >= 500",
     "2 * (total - d1 - d2) != total"
    ],
-   "text": "{who.name}'s family is driving {total:num} km to {dest}. They drive {d1} km on day 1 and {d2} km on day 2. Their fuel budget is {bud:money}; they spend {f1:money} on day 1 and {f2:money} on day 2. (a) How far have they driven in two days? (b) How far is left? (c) How much has been spent on fuel? (d) How much of the fuel budget is left? (e) Is the distance left more or less than half of the journey? Show your working.",
-   "maxWords": 110,
-   "answer": "(a) {d1} + {d2} = {d1 + d2:num} km. (b) {total:num} − {d1 + d2:num} = {total - d1 - d2:num} km. (c) {f1:money} + {f2:money} = {f1 + f2:money}. (d) {bud:money} − {f1 + f2:money} = {bud - f1 - f2:money}. (e) Half of {total:num} is {total // 2:num}; {total - d1 - d2:num} km is {'more' if 2 * (total - d1 - d2) > total else 'less'} than half.",
-   "steps": [
+   "stimulus": "{who.name}'s family is driving {total:num} km to {dest}. They drive {d1} km on day 1 and {d2} km on day 2. Their fuel budget is {bud:money}; they spend {f1:money} on day 1 and {f2:money} on day 2. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {d1} + {d2} = {d1 + d2:num} km."
+     "text": "(a) How far have they driven in two days, in km?",
+     "answer": "d1 + d2",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{d1} + {d2} = {d1 + d2:num} km."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {total:num} − {d1 + d2:num} = {total - d1 - d2:num} km (follow through from (a))."
+     "text": "(b) How far is left, in km?",
+     "answer": "total - d1 - d2",
+     "unit": "km",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{total:num} − {d1 + d2:num} = {total - d1 - d2:num} km."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {f1:money} + {f2:money} = {f1 + f2:money}."
+     "text": "(c) How much has been spent on fuel, in rupees?",
+     "answer": "f1 + f2",
+     "responseFormat": "Integer",
+     "explanation": "{f1:money} + {f2:money} = {f1 + f2:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {bud:money} − {f1 + f2:money} = {bud - f1 - f2:money} (follow through from (c))."
+     "text": "(d) How much of the fuel budget is left, in rupees?",
+     "answer": "bud - f1 - f2",
+     "responseFormat": "Integer",
+     "explanation": "{bud:money} − {f1 + f2:money} = {bud - f1 - f2:money}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(e) Compares with half the journey, {total / 2:num} km: the distance left is {'more' if 2 * (total - d1 - d2) > total else 'less'} than half. Distances and money are never combined."
+     "text": "(e) Is the distance left more or less than half of the journey?",
+     "options": {
+      "correct": "'More than half' if 2 * (total - d1 - d2) > total else 'Less than half'",
+      "wrong": [
+       {
+        "expr": "'Less than half' if 2 * (total - d1 - d2) > total else 'More than half'",
+        "mistake": "compares with the distance driven instead of with half the journey"
+       },
+       {
+        "expr": "'Exactly half'",
+        "mistake": "does not work out half of the journey"
+       },
+       {
+        "expr": "'Cannot be told'",
+        "mistake": "thinks the distances given are not enough to compare"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "Half of {total:num} km is {total // 2:num} km, and {total - d1 - d2:num} km is {'more' if 2 * (total - d1 - d2) > total else 'less'} than that."
     }
    ],
-   "hint": "Keep the distances and the money separate. Do one step at a time.",
-   "explanation": "Driven: {d1 + d2:num} km; left: {total - d1 - d2:num} km. Fuel spent: {f1 + f2:money}; budget left: {bud - f1 - f2:money}. Half the journey is {total / 2:num} km, so the distance left is {'more' if 2 * (total - d1 - d2) > total else 'less'} than half.",
    "misconception": "Stops after one calculation or combines quantities with incompatible meanings.",
-   "notes": "Journey 1,500 to 2,900 km (a multiple of 10, so half is whole); two days of 380 to 790 and 310 to 690 km; fuel budget ₹9,000 to ₹15,000 with two spends; at least 200 km and ₹500 left.",
+   "notes": "Journey 1,500 to 2,900 km (a multiple of 10, so half is whole); two days of 380 to 790 and 310 to 690 km; fuel budget ₹9,000 to ₹15,000 with two spends; at least 200 km and ₹500 left. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH04-Q498",
     "CBSE-C5-CH04-Q491",
@@ -4259,11 +4381,10 @@
    "code": "C5-WT2-L5-2",
    "chapter": 4,
    "skill": "C5-WT2-S06",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "st",
@@ -4327,31 +4448,51 @@
     "a != c",
     "est != ex"
    ],
-   "text": "A railway station at {st} counted {a:num} passengers in June, {b:num} in July and {c:num} in August. (a) Estimate the total by rounding each number to the nearest thousand. (b) Find the exact total. (c) How far is the estimate from the exact total? (d) How many more passengers came in the busiest month than in the quietest? Show your working.",
-   "maxWords": 90,
-   "answer": "(a) {ra:num} + {rb:num} + {rc:num} = {est:num}. (b) {a:num} + {b:num} + {c:num} = {ex:num}. (c) {abs(est - ex):num}. (d) {max(a, b, c):num} − {min(a, b, c):num} = {max(a, b, c) - min(a, b, c):num}.",
-   "steps": [
+   "stimulus": "A railway station at {st} counted {a:num} passengers in June, {b:num} in July and {c:num} in August. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Rounds to {ra:num}, {rb:num} and {rc:num} and adds: {est:num}."
+     "text": "(a) Estimate the total by rounding each number to the nearest thousand. What is the estimate?",
+     "answer": "est",
+     "responseFormat": "Integer",
+     "explanation": "{ra:num} + {rb:num} + {rc:num} = {est:num}."
     },
     {
-     "marks": 2,
-     "text": "(b) 1 mark for adding with correct place value; 1 mark for the exact total {ex:num}."
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) What is the exact number of passengers in June and July together?",
+     "answer": "a + b",
+     "responseFormat": "Integer",
+     "explanation": "{a:num} + {b:num} = {a + b:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {abs(est - ex):num} (follow through from (a) and (b))."
+     "text": "(c) What is the exact total for the three months?",
+     "answer": "ex",
+     "responseFormat": "Integer",
+     "explanation": "{a:num} + {b:num} + {c:num} = {ex:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {max(a, b, c):num} − {min(a, b, c):num} = {max(a, b, c) - min(a, b, c):num}."
+     "text": "(d) How far is the estimate from the exact total?",
+     "answer": "abs(est - ex)",
+     "responseFormat": "Integer",
+     "explanation": "The difference between {est:num} and {ex:num} is {abs(est - ex):num}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(e) How many more passengers came in the busiest month than in the quietest?",
+     "answer": "max(a, b, c) - min(a, b, c)",
+     "responseFormat": "Integer",
+     "explanation": "{max(a, b, c):num} − {min(a, b, c):num} = {max(a, b, c) - min(a, b, c):num}."
     }
    ],
-   "hint": "An estimate uses rounded numbers; the exact total uses the numbers as they are.",
-   "explanation": "Estimate: {est:num}. Exact: {ex:num}. They differ by {abs(est - ex):num}. Busiest minus quietest: {max(a, b, c) - min(a, b, c):num}.",
    "misconception": "Treats an estimate as the exact answer or rounds inconsistently.",
-   "notes": "Three five-digit monthly counts 12,105 to 38,995, all different, none ending in 500.",
+   "notes": "Three five-digit monthly counts 12,105 to 38,995, all different, none ending in 500. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH04-Q166",
     "CBSE-C5-CH04-Q167",
@@ -4364,11 +4505,10 @@
    "code": "C5-WT2-L5-3",
    "chapter": 4,
    "skill": "C5-WT2-S08",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 3,
    "competency": "Multi-step application",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "thing",
@@ -4401,11 +4541,23 @@
      }
     },
     {
-     "name": "w3",
+     "name": "over",
+     "choice": [
+      1,
+      -1
+     ]
+    },
+    {
+     "name": "gap",
      "int": {
       "min": 105,
-      "max": 4995
+      "max": "min(1995, target - w1 - w2 - 105)",
+      "step": 5
      }
+    },
+    {
+     "name": "w3",
+     "expr": "target - w1 - w2 + over * gap"
     }
    ],
    "require": [
@@ -4413,27 +4565,67 @@
     "w1 + w2 + w3 != target",
     "(w1 + w2) % 10 != 0"
    ],
-   "text": "A school wants to collect {target:num} {thing}. It collects {w1:num} in week 1 and {w2:num} in week 2. (a) How many has it collected so far? (b) How many more are needed to reach {target:num}? (c) In week 3 it collects {w3:num}. Has it reached the target? By how many is it over or short? Show your working.",
-   "maxWords": 90,
-   "answer": "(a) {w1:num} + {w2:num} = {w1 + w2:num}. (b) {target:num} − {w1 + w2:num} = {target - w1 - w2:num}. (c) {w1 + w2:num} + {w3:num} = {w1 + w2 + w3:num}; {'over' if w1 + w2 + w3 > target else 'short'} by {abs(w1 + w2 + w3 - target):num}.",
-   "steps": [
+   "stimulus": "A school wants to collect {target:num} {thing}. It collects {w1:num} in week 1, {w2:num} in week 2 and {w3:num} in week 3. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {w1:num} + {w2:num} = {w1 + w2:num}."
+     "text": "(a) How many has it collected in the first two weeks?",
+     "answer": "w1 + w2",
+     "responseFormat": "Integer",
+     "explanation": "{w1:num} + {w2:num} = {w1 + w2:num}."
     },
     {
-     "marks": 2,
-     "text": "(b) 1 mark for {target:num} − {w1 + w2:num} (or counting on); 1 mark for {target - w1 - w2:num}."
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) After week 2, how many more were needed to reach {target:num}?",
+     "answer": "target - w1 - w2",
+     "responseFormat": "Integer",
+     "explanation": "{target:num} − {w1 + w2:num} = {target - w1 - w2:num}."
     },
     {
-     "marks": 2,
-     "text": "(c) 1 mark for comparing {w3:num} with {target - w1 - w2:num} (or finding {w1 + w2 + w3:num}); 1 mark for '{'over' if w1 + w2 + w3 > target else 'short'} by {abs(w1 + w2 + w3 - target):num}'."
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) How many has it collected after week 3?",
+     "answer": "w1 + w2 + w3",
+     "responseFormat": "Integer",
+     "explanation": "{w1 + w2:num} + {w3:num} = {w1 + w2 + w3:num}."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(d) Has the school reached its target of {target:num}?",
+     "options": {
+      "correct": "'Yes, it is over the target.' if w1 + w2 + w3 > target else 'No, it is short of the target.'",
+      "wrong": [
+       {
+        "expr": "'No, it is short of the target.' if w1 + w2 + w3 > target else 'Yes, it is over the target.'",
+        "mistake": "compares only one week with the target"
+       },
+       {
+        "expr": "'Yes, it is exactly on target.'",
+        "mistake": "does not compare the total with the target"
+       },
+       {
+        "expr": "'It cannot be found yet.'",
+        "mistake": "thinks more information is needed"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "{w1 + w2 + w3:num} is {'more' if w1 + w2 + w3 > target else 'less'} than {target:num}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(e) By how many is it over or short of the target?",
+     "answer": "abs(w1 + w2 + w3 - target)",
+     "responseFormat": "Integer",
+     "explanation": "The difference between {w1 + w2 + w3:num} and {target:num} is {abs(w1 + w2 + w3 - target):num}."
     }
    ],
-   "hint": "The number still needed is the complement of what has been collected.",
-   "explanation": "So far: {w1 + w2:num}. Still needed: {target - w1 - w2:num}. After week 3: {w1 + w2 + w3:num}, which is {'over' if w1 + w2 + w3 > target else 'short'} by {abs(w1 + w2 + w3 - target):num}.",
    "misconception": "Subtracts each digit independently without regrouping.",
-   "notes": "Targets 5,000 or 10,000; two weeks of 1,205 to 2,995; week 3 from 105 to 4,995, so the target may or may not be reached.",
+   "notes": "Targets 5,000 or 10,000; two weeks of 1,205 to 2,995; week 3 lands 105 to 1,995 over or short of the target (short by less than was still needed), half the time each. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH04-Q232",
     "CBSE-C5-CH04-Q238",

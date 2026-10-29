@@ -4,7 +4,7 @@
     "classLevel": "5",
     "course": "MATHEMATICS"
   },
-  "about": "Chapter 1, We the Travellers I: 59 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them; the first five were sent to her as samples on 27 Oct 2026.",
+  "about": "Chapter 1, We the Travellers I: 59 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them; the first five were sent to her as samples on 27 Oct 2026.",
   "patterns": [
     {
       "code": "C5-WT1-S01-P1",
@@ -4378,11 +4378,10 @@
       "code": "C5-WT1-L3-1",
       "chapter": 1,
       "skill": "C5-WT1-S13",
-      "questionType": "Constructed Response",
+      "questionType": "Long Answer",
       "marks": 3,
       "difficulty": 3,
       "competency": "Application in context",
-      "responseFormat": "Written working",
       "values": [
         {
           "name": "place",
@@ -4442,26 +4441,35 @@
       "require": [
         "r != 0"
       ],
-      "text": "A school is taking {students} students and {teachers} teachers on a trip to {place}. Each bus can seat {cap} people. How many buses are needed so that everyone goes? How many seats will be empty? Show your working.",
-      "answer": "Total people = {students} + {teachers} = {total}. {total} ÷ {cap} = {q} remainder {r}. {q} buses seat {q * cap} people, so {r} people are left over and need one more bus. Buses needed = {buses}. Seats in {buses} buses = {buses} × {cap} = {buses * cap}, so empty seats = {buses * cap} − {total} = {empty}.",
-      "steps": [
+      "stimulus": "A school is taking {students} students and {teachers} teachers on a trip to {place}. Each bus can seat {cap} people. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Adds students and teachers: {students} + {teachers} = {total} people."
+          "text": "(a) How many people are going on the trip in all?",
+          "answer": "total",
+          "responseFormat": "Integer",
+          "explanation": "{students} + {teachers} = {total} people."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Divides {total} by {cap} to get {q} remainder {r} (or shows that {q} buses seat {q * cap} and {r} people are left). Accept repeated addition or multiplication by trial."
+          "text": "(b) How many buses are needed so that everyone goes?",
+          "answer": "buses",
+          "responseFormat": "Integer",
+          "explanation": "{total} ÷ {cap} = {q} remainder {r}. The {r} people left over need one more bus, so {buses} buses."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Concludes {buses} buses (one more for the {r} people left over) and {empty} empty seats. Both are needed for the mark; {q} buses gets no mark. Follow through from a wrong total if the method is right."
+          "text": "(c) How many seats will be empty on these buses?",
+          "answer": "empty",
+          "responseFormat": "Integer",
+          "explanation": "{buses} × {cap} = {buses * cap} seats, and {buses * cap} − {total} = {empty} are empty."
         }
       ],
-      "hint": "Find the total number of people first. What happens to the people left over after the full buses?",
-      "explanation": "{students} + {teachers} = {total} people. {total} ÷ {cap} = {q} remainder {r}, so {q} full buses leave {r} people, who need one more bus: {buses} buses. They have {buses * cap} {'seat' if (buses * cap) == 1 else 'seats'}, so {buses * cap} − {total} = {empty} {'seat' if (empty) == 1 else 'seats'} are empty.",
       "misconception": "Drops the remainder even when every person or object must be accommodated.",
-      "notes": "150 to 380 students and 8 to 20 teachers; a bus seats 40, 45, 48, 50 or 52. The people never fill the buses exactly, so there is always a part-full bus.",
+      "notes": "150 to 380 students and 8 to 20 teachers; a bus seats 40, 45, 48, 50 or 52. The people never fill the buses exactly, so there is always a part-full bus. Step question (#208): (a) people, (b) buses, (c) empty seats.",
       "sources": [
         "CBSE-C5-CH01-Q128",
         "CBSE-C5-CH01-Q499",
@@ -4473,11 +4481,10 @@
       "code": "C5-WT1-L3-2",
       "chapter": 1,
       "skill": "C5-WT1-S10",
-      "questionType": "Constructed Response",
+      "questionType": "Long Answer",
       "marks": 3,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Written working",
       "values": [
         {
           "name": "event",
@@ -4490,42 +4497,58 @@
           ]
         },
         {
+          "name": "u",
+          "choice": [
+            100,
+            1000
+          ]
+        },
+        {
           "name": "r",
           "int": {
-            "min": 12000,
-            "max": 98000,
-            "step": 1000
+            "min": "12 * 1000 if u == 1000 else 1200",
+            "max": "98 * 1000 if u == 1000 else 9800",
+            "step": "u"
           }
         },
         {
           "name": "lo",
-          "expr": "r - 500"
+          "expr": "r - u // 2"
         },
         {
           "name": "hi",
-          "expr": "r + 499"
+          "expr": "r + u // 2 - 1"
         }
       ],
-      "text": "A newspaper says that {r:num} people {event}. The number was rounded to the nearest 1,000. What is the smallest number of people who could have come? What is the greatest? How many different exact numbers are possible? Explain.",
-      "answer": "Numbers from {lo:num} to {hi:num} round to {r:num}. Smallest: {lo:num}, because it is exactly halfway between {r - 1000:num} and {r:num} and a halfway number rounds up. Greatest: {hi:num}, because {r + 500:num} would round up to {r + 1000:num}. Number of possible counts = {hi:num} − {lo:num} + 1 = 1,000.",
-      "steps": [
+      "stimulus": "A newspaper says that {r:num} people {event}. The number was rounded to the nearest {u:num}. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Uses the halfway points: {lo:num} (halfway, so it rounds up to {r:num}) and {r + 500:num} (rounds up to {r + 1000:num}). Accept a number line or a clear statement that 500 below and up to 499 above round to {r:num}."
+          "text": "(a) What is the smallest number of people who could have come?",
+          "answer": "lo",
+          "responseFormat": "Integer",
+          "explanation": "{lo:num} is halfway between {r - u:num} and {r:num}, and a halfway number rounds up, so it rounds to {r:num}; {lo - 1:num} would round to {r - u:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Smallest {lo:num} and greatest {hi:num}, both right. No mark for {lo - 1:num} or {r + 500:num}."
+          "text": "(b) What is the greatest number of people who could have come?",
+          "answer": "hi",
+          "responseFormat": "Integer",
+          "explanation": "{hi + 1:num} would round up to {r + u:num}, so the greatest is {hi:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Concludes that 1,000 different numbers are possible (from {hi:num} − {lo:num} + 1). Follow through from the student's own smallest and greatest if the counting is right."
+          "text": "(c) How many different exact numbers of people are possible?",
+          "answer": "hi - lo + 1",
+          "responseFormat": "Integer",
+          "explanation": "From {lo:num} to {hi:num} there are {hi:num} − {lo:num} + 1 = {hi - lo + 1:num} numbers."
         }
       ],
-      "hint": "Which numbers are halfway between {r - 1000:num} and {r:num}, and between {r:num} and {r + 1000:num}? Which way does a halfway number round?",
-      "explanation": "A number rounds to {r:num} if it is at least {lo:num} (halfway rounds up) and less than {r + 500:num}. So the smallest is {lo:num}, the greatest is {hi:num}, and there are {hi:num} − {lo:num} + 1 = 1,000 possible numbers.",
       "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
-      "notes": "The rounded number is a thousand from 12,000 to 98,000; the answers are 500 below it and 499 above it, and always 1,000 possible numbers.",
+      "notes": "Rounded to the nearest 1,000 (a thousand from 12,000 to 98,000) or the nearest 100 (a hundred from 1,200 to 9,800). The smallest is half the unit below, the greatest one less than half the unit above, so 1,000 or 100 numbers are possible. Step question (#208): (a) smallest, (b) greatest, (c) how many.",
       "sources": [
         "CBSE-C5-CH01-Q100",
         "CBSE-C5-CH01-Q371",
@@ -4537,11 +4560,10 @@
       "code": "C5-WT1-L3-3",
       "chapter": 1,
       "skill": "C5-WT1-S06",
-      "questionType": "Constructed Response",
+      "questionType": "Long Answer",
       "marks": 3,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Written working",
       "values": [
         {
           "name": "who",
@@ -4591,26 +4613,35 @@
           "expr": "d1 * 10000 + d2 * 100 + d3 * 10 + d4"
         }
       ],
-      "text": "{who.name} has five number cards: {d3 if order == 1 else d2}, 0, {d1 if order == 1 else d4}, {d4 if order == 1 else (d3 if order == 2 else d1)}, {d2 if order == 1 else (d1 if order == 2 else d3)}. Using each card once, {who.he} makes the greatest and the smallest 5-digit numbers. Write both numbers and find their difference. Show your working.",
-      "answer": "Greatest number: {big:num} (biggest digits in the highest places, 0 in the ones place). Smallest 5-digit number: {small:num} (0 cannot go first, so the smallest non-zero digit {d1} goes first and 0 goes next). Difference = {big:num} − {small:num} = {big - small:num}.",
-      "steps": [
+      "stimulus": "{who.name} has five number cards: {d3 if order == 1 else d2}, 0, {d1 if order == 1 else d4}, {d4 if order == 1 else (d3 if order == 2 else d1)}, {d2 if order == 1 else (d1 if order == 2 else d3)}. Using each card once, {who.he} makes 5-digit numbers. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Greatest number {big:num}, with the digits in order from biggest to smallest."
+          "text": "(a) What is the greatest 5-digit number {who.he} can make?",
+          "answer": "big",
+          "responseFormat": "Integer",
+          "explanation": "Biggest digits in the highest places and 0 in the ones place: {big:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Smallest 5-digit number {small:num}, with {d1} first and 0 in the thousands place. No mark for a number starting with 0 (that is not a 5-digit number)."
+          "text": "(b) What is the smallest 5-digit number {who.he} can make?",
+          "answer": "small",
+          "responseFormat": "Integer",
+          "explanation": "A 5-digit number cannot start with 0, so it starts with {d1}, then 0, then {d2}, {d3}, {d4}: {small:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Difference {big - small:num}, subtracted correctly. Follow through: give this mark if the subtraction is right for the student's own two numbers."
+          "text": "(c) What is the difference between the greatest and the smallest of these numbers?",
+          "answer": "big - small",
+          "responseFormat": "Integer",
+          "explanation": "{big:num} − {small:num} = {big - small:num}."
         }
       ],
-      "hint": "For the greatest, put the biggest digit in the ten-thousands place. Can a 5-digit number start with 0?",
-      "explanation": "Greatest: {big:num}. The smallest cannot start with 0, so it starts with {d1}, then 0, then {d2}, {d3}, {d4}: {small:num}. Difference: {big:num} − {small:num} = {big - small:num}.",
       "misconception": "Creates a leading zero or changes more than the allowed digits.",
-      "notes": "Four different digits from 1 to 9 plus a 0, shown in one of three mixed-up orders. The smallest number always has 0 in the thousands place.",
+      "notes": "Four different digits from 1 to 9 plus a 0, shown in one of three mixed-up orders. The smallest number always has 0 in the thousands place. Step question (#208): (a) greatest, (b) smallest, (c) difference.",
       "sources": [
         "CBSE-C5-CH01-Q060",
         "CBSE-C5-CH01-Q285",
@@ -4621,12 +4652,10 @@
       "code": "C5-WT1-L5-1",
       "chapter": 1,
       "skill": "C5-WT1-S12",
-      "questionType": "Constructed Response",
+      "questionType": "Long Answer",
       "marks": 5,
       "difficulty": 4,
       "competency": "Application in context",
-      "responseFormat": "Written working",
-      "maxWords": 90,
       "values": [
         {
           "name": "who",
@@ -4688,30 +4717,61 @@
         "s1 != s2",
         "h1 != h2"
       ],
-      "text": "{who.name}'s family drives {d} km to {who.his} {dest}. Before lunch they drive at {s1} km each hour for {h1} hours. After lunch they drive at {s2} km each hour until they reach. (a) How far do they drive before lunch? (b) How far is left after lunch? (c) For how many hours do they drive after lunch? (d) For how many hours do they drive in all? Show your working.",
-      "answer": "(a) Before lunch: {s1} × {h1} = {m} km. (b) Left after lunch: {d} − {m} = {rest} km. (c) Hours after lunch: {rest} ÷ {s2} = {h2} hours. (d) Total time: {h1} + {h2} = {h1 + h2} hours.",
-      "steps": [
+      "stimulus": "{who.name}'s family drives {d} km to {who.his} {dest}. Before lunch they drive at {s1} km each hour for {h1} hours. After lunch they drive at {s2} km each hour until they reach. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(a) Multiplies: {s1} × {h1} = {m} km. No mark for {s1} + {h1}."
+          "text": "(a) How far do they drive before lunch?",
+          "answer": "m",
+          "unit": "km",
+          "unitRule": "STATED",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{s1} × {h1} = {m} km."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(b) Subtracts from the whole journey: {d} − {m} = {rest} km (follow through from a wrong (a))."
+          "text": "(b) How far is left to drive after lunch?",
+          "answer": "rest",
+          "unit": "km",
+          "unitRule": "STATED",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{d} − {m} = {rest} km."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 2,
-          "text": "(c) 1 mark for dividing the distance left by {s2} (or adding {s2} km an hour until reaching {rest} km); 1 mark for {h2} hours."
+          "text": "(c) For how many hours do they drive after lunch?",
+          "answer": "h2",
+          "unit": "hours",
+          "unitRule": "STATED",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{rest} ÷ {s2} = {h2} hours.",
+          "steps": [
+            {
+              "marks": 1,
+              "text": "Divides the distance left by {s2}: {rest} ÷ {s2}."
+            },
+            {
+              "marks": 1,
+              "text": "{h2} hours."
+            }
+          ]
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(d) {h1} + {h2} = {h1 + h2} hours, with the unit (hours). Follow through from the student's own (c)."
+          "text": "(d) For how many hours do they drive in all?",
+          "answer": "h1 + h2",
+          "unit": "hours",
+          "unitRule": "STATED",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{h1} + {h2} = {h1 + h2} hours."
         }
       ],
-      "hint": "The same distance is covered in every hour. Find the distance before lunch first.",
-      "explanation": "Before lunch: {s1} km each hour for {h1} hours is {s1} × {h1} = {m} km. Left: {d} − {m} = {rest} km. At {s2} km each hour that takes {rest} ÷ {s2} = {h2} hours. In all: {h1} + {h2} = {h1 + h2} hours.",
       "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
-      "notes": "Before lunch 40 to 65 km an hour for 2 to 4 hours; after lunch 30 to 60 km an hour (a multiple of 5) for 2 to 5 hours, so the distance left always divides exactly. The two speeds differ and the two times differ. Journey 110 to 560 km.",
+      "notes": "Before lunch 40 to 65 km an hour for 2 to 4 hours; after lunch 30 to 60 km an hour (a multiple of 5) for 2 to 5 hours, so the distance left always divides exactly. The two speeds differ and the two times differ. Journey 110 to 560 km. Step question (#208): (a) distance before lunch, (b) distance left, (c) hours after lunch (2 marks, all or nothing), (d) total hours.",
       "sources": [
         "CBSE-C5-CH01-Q120",
         "CBSE-C5-CH01-Q423",
@@ -4723,12 +4783,10 @@
       "code": "C5-WT1-L5-2",
       "chapter": 1,
       "skill": "C5-WT1-S14",
-      "questionType": "Constructed Response",
+      "questionType": "Long Answer",
       "marks": 5,
       "difficulty": 4,
       "competency": "Application in context",
-      "responseFormat": "Written working",
-      "maxWords": 90,
       "values": [
         {
           "name": "who",
@@ -4784,32 +4842,56 @@
       "require": [
         "r500 >= 200",
         "r500 % 100 >= 20",
-        "n500 >= 10"
+        "n500 >= 10",
+        "n100 != n10"
       ],
-      "text": "Each of the {n} children in Class 5 pays {p:money} for a school trip to {trip}. Their teacher, {who.name}, takes all the money to the bank and asks for as many ₹500 notes as possible, then as many ₹100 notes as possible, and the rest in ₹10 notes. (a) How much money was collected? (b) How many notes of each kind does {who.he} get? Show your working.",
-      "answer": "(a) Money collected = {n} × {p:money} = {t:money}. (b) {t:num} ÷ 500 = {n500} remainder {r500}, so {n500} notes of ₹500 make {n500 * 500:money} and {r500:money} is left. {r500} ÷ 100 = {n100} remainder {r500 % 100}, so {n100} notes of ₹100. {r500 % 100} ÷ 10 = {n10}, so {n10} notes of ₹10. Check: {n500 * 500:money} + {n100 * 100:money} + {n10 * 10:money} = {t:money}.",
-      "steps": [
+      "stimulus": "Each of the {n} children in Class 5 pays {p:money} for a school trip to {trip}. Their teacher, {who.name}, takes all the money to the bank and asks for as many ₹500 notes as possible, then as many ₹100 notes as possible, and the rest in ₹10 notes. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 2,
-          "text": "(a) 1 mark for multiplying {n} × {p}; 1 mark for {t:money}."
+          "text": "(a) How much money was collected, in rupees?",
+          "answer": "t",
+          "responseFormat": "Integer",
+          "explanation": "{n} × {p:money} = {t:money}.",
+          "steps": [
+            {
+              "marks": 1,
+              "text": "Multiplies {n} × {p}."
+            },
+            {
+              "marks": 1,
+              "text": "{t:money}."
+            }
+          ]
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "{n500} notes of ₹500 with {r500:money} left (from {t:num} ÷ 500). No mark for giving a digit of {t:num} instead of the number of complete ₹500 groups. Follow through from a wrong (a)."
+          "text": "(b) How many ₹500 notes does {who.he} get?",
+          "answer": "n500",
+          "responseFormat": "Integer",
+          "explanation": "{t:num} ÷ 500 = {n500} remainder {r500}, so {n500} notes of ₹500."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "{n100} notes of ₹100 from the {r500:money} left (follow through)."
+          "text": "(c) How many ₹100 notes does {who.he} get?",
+          "answer": "n100",
+          "responseFormat": "Integer",
+          "explanation": "{n500} notes of ₹500 make {n500 * 500:money}, leaving {r500:money}: {n100} notes of ₹100."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "{n10} notes of ₹10, with all three counts stated as the final answer (follow through)."
+          "text": "(d) How many ₹10 notes does {who.he} get?",
+          "answer": "n10",
+          "responseFormat": "Integer",
+          "explanation": "After the ₹100 notes, {r500 % 100:money} is left: {n10} notes of ₹10."
         }
       ],
-      "hint": "Find the total first. How many complete ₹500 groups are in the whole amount, not just in the thousands?",
-      "explanation": "{n} × {p:money} = {t:money}. {t:num} ÷ 500 = {n500} remainder {r500}, so {n500} notes of ₹500. The {r500:money} left gives {n100} notes of ₹100 and {r500 % 100:money}, which is {n10} notes of ₹10.",
       "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
-      "notes": "24 to 42 children paying ₹150 to ₹450 (a multiple of ₹10), so ₹3,600 to ₹18,900 in all. At least 10 notes of ₹500, and always at least 2 notes of ₹100 and at least 2 notes of ₹10.",
+      "notes": "24 to 42 children paying ₹150 to ₹450 (a multiple of ₹10), so ₹3,600 to ₹18,900 in all. At least 10 notes of ₹500, and always at least 2 notes of ₹100 and at least 2 notes of ₹10. Step question (#208): (a) total (2 marks, all or nothing), (b) ₹500 notes, (c) ₹100 notes, (d) ₹10 notes. The ₹100 and ₹10 counts always differ.",
       "sources": [
         "CBSE-C5-CH01-Q138",
         "CBSE-C5-CH01-Q140",
@@ -4821,12 +4903,10 @@
       "code": "C5-WT1-L5-3",
       "chapter": 1,
       "skill": "C5-WT1-S11",
-      "questionType": "Constructed Response",
+      "questionType": "Long Answer",
       "marks": 5,
       "difficulty": 4,
       "competency": "Application in context",
-      "responseFormat": "Written working",
-      "maxWords": 90,
       "values": [
         {
           "name": "train",
@@ -4884,30 +4964,53 @@
         "s % 10 != 5",
         "est != ex"
       ],
-      "text": "A {train} has {c} coaches. Each coach has {s} seats. (a) Round both numbers to the nearest 10 and estimate the number of seats on the train. (b) Find the exact number of seats. (c) By how many seats is your estimate more or less than the exact number? Show your working.",
-      "answer": "(a) {c} rounds to {rc} and {s} rounds to {rs}. Estimate = {rc} × {rs} = {est:num} seats. (b) Exact = {c} × {s} = {ex:num} seats. (c) {max(est, ex):num} − {min(est, ex):num} = {gap}, so the estimate is {gap} seats {way} than the exact number.",
-      "steps": [
+      "stimulus": "A {train} has {c} coaches. Each coach has {s} seats. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Rounds both numbers: {c} to {rc} and {s} to {rs}."
+          "text": "(a) What is {s} rounded to the nearest 10?",
+          "answer": "rs",
+          "responseFormat": "Integer",
+          "explanation": "{s} rounds to {rs}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Estimate {rc} × {rs} = {est:num} (follow through from the student's rounding)."
+          "text": "(b) Round both numbers to the nearest 10 and multiply. What is the estimate of the number of seats?",
+          "answer": "est",
+          "responseFormat": "Integer",
+          "explanation": "{rc} × {rs} = {est:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 2,
-          "text": "(b) 1 mark for multiplying {c} × {s} by a correct method; 1 mark for {ex:num}."
+          "text": "(c) What is the exact number of seats on the train?",
+          "answer": "ex",
+          "responseFormat": "Integer",
+          "explanation": "{c} × {s} = {ex:num} seats.",
+          "steps": [
+            {
+              "marks": 1,
+              "text": "Multiplies {c} × {s}."
+            },
+            {
+              "marks": 1,
+              "text": "{ex:num}."
+            }
+          ]
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(c) {gap} seats, and says the estimate is {way} than the exact number. Both needed. Follow through from the student's own (a) and (b)."
+          "text": "(d) By how many seats does the estimate differ from the exact number?",
+          "answer": "gap",
+          "responseFormat": "Integer",
+          "explanation": "The estimate {est:num} is {gap} {way} than the exact {ex:num}."
         }
       ],
-      "hint": "Look at the ones digit to round to the nearest 10. Then multiply the rounded numbers.",
-      "explanation": "{c} is about {rc} and {s} is about {rs}, so the estimate is {rc} × {rs} = {est:num}. Exactly, {c} × {s} = {ex:num}. The estimate is {gap} {way} than the exact number, which is why an estimate is only a quick check.",
       "misconception": "Treats an estimate as an exact answer or chooses units that are not plausible.",
-      "notes": "12 to 24 coaches with 61 to 89 seats each; neither number ends in 0 or 5, and the estimate is never exactly right. Exact totals 732 to 2,136.",
+      "notes": "12 to 24 coaches with 61 to 89 seats each; neither number ends in 0 or 5, and the estimate is never exactly right. Exact totals 732 to 2,136. Step question (#208): (a) rounding of the seats in a coach, (b) estimate, (c) exact (2 marks, all or nothing), (d) the difference.",
       "sources": [
         "CBSE-C5-CH01-Q108",
         "CBSE-C5-CH01-Q395",

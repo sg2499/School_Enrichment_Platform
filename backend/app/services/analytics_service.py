@@ -528,9 +528,15 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
             (skill.id, key),
             {"skill": skill, "tag": " ".join(raw_tag.split()), "questions": set(), "per_student": {}},
         )
-        group["questions"].add(counted_as.get(question_id, question_id))
-        answered, missed = group["per_student"].get(student_id, (0, 0))
-        group["per_student"][student_id] = (answered + 1, missed + (1 if row[2] < row[3] else 0))
+        counted = counted_as.get(question_id, question_id)
+        group["questions"].add(counted)
+        # A case study's or long answer's parts are one question here: a
+        # student answered it once and missed it if any part was wrong, so
+        # one long answer alone can't flag a mistake (#208 review).
+        seen = group["per_student"].setdefault(student_id, ({}, set()))
+        seen[0][counted] = True
+        if row[2] < row[3]:
+            seen[1].add(counted)
 
     skill_ids = list({g["skill"].id for g in groups.values()})
     rescue: dict[str, LearningActivity] = {}
@@ -562,7 +568,8 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
         approved = _approved(review)
         flagged = []
         judged = 0
-        for student_id, (answered, missed) in group["per_student"].items():
+        for student_id, (answered_set, missed_set) in group["per_student"].items():
+            answered, missed = len(answered_set), len(missed_set)
             if answered >= MISSED_FOR_MISCONCEPTION:
                 judged += 1
             if missed >= MISSED_FOR_MISCONCEPTION:

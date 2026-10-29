@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 7, Shapes and Patterns: 68 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. Only what words alone state fully is generated (no pictures). All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 7, Shapes and Patterns: 68 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. Only what words alone state fully is generated (no pictures). All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-SP-S01-P1",
@@ -10990,16 +10990,15 @@
    "code": "C5-SP-L3-1",
    "chapter": 7,
    "skill": "C5-SP-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "n",
      "int": {
-      "min": 4,
+      "min": 5,
       "max": 10
      }
     },
@@ -11008,26 +11007,39 @@
      "list": "names"
     }
    ],
-   "text": "{who.name} paints all the outside faces of {'an' if n == 8 or n == 11 else 'a'} {n} × {n} × {n} cube made of small cubes and takes it apart. How many small cubes have exactly 2 painted faces, exactly 1 painted face and no painted face? Show your working.",
-   "answer": "2 faces: 12 edges × {n - 2} = {12 * (n - 2)}. 1 face: 6 faces × {(n - 2) * (n - 2)} = {6 * (n - 2) * (n - 2)}. No face: {n - 2} × {n - 2} × {n - 2} = {(n - 2) * (n - 2) * (n - 2)}.",
-   "steps": [
+   "require": [
+    "n != 8"
+   ],
+   "stimulus": "{who.name} paints all the outside faces of {'an' if n == 8 or n == 11 else 'a'} {n} × {n} × {n} cube made of small cubes and takes it apart. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Exactly 2 painted faces: 12 × {n - 2} = {12 * (n - 2)}."
+     "text": "(a) How many small cubes have exactly 2 painted faces?",
+     "answer": "12 * (n - 2)",
+     "responseFormat": "Integer",
+     "hint": "Think about the edges, leaving out the corners.",
+     "explanation": "These are on the 12 edges, not at the corners: 12 × {n - 2} = {12 * (n - 2)}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Exactly 1 painted face: 6 × {n - 2} × {n - 2} = {6 * (n - 2) * (n - 2)}."
+     "text": "(b) How many small cubes have exactly 1 painted face?",
+     "answer": "6 * (n - 2) * (n - 2)",
+     "responseFormat": "Integer",
+     "explanation": "These are in the middle of the 6 faces: 6 × {n - 2} × {n - 2} = {6 * (n - 2) * (n - 2)}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "No painted face: {n - 2} × {n - 2} × {n - 2} = {(n - 2) * (n - 2) * (n - 2)}."
+     "text": "(c) How many small cubes have no painted face?",
+     "answer": "(n - 2) * (n - 2) * (n - 2)",
+     "responseFormat": "Integer",
+     "explanation": "These are inside: {n - 2} × {n - 2} × {n - 2} = {(n - 2) * (n - 2) * (n - 2)}. With the 8 corners, all the groups add up to {n * n * n:num}."
     }
    ],
-   "hint": "Think about edges (not corners), the middles of faces and the inside.",
-   "explanation": "With 8 corners: 8 + {12 * (n - 2)} + {6 * (n - 2) * (n - 2)} + {(n - 2) * (n - 2) * (n - 2)} = {n * n * n}, the whole cube.",
    "misconception": "Counts painted large faces instead of small cubes or double-counts corner cubes on several faces.",
-   "notes": "Cubes 4 to 10 on a side.",
+   "notes": "Cubes 5 to 10 on a side, not 8 (a 4-cube gives (a) = (b), an 8-cube (b) = (c)). Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH07-Q437",
     "CBSE-C5-CH07-Q445",
@@ -11038,11 +11050,10 @@
    "code": "C5-SP-L3-2",
    "chapter": 7,
    "skill": "C5-SP-S05",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "c",
@@ -11342,28 +11353,66 @@
        "k": 2
       }
      ]
-    }
-   ],
-   "text": "Can {c.t} fit exactly around one point with no gap or overlap? Their angles are {c.g}. Explain your answer.",
-   "answer": "The angles add up to {c.tot}°. {'This is exactly 360°, a full turn, so they fit.' if c.k == 0 else ('This is less than 360°, so a gap is left: they do not fit.' if c.k == 1 else 'This is more than 360°, so they overlap: they do not fit.')}",
-   "steps": [
-    {
-     "marks": 1,
-     "text": "Uses the angle of each shape ({c.g})."
     },
     {
-     "marks": 1,
-     "text": "Adds them: {c.tot}°."
+     "name": "fit",
+     "expr": "'Yes: the angles add up to exactly 360°, a full turn, so they fit.'"
     },
     {
-     "marks": 1,
-     "text": "Compares with 360° and concludes: {'they fit' if c.k == 0 else 'they do not fit'}."
+     "name": "gap",
+     "expr": "'No: the angles add up to less than 360°, so a gap is left.'"
+    },
+    {
+     "name": "over",
+     "expr": "'No: the angles add up to more than 360°, so the shapes overlap.'"
     }
    ],
-   "hint": "A full turn is 360°.",
-   "explanation": "Total {c.tot}°; {'equal to' if c.k == 0 else 'not equal to'} 360°.",
+   "stimulus": "Can {c.t} fit exactly around one point with no gap or overlap? Their angles are {c.g}. Answer each step in its own box.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) What do the angles add up to, in degrees?",
+     "answer": "c.tot",
+     "responseFormat": "Integer",
+     "hint": "Add one angle for each shape.",
+     "explanation": "{c.g} add up to {c.tot}°."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) What is the difference between this total and 360°, in degrees?",
+     "answer": "abs(360 - c.tot)",
+     "responseFormat": "Integer",
+     "hint": "A full turn is 360°.",
+     "explanation": "The difference between {c.tot}° and 360° is {abs(360 - c.tot)}°."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(c) Can the shapes fit exactly around one point?",
+     "options": {
+      "correct": "fit if c.k == 0 else (gap if c.k == 1 else over)",
+      "wrong": [
+       {
+        "expr": "gap if c.k == 0 else (over if c.k == 1 else fit)",
+        "mistake": "compares the total with 360° the wrong way"
+       },
+       {
+        "expr": "over if c.k == 0 else (fit if c.k == 1 else gap)",
+        "mistake": "compares the total with 360° the wrong way"
+       },
+       {
+        "expr": "'Yes: shapes with straight sides always fit around a point.'",
+        "mistake": "checks the shapes one at a time, not the full turn"
+       }
+      ]
+     },
+     "explanation": "The total is {c.tot}°, {'exactly' if c.k == 0 else 'not'} 360°, so they {'fit' if c.k == 0 else 'do not fit'}."
+    }
+   ],
    "misconception": "Checks each shape separately but not whether the complete turn around every meeting point is filled.",
-   "notes": "As S05-P3.",
+   "notes": "As S05-P3; 18 of the 42 sets fit exactly, 12 leave a gap, 12 overlap. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH07-Q141",
     "CBSE-C5-CH07-Q153",
@@ -11374,11 +11423,10 @@
    "code": "C5-SP-L3-3",
    "chapter": 7,
    "skill": "C5-SP-S02",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "b",
@@ -12128,26 +12176,36 @@
      }
     }
    ],
-   "text": "A border repeats {b.t}. (a) What colour is item {p}? (b) How many {b.col} items are there in the first {t * b.L} items? Show your working.",
-   "answer": "(a) Item {p} is item {(p - 1) % b.L + 1} of a unit of {b.L} ({(p - 1) // b.L} complete units come first), so it is {(b.m1 if (p - 1) % b.L == 0 else (b.m2 if (p - 1) % b.L == 1 else (b.m3 if (p - 1) % b.L == 2 else (b.m4 if (p - 1) % b.L == 3 else b.m5))))}. (b) {t * b.L} items are {t} complete units, each with {b.cc} {b.col}: {t} × {b.cc} = {t * b.cc}.",
-   "steps": [
+   "stimulus": "A border repeats the colours {b.t}, in that order, again and again. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Finds item {p}'s place in the unit of {b.L}: item {(p - 1) % b.L + 1}."
+     "text": "(a) The repeating unit has {b.L} items. Item {p} of the border is which item of its unit (1 to {b.L})?",
+     "answer": "(p - 1) % b.L + 1",
+     "responseFormat": "Integer",
+     "hint": "Divide by {b.L} and look at what is left over.",
+     "explanation": "{(p - 1) // b.L} complete units come before it, so item {p} is item {(p - 1) % b.L + 1} of its unit."
     },
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "Names the colour: {(b.m1 if (p - 1) % b.L == 0 else (b.m2 if (p - 1) % b.L == 1 else (b.m3 if (p - 1) % b.L == 2 else (b.m4 if (p - 1) % b.L == 3 else b.m5))))}."
+     "text": "(b) What colour is item {p}?",
+     "answer": "(b.m1 if (p - 1) % b.L == 0 else (b.m2 if (p - 1) % b.L == 1 else (b.m3 if (p - 1) % b.L == 2 else (b.m4 if (p - 1) % b.L == 3 else b.m5))))",
+     "responseFormat": "One colour word",
+     "explanation": "Item {(p - 1) % b.L + 1} of the unit {b.t} is {(b.m1 if (p - 1) % b.L == 0 else (b.m2 if (p - 1) % b.L == 1 else (b.m3 if (p - 1) % b.L == 2 else (b.m4 if (p - 1) % b.L == 3 else b.m5))))}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Counts {b.col}: {t} units × {b.cc} = {t * b.cc}."
+     "text": "(c) How many {b.col} items are there in the first {t * b.L} items?",
+     "answer": "t * b.cc",
+     "responseFormat": "Integer",
+     "explanation": "{t * b.L} items are {t} complete units, each with {b.cc} {b.col}: {t} × {b.cc} = {t * b.cc}."
     }
    ],
-   "hint": "Use the length of the repeating unit for both parts.",
-   "explanation": "Item {p} is {(b.m1 if (p - 1) % b.L == 0 else (b.m2 if (p - 1) % b.L == 1 else (b.m3 if (p - 1) % b.L == 2 else (b.m4 if (p - 1) % b.L == 3 else b.m5))))}; {t} units contain {t * b.cc} {b.col} items.",
    "misconception": "Looks only across one row and ignores the row shift, column rule or complete repeating block.",
-   "notes": "As S02-P1; the count is over a whole number of units.",
+   "notes": "As S02-P1; the count is over a whole number of units. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH07-Q062",
     "CBSE-C5-CH07-Q063",
@@ -12158,16 +12216,15 @@
    "code": "C5-SP-L5-1",
    "chapter": 7,
    "skill": "C5-SP-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "n",
      "int": {
-      "min": 4,
+      "min": 5,
       "max": 9
      }
     },
@@ -12176,34 +12233,55 @@
      "list": "names"
     }
    ],
-   "text": "{who.name} builds {'an' if n == 8 or n == 11 else 'a'} {n} × {n} × {n} cube from small cubes, paints all its outside faces and takes it apart. (a) How many small cubes are there? (b) How many have 3 painted faces? (c) Exactly 2? (d) Exactly 1? (e) None? Show your working.",
-   "answer": "(a) {n} × {n} × {n} = {n * n * n}. (b) 8 corners. (c) 12 × {n - 2} = {12 * (n - 2)}. (d) 6 × {n - 2} × {n - 2} = {6 * (n - 2) * (n - 2)}. (e) {n - 2} × {n - 2} × {n - 2} = {(n - 2) * (n - 2) * (n - 2)}. Check: 8 + {12 * (n - 2)} + {6 * (n - 2) * (n - 2)} + {(n - 2) * (n - 2) * (n - 2)} = {n * n * n}.",
-   "steps": [
+   "require": [
+    "n != 8"
+   ],
+   "stimulus": "{who.name} builds {'an' if n == 8 or n == 11 else 'a'} {n} × {n} × {n} cube from small cubes, paints all its outside faces and takes it apart. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {n * n * n} small cubes."
+     "text": "(a) How many small cubes are there in all?",
+     "answer": "n * n * n",
+     "responseFormat": "Integer",
+     "explanation": "{n} × {n} × {n} = {n * n * n}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) 8 (the corners)."
+     "text": "(b) How many small cubes have at least one painted face?",
+     "answer": "n * n * n - (n - 2) * (n - 2) * (n - 2)",
+     "responseFormat": "Integer",
+     "hint": "Find the unpainted cubes inside first.",
+     "explanation": "Only the {n - 2} × {n - 2} × {n - 2} = {(n - 2) * (n - 2) * (n - 2)} inside cubes are unpainted: {n * n * n} − {(n - 2) * (n - 2) * (n - 2)} = {n * n * n - (n - 2) * (n - 2) * (n - 2)}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) 12 × {n - 2} = {12 * (n - 2)}."
+     "text": "(c) How many small cubes have exactly 2 painted faces?",
+     "answer": "12 * (n - 2)",
+     "responseFormat": "Integer",
+     "explanation": "On the 12 edges, not the corners: 12 × {n - 2} = {12 * (n - 2)}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) 6 × {n - 2} × {n - 2} = {6 * (n - 2) * (n - 2)}."
+     "text": "(d) How many small cubes have exactly 1 painted face?",
+     "answer": "6 * (n - 2) * (n - 2)",
+     "responseFormat": "Integer",
+     "explanation": "In the middle of the 6 faces: 6 × {n - 2} × {n - 2} = {6 * (n - 2) * (n - 2)}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {(n - 2) * (n - 2) * (n - 2)}, and the four groups add up to {n * n * n}."
+     "text": "(e) How many small cubes have no painted face?",
+     "answer": "(n - 2) * (n - 2) * (n - 2)",
+     "responseFormat": "Integer",
+     "explanation": "Inside: {(n - 2) * (n - 2) * (n - 2)}. Check: 8 corners + {12 * (n - 2)} + {6 * (n - 2) * (n - 2)} + {(n - 2) * (n - 2) * (n - 2)} = {n * n * n}."
     }
    ],
-   "hint": "Corners, edges, face middles and the inside: each small cube is in exactly one group.",
-   "explanation": "The four groups add up to all {n * n * n} small cubes.",
    "misconception": "Counts painted large faces instead of small cubes or double-counts corner cubes on several faces.",
-   "notes": "Cubes 4 to 9 on a side.",
+   "notes": "Cubes 5, 6, 7 or 9 on a side (a 4-cube gives (c) = (d), an 8-cube (d) = (e)). The '3 painted faces' step (always 8) became 'at least one painted face', so no step has the same answer every time. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH07-Q437",
     "CBSE-C5-CH07-Q451",
@@ -12214,11 +12292,10 @@
    "code": "C5-SP-L5-2",
    "chapter": 7,
    "skill": "C5-SP-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "b",
@@ -12269,36 +12346,57 @@
     {
      "name": "who",
      "list": "names"
+    },
+    {
+     "name": "other",
+     "expr": "'pyramid' if k.k == 'prism' else 'prism'"
     }
    ],
-   "text": "{who.name} makes a model of {b.ar} {b.b} {k.k}. Its base has {b.n} sides. Find its number of faces, edges and vertices, and check that faces + vertices − edges = 2. Show your working.",
-   "answer": "Faces = {b.n + 2 if k.k == 'prism' else b.n + 1}. Edges = {3 * b.n if k.k == 'prism' else 2 * b.n}. Vertices = {2 * b.n if k.k == 'prism' else b.n + 1}. Check: {b.n + 2 if k.k == 'prism' else b.n + 1} + {2 * b.n if k.k == 'prism' else b.n + 1} − {3 * b.n if k.k == 'prism' else 2 * b.n} = 2.",
-   "steps": [
+   "stimulus": "{who.name} makes a model of {b.ar} {b.b} {k.k}. Its base has {b.n} sides. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Faces: {b.n + 2 if k.k == 'prism' else b.n + 1} ({'2 bases and ' if k.k == 'prism' else '1 base and '}{b.n} side faces)."
+     "text": "(a) How many edges does the {k.k} have?",
+     "answer": "3 * b.n if k.k == 'prism' else 2 * b.n",
+     "responseFormat": "Integer",
+     "explanation": "{'2 × ' if k.k == 'prism' else ''}{b.n} round the base{'s, and ' if k.k == 'prism' else ', and '}{b.n} {'joining the bases' if k.k == 'prism' else 'up to the top'}: {(3 * b.n if k.k == 'prism' else 2 * b.n)} edges."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Edges: {3 * b.n if k.k == 'prism' else 2 * b.n}."
+     "text": "(b) How many vertices does it have?",
+     "answer": "2 * b.n if k.k == 'prism' else b.n + 1",
+     "responseFormat": "Integer",
+     "explanation": "{'The corners of the two bases' if k.k == 'prism' else 'The corners of the base and the top'}: {(2 * b.n if k.k == 'prism' else b.n + 1)} vertices."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Vertices: {2 * b.n if k.k == 'prism' else b.n + 1}."
+     "text": "(c) What is its number of faces + its number of vertices?",
+     "answer": "(b.n + 2 if k.k == 'prism' else b.n + 1) + (2 * b.n if k.k == 'prism' else b.n + 1)",
+     "responseFormat": "Integer",
+     "explanation": "{'2 bases and ' if k.k == 'prism' else '1 base and '}{b.n} side faces make {(b.n + 2 if k.k == 'prism' else b.n + 1)} faces; {(b.n + 2 if k.k == 'prism' else b.n + 1)} + {(2 * b.n if k.k == 'prism' else b.n + 1)} = {(b.n + 2 if k.k == 'prism' else b.n + 1) + (2 * b.n if k.k == 'prism' else b.n + 1)}, which is 2 more than its {(3 * b.n if k.k == 'prism' else 2 * b.n)} edges: faces + vertices − edges = 2."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Works out faces + vertices − edges."
+     "text": "(d) {b.Ar} {b.b} {other} has the same base. How many faces does it have?",
+     "answer": "b.n + 1 if k.k == 'prism' else b.n + 2",
+     "responseFormat": "Integer",
+     "explanation": "{'A pyramid has 1 base and ' if k.k == 'prism' else 'A prism has 2 bases and '}{b.n} side faces: {(b.n + 1 if k.k == 'prism' else b.n + 2)} faces."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Shows it equals 2."
+     "text": "(e) Back to the {k.k}: how many more edges than vertices does it have?",
+     "answer": "(3 * b.n if k.k == 'prism' else 2 * b.n) - (2 * b.n if k.k == 'prism' else b.n + 1)",
+     "responseFormat": "Integer",
+     "explanation": "{(3 * b.n if k.k == 'prism' else 2 * b.n)} − {(2 * b.n if k.k == 'prism' else b.n + 1)} = {(3 * b.n if k.k == 'prism' else 2 * b.n) - (2 * b.n if k.k == 'prism' else b.n + 1)}."
     }
    ],
-   "hint": "{'Two equal bases, joined by rectangles.' if k.k == 'prism' else 'One base, with triangles meeting at the top.'}",
-   "explanation": "F = {b.n + 2 if k.k == 'prism' else b.n + 1}, E = {3 * b.n if k.k == 'prism' else 2 * b.n}, V = {2 * b.n if k.k == 'prism' else b.n + 1}; F + V − E = 2.",
    "misconception": "Confuses a face with an edge or assumes the solid's name gives its number of vertices.",
-   "notes": "Prisms and pyramids with 3- to 8-sided bases.",
+   "notes": "Prisms and pyramids with 3- to 8-sided bases. The original 'check F + V − E = 2' (always 2) is now (c) F + V and its explanation; (d) contrasts the other solid. Faces are not asked on their own and the other solid's edges and vertices are not asked, since a pyramid's faces equal its vertices and its edges equal a prism's vertices. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH07-Q479",
     "CBSE-C5-CH07-Q487",
@@ -12309,11 +12407,10 @@
    "code": "C5-SP-L5-3",
    "chapter": 7,
    "skill": "C5-SP-S10",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "q",
@@ -12323,35 +12420,62 @@
      }
     }
    ],
-   "text": "A tangram square has an area of {16 * q} square cm. Each large triangle is one quarter of it; the medium triangle, the square piece and the parallelogram are each one eighth; each small triangle is one sixteenth. Find the area of each of the seven pieces, and check they add up to {16 * q} square cm. Show your working.",
-   "maxWords": 80,
-   "answer": "Large triangles: {16 * q} ÷ 4 = {4 * q} each. Medium triangle, square, parallelogram: {16 * q} ÷ 8 = {2 * q} each. Small triangles: {16 * q} ÷ 16 = {q} each. Total: {4 * q} + {4 * q} + {2 * q} + {2 * q} + {2 * q} + {q} + {q} = {16 * q}.",
-   "steps": [
+   "stimulus": "A tangram square has an area of {16 * q} square cm. Each large triangle is one quarter of it; the medium triangle, the square piece and the parallelogram are each one eighth; each small triangle is one sixteenth. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Large triangles: {4 * q} square cm each."
+     "text": "(a) What is the area of one large triangle, in square cm?",
+     "answer": "4 * q",
+     "unit": "square cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "One quarter: {16 * q} ÷ 4 = {4 * q} square cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Medium triangle, square and parallelogram: {2 * q} square cm each."
+     "text": "(b) What is the area of the parallelogram, in square cm?",
+     "answer": "2 * q",
+     "unit": "square cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "One eighth: {16 * q} ÷ 8 = {2 * q} square cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Small triangles: {q} square cm each."
+     "text": "(c) What is the area of one small triangle, in square cm?",
+     "answer": "q",
+     "unit": "square cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "One sixteenth: {16 * q} ÷ 16 = {q} square cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds all seven pieces."
+     "text": "(d) What is the total area of the medium triangle, the square piece and the parallelogram together, in square cm?",
+     "answer": "6 * q",
+     "unit": "square cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "3 × {2 * q} = {6 * q} square cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Shows the total is {16 * q} square cm."
+     "text": "(e) What is the total area of the two large triangles and the two small triangles together, in square cm?",
+     "answer": "10 * q",
+     "unit": "square cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "2 × {4 * q} + 2 × {q} = {10 * q} square cm. With (d): {10 * q} + {6 * q} = {16 * q}, the whole square."
     }
    ],
-   "hint": "One quarter is divide by 4, one eighth by 8, one sixteenth by 16.",
-   "explanation": "2 × {4 * q} + 3 × {2 * q} + 2 × {q} = {16 * q}.",
+   "maxWords": 80,
    "misconception": "Counts moved or rotated pieces as different sizes or allows gaps and overlaps in a completed figure.",
-   "notes": "Whole-square areas 64 to 400 square cm (multiples of 16).",
+   "notes": "Whole-square areas 64 to 400 square cm (multiples of 16); (d) and (e) together make the whole square, the original's check. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH07-Q318",
     "CBSE-C5-CH07-Q498",

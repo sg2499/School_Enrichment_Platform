@@ -122,7 +122,13 @@ function PartBlock({
         <QuestionInput question={part} value={value} onChange={onChange} maxLength={2000} />
         {part.acceptsWorking ? (
           <div className="mt-3">
-            <WorkingBox question={part} value={working} disabled={locked} onChange={onWorking} />
+            <WorkingBox
+              question={part}
+              value={working}
+              disabled={locked}
+              onChange={onWorking}
+              note="Show your steps to check your answer. On a mock paper the marks are for the answer."
+            />
           </div>
         ) : null}
       </fieldset>

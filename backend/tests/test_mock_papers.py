@@ -90,6 +90,10 @@ def test_formats_are_checked_in_words():
                          {"marks": 5, "count": 50}],
             "difficulty": {"easy": 50, "medium": 50, "hard": 10},
         })
+    with pytest.raises(FormatError) as written:
+        paper_formats.clean_format({**paper_formats.STARTING_POINTS[2], "sections": [
+            {"name": "A", "marks": 2, "count": 3, "kind": "WRITTEN"}]})
+    assert "long answers in steps are worth 3 or 5 marks" in written.value.problems[0]
     text = " | ".join(bad.value.problems)
     for words in ("Give the test format a name", "4-mark questions are case studies", "can't be more than the questions",
                   "multiple-choice questions are worth 1 or 2 marks", "keep it to 200", "from 5 minutes", "add up to 100%"):

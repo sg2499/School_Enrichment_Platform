@@ -25,7 +25,7 @@ export const KIND_LABEL: Record<QuestionKind, string> = {
   ANY: "Any kind",
   CHOICE: "Multiple choice",
   NUMBER: "Number or short answer",
-  WRITTEN: "Written answer",
+  WRITTEN: "Long answer in steps",
   CASE_STUDY: "Case study",
 };
 
@@ -33,10 +33,11 @@ export const DIFFICULTY_LABEL = { easy: "Easy", medium: "Medium", hard: "Challen
 
 export const MARK_CHOICES = [1, 2, 3, 4, 5] as const;
 
-/** The kinds a question of these marks can be (4 marks is the case study). */
+/** The kinds a question of these marks can be (4 marks is the case study;
+ *  long answers in steps are 3 or 5 marks, #208). */
 export function kindsFor(marks: number): QuestionKind[] {
   if (marks === 4) return ["CASE_STUDY"];
-  if (marks <= 2) return ["ANY", "CHOICE", "NUMBER", "WRITTEN"];
+  if (marks <= 2) return ["ANY", "CHOICE", "NUMBER"];
   return ["ANY", "NUMBER", "WRITTEN"];
 }
 

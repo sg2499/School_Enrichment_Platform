@@ -418,7 +418,7 @@ export function ClassAnalytics({ role }: { role: "TEACHER" | "ADMIN" | "SUPER_AD
         surface="masthead"
         eyebrow="Insight"
         title="Class Analytics"
-        description="How a section did on each question, and the mistakes it makes most, from the practice it has handed in and its mock papers once their results are out."
+        description="How a section did on each question, and the mistakes it makes most, from the practice and mock papers it has handed in."
         stats={[
           { label: "Practice Sets", value: sets.problem ? "—" : setsData ? setsData.sets.length : activeScope ? null : "—" },
           { label: "Chapters", value: sets.problem ? "—" : setsData ? setsData.chapters.length : activeScope ? null : "—" },
@@ -555,7 +555,7 @@ export function ClassAnalytics({ role }: { role: "TEACHER" | "ADMIN" | "SUPER_AD
               </div>
               {sets.problem ? null : setsData && setsData.chapters.length === 0 ? (
                 <Card className="p-6">
-                  <EmptyState title="No Practice Yet" description="Misconceptions appear once this section has handed in practice or a mock paper's results are out." />
+                  <EmptyState title="No Practice Yet" description="Misconceptions appear once this section has handed in practice or a mock paper." />
                 </Card>
               ) : report.problem ? (
                 <LoadError problem={report.problem} onRetry={report.reload} />
