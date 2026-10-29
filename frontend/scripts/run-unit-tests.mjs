@@ -63,6 +63,7 @@ const UNITS = [
   "lib/csv.ts",
   "lib/schoolSetup.ts",
   "lib/schools.ts",
+  "lib/curriculumStudio.ts",
 ];
 
 /**

@@ -31,6 +31,10 @@ export type ChapterSummary = {
   questionCount: number;
   createdAt: string | null;
   updatedAt: string | null;
+  /** Super Admin only (#212): how far the chapter's questions are through review. */
+  approvedQuestionCount?: number;
+  flaggedQuestionCount?: number;
+  publishedLessonCount?: number;
 };
 
 // "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED" -- same lifecycle shape as
@@ -57,6 +61,8 @@ export type ConceptLessonSummary = {
   status: ConceptLessonStatus;
   sequence: number;
   questionCount: number;
+  /** Super Admin only (#212): its questions approved or published, in review, and flagged so far. */
+  review?: { approved: number; inReview: number; flagged: number };
 };
 
 export type ChapterDetail = ChapterSummary & {
