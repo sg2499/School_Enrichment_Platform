@@ -1249,3 +1249,35 @@ def test_only_a_super_admin_can_change_marking(client, db_session):
     assert response.status_code == 403
     db_session.refresh(question)
     assert question.unit_rule is None
+
+
+def test_review_progress_for_the_super_admin_only(client, db_session):
+    """#212: the chapter list and a chapter's lessons say how far their
+    questions are through review; a school's admin is not given it."""
+    chapter, _ = _make_chapter(db_session, "prog01", status="PUBLISHED")
+    lesson_a, _q = _add_lesson_with_question(db_session, chapter, "prog01a", lesson_status="PUBLISHED", question_status="APPROVED")
+    lesson_b, q_b = _add_lesson_with_question(db_session, chapter, "prog01b", question_status="SME_REVIEW")
+    q_b.quality_status = "FLAGGED"
+    _q.quality_status = "FLAGGED"  # flagged, but approved after reading: decided, so not counted
+    db_session.add(
+        Question(concept_lesson_id=lesson_b.id, code="Q-prog01c", question_type="Single Select", stem="1 + 1 = ?", correct_answer="2", status="PUBLISHED")
+    )
+    db_session.commit()
+    _make_super_admin(db_session, "sa-prog01@example.com")
+    _login(client, "sa-prog01@example.com")
+
+    row = next(c for c in client.get("/api/curriculum-admin/chapters").json()["chapters"] if c["id"] == chapter.id)
+    assert (row["approvedQuestionCount"], row["flaggedQuestionCount"], row["publishedLessonCount"]) == (2, 1, 1)
+    lessons = {l["id"]: l["review"] for l in client.get(f"/api/curriculum-admin/chapters/{chapter.id}").json()["conceptLessons"]}
+    assert lessons[lesson_a.id] == {"approved": 1, "inReview": 0, "flagged": 0}
+    assert lessons[lesson_b.id] == {"approved": 1, "inReview": 1, "flagged": 1}
+
+    from app.main import app
+
+    with TestClient(app) as other:
+        _make_school_admin(db_session, "admin-prog01@example.com", "Progress Test School")
+        _login(other, "admin-prog01@example.com")
+        row = next(c for c in other.get("/api/curriculum-admin/chapters").json()["chapters"] if c["id"] == chapter.id)
+        assert "approvedQuestionCount" not in row
+        detail = other.get(f"/api/curriculum-admin/chapters/{chapter.id}").json()
+        assert all("review" not in l for l in detail["conceptLessons"])

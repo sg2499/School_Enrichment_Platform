@@ -273,6 +273,8 @@ const FOCUS_ROUTES: RegExp[] = [
   // A scheme's marks sheet and results are wide tables (#165).
   /^\/teacher\/marks\/[^/]+\/?$/,
   /^\/admin\/assessment\/[^/]+\/?$/,
+  // A chapter's lessons and questions are read side by side (#212).
+  /^\/admin\/curriculum\/chapters\/[^/]+\/?$/,
   // A section's attendance sheet is a wide table (#188).
   /^\/(admin|teacher)\/report-cards\/section\/?$/,
 ];

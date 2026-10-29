@@ -215,6 +215,34 @@ def _chapter_counts(db: Session, chapter_id: str) -> tuple[int, int]:
     return lesson_count, question_count
 
 
+def _review_progress(db: Session, chapter_ids: list[str]) -> dict[str, dict[str, dict[str, int]]]:
+    """chapter id -> lesson id -> how far its bank questions are through
+    review, for Curriculum Studio's progress bars (#212, 29 Oct 2026): one
+    grouped query, not one per lesson. "flagged" counts what the quality
+    checks have flagged so far (they run when a lesson's questions are read
+    or bulk-approved)."""
+    from sqlalchemy import case, func
+
+    out: dict[str, dict[str, dict[str, int]]] = {}
+    if not chapter_ids:
+        return out
+    approved = func.sum(case((Question.status.in_(("APPROVED", "PUBLISHED")), 1), else_=0))
+    review = func.sum(case((Question.status == "SME_REVIEW", 1), else_=0))
+    # Flagged and still undecided: one approved by hand after reading it is decided (review, 29 Oct).
+    flagged = func.sum(
+        case((Question.quality_status == "FLAGGED", case((Question.status.in_(("APPROVED", "PUBLISHED")), 0), else_=1)), else_=0)
+    )
+    rows = (
+        db.query(ConceptLesson.chapter_id, ConceptLesson.id, approved, review, flagged)
+        .join(Question, Question.concept_lesson_id == ConceptLesson.id)
+        .filter(ConceptLesson.chapter_id.in_(chapter_ids), Question.origin == "BANK")
+        .group_by(ConceptLesson.chapter_id, ConceptLesson.id)
+    )
+    for chapter_id, lesson_id, a, r, f in rows:
+        out.setdefault(chapter_id, {})[lesson_id] = {"approved": int(a or 0), "inReview": int(r or 0), "flagged": int(f or 0)}
+    return out
+
+
 def _chapter_summary(chapter: Chapter, lesson_count: int, question_count: int) -> dict:
     return {
         "id": chapter.id,
@@ -305,9 +333,28 @@ def list_chapters(
     chapters = query.order_by(Chapter.chapter_no).all()
 
     payload = []
+    # Review progress for the Super Admin's list (#212); a school's admin
+    # sees published chapters only and has no use for it.
+    progress = _review_progress(db, [c.id for c in chapters]) if user.role == "SUPER_ADMIN" else {}
+    published_lessons: dict[str, int] = {}
+    if user.role == "SUPER_ADMIN" and chapters:
+        from sqlalchemy import func
+
+        for chapter_id, n in (
+            db.query(ConceptLesson.chapter_id, func.count(ConceptLesson.id))
+            .filter(ConceptLesson.chapter_id.in_([c.id for c in chapters]), ConceptLesson.status == "PUBLISHED")
+            .group_by(ConceptLesson.chapter_id)
+        ):
+            published_lessons[chapter_id] = n
     for chapter in chapters:
         lesson_count, question_count = _chapter_counts(db, chapter.id)
-        payload.append(_chapter_summary(chapter, lesson_count, question_count))
+        summary = _chapter_summary(chapter, lesson_count, question_count)
+        if user.role == "SUPER_ADMIN":
+            lessons = progress.get(chapter.id, {}).values()
+            summary["approvedQuestionCount"] = sum(x["approved"] for x in lessons)
+            summary["flaggedQuestionCount"] = sum(x["flagged"] for x in lessons)
+            summary["publishedLessonCount"] = published_lessons.get(chapter.id, 0)
+        payload.append(summary)
     return {"chapters": payload}
 
 
@@ -337,6 +384,7 @@ def get_chapter(
     )
     lesson_payload = []
     total_questions = 0
+    progress = _review_progress(db, [chapter.id]).get(chapter.id, {}) if user.role == "SUPER_ADMIN" else {}
     for lesson in lessons:
         question_count = db.query(Question).filter(Question.concept_lesson_id == lesson.id, Question.origin == "BANK").count()
         total_questions += question_count
@@ -348,6 +396,11 @@ def get_chapter(
                 "status": lesson.status,
                 "sequence": lesson.sequence,
                 "questionCount": question_count,
+                **(
+                    {"review": progress.get(lesson.id, {"approved": 0, "inReview": 0, "flagged": 0})}
+                    if user.role == "SUPER_ADMIN"
+                    else {}
+                ),
             }
         )
 
