@@ -42,7 +42,7 @@ function refusedCheck(err: unknown): SetupCheck | null {
   };
 }
 
-function SetupCard({ onImported, reissued }: { onImported: () => void; reissued: string[] }) {
+function SetupCard({ onImported, reissued, schoolId }: { onImported: () => void; reissued: string[]; schoolId?: string }) {
   const input = useRef<HTMLInputElement>(null);
   const importing = useRef(false);
   const [file, setFile] = useState<File | null>(null);
@@ -55,7 +55,7 @@ function SetupCard({ onImported, reissued }: { onImported: () => void; reissued:
     setBusy("template");
     setProblem(null);
     try {
-      const { data } = await api.get<Blob>("/roster/setup-template", { responseType: "blob" });
+      const { data } = await api.get<Blob>("/roster/setup-template", { responseType: "blob", params: schoolId ? { schoolId } : undefined });
       const url = URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;
@@ -74,6 +74,7 @@ function SetupCard({ onImported, reissued }: { onImported: () => void; reissued:
   function form(chosen: File) {
     const data = new FormData();
     data.append("file", chosen);
+    if (schoolId) data.append("schoolId", schoolId);
     return data;
   }
 
@@ -261,10 +262,12 @@ function SectionsCard({
   view,
   onReload,
   onReissued,
+  schoolId,
 }: {
   view: ReturnType<typeof useApiQuery<SectionsView>>;
   onReload: () => void;
   onReissued: (key: string) => void;
+  schoolId?: string;
 }) {
   const [asking, setAsking] = useState<SectionSummary | null>(null);
   const [busy, setBusy] = useState(false);
@@ -275,7 +278,11 @@ function SectionsCard({
     setBusy(true);
     setProblem(null);
     try {
-      const { data } = await api.post<SectionSlips>("/roster/sections/slips", { className: section.className, section: section.section });
+      const { data } = await api.post<SectionSlips>("/roster/sections/slips", {
+        className: section.className,
+        section: section.section,
+        schoolId,
+      });
       setSlips({ ...data, label: `${section.className}${section.section}` });
       onReissued(sectionKey(section.className, section.section));
       setAsking(null);
@@ -384,8 +391,9 @@ function SectionsCard({
   );
 }
 
-export function ClassesAndSections() {
-  const view = useApiQuery<SectionsView>("/roster/sections", {}, { action: "load the school's sections" });
+/** A school's admin sees their own school; the Super Admin passes the school they chose (#211), with its picker. */
+export function ClassesAndSections({ schoolId, picker }: { schoolId?: string; picker?: React.ReactNode } = {}) {
+  const view = useApiQuery<SectionsView>("/roster/sections", { schoolId }, { action: "load the school's sections" });
   const [reissued, setReissued] = useState<string[]>([]);
   const sections = view.data?.sections ?? [];
   const students = sections.reduce((n, s) => n + s.students, 0);
@@ -407,15 +415,18 @@ export function ClassesAndSections() {
             hint: "Still on their first password",
           },
         ]}
-      />
+      >
+        {picker}
+      </PageHeader>
       <SetupCard
+        schoolId={schoolId}
         onImported={() => {
           setReissued([]);
           view.reload();
         }}
         reissued={reissued}
       />
-      <SectionsCard view={view} onReload={view.reload} onReissued={(key) => setReissued((keys) => [...keys, key])} />
+      <SectionsCard schoolId={schoolId} view={view} onReload={view.reload} onReissued={(key) => setReissued((keys) => [...keys, key])} />
     </div>
   );
 }

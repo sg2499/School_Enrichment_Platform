@@ -37,6 +37,7 @@ from app.api.routes_mock_papers import student_router as my_papers_router
 from app.api.routes_report_cards import router as report_cards_router
 from app.api.routes_roster import router as roster_router
 from app.api.routes_school_logo import router as school_logo_router
+from app.api.routes_schools_admin import router as schools_admin_router
 from app.api.routes_teacher_assignments import router as teacher_assignments_router
 from app.api.routes_weekly_reports import router as weekly_reports_router
 from app.core.brand import PRODUCT_NAME
@@ -218,6 +219,7 @@ app.include_router(assessment_router)
 app.include_router(report_cards_router)
 app.include_router(weekly_reports_router)
 app.include_router(school_logo_router)
+app.include_router(schools_admin_router)
 app.include_router(analytics_router)
 app.include_router(question_patterns_router)
 app.include_router(mock_papers_router)

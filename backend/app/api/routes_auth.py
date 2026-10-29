@@ -724,6 +724,10 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
     user = db.get(User, UserId)
     if not user or not user.is_active or not user.totp_enabled:
         api_error(401, "UNAUTHORIZED", "This verification step has expired. Please sign in again.")
+    from app.services.school_status import SUSPENDED_MESSAGE, school_is_suspended
+
+    if school_is_suspended(db, user):  # suspended between the two steps (#211)
+        api_error(403, "SCHOOL_SUSPENDED", SUSPENDED_MESSAGE)
 
     # The password step was passed against one particular password. If that
     # password has since been changed or reset, this second step is the tail

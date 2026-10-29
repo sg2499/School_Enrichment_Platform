@@ -219,7 +219,7 @@ function PeopleScreen({ user }: { user: CurrentUser }) {
     if (!isPlatformAdmin) return;
     let cancelled = false;
     api
-      .get<{ schools: SchoolOption[] }>("/curriculum-admin/schools")
+      .get<{ schools: SchoolOption[] }>("/curriculum-admin/schools", { params: { includeSuspended: true } })
       .then(({ data }) => {
         if (!cancelled) setSchools(data.schools);
       })
@@ -232,6 +232,13 @@ function PeopleScreen({ user }: { user: CurrentUser }) {
       cancelled = true;
     };
   }, [isPlatformAdmin]);
+
+  // Opened from a school's own page (#211): /admin/people?school=<id>.
+  useEffect(() => {
+    if (!isPlatformAdmin || !schools || selectedSchoolId) return;
+    const wanted = new URLSearchParams(window.location.search).get("school");
+    if (wanted && schools.some((school) => school.id === wanted)) setSelectedSchoolId(wanted);
+  }, [isPlatformAdmin, schools, selectedSchoolId]);
 
   const selectedSchool = schools?.find((school) => school.id === selectedSchoolId) ?? null;
   const schoolContextReady = !isPlatformAdmin || Boolean(selectedSchoolId);
@@ -384,6 +391,7 @@ function PeopleScreen({ user }: { user: CurrentUser }) {
                   {school.name}
                   {school.board ? ` · ${school.board}` : ""}
                   {school.city ? ` · ${school.city}` : ""}
+                  {school.isActive === false ? " (Suspended)" : ""}
                 </option>
               ))}
             </MastheadSelect>

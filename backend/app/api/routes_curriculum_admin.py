@@ -1044,16 +1044,21 @@ def list_disciplines(db: Session = Depends(get_db)):
 
 
 @router.get("/schools", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
-def list_schools(db: Session = Depends(get_db)):
+def list_schools(includeSuspended: bool = False, db: Session = Depends(get_db)):
     """Lets a SUPER_ADMIN pick which school to map a chapter into, from one
     session, without needing a second ADMIN login for that school. Deliberately
     SUPER_ADMIN-only -- a school's own ADMIN must still never be able to see
     another school exists at all, let alone browse it (blueprint Section 6.4:
     "a school coordinator cannot ... view another school")."""
-    schools = db.query(School).filter(School.is_active.is_(True)).order_by(School.name).all()
+    # includeSuspended (#211): People and Classes & Sections still open a
+    # suspended school, so its people can be managed while nobody can sign in.
+    query = db.query(School)
+    if not includeSuspended:
+        query = query.filter(School.is_active.is_(True))
+    schools = query.order_by(School.is_active.desc(), School.name).all()
     return {
         "schools": [
-            {"id": school.id, "name": school.name, "board": school.board, "city": school.city}
+            {"id": school.id, "name": school.name, "board": school.board, "city": school.city, "isActive": school.is_active}
             for school in schools
         ]
     }

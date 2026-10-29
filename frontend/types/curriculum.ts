@@ -157,6 +157,8 @@ export type SchoolOption = {
   name: string;
   board: string | null;
   city: string | null;
+  /** Present when the list was asked for suspended schools too (#211). */
+  isActive?: boolean;
 };
 
 // section was dropped 19 Aug 2026 -- "n number of sections for a class in a
