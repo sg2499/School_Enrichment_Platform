@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   BarChart3,
   BookOpen,
+  Building2,
   Calculator,
   CalendarCheck,
   CalendarDays,
@@ -215,8 +216,10 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Platform",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
+        // #211: every school, its details, admins and status.
+        { label: "Schools", icon: Building2, href: "/admin/schools" },
         { label: "People", icon: Users, href: "/admin/people" },
-        { label: "Classes & Sections", icon: GraduationCap, soon: true },
+        { label: "Classes & Sections", icon: GraduationCap, href: "/admin/sections" },
       ],
     },
     {

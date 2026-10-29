@@ -226,6 +226,11 @@ def get_current_user(
             "UNAUTHORIZED",
             f"Your account has been deactivated. Please ask {who_can_help(user.role)} if you need it back.",
         )
+    # Suspending a school ends its people's sessions at once (#211).
+    from app.services.school_status import SUSPENDED_MESSAGE, school_is_suspended
+
+    if school_is_suspended(db, user):
+        api_error(401, "UNAUTHORIZED", SUSPENDED_MESSAGE)
 
     # Issued under a password that is no longer this account's (3 Oct 2026).
     # Exact, and independent of any clock: see password_fingerprint() in

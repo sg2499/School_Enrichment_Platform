@@ -320,6 +320,14 @@ def login(
             f"This account is inactive. Please ask {who_can_help(user.role)} to reactivate it.",
         )
 
+    # A school the Super Admin has suspended (#211): its people can't sign
+    # in. After the password check, like the line above, so it tells only
+    # the account's owner.
+    from app.services.school_status import SUSPENDED_MESSAGE, school_is_suspended
+
+    if school_is_suspended(db, user):
+        api_error(403, "SCHOOL_SUSPENDED", SUSPENDED_MESSAGE)
+
     # Right details, wrong way in (4 Oct 2026). Until now the choice on the
     # sign-in page only changed its wording: an admin's details under
     # "Teacher" went on to the two-factor step and into the admin workspace.
