@@ -175,6 +175,10 @@ class Student(Base):
     permanent_address = Column(Text, nullable=True)
     class_name = Column(String(50), nullable=True)
     section = Column(String(50), nullable=True)
+    # #210 (29 Oct 2026): the roll number the school gives the student in
+    # their section, from the school setup sheet; lists and sign-in slips
+    # follow it. Unique within a section, checked by the setup import.
+    roll_number = Column(String(20), nullable=True)
     # Normalized standard, added 20 Aug 2026 for the teacher-assignment/
     # Practice Overview scale-safety work -- see
     # app/models/teacher_assignment.py's module docstring. Deliberately

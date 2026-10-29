@@ -19,8 +19,7 @@ export function useSchoolLogoUrl(initial?: string | null): string | null {
     else setUrl(initial);
   }, [initial]);
   useEffect(() => {
-    const onChange = (event: Event) =>
-      setUrl((event as CustomEvent<string | null>).detail ?? null);
+    const onChange = (event: Event) => setUrl((event as CustomEvent<string | null>).detail ?? null);
     window.addEventListener(SCHOOL_LOGO_EVENT, onChange);
     return () => window.removeEventListener(SCHOOL_LOGO_EVENT, onChange);
   }, []);
@@ -54,9 +53,7 @@ export function SchoolLogo({
       {/* eslint-disable-next-line @next/next/no-img-element -- a local blob: URL of an image only signed-in people may load. */}
       <img
         src={src}
-        alt={
-          decorative ? "" : schoolName ? `${schoolName} logo` : "School logo"
-        }
+        alt={decorative ? "" : schoolName ? `${schoolName} logo` : "School logo"}
         data-school-logo=""
         className={cn("h-8 w-auto max-w-[9rem] object-contain", className)}
       />

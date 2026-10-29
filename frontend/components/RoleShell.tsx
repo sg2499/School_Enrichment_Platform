@@ -177,7 +177,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
         { label: "People", icon: Users, href: "/admin/people" },
-        { label: "Classes & Sections", icon: GraduationCap, soon: true },
+        // #210: the school setup workbook, sign-in slips, each section.
+        { label: "Classes & Sections", icon: GraduationCap, href: "/admin/sections" },
       ],
     },
     {
