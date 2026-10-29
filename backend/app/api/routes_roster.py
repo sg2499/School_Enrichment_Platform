@@ -46,6 +46,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.core.errors import api_error
@@ -905,3 +906,238 @@ def bulk_create_people(
         # reads, so the screen can say they were not used.
         "unrecognisedColumns": unrecognised_columns,
     }
+
+
+# --- School setup in one workbook, and sign-in slips (#210, 29 Oct 2026) -----------------------
+# PHASE8_SCHOOL_SETUP_DESIGN.md. The workbook (Teachers, Students) is checked
+# whole and imported all or nothing; teachers get the sections they teach.
+# First passwords are returned once, for printing as sign-in slips.
+
+MAX_SETUP_FILE_BYTES = 5 * 1024 * 1024
+
+
+def _read_setup_upload(file: UploadFile) -> bytes:
+    if not file.filename or not file.filename.lower().endswith(".xlsx"):
+        api_error(422, "VALIDATION_ERROR", "Upload the School Setup workbook (.xlsx).")
+    raw = file.file.read(MAX_SETUP_FILE_BYTES + 1)
+    if len(raw) > MAX_SETUP_FILE_BYTES:
+        api_error(422, "VALIDATION_ERROR", "That file is over 5 MB. The setup workbook needs only names, sections and roll numbers.")
+    return raw
+
+
+def _setup_plan(db: Session, school: School, raw: bytes, *, final: bool = False):
+    from app.services import school_setup_service as setup
+
+    try:
+        teachers, students = setup.read_workbook(raw)
+    except setup.SetupFileError as exc:
+        api_error(422, "VALIDATION_ERROR", str(exc))
+    return setup.make_plan(db, school, teachers, students, final=final)
+
+
+@router.get("/setup-template")
+def setup_template(
+    schoolId: str | None = None,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    from app.services import school_setup_service as setup
+
+    school = _resolve_school(db, user, schoolId)
+    return Response(
+        content=setup.template_bytes(school),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="Krama_School_Setup.xlsx"'},
+    )
+
+
+@router.post("/setup/check")
+@limiter.limit("20/minute")
+def setup_check(
+    request: Request,
+    schoolId: str | None = Form(default=None),
+    file: UploadFile = File(...),
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """What importing the workbook would do, or every problem in it. Writes nothing."""
+    school = _resolve_school(db, user, schoolId)
+    plan = _setup_plan(db, school, _read_setup_upload(file))
+    db.rollback()
+    return plan.summary()
+
+
+@router.post("/setup/import")
+@limiter.limit("10/minute")
+def setup_import(
+    request: Request,
+    response: Response,
+    schoolId: str | None = Form(default=None),
+    file: UploadFile = File(...),
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Checks the workbook again and, if every row is right, creates its new
+    teachers, students and sections taught in one transaction. Returns the
+    new accounts' first passwords, once."""
+    from app.services import school_setup_service as setup
+
+    school = _resolve_school(db, user, schoolId)
+    raw = _read_setup_upload(file)
+    # One import per school at a time: two at once (two tabs, two admins)
+    # would both plan against the same roster and both create everyone.
+    # A second import waits here, then plans against what the first made.
+    db.query(School.id).filter(School.id == school.id).with_for_update().one()
+    plan = _setup_plan(db, school, raw, final=True)
+    if plan.problems:
+        summary = plan.summary()
+        db.rollback()
+        # A refused import is recorded (counts only, never the rows), so
+        # importing can't be used quietly to test who is on Krama (A14).
+        log_audit_event(
+            db,
+            "roster.school_setup_import_refused",
+            user_id=user.id,
+            request=request,
+            details={"schoolId": school.id, "problems": len(summary["problems"])},
+        )
+        db.commit()
+        api_error(422, "SETUP_HAS_PROBLEMS", "The workbook has rows to fix, so nothing was imported.", details=summary)
+    try:
+        created = setup.apply_plan(db, plan, school=school, creator=user)
+    except ValueError as exc:
+        db.rollback()
+        api_error(422, "VALIDATION_ERROR", str(exc))
+    summary = plan.summary()
+    log_audit_event(
+        db,
+        "roster.school_setup_import",
+        user_id=user.id,
+        request=request,
+        details={
+            "schoolId": school.id, "newTeachers": summary["newTeachers"], "newStudents": summary["newStudents"],
+            "newSectionsTaught": summary["newSectionsTaught"],
+        },
+    )
+    db.commit()
+    response.headers["Cache-Control"] = "no-store"
+    return {**summary, "schoolName": school.name, "created": created}
+
+
+def _section_students(db: Session, school: School, class_name: str, section: str):
+    return (
+        db.query(Student, User)
+        .join(User, User.id == Student.user_id)
+        .filter(
+            Student.school_id == school.id,
+            func.trim(Student.class_name) == class_name,
+            func.upper(func.trim(Student.section)) == section,
+        )
+        .all()
+    )
+
+
+@router.get("/sections")
+def list_sections(
+    schoolId: str | None = None,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Each section of the school: its students, how many have not chosen
+    their own password yet, and who teaches it what."""
+    from app.models.curriculum import BoardCourse, ClassLevel
+    from app.models.teacher_assignment import TeacherSectionAssignment
+
+    school = _resolve_school(db, user, schoolId)
+    sections: dict[tuple[str, str], dict] = {}
+
+    def entry(class_name: str, section: str) -> dict:
+        return sections.setdefault((class_name, section), {
+            "className": class_name, "section": section, "students": 0, "awaitingFirstSignIn": 0, "teachers": [],
+        })
+
+    for student, person in (
+        db.query(Student, User).join(User, User.id == Student.user_id)
+        .filter(Student.school_id == school.id, Student.is_active.is_(True), User.is_active.is_(True))
+    ):
+        if not (student.class_name or "").strip() or not (student.section or "").strip():
+            continue
+        e = entry(student.class_name.strip(), student.section.strip().upper())
+        e["students"] += 1
+        if person.must_change_password:
+            e["awaitingFirstSignIn"] += 1
+    for assignment, level, course, teacher_user in (
+        db.query(TeacherSectionAssignment, ClassLevel, BoardCourse, User)
+        .join(ClassLevel, ClassLevel.id == TeacherSectionAssignment.class_level_id)
+        .join(BoardCourse, BoardCourse.id == TeacherSectionAssignment.board_course_id)
+        .join(Teacher, Teacher.id == TeacherSectionAssignment.teacher_id)
+        .join(User, User.id == Teacher.user_id)
+        .filter(TeacherSectionAssignment.school_id == school.id, TeacherSectionAssignment.end_date.is_(None))
+    ):
+        entry(level.code, assignment.section.strip().upper())["teachers"].append(
+            {"fullName": teacher_user.full_name, "subject": course.display_name}
+        )
+
+    def order(e):
+        return (int(e["className"]) if e["className"].isdigit() else 99, e["className"], e["section"])
+
+    return {"schoolName": school.name, "sections": sorted(sections.values(), key=order)}
+
+
+class SectionSlipsRequest(BaseModel):
+    className: str
+    section: str
+    schoolId: str | None = None
+
+
+@router.post("/sections/slips")
+@limiter.limit("10/minute")
+def section_slips(
+    payload: SectionSlipsRequest,
+    request: Request,
+    response: Response,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """New first passwords and slips for a section's students who have not
+    chosen their own password yet (a printed slip lost before the first
+    day can't be shown again: passwords are kept only as hashes). Anyone
+    who has chosen their own is left alone; reset them one by one on People."""
+    from app.services import school_setup_service as setup
+
+    school = _resolve_school(db, user, payload.schoolId)
+    class_name, section = payload.className.strip(), payload.section.strip().upper()
+    if not class_name or not section:
+        api_error(422, "VALIDATION_ERROR", "Choose a section.")
+    slips, skipped = [], 0
+    now = datetime.now(timezone.utc)
+    for student, person in _section_students(db, school, class_name, section):
+        if not student.is_active or not person.is_active:
+            continue
+        if not person.must_change_password:
+            skipped += 1
+            continue
+        password = _generate_initial_password(person.full_name)
+        person.password_hash = hash_password(password)
+        person.password_changed_at = now
+        reset_lockout(person)
+        revoke_all_sessions_for_user(db, person.id)
+        # On the student's own trail too, as a one-by-one reset on People is.
+        log_audit_event(db, "auth.password_reset_by_admin", user_id=person.id, details={"byRole": user.role})
+        slips.append({
+            "role": "STUDENT", "fullName": person.full_name, "code": student.student_code, "initialPassword": password,
+            "className": class_name, "section": section, "rollNumber": student.roll_number, "teaches": [],
+        })
+    if not slips and not skipped:
+        api_error(404, "NOT_FOUND", "That section has no students.")
+    slips.sort(key=setup.slip_order)  # before the commit: nothing after it can fail
+    log_audit_event(
+        db,
+        "roster.section_slips_reissued",
+        user_id=user.id,
+        request=request,
+        details={"schoolId": school.id, "className": class_name, "section": section, "reissued": len(slips), "alreadySignedIn": skipped},
+    )
+    db.commit()
+    response.headers["Cache-Control"] = "no-store"
+    return {"schoolName": school.name, "slips": slips, "alreadySignedIn": skipped}

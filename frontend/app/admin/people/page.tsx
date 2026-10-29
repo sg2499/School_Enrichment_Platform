@@ -68,6 +68,7 @@ import { SessionGate } from "@/components/SessionGate";
 import { TextField } from "@/components/ui/Field";
 import { RosterIllustration } from "@/components/brand/Graphics";
 import { api, errorMessage } from "@/lib/api";
+import { csvCell, csvTimestamp } from "@/lib/csv";
 import { PRODUCT_NAME } from "@/lib/brand";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { cn, initialsFromName } from "@/lib/utils";
@@ -1386,18 +1387,6 @@ interface BulkImportResult {
 // line up down a list that can run to hundreds of rows.
 const BULK_RESULT_GRID = "sm:grid sm:grid-cols-[0.875rem_3rem_minmax(0,1fr)_14rem_7.5rem] sm:gap-x-2.5";
 
-/** One CSV cell: quoted when it holds a delimiter/quote/newline, and a
- * leading = + - @ (or tab/CR) neutralised with a ' so a spreadsheet opens a
- * name like "=HYPERLINK(...)" as text, not as a formula. */
-function csvCell(value: string, { exact = false }: { exact?: boolean } = {}): string {
-  // `exact` is for the password column: a password must come out of the
-  // file as the characters it is, so it is quoted but never altered. (The
-  // guard exists for names typed by other people; a password that begins
-  // with "@" was chosen by the admin opening the file.)
-  const safe = !exact && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-}
-
 /** How many of the passwords just shown came from the admin's own sheet,
  *  said only when some did, and without claiming "the rest" when there is
  *  no rest. */
@@ -1407,11 +1396,6 @@ function sheetNote(fromSheet: number, created: number): string {
     return created === 1 ? " This one is the password from your sheet." : " All of these are the passwords from your sheet.";
   }
   return ` ${fromSheet} of these ${fromSheet === 1 ? "is" : "are"} from your sheet; the rest were generated.`;
-}
-
-function csvTimestamp(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
 }
 
 function BulkImportForm({

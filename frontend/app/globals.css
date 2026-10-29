@@ -924,3 +924,36 @@
     transform: none !important;
   }
 }
+
+/* Sign-in slips (#210, components/school/SignInSlips.tsx): the slips sit
+   in #print-slips, hidden on screen. Print Sign-In Slips adds .print-slips
+   to the body, and then only that area prints, one A4 page per eight. */
+#print-slips {
+  display: none;
+}
+
+@media print {
+  body.print-slips > *:not(#print-slips) {
+    display: none !important;
+  }
+  body.print-slips {
+    background: #fff !important;
+  }
+  body.print-slips #print-slips {
+    display: block;
+  }
+  body.print-slips .print-slip-page {
+    page: slips;
+    break-after: page;
+  }
+  body.print-slips .print-slip-page:last-child {
+    break-after: auto;
+  }
+}
+
+/* A named page, so only the slips are set to A4: printing anything else
+   in the app keeps the browser's own page settings. */
+@page slips {
+  size: A4;
+  margin: 12mm;
+}
