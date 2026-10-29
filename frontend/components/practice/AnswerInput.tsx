@@ -303,18 +303,23 @@ const WORKING_MAX = 2000;
  * "Your Working" (#163, 22 Oct 2026), under the answer on a question worth
  * 2 or more marks that is marked automatically. Optional. The answer is
  * still marked at once; the working is what a teacher reads to give marks
- * for a correct method when the answer itself lost marks.
+ * for a correct method when the answer itself lost marks. A mock paper
+ * (#208) gives no method marks, so it passes its own `note`.
  */
+export const WORKING_NOTE = "Your teacher can give marks for correct working, even if the final answer is wrong.";
+
 export function WorkingBox({
   question,
   value,
   disabled,
   onChange,
+  note = WORKING_NOTE,
 }: {
   question: AnswerQuestion;
   value: string;
   disabled: boolean;
   onChange: (next: string) => void;
+  note?: string;
 }) {
   const id = `working-${question.id}`;
   const hintId = `working-hint-${question.id}`;
@@ -337,7 +342,7 @@ export function WorkingBox({
       />
       {/* content-subtle on white: 6.4:1. */}
       <p id={hintId} className="flex flex-wrap justify-between gap-x-3 text-xs text-content-subtle">
-        <span>Your teacher can give marks for correct working, even if the final answer is wrong.</span>
+        <span>{note}</span>
         {nearLimit ? (
           <span className="tabular">
             {value.length} / {WORKING_MAX}

@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 8, Weight and Capacity: 65 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 8, Weight and Capacity: 65 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-WC-S01-P1",
@@ -4235,11 +4235,10 @@
    "code": "C5-WC-L3-1",
    "chapter": 8,
    "skill": "C5-WC-S09",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
    "values": [
     {
      "name": "who",
@@ -4288,26 +4287,36 @@
     "(r * b) % 1000 == 0",
     "(s * c) % 1000 == 0"
    ],
-   "text": "{who.name} buys {a} kg {b} g of tomatoes at ₹{r} per kg and {c} g of ginger at ₹{s} per kg. What is the total cost? Show your working.",
-   "answer": "Tomatoes: {a} × ₹{r} + {b} g at ₹{r} per kg = {a * r:money} + {r * b // 1000:money} = {a * r + r * b // 1000:money}. Ginger: {c} g at ₹{s} per kg = {s * c // 1000:money}. Total: {a * r + r * b // 1000 + s * c // 1000:money}.",
-   "steps": [
+   "stimulus": "{who.name} buys {a} kg {b} g of tomatoes at ₹{r} per kg and {c} g of ginger at ₹{s} per kg. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Tomatoes: {a * r:money} + {r * b // 1000:money} = {a * r + r * b // 1000:money}."
+     "text": "(a) What do the tomatoes cost, in rupees?",
+     "answer": "a * r + r * b // 1000",
+     "responseFormat": "Integer",
+     "hint": "500 g is half a kilogram and 250 g a quarter.",
+     "explanation": "{a} kg cost {a * r:money}; {b} g is {'a quarter' if b == 250 else ('half' if b == 500 else 'three quarters')} of a kg, so {r * b // 1000:money}. Tomatoes: {a * r + r * b // 1000:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Ginger: {c} g is {'a quarter' if c == 250 else 'half'} of a kilogram, so {s * c // 1000:money}."
+     "text": "(b) What does the ginger cost, in rupees?",
+     "answer": "s * c // 1000",
+     "responseFormat": "Integer",
+     "explanation": "{c} g is {'a quarter' if c == 250 else 'half'} of a kg, so {s * c // 1000:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds: {a * r + r * b // 1000 + s * c // 1000:money}."
+     "text": "(c) What is the total cost, in rupees?",
+     "answer": "a * r + r * b // 1000 + s * c // 1000",
+     "responseFormat": "Integer",
+     "explanation": "{a * r + r * b // 1000:money} + {s * c // 1000:money} = {a * r + r * b // 1000 + s * c // 1000:money}."
     }
    ],
-   "hint": "Work out each item separately. 500 g is half a kilogram and 250 g a quarter.",
-   "explanation": "{a * r + r * b // 1000:money} + {s * c // 1000:money} = {a * r + r * b // 1000 + s * c // 1000:money}.",
    "misconception": "Charges the full kilogram rate for 500 g, 250 g or 100 g.",
-   "notes": "1 to 4 kg and a part kilogram of tomatoes at ₹40 to ₹120 per kg; 250 or 500 g of ginger at ₹60 to ₹200 per kg; whole rupees.",
+   "notes": "1 to 4 kg and a part kilogram of tomatoes at ₹40 to ₹120 per kg; 250 or 500 g of ginger at ₹60 to ₹200 per kg; whole rupees. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH08-Q269",
     "CBSE-C5-CH08-Q273",
@@ -4318,11 +4327,10 @@
    "code": "C5-WC-L3-2",
    "chapter": 8,
    "skill": "C5-WC-S13",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
    "values": [
     {
      "name": "a",
@@ -4359,26 +4367,43 @@
     "(c + d) % 1000 != 0",
     "(1000 * a - 1000 * b - c - d) % 1000 != 0"
    ],
-   "text": "A family's water tank has {a} L of water. In the morning they use {b} L {c} mL and in the evening {d} mL. How much water is left in the tank? Show your working.",
-   "answer": "Used: {b} L {c} mL + {d} mL = {(1000 * b + c + d) // 1000} L {(1000 * b + c + d) % 1000} mL. Left: {a} L − that = {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL.",
-   "steps": [
+   "stimulus": "A school's water cooler has {a} L of water. In the morning a class uses {b} L {c} mL from it, and after lunch {d} mL more. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds the water used: {(1000 * b + c + d) // 1000} L {(1000 * b + c + d) % 1000} mL (or {1000 * b + c + d:num} mL)."
+     "text": "(a) How much water does the class use in all, in mL?",
+     "answer": "1000 * b + c + d",
+     "unit": "mL",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "1 L = 1,000 mL.",
+     "explanation": "{b} L {c} mL = {1000 * b + c:num} mL; {1000 * b + c:num} + {d} = {(1000 * b + c + d):num} mL."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Subtracts from {a} L ({1000 * a:num} mL), borrowing or working in millilitres."
+     "text": "(b) How much water is left in the cooler, in mL?",
+     "answer": "1000 * a - 1000 * b - c - d",
+     "unit": "mL",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a} L = {1000 * a:num} mL; {1000 * a:num} − {(1000 * b + c + d):num} = {(1000 * a - 1000 * b - c - d):num} mL."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Gives {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL left."
+     "text": "(c) Write the water left in litres and millilitres. Enter litres; millilitres.",
+     "answer": [
+      "(1000 * a - 1000 * b - c - d) // 1000",
+      "(1000 * a - 1000 * b - c - d) % 1000"
+     ],
+     "responseFormat": "Mixed-unit measure in two boxes",
+     "explanation": "{(1000 * a - 1000 * b - c - d):num} mL = {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL."
     }
    ],
-   "hint": "Find the total used first. Working in millilitres can help.",
-   "explanation": "Used {1000 * b + c + d:num} mL. Left: {1000 * a:num} − {1000 * b + c + d:num} = {1000 * a - 1000 * b - c - d:num} mL = {(1000 * a - 1000 * b - c - d) // 1000} L {(1000 * a - 1000 * b - c - d) % 1000} mL.",
    "misconception": "Does not exchange 1,000 ml for 1 l or subtracts the smaller displayed ml part from the larger regardless of place.",
-   "notes": "A tank of 15 to 40 L; uses of 2 to 6 L with 100 to 900 mL and 300 to 950 mL.",
+   "notes": "A school water cooler of 15 to 40 L; a class uses 2 to 6 L with 100 to 900 mL, then 300 to 950 mL (a family tank would be hundreds of litres). Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH08-Q409",
     "CBSE-C5-CH08-Q421",
@@ -4389,11 +4414,10 @@
    "code": "C5-WC-L3-3",
    "chapter": 8,
    "skill": "C5-WC-S04",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
    "values": [
     {
      "name": "who",
@@ -4425,32 +4449,84 @@
       "max": 850,
       "step": 50
      }
+    },
+    {
+     "name": "v",
+     "choice": [
+      {
+       "r": "No. In grams, it is the lighter one.",
+       "w1": "Yes. In grams, it is the bigger number.",
+       "w2": "No. You cannot compare kg and g.",
+       "w3": "Yes. Kilograms are always heavier."
+      },
+      {
+       "r": "No. The grams are in the wrong place.",
+       "w1": "Yes. The grams are in the right place.",
+       "w2": "No. Kilograms and grams can't be compared.",
+       "w3": "Yes. Anything in kg is heavier than anything in g."
+      },
+      {
+       "r": "No. It is really lighter.",
+       "w1": "Yes. It is really heavier.",
+       "w2": "No. The two weights can't be compared.",
+       "w3": "Yes. A weight in kg is always heavier."
+      }
+     ]
     }
    ],
    "require": [
     "1000 * a + b < 1000 * a + e",
     "(1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b) > 1000 * a + e"
    ],
-   "text": "{who.name} says that {a} kg {b} g is the same as {1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b:num} g, so it is heavier than {1000 * a + e:num} g. Is {who.name} right? Explain, giving both weights in grams.",
-   "answer": "No. {a} kg {b} g = {1000 * a:num} g + {b} g = {1000 * a + b:num} g, not {1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b:num} g. {1000 * a + b:num} g is lighter than {1000 * a + e:num} g.",
-   "steps": [
+   "stimulus": "{who.name} says that {a} kg {b} g is the same as {(1000 * a + 10 * b if b >= 10 else 1000 * a + 100 * b):num} g, so it is heavier than {1000 * a + e:num} g. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Changes correctly: {a} kg {b} g = {1000 * a + b:num} g (keeps the zero in the hundreds place)."
+     "text": "(a) Write {a} kg {b} g in grams.",
+     "answer": "1000 * a + b",
+     "unit": "g",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "{a} kg = {1000 * a:num} g.",
+     "explanation": "{a} kg = {1000 * a:num} g, and {1000 * a:num} + {b} = {1000 * a + b:num} g."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Compares: {1000 * a + b:num} g is less than {1000 * a + e:num} g."
+     "text": "(b) Is {who.name} right?",
+     "options": {
+      "correct": "v.r",
+      "wrong": [
+       {
+        "expr": "v.w1",
+        "mistake": "trusts the wrong change into grams"
+       },
+       {
+        "expr": "v.w2",
+        "mistake": "thinks different units cannot be compared"
+       },
+       {
+        "expr": "v.w3",
+        "mistake": "compares the units, not the amounts"
+       }
+      ]
+     },
+     "explanation": "{a} kg {b} g = {1000 * a + b:num} g, which is lighter than {1000 * a + e:num} g. {who.name} moved the {b} g into the wrong place."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Says {who.name} is not right and explains the mistake: the grams were put in the wrong place."
+     "text": "(c) How many grams lighter is {a} kg {b} g than {1000 * a + e:num} g?",
+     "answer": "e - b",
+     "unit": "g",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{1000 * a + e:num} − {1000 * a + b:num} = {e - b} g."
     }
    ],
-   "hint": "Write {b} g in a weight of more than 1 kg carefully: {a} kg = {1000 * a:num} g.",
-   "explanation": "{a} kg {b} g = {1000 * a + b:num} g, which is lighter than {1000 * a + e:num} g. {who.name} moved the {b} g into the wrong place.",
    "misconception": "Compares only the gram parts or only the displayed numerals without using a common unit.",
-   "notes": "2 to 6 kg with fewer than 100 g; the wrong conversion pushes the grams into the hundreds, which makes it look heavier than a weight that is really heavier.",
+   "notes": "2 to 6 kg with fewer than 100 g; the wrong conversion pushes the grams into the hundreds, which makes it look heavier than a weight that is really heavier. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH08-Q100",
     "CBSE-C5-CH08-Q120",
@@ -4461,11 +4537,10 @@
    "code": "C5-WC-L5-1",
    "chapter": 8,
    "skill": "C5-WC-S15",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation or working",
    "values": [
     {
      "name": "k",
@@ -4503,35 +4578,63 @@
     "(m * v) % 1000 != 0",
     "m * v > 1000"
    ],
-   "text": "A recipe for {k} people needs {w} g of rice and {v} mL of oil. A school camp cooks for {k * m} people. (a) How many grams of rice are needed? (b) Write this in kg and g. (c) How many millilitres of oil are needed? (d) Write this in L and mL. (e) Rice comes in 1 kg packets. How many packets must be bought? Show your working.",
-   "maxWords": 110,
-   "answer": "{k * m} ÷ {k} = {m} times the recipe. (a) {m} × {w} = {m * w:num} g. (b) {(m * w) // 1000} kg {(m * w) % 1000} g. (c) {m} × {v} = {m * v:num} mL. (d) {(m * v) // 1000} L {(m * v) % 1000} mL. (e) {(m * w) // 1000 + 1} packets ({(m * w) // 1000} packets are not enough).",
-   "steps": [
+   "stimulus": "A recipe for {k} people needs {w} g of rice and {v} mL of oil. A school camp cooks for {k * m} people. Rice comes in 1 kg packets. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Finds {m} times the recipe and {m * w:num} g of rice."
+     "text": "(a) How many grams of rice are needed?",
+     "answer": "m * w",
+     "unit": "g",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "First find how many times the recipe must be made.",
+     "explanation": "{k * m} ÷ {k} = {m}, so {m} times the recipe: {m} × {w} = {m * w:num} g."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {(m * w) // 1000} kg {(m * w) % 1000} g."
+     "text": "(b) Write the rice needed in kilograms and grams. Enter kilograms; grams.",
+     "answer": [
+      "(m * w) // 1000",
+      "(m * w) % 1000"
+     ],
+     "responseFormat": "Mixed-unit measure in two boxes",
+     "explanation": "{m * w:num} g = {(m * w) // 1000} kg {(m * w) % 1000} g."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {m * v:num} mL of oil."
+     "text": "(c) How many millilitres of oil are needed?",
+     "answer": "m * v",
+     "unit": "mL",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{m} × {v} = {m * v:num} mL."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {(m * v) // 1000} L {(m * v) % 1000} mL."
+     "text": "(d) Write the oil needed in litres and millilitres. Enter litres; millilitres.",
+     "answer": [
+      "(m * v) // 1000",
+      "(m * v) % 1000"
+     ],
+     "responseFormat": "Mixed-unit measure in two boxes",
+     "explanation": "{m * v:num} mL = {(m * v) // 1000} L {(m * v) % 1000} mL."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) Rounds up: {(m * w) // 1000 + 1} packets, since a part packet cannot be bought."
+     "text": "(e) How many 1 kg packets of rice must be bought?",
+     "answer": "(m * w) // 1000 + 1",
+     "responseFormat": "Integer",
+     "explanation": "{(m * w) // 1000} {'packet is' if (m * w) // 1000 == 1 else 'packets are'} not enough for {m * w:num} g, so {(m * w) // 1000 + 1} packets."
     }
    ],
-   "hint": "First find how many times the recipe must be made.",
-   "explanation": "{m} times the recipe: {m * w:num} g rice, {m * v:num} mL oil, and {(m * w) // 1000 + 1} packets of rice.",
+   "maxWords": 80,
    "misconception": "Mixes weight and capacity units, uses every number without planning, or stops after an intermediate result.",
-   "notes": "A recipe for 4 or 5 people scaled 6 to 15 times; totals are never whole kilograms or litres, so (e) always rounds up.",
+   "notes": "A recipe for 4 or 5 people scaled 6 to 15 times; totals are never whole kilograms or litres, so (e) always rounds up. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH08-Q479",
     "CBSE-C5-CH08-Q483",
@@ -4542,11 +4645,10 @@
    "code": "C5-WC-L5-2",
    "chapter": 8,
    "skill": "C5-WC-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
    "values": [
     {
      "name": "who",
@@ -4588,35 +4690,58 @@
     "(1000 * a) % v != 0",
     "1000 * a // v > x"
    ],
-   "text": "{who.name} makes {a} L of lemonade for a school fair and serves it in glasses of {v} mL at ₹{p} a glass. (a) Write {a} L in mL. (b) How many glasses can be filled completely? (c) How many mL are left over? (d) How much money does {who.name} get if every full glass is sold? (e) {who.name} keeps {x} {'glass' if (x) == 1 else 'glasses'} for the helpers. How much lemonade, in mL, is sold? Show your working.",
-   "maxWords": 110,
-   "answer": "(a) {1000 * a:num} mL. (b) {1000 * a:num} ÷ {v} = {1000 * a // v} glasses. (c) {(1000 * a) % v} mL. (d) {1000 * a // v} × ₹{p} = {1000 * a // v * p:money}. (e) {1000 * a // v - x} × {v} = {(1000 * a // v - x) * v:num} mL.",
-   "steps": [
+   "stimulus": "{who.name} makes {a} L of lemonade for a school fair and serves it in glasses of {v} mL at ₹{p} a glass. {who.name} keeps {x} {'glass' if x == 1 else 'glasses'} for the helpers. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {1000 * a:num} mL."
+     "text": "(a) How many millilitres is {a} L?",
+     "answer": "1000 * a",
+     "unit": "mL",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a} × 1,000 = {1000 * a:num} mL."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {1000 * a // v} full glasses."
+     "text": "(b) How many glasses can be filled completely?",
+     "answer": "1000 * a // v",
+     "responseFormat": "Integer",
+     "explanation": "{1000 * a:num} ÷ {v} = {(1000 * a // v)} remainder {(1000 * a) % v}, so {(1000 * a // v)} full glasses."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {(1000 * a) % v} mL left over."
+     "text": "(c) How many millilitres are left over?",
+     "answer": "(1000 * a) % v",
+     "unit": "mL",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{(1000 * a // v)} × {v} = {(1000 * a // v) * v:num} mL; {1000 * a:num} − {(1000 * a // v) * v:num} = {(1000 * a) % v} mL."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {1000 * a // v * p:money}."
+     "text": "(d) How much money would {who.name} get if every full glass were sold, in rupees?",
+     "answer": "1000 * a // v * p",
+     "responseFormat": "Integer",
+     "explanation": "{(1000 * a // v)} × ₹{p} = {(1000 * a // v) * p:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {1000 * a // v - x} {'glass' if (1000 * a // v - x) == 1 else 'glasses'} sold: {(1000 * a // v - x) * v:num} mL."
+     "text": "(e) The glasses kept for the helpers are not sold, and every other full glass is. How much lemonade is sold, in mL?",
+     "answer": "((1000 * a // v) - x) * v",
+     "unit": "mL",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{(1000 * a // v) - x} {'glass' if (1000 * a // v) - x == 1 else 'glasses'} × {v} mL = {((1000 * a // v) - x) * v:num} mL."
     }
    ],
-   "hint": "Change litres to millilitres first, then divide by the glass size.",
-   "explanation": "{1000 * a:num} mL makes {1000 * a // v} {'glass' if (1000 * a // v) == 1 else 'glasses'} with {(1000 * a) % v} mL over; money {1000 * a // v * p:money}; sold {(1000 * a // v - x) * v:num} mL.",
+   "maxWords": 80,
    "misconception": "Divides before converting to one unit or counts refills inconsistently with full container quantities.",
-   "notes": "3 to 9 L in glasses of 150 to 400 mL (never exact), ₹10 to ₹30 a glass, 2 to 6 glasses kept.",
+   "notes": "3 to 9 L in glasses of 150 to 400 mL (never exact), ₹10 to ₹30 a glass, 2 to 6 glasses kept. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH08-Q454",
     "CBSE-C5-CH08-Q487",
@@ -4627,11 +4752,10 @@
    "code": "C5-WC-L5-3",
    "chapter": 8,
    "skill": "C5-WC-S06",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written explanation or working",
    "values": [
     {
      "name": "t",
@@ -4644,8 +4768,7 @@
      "name": "w",
      "choice": [
       25,
-      50,
-      100
+      50
      ]
     },
     {
@@ -4659,35 +4782,56 @@
    "require": [
     "q < 10 * t"
    ],
-   "text": "A truck carries {t} tonnes of potatoes. (a) How many kilograms is that? (b) How many quintals is that? (c) The potatoes are packed into sacks of {w} kg. How many sacks are there? (d) {q} quintals are unloaded at the first shop. How many kilograms are left on the truck? (e) How many sacks are left? Show your working.",
-   "maxWords": 100,
-   "answer": "(a) {1000 * t:num} kg. (b) {10 * t} quintals. (c) {1000 * t:num} ÷ {w} = {1000 * t // w} sacks. (d) {q} quintals = {100 * q} kg; {1000 * t:num} − {100 * q} = {1000 * t - 100 * q:num} kg. (e) {1000 * t - 100 * q:num} ÷ {w} = {(1000 * t - 100 * q) // w} sacks.",
-   "steps": [
+   "stimulus": "A truck carries {t} tonnes of potatoes, packed in sacks of {w} kg. At the first shop, {q} quintals are unloaded. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {t} × 1,000 = {1000 * t:num} kg."
+     "text": "(a) How many kilograms of potatoes does the truck carry?",
+     "answer": "1000 * t",
+     "unit": "kg",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "1 tonne = 1,000 kg = 10 quintals; 1 quintal = 100 kg.",
+     "explanation": "1 tonne = 1,000 kg, so {t} × 1,000 = {1000 * t:num} kg."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {t} × 10 = {10 * t} quintals."
+     "text": "(b) How many quintals is that?",
+     "answer": "10 * t",
+     "responseFormat": "Integer",
+     "explanation": "1 tonne = 10 quintals, so {t} × 10 = {10 * t} quintals."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {1000 * t // w} sacks."
+     "text": "(c) How many sacks are on the truck at the start?",
+     "answer": "1000 * t // w",
+     "responseFormat": "Integer",
+     "explanation": "{1000 * t:num} ÷ {w} = {1000 * t // w} sacks."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {1000 * t - 100 * q:num} kg left."
+     "text": "(d) How many kilograms are left on the truck after the first shop?",
+     "answer": "1000 * t - 100 * q",
+     "unit": "kg",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{q} quintals = {100 * q} kg; {1000 * t:num} − {100 * q} = {1000 * t - 100 * q:num} kg."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {(1000 * t - 100 * q) // w} sacks left."
+     "text": "(e) How many sacks are left on the truck?",
+     "answer": "(1000 * t - 100 * q) // w",
+     "responseFormat": "Integer",
+     "explanation": "{1000 * t - 100 * q:num} ÷ {w} = {(1000 * t - 100 * q) // w} sacks."
     }
    ],
-   "hint": "1 tonne = 1,000 kg = 10 quintals; 1 quintal = 100 kg.",
-   "explanation": "{1000 * t:num} kg = {10 * t} quintals = {1000 * t // w} sacks. After {q} quintals: {1000 * t - 100 * q:num} kg, {(1000 * t - 100 * q) // w} sacks.",
    "misconception": "Uses 10 kg for a quintal or 100 kg for a tonne.",
-   "notes": "2 to 8 tonnes, sacks of 25, 50 or 100 kg (always exact), 3 to 9 quintals unloaded.",
+   "notes": "2 to 8 tonnes, sacks of 25 or 50 kg (always exact; 100 kg sacks would make the sacks equal the quintals), 3 to 9 quintals unloaded. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH08-Q166",
     "CBSE-C5-CH08-Q186",

@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 3, Angles as Turns: 65 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. Directions are North, East, South and West only and turns are fractions of a full turn (the chapter uses no degrees). All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 3, Angles as Turns: 65 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. Directions are North, East, South and West only and turns are fractions of a full turn (the chapter uses no degrees). All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-AT-S01-P1",
@@ -11715,11 +11715,10 @@
    "code": "C5-AT-L3-1",
    "chapter": 3,
    "skill": "C5-AT-S09",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written explanation",
    "values": [
     {
      "name": "x",
@@ -11897,41 +11896,63 @@
     {
      "name": "who",
      "list": "names"
-    }
-   ],
-   "text": "{who.name} turns a dial {x.c}/{x.d} of a full turn. Another dial is turned {x.a}/{x.b} of a full turn the same way from the same start. Explain, using equal parts of a circle or fractions, why both dials end in the same position.",
-   "answer": "{x.c}/{x.d} and {x.a}/{x.b} are equivalent fractions: dividing the numerator and the denominator of {x.c}/{x.d} by {x.k} gives {x.a}/{x.b}. In a circle cut into {x.d} equal parts, every {x.k} small parts make one part of {x.b}, so {x.c} small parts are {x.aw} of {x.b}. The two turns are the same amount, so they end in the same position.",
-   "steps": [
-    {
-     "marks": 1,
-     "text": "States that {x.c}/{x.d} = {x.a}/{x.b} (the turns are the same amount)."
     },
     {
-     "marks": 1,
-     "text": "Shows why: divides numerator and denominator by {x.k}, or explains that {x.k} parts of {x.d} make one part of {x.b}."
-    },
-    {
-     "marks": 1,
-     "text": "Concludes that equal turns from the same start in the same direction end at the same position."
+     "name": "m",
+     "choice": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ]
     }
    ],
-   "hint": "Can you simplify {x.c}/{x.d}? Think of the circle cut into {x.d} equal parts.",
-   "explanation": "{x.c}/{x.d} = {x.a}/{x.b} (divide both by {x.k}). Equal turns from the same start in the same direction end at the same place.",
-   "notes": "Seven turns (quarters, halves, thirds, sixths, eighths) shown scaled by 2, 3 or 4.",
+   "require": [
+    "m != x.k"
+   ],
+   "stimulus": "{who.name} turns a dial {x.c}/{x.d} of a full turn. Another dial is turned {x.a}/{x.b} of a full turn the same way from the same start. Both dials end in the same position. Answer each step in its own box.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) Write {x.c}/{x.d} in simplest form.",
+     "answer": "frac(x.c, x.d)",
+     "answerFormat": "fraction",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "Dividing the numerator and the denominator of {x.c}/{x.d} by {x.k} gives {x.a}/{x.b}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) A circle is cut into {x.d} equal parts. How many of these small parts make one part of a circle cut into {x.b} equal parts?",
+     "answer": "x.k",
+     "responseFormat": "Integer",
+     "explanation": "{x.d} ÷ {x.b} = {x.k}, so {x.k} small parts make one part of {x.b}."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(c) A third dial is marked in {x.b * m} equal parts. How many of these parts must it turn, the same way from the same start, to end in the same position as the other two?",
+     "answer": "x.a * m",
+     "responseFormat": "Integer",
+     "explanation": "{x.a}/{x.b} = {x.a * m}/{x.b * m}, so it turns {x.a * m} parts."
+    }
+   ],
+   "misconception": "Adds the same number to numerator and denominator rather than scaling both.",
+   "notes": "Seven turns (quarters, halves, thirds, sixths, eighths) shown scaled by 2, 3 or 4. A third dial in 2 to 6 times as many parts (not the same as the first dial's). Step question (#208): (a) simplest form, (b) small parts in one bigger part, (c) the same turn on a third dial. The written explanation is now shown through the three answers.",
    "sources": [
     "CBSE-C5-CH03-Q297"
-   ],
-   "misconception": "Adds the same number to numerator and denominator rather than scaling both."
+   ]
   },
   {
    "code": "C5-AT-L3-2",
    "chapter": 3,
    "skill": "C5-AT-S13",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in context",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "x",
@@ -12920,40 +12941,51 @@
      ]
     }
    ],
-   "text": "{ctx} starts facing {x.s}. It makes {x.t1}, then {x.t2}, then {x.t3}. Write the direction it faces after each turn. Which way does it face at the end?",
-   "answer": "After {x.t1}: {x.m1}. After {x.t2}: {x.m2}. After {x.t3}: {x.c}. It faces {x.c} at the end.",
-   "steps": [
+   "require": [
+    "x.m1 != x.c"
+   ],
+   "stimulus": "{ctx} starts facing {x.s}. It makes {x.t1}, then {x.t2}, then {x.t3}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "After the first turn ({x.t1}): {x.m1}."
+     "text": "(a) Which way does it face after the first turn?",
+     "answer": "x.m1",
+     "responseFormat": "A direction: North, East, South or West",
+     "explanation": "From {x.s}, {x.t1} gives {x.m1}."
     },
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "After the second turn ({x.t2}): {x.m2} (follow through from the student's first answer)."
+     "text": "(b) Which way does it face after the second turn?",
+     "answer": "x.m2",
+     "responseFormat": "A direction: North, East, South or West",
+     "explanation": "From {x.m1}, {x.t2} gives {x.m2}."
     },
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "After the third turn ({x.t3}): {x.c} (follow through)."
+     "text": "(c) Which way does it face at the end?",
+     "answer": "x.c",
+     "responseFormat": "A direction: North, East, South or West",
+     "explanation": "From {x.m2}, {x.t3} gives {x.c}."
     }
    ],
-   "hint": "Update the direction after every turn, and start each turn from where it is facing now.",
-   "explanation": "{x.s} → {x.m1} → {x.m2} → {x.c}.",
-   "notes": "Any start; three turns, each a quarter turn either way or a half turn.",
+   "misconception": "Restarts from North for each instruction instead of continuing from the current direction.",
+   "notes": "Any start; three turns, each a quarter turn either way or a half turn. Step question (#208): the direction after each turn, typed as North, East, South or West. The direction at the end is never the one after the first turn.",
    "sources": [
     "CBSE-C5-CH03-Q499",
     "CBSE-C5-CH03-Q425"
-   ],
-   "misconception": "Restarts from North for each instruction instead of continuing from the current direction."
+   ]
   },
   {
    "code": "C5-AT-L3-3",
    "chapter": 3,
    "skill": "C5-AT-S12",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in context",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "x",
@@ -13282,40 +13314,49 @@
      ]
     }
    ],
-   "text": "A class starts when the minute hand points to 12. It spends {x.m1} minutes on {act.a} and then {x.m2} minutes on {act.b}. (a) How many clock-number spaces does the minute hand move altogether? (b) At which number does it stop? (c) What fraction of a full turn is this, in simplest form?",
-   "answer": "(a) {x.m1} + {x.m2} = {x.t} minutes; {x.t} ÷ 5 = {x.n} spaces. (b) It stops at {x.stop}. (c) {x.t}/60 = {x.f} of a full turn.",
-   "steps": [
+   "stimulus": "A class starts when the minute hand points to 12. It spends {x.m1} minutes on {act.a} and then {x.m2} minutes on {act.b}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Total {x.t} minutes and {x.n} spaces (each space is 5 minutes, not 1)."
+     "text": "(a) For how many minutes does the minute hand move altogether?",
+     "answer": "x.t",
+     "unit": "minutes",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{x.m1} + {x.m2} = {x.t} minutes."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Stops at {x.stop}."
+     "text": "(b) At which number on the clock does it stop?",
+     "answer": "x.stop",
+     "responseFormat": "Integer",
+     "explanation": "Each clock-number space is 5 minutes, so {x.t} minutes is {x.n} spaces on from 12: it stops at {x.stop}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {x.t}/60 = {x.f} (or {x.n}/12 simplified). Follow through from (a)."
+     "text": "(c) What fraction of a full turn has the minute hand made? Give it in simplest form.",
+     "answer": "x.f",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{x.t}/60 = {x.f}."
     }
    ],
-   "hint": "Each number space on a clock is 5 minutes.",
-   "explanation": "{x.m1} + {x.m2} = {x.t} minutes, which is {x.t} ÷ 5 = {x.n} spaces, so the hand stops at {x.stop}. As a fraction of the 60-minute turn: {x.t}/60 = {x.f}.",
-   "notes": "Two different activity times from 5 to 35 minutes in steps of 5, together at most 55 minutes.",
+   "misconception": "Uses the number written on the clock as the number of minutes moved.",
+   "notes": "Two different activity times from 5 to 35 minutes in steps of 5, together at most 55 minutes. Step question (#208): (a) minutes in all, (b) the number it stops at (the spaces moved), (c) the fraction of a turn.",
    "sources": [
     "CBSE-C5-CH03-Q498"
-   ],
-   "misconception": "Uses the number written on the clock as the number of minutes moved."
+   ]
   },
   {
    "code": "C5-AT-L5-1",
    "chapter": 3,
    "skill": "C5-AT-S10",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application and reasoning",
-   "responseFormat": "Written working",
-   "maxWords": 80,
    "values": [
     {
      "name": "x",
@@ -13439,49 +13480,64 @@
      "list": "names"
     }
    ],
-   "text": "{who.name} opens a paper fan in three steps: 1/{x.p} of a full turn, then 1/{x.q}, then 1/{x.r}. (a) Write all three with the same denominator. (b) Find the total opening in simplest form. (c) What type of angle is it? (d) How much more must the fan open to make a straight angle? Show your working.",
-   "answer": "(a) 1/{x.p} = {x.ap}/{x.l}, 1/{x.q} = {x.aq}/{x.l}, 1/{x.r} = {x.ar}/{x.l}. (b) Total = {x.sum}/{x.l} = {x.t}. (c) {x.t} is {x.cmp} of a full turn: the angle is {x.cl}. (d) A straight angle is 1/2: 1/2 − {x.t} = {x.need} more.",
-   "steps": [
+   "stimulus": "{who.name} opens a paper fan in three steps: 1/{x.p} of a full turn, then 1/{x.q}, then 1/{x.r}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) A common denominator (for example {x.l}) with the three parts {x.ap}/{x.l}, {x.aq}/{x.l}, {x.ar}/{x.l}."
+     "text": "(a) 1/{x.p} = ?/{x.l}. What number goes in place of ?",
+     "answer": "x.ap",
+     "responseFormat": "Integer",
+     "explanation": "1/{x.p} = {x.ap}/{x.l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Adds the numerators: {x.sum}/{x.l}."
+     "text": "(b) 1/{x.q} = ?/{x.l}. What number goes in place of ?",
+     "answer": "x.aq",
+     "responseFormat": "Integer",
+     "explanation": "1/{x.q} = {x.aq}/{x.l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Simplifies to {x.t}."
+     "text": "(c) The total opening is ?/{x.l}. What number goes in place of ?",
+     "answer": "x.sum",
+     "responseFormat": "Integer",
+     "explanation": "1/{x.r} = {x.ar}/{x.l}, and {x.ap} + {x.aq} + {x.ar} = {x.sum}, so the total is {x.sum}/{x.l}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) The angle is {x.cl}, by comparing {x.t} with 1/4 and 1/2 (follow through)."
+     "text": "(d) What is the total opening as a fraction of a full turn, in simplest form?",
+     "answer": "x.t",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{x.sum}/{x.l} = {x.t}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) 1/2 − {x.t} = {x.need} (follow through from (b))."
+     "text": "(e) How much more must the fan open to make a straight angle (half a turn)? Give it as a fraction of a full turn in simplest form.",
+     "answer": "x.need",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "1/2 − {x.t} = {x.need}."
     }
    ],
-   "hint": "Change all three fractions to the same denominator before adding.",
-   "explanation": "1/{x.p} + 1/{x.q} + 1/{x.r} = {x.ap}/{x.l} + {x.aq}/{x.l} + {x.ar}/{x.l} = {x.sum}/{x.l} = {x.t}, which is {x.cmp}, so the angle is {x.cl}. To reach 1/2 it needs {x.need} more.",
-   "notes": "Three different unit fractions from 1/4, 1/6, 1/8, 1/12 and 1/24 whose total is under a half turn.",
+   "misconception": "Adds denominators when combining equal fractional-turn units.",
+   "notes": "Three different unit fractions from 1/4, 1/6, 1/8, 1/12 and 1/24 whose total is under a half turn. Step question (#208): (a), (b) two of the parts over {x.l}, (c) the total over {x.l}, (d) simplest form, (e) the turn still needed. The angle type is no longer asked (it was obtuse in 7 of the 8 sets, so a choice would be guessable).",
    "sources": [
     "CBSE-C5-CH03-Q500",
     "CBSE-C5-CH03-Q326"
-   ],
-   "misconception": "Adds denominators when combining equal fractional-turn units."
+   ]
   },
   {
    "code": "C5-AT-L5-2",
    "chapter": 3,
    "skill": "C5-AT-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
-   "maxWords": 80,
    "values": [
     {
      "name": "x",
@@ -14739,51 +14795,90 @@
     {
      "name": "who",
      "list": "names"
+    },
+    {
+     "name": "u",
+     "expr": "('A quarter turn clockwise' if x.u3 == 'a quarter turn clockwise' else ('A quarter turn anticlockwise' if x.u3 == 'a quarter turn anticlockwise' else 'A half turn'))"
     }
    ],
-   "text": "In a treasure game, {who.name} makes {x.t1}, then {x.t2}, then {x.t3}, and ends up facing {x.e}. Work backwards to find the direction {who.he} faced at the start. (a) Which turn do you undo first, and how? (b) Write the direction before each turn. (c) Check your answer by following the turns forwards. Show your working.",
-   "answer": "(a) Undo the last turn first, by {x.u3}. (b) Before the third turn: {x.b2}. Before the second turn: {x.b1}. Before the first turn: {x.s}. So {who.he} started facing {x.s}. (c) Forwards: {x.s} → {x.b1} → {x.b2} → {x.e}, which matches.",
-   "steps": [
+   "require": [
+    "x.b2 != x.s"
+   ],
+   "stimulus": "In a treasure game, {who.name} makes {x.t1}, then {x.t2}, then {x.t3}, and ends up facing {x.e}. Work backwards to find the direction {who.he} faced at the start. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(a) Undoes the last turn first, with the same size turn the other way ({x.u3})."
+     "text": "(a) Working backwards, you undo the last turn first. Which turn undoes {x.t3}?",
+     "options": {
+      "correct": "u",
+      "wrong": [
+       {
+        "expr": "'A quarter turn anticlockwise' if (u == 'A quarter turn clockwise') else 'A quarter turn clockwise'",
+        "mistake": "does not undo the last turn with the same size turn the other way"
+       },
+       {
+        "expr": "'A half turn' if (u == 'A quarter turn clockwise' or u == 'A quarter turn anticlockwise') else 'A quarter turn anticlockwise'",
+        "mistake": "does not undo the last turn with the same size turn the other way"
+       },
+       {
+        "expr": "'A full turn' if (u == 'A quarter turn clockwise' or u == 'A quarter turn anticlockwise' or u == 'A half turn') else 'A half turn'",
+        "mistake": "does not undo the last turn with the same size turn the other way"
+       }
+      ]
+     },
+     "explanation": "A turn is undone by the same size turn the other way: {x.u3}."
     },
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "(b) Before the last turn: {x.b2}."
+     "text": "(b) Which way did {who.he} face before the third turn?",
+     "answer": "x.b2",
+     "responseFormat": "A direction: North, East, South or West",
+     "explanation": "Undo {x.t3} from {x.e} with {x.u3}: {x.b2}."
     },
     {
+     "questionType": "Text Entry",
      "marks": 1,
-     "text": "(b) Before the second turn: {x.b1} (undoing with {x.u2})."
+     "text": "(c) Which way did {who.he} face before the second turn?",
+     "answer": "x.b1",
+     "responseFormat": "A direction: North, East, South or West",
+     "explanation": "Undo {x.t2} from {x.b2} with {x.u2}: {x.b1}."
     },
     {
-     "marks": 1,
-     "text": "(b) Start: {x.s} (undoing with {x.u1}). Follow through from an earlier slip."
-    },
-    {
-     "marks": 1,
-     "text": "(c) A forward check {x.s} → {x.b1} → {x.b2} → {x.e}."
+     "questionType": "Text Entry",
+     "marks": 2,
+     "text": "(d) Which way did {who.he} face at the start?",
+     "answer": "x.s",
+     "responseFormat": "A direction: North, East, South or West",
+     "explanation": "Undo {x.t1} from {x.b1} with {x.u1}: {x.s}. Check forwards: {x.s} → {x.b1} → {x.b2} → {x.e}.",
+     "steps": [
+      {
+       "marks": 1,
+       "text": "Undoes the first turn with {x.u1}."
+      },
+      {
+       "marks": 1,
+       "text": "Start: {x.s}."
+      }
+     ]
     }
    ],
-   "hint": "Start at the end. Undo the turns in reverse order, each by the same size turn the other way.",
-   "explanation": "Undo in reverse: {x.e} → {x.b2} (undo {x.t3}) → {x.b1} (undo {x.t2}) → {x.s} (undo {x.t1}). Forwards: {x.s} → {x.b1} → {x.b2} → {x.e}.",
-   "notes": "Any end direction; three turns (at least one quarter turn), each a quarter turn either way or a half turn.",
+   "misconception": "Repeats the given turn instead of applying its inverse when working backwards.",
+   "notes": "Any end direction; three turns (at least one quarter turn), each a quarter turn either way or a half turn. Step question (#208): (a) the turn that undoes the last one (multiple choice), (b) and (c) the directions before the third and second turns, (d) the start (2 marks, all or nothing). The forward check is now in the explanation. The start is never the direction before the third turn.",
    "sources": [
     "CBSE-C5-CH03-Q462",
     "CBSE-C5-CH03-Q430"
-   ],
-   "misconception": "Repeats the given turn instead of applying its inverse when working backwards."
+   ]
   },
   {
    "code": "C5-AT-L5-3",
    "chapter": 3,
    "skill": "C5-AT-S12",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in context",
-   "responseFormat": "Written working",
-   "maxWords": 85,
    "values": [
     {
      "name": "x",
@@ -17689,40 +17784,78 @@
        "b": "storytelling"
       }
      ]
+    },
+    {
+     "name": "ang",
+     "expr": "('An acute angle' if x.cl == 'acute' else ('An obtuse angle' if x.cl == 'obtuse' else ('A right angle' if x.cl == 'a right angle' else 'A straight angle')))"
     }
    ],
-   "text": "A lesson starts when the minute hand points to {x.a}. First comes {act.a} for {x.m1} minutes, then {act.b} for {x.m2} minutes. (a) Where does the minute hand point after {act.the}? (b) What fraction of a full turn did it make during {act.the}, in simplest form? (c) What type of angle is that turn? (d) Where does it point at the end? (e) How long did the lesson last?",
-   "answer": "(a) {x.m1} minutes is {x.sp1} spaces: from {x.a} it points to {x.s1}. (b) {x.m1}/60 = {x.f1}. (c) {x.f1} is {x.cmp} of a full turn, so the angle is {x.cl}. (d) {x.m2} more minutes: it points to {x.s2}. (e) {x.m1} + {x.m2} = {x.t} minutes.",
-   "steps": [
+   "stimulus": "A lesson starts when the minute hand points to {x.a}. First comes {act.a} for {x.m1} minutes, then {act.b} for {x.m2} minutes. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {x.s1} ({x.m1} minutes = {x.sp1} spaces of 5 minutes)."
+     "text": "(a) At which number does the minute hand point after {act.the}?",
+     "answer": "x.s1",
+     "responseFormat": "Integer",
+     "explanation": "{x.m1} minutes is {x.sp1} spaces of 5 minutes: from {x.a} it points to {x.s1}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {x.m1}/60 = {x.f1}."
+     "text": "(b) What fraction of a full turn did it make during {act.the}? Give it in simplest form.",
+     "answer": "x.f1",
+     "responseFormat": "Fraction in simplest form",
+     "explanation": "{x.m1}/60 = {x.f1}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(c) The angle is {x.cl}, by comparing {x.f1} with 1/4 and 1/2 (follow through from (b))."
+     "text": "(c) What type of angle is that turn?",
+     "options": {
+      "correct": "ang",
+      "wrong": [
+       {
+        "expr": "'A right angle' if (ang == 'An acute angle') else 'An acute angle'",
+        "mistake": "compares the turn with 1/4 and 1/2 of a full turn wrongly"
+       },
+       {
+        "expr": "'An obtuse angle' if (ang == 'An acute angle' or ang == 'A right angle') else 'A right angle'",
+        "mistake": "compares the turn with 1/4 and 1/2 of a full turn wrongly"
+       },
+       {
+        "expr": "'A straight angle' if (ang == 'An acute angle' or ang == 'A right angle' or ang == 'An obtuse angle') else 'An obtuse angle'",
+        "mistake": "compares the turn with 1/4 and 1/2 of a full turn wrongly"
+       }
+      ]
+     },
+     "explanation": "{x.f1} is {x.cmp} of a full turn, so the angle is {x.cl}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {x.s2} (follow through from (a))."
+     "text": "(d) At which number does the minute hand point at the end?",
+     "answer": "x.s2",
+     "responseFormat": "Integer",
+     "explanation": "{x.m2} more minutes: it points to {x.s2}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {x.t} minutes."
+     "text": "(e) How long did the lesson last, in minutes?",
+     "answer": "x.t",
+     "unit": "minutes",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{x.m1} + {x.m2} = {x.t} minutes."
     }
    ],
-   "hint": "Each clock-number space is 5 minutes, and the full turn is 60 minutes.",
-   "explanation": "{x.m1} minutes moves {x.sp1} spaces from {x.a} to {x.s1}; that is {x.m1}/60 = {x.f1} of a turn, so the angle is {x.cl}. {x.m2} more minutes reaches {x.s2}. In all {x.t} minutes.",
-   "notes": "Start at any number; the two activities take 10 to 30 minutes each (different), in steps of 5. The first turn is never more than a half turn.",
+   "misconception": "Uses the number written on the clock as the number of minutes moved.",
+   "notes": "Start at any number; the two activities take 10 to 30 minutes each (different), in steps of 5. The first turn is never more than a half turn. Step question (#208): (a) where it points, (b) fraction of a turn, (c) the angle type (multiple choice), (d) where it ends, (e) how long.",
    "sources": [
     "CBSE-C5-CH03-Q498",
     "CBSE-C5-CH03-Q392"
-   ],
-   "misconception": "Uses the number written on the clock as the number of minutes moved."
+   ]
   },
   {
    "code": "C5-AT-CS-1",

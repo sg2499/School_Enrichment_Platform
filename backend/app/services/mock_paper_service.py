@@ -63,7 +63,9 @@ def pattern_kind(pattern: QuestionPattern) -> str:
         return "CASE_STUDY"
     if qtype == "Single Select":
         return "CHOICE"
-    if qtype == "Constructed Response":
+    if qtype in ("Constructed Response", "Long Answer"):
+        # A Long Answer (#208) fills the written places of a paper: the
+        # same 3- and 5-mark question, in steps the platform marks.
         return "WRITTEN"
     return "NUMBER"
 

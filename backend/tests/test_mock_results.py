@@ -1,4 +1,4 @@
-"""Released mock paper results outside the paper (#207, 28 Oct 2026).
+"""Mock paper results outside the paper (#207, 28 Oct 2026).
 
 Rules under test: nothing counts before the student hands in; from then
 (#208: no release step) the student's My Progress lists the paper and its
@@ -121,3 +121,44 @@ def test_an_unchosen_or_unmarked_answer_never_counts(db_session):
     db.commit()
     assert len(mock_results_service.answers(db, [a.id])) == 8
     assert len(mock_results_service.answers(db, [a.id], before=sitting.submitted_at)) == 0
+
+
+def test_one_long_answer_alone_never_flags_a_mistake(db_session):
+    """A long answer's (or case study's) steps are one question for Class
+    Analytics: a student who misses two steps of one long answer, and gets
+    another question testing the same mistake right, has missed one of two
+    questions, which doesn't flag them (#208 review)."""
+    from app.models.papers import QuestionPattern
+
+    db = db_session
+    w = _world(db, "MKR3", students=1)
+    fmt = {"name": "Steps", "timeMinutes": 30, "readingMinutes": 0, "difficulty": None, "applicationMin": None,
+           "sections": [{"name": "A", "marks": 3, "count": 1, "kind": "WRITTEN"},
+                        {"name": "B", "marks": 1, "count": 1, "kind": "NUMBER"}]}
+    paper, teacher = _paper(db, w, fmt)
+    (a,) = w["students"]
+    view = sit.start(db, a, paper.id, now=T1)
+    long_parts = [p for sec in view["sections"][:1] for place in sec["places"] for h in place["halves"] for p in h["parts"]]
+    (number,) = [p for sec in view["sections"][1:] for place in sec["places"] for h in place["halves"] for p in h["parts"]]
+    assert len(long_parts) >= 2
+    qs = {q.id: q for q in db.query(Question).filter(Question.id.in_([p["id"] for p in long_parts] + [number["id"]]))}
+    tag = qs[long_parts[0]["id"]].misconception_tag
+    # The number question tests the same mistake.
+    qs[number["id"]].misconception_tag = tag
+    qs[number["id"]].concept_lesson_id = qs[long_parts[0]["id"]].concept_lesson_id
+    db.commit()
+    writing = T1 + timedelta(minutes=1)
+    for part in long_parts[:2]:
+        sit.save_answer(db, a, paper.id, part["id"], "999999", now=writing)
+    for part in long_parts[2:]:
+        sit.save_answer(db, a, paper.id, part["id"], qs[part["id"]].correct_answer, now=writing)
+    sit.save_answer(db, a, paper.id, number["id"], qs[number["id"]].correct_answer, now=writing)
+    sit.submit(db, a, paper.id, now=writing + timedelta(minutes=1))
+    db.add(MisconceptionReview(concept_lesson_id=qs[number["id"]].concept_lesson_id, tag_key=tag_key(tag), status="APPROVED",
+                               shown_note="Note"))
+    db.commit()
+    own = resolve_viewer(db, w["teacher"].user)
+    shown = analytics_service.misconceptions(db, own, analytics_service.parse_scope(w["scope"]), w["chapter"].id,
+                                             analytics_service.FIRST)
+    flagged = [m for m in shown["misconceptions"] if any(s["id"] == a.id for s in m["students"])]
+    assert flagged == [], flagged

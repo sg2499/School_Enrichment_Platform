@@ -13,7 +13,8 @@ A format (JSON):
                     count   questions to answer, 1 to 50
                     choices how many of them come as an either/or pair, 0 to count
                     kind    ANY | CHOICE (multiple choice) | NUMBER (number or
-                            short answers) | WRITTEN (worked written answers) |
+                            short answers) | WRITTEN (3- and 5-mark long answers,
+                            in steps the platform marks: #208) |
                             CASE_STUDY (4-mark case study, the only kind at 4 marks)
   timeMinutes     5 to 240; readingMinutes 0 to 15
   difficulty      {easy, medium, hard} percentages adding to 100, or null (any mix)
@@ -26,7 +27,7 @@ from __future__ import annotations
 KINDS = ("ANY", "CHOICE", "NUMBER", "WRITTEN", "CASE_STUDY")
 KIND_LABEL = {
     "ANY": "Any kind", "CHOICE": "Multiple choice", "NUMBER": "Number or short answer",
-    "WRITTEN": "Written answer", "CASE_STUDY": "Case study",
+    "WRITTEN": "Long answer in steps", "CASE_STUDY": "Case study",
 }
 MARKS = (1, 2, 3, 4, 5)
 MAX_SECTIONS = 10
@@ -118,6 +119,10 @@ def clean_format(raw) -> dict:
             problems.append(f"{where}: 4-mark questions are case studies, and case studies are worth 4 marks.")
         elif kind == "CHOICE" and marks not in (1, 2):
             problems.append(f"{where}: multiple-choice questions are worth 1 or 2 marks.")
+        elif kind == "WRITTEN" and marks not in (3, 5):
+            # Long answers in steps are 3 or 5 marks (#208 review): a 1- or
+            # 2-mark one has no question to fill it.
+            problems.append(f"{where}: long answers in steps are worth 3 or 5 marks.")
         cleaned.append({"name": sname, "marks": marks, "count": count, "choices": choices, "kind": kind})
     total = sum(s["marks"] * s["count"] for s in cleaned if isinstance(s["marks"], int) and isinstance(s["count"], int))
     if total > MAX_TOTAL:

@@ -6,7 +6,9 @@
  * totals. Each student sees their marks at hand-in and the solutions once
  * the paper closes (#208: no release step). Marking: each written answer,
  * with that student's own question and marking steps (every student's
- * numbers differ); a mark can be changed at any time.
+ * numbers differ); a mark can be changed at any time. With every long
+ * answer in steps (#208 part 2) and no method marks on mocks, this tab is
+ * normally empty.
  */
 import { useState } from "react";
 import { Save } from "lucide-react";
@@ -161,7 +163,7 @@ export function MarkingPanel({ paperId, canAct }: { paperId: string; canAct: boo
       <Card className="p-6">
         <EmptyState
           title="Nothing to Mark"
-          description="Written answers appear here once students hand in the paper. Number and choice answers are marked automatically."
+          description="The platform marks every answer, step by step. A written answer from an older question would appear here for you to mark."
         />
       </Card>
     );
@@ -219,17 +221,6 @@ export function MarkingPanel({ paperId, canAct }: { paperId: string; canAct: boo
                         <div className="rounded-xl border border-line p-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-content-subtle">Student&apos;s Answer</p>
                           <p className="mt-1 whitespace-pre-line text-sm text-content">{a.response || "Left blank"}</p>
-                          {a.working ? (
-                            <>
-                              <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-content-subtle">Working</p>
-                              <p className="mt-1 whitespace-pre-line font-mono text-[0.8125rem] text-content">{a.working}</p>
-                            </>
-                          ) : null}
-                          {a.autoScore !== null ? (
-                            <p className="mt-2 text-xs text-content-subtle">
-                              Marked automatically: {a.autoScore} of {a.maxScore}. Change it only to give marks for correct working.
-                            </p>
-                          ) : null}
                         </div>
                         <details className="rounded-xl bg-surface-muted px-3 py-2 text-sm text-content-muted" open>
                           <summary className="cursor-pointer font-semibold text-content">Marking Steps and Model Answer</summary>

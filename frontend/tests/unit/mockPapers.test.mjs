@@ -26,6 +26,8 @@ describe("sections", () => {
     assert.deepEqual(kindsFor(4), ["CASE_STUDY"]);
     assert.ok(kindsFor(2).includes("CHOICE"));
     assert.ok(!kindsFor(3).includes("CHOICE") && !kindsFor(5).includes("CASE_STUDY"));
+    // #208: long answers in steps are 3 or 5 marks.
+    assert.ok(!kindsFor(1).includes("WRITTEN") && !kindsFor(2).includes("WRITTEN") && kindsFor(3).includes("WRITTEN"));
   });
 
   test("changing the marks keeps the kind when it still fits", () => {

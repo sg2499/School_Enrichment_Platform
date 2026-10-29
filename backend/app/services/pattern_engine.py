@@ -32,6 +32,14 @@ A pattern spec (JSON, read by clean_spec) holds:
   steps        for 2 marks or more: [{marks, text}], one line per mark step
   stimulus + parts   a case study: one scenario, then parts, each a small
                question of its own (text, answer or options, marks, ...)
+  Long Answer  questionType "Long Answer" (#208, 28 Oct 2026): a 3- or
+               5-mark question in steps. The stimulus is the problem; each
+               part is one step with its own answer box (number, short
+               answer or multiple choice, 1 or 2 marks), so the platform
+               marks every step and the marks add up to the question's.
+               Shailesh, 28 Oct: "we need to figure out a way to remove
+               manual work as much as possible"; a mock answer never waits
+               for a teacher.
   maxWords     the longest the question may be (default 60)
   notes        the limits in words, for the reviewer; sources: the bank
                questions the pattern was drawn from
@@ -54,6 +62,9 @@ from app.services import pattern_expr
 from app.services.pattern_expr import ExprError
 
 QUESTION_TYPES = ("Single Select", "Numeric Entry", "Text Entry", "Constructed Response")
+LONG_ANSWER = "Long Answer"
+LONG_ANSWER_MARKS = (3, 5)
+STEP_TYPES = ("Single Select", "Numeric Entry", "Text Entry")  # a step is marked by the platform
 ANSWER_FORMATS = ("plain", "fraction")
 BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed")
 DEFAULT_MAX_WORDS = 60
@@ -334,7 +345,38 @@ def clean_spec(raw: dict) -> Spec:
     question_type = raw.get("questionType")
     stimulus = None
     parts: list[Part] = []
-    if "parts" in raw:
+    if question_type == LONG_ANSWER:
+        stimulus = _template(raw.get("stimulus"), f"{where} stimulus", problems, known)
+        if stimulus is None:
+            problems.append(f"{where}: a Long Answer needs its problem (the stimulus).")
+        if raw.get("marks") not in LONG_ANSWER_MARKS:
+            problems.append(f"{where}: a Long Answer is worth 3 or 5 marks.")
+        for key in ("text", "answer", "steps", "hint", "options", "explanation"):
+            if key in raw:
+                # Each step carries its own; a top-level one would never be shown (review).
+                problems.append(f"{where}: a Long Answer's {key} belongs on its steps, not on the question.")
+        raw_parts = raw.get("parts")
+        if not isinstance(raw_parts, list) or not 2 <= len(raw_parts) <= 6:
+            problems.append(f"{where}: a Long Answer needs 2 to 6 steps (parts).")
+        else:
+            for i, p in enumerate(raw_parts, 1):
+                p = p if isinstance(p, dict) else {}
+                if not str(p.get("text") or "").startswith(f"({chr(96 + i)}) "):
+                    # The paper letters the steps by their own text (review).
+                    problems.append(f"{where} step {i}: its text must start with \"({chr(96 + i)}) \".")
+                if p.get("questionType") not in STEP_TYPES:
+                    problems.append(f"{where} step {i}: must be marked by the platform ({', '.join(STEP_TYPES)}).")
+                    continue
+                if p.get("marks") not in (1, 2):
+                    problems.append(f"{where} step {i}: a step is worth 1 or 2 marks.")
+                    continue
+                part = _part(p, f"{where} step {i}", problems, known)
+                if part:
+                    parts.append(part)
+            total = sum(p.marks for p in parts)
+            if len(parts) == len(raw_parts) and raw.get("marks") != total:
+                problems.append(f"{where}: marks must be the total of its steps ({total}).")
+    elif "parts" in raw:
         stimulus = _template(raw.get("stimulus"), f"{where} stimulus", problems, known)
         if stimulus is None:
             problems.append(f"{where}: a case study needs its stimulus (the scenario).")
@@ -364,7 +406,10 @@ def clean_spec(raw: dict) -> Spec:
         raise PatternError(problems)
     return Spec(
         code=code, chapter=chapter, skill=skill,
-        question_type="Case Study" if stimulus is not None else (question_type or parts[0].question_type),
+        question_type=(
+            LONG_ANSWER if question_type == LONG_ANSWER
+            else "Case Study" if stimulus is not None else (question_type or parts[0].question_type)
+        ),
         marks=raw.get("marks"), difficulty=difficulty, competency=raw.get("competency"),
         values=values, require=[r for r in require if r is not None], parts=parts, stimulus=stimulus,
         misconception=misconception,

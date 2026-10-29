@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 9, Coconut Farm: 69 patterns, four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 9, Coconut Farm: 69 patterns, four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-CF-S01-P1",
@@ -21459,11 +21459,10 @@
    "code": "C5-CF-L3-1",
    "chapter": 9,
    "skill": "C5-CF-S10",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "d",
@@ -21487,26 +21486,36 @@
      }
     }
    ],
-   "text": "A farm has {d * q + r} coconuts. Answer each question and say how you used the remainder. (a) The coconuts are packed in bags of {d}. How many bags are completely full? (b) How many bags are needed to pack every coconut? (c) How many coconuts are in the last bag?",
-   "answer": "{d * q + r} ÷ {d} = {q} remainder {r}. (a) {q} full bags: only complete bags count. (b) {q + 1} bags: the {r} coconuts left over need one more bag. (c) {r} coconuts: the remainder goes in the last bag.",
-   "steps": [
+   "stimulus": "A farm has {d * q + r} coconuts. They are packed in bags of {d}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Divides: {q} remainder {r}, so {q} full bags."
+     "text": "(a) How many bags are completely full?",
+     "answer": "q",
+     "responseFormat": "Integer",
+     "hint": "Divide once, then decide what each step needs.",
+     "explanation": "{d * q + r} ÷ {d} = {q} remainder {r}: only complete bags count, so {q}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {q + 1} bags, explaining that the leftover coconuts need one more bag."
+     "text": "(b) How many bags are needed to pack every coconut?",
+     "answer": "q + 1",
+     "responseFormat": "Integer",
+     "explanation": "The {r} coconuts left over need one more bag: {q} + 1 = {q + 1}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {r} coconuts in the last bag (the remainder). Follow through from a slip in the division."
+     "text": "(c) How many coconuts are in the last bag?",
+     "answer": "r",
+     "responseFormat": "Integer",
+     "explanation": "The remainder goes in the last bag: {r} coconuts."
     }
    ],
-   "hint": "Divide once. Then decide what each question needs: full bags, all the bags, or what is left.",
-   "explanation": "{d * q + r} ÷ {d} = {q} remainder {r}: {q} full bags, {q + 1} bags in all, {r} coconuts in the last bag.",
    "misconception": "Reports the quotient mechanically when the situation requires rounding up or interpreting leftovers.",
-   "notes": "Bags of 6 to 12; 15 to 40 full bags; 2 or more left over.",
+   "notes": "Bags of 6 to 12; 15 to 40 full bags; 2 or more left over. The steps ask for each use of the remainder in turn. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH09-Q329",
     "CBSE-C5-CH09-Q303",
@@ -21518,11 +21527,10 @@
    "code": "C5-CF-L3-2",
    "chapter": 9,
    "skill": "C5-CF-S13",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "who",
@@ -21548,6 +21556,29 @@
       "min": 1,
       "max": "d - 1"
      }
+    },
+    {
+     "name": "v",
+     "choice": [
+      {
+       "r": "The remainder is not less than the divisor, so one more group fits.",
+       "w1": "The quotient is too big, so one group too many was taken away.",
+       "w2": "A remainder must always be less than 10.",
+       "w3": "Nothing: the divisor times the quotient, plus the remainder, gives the number."
+      },
+      {
+       "r": "The remainder is too big: another group of the divisor can be taken.",
+       "w1": "The quotient should be one less.",
+       "w2": "The remainder should be under 10.",
+       "w3": "Nothing is wrong, because the check works out."
+      },
+      {
+       "r": "The remainder is bigger than the divisor.",
+       "w1": "Too many groups were taken, so the quotient is too large.",
+       "w2": "Remainders must be single digits.",
+       "w3": "Nothing: multiplying back and adding the remainder gives the number."
+      }
+     ]
     }
    ],
    "require": [
@@ -21555,26 +21586,50 @@
     "d * q >= 1000",
     "r + d < 2 * d"
    ],
-   "text": "{who.name} divides {d * q + r:num} by {d} and writes: quotient {q - 1}, remainder {r + d}. Explain the mistake and give the correct quotient and remainder. Check your answer.",
-   "answer": "A remainder of {r + d} is not less than the divisor {d}, so one more group of {d} fits. The correct answer is quotient {q}, remainder {r}. Check: {d} × {q} + {r} = {d * q:num} + {r} = {d * q + r:num}.",
-   "steps": [
+   "stimulus": "{who.name} divides {d * q + r:num} by {d} and writes: quotient {q - 1}, remainder {r + d}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Explains: the remainder {r + d} is not smaller than {d}, so another group fits."
+     "text": "(a) What is wrong with this answer?",
+     "options": {
+      "correct": "v.r",
+      "wrong": [
+       {
+        "expr": "v.w1",
+        "mistake": "thinks the quotient is too large when it is too small"
+       },
+       {
+        "expr": "v.w2",
+        "mistake": "compares the remainder with 10 instead of the divisor"
+       },
+       {
+        "expr": "v.w3",
+        "mistake": "checks the multiplication but not the size of the remainder"
+       }
+      ]
+     },
+     "explanation": "{r + d} is not less than {d}, so another {d} fits: {r + d} − {d} = {r}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Correct answer: quotient {q}, remainder {r}."
+     "text": "(b) What is the correct quotient?",
+     "answer": "q",
+     "responseFormat": "Integer",
+     "explanation": "One more group of {d}: {q - 1} + 1 = {q}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Check: {d} × {q} + {r} = {d * q + r:num}."
+     "text": "(c) What is the correct remainder?",
+     "answer": "r",
+     "responseFormat": "Integer",
+     "explanation": "{r + d} − {d} = {r}. Check: {d} × {q} + {r} = {d * q + r:num}."
     }
    ],
-   "hint": "Compare the remainder with the divisor.",
-   "explanation": "{r + d} − {d} = {r}, so one more group fits: quotient {q}, remainder {r}.",
    "misconception": "Underestimates benchmark multiples or accepts a remainder not smaller than the divisor.",
-   "notes": "Divisor 12 to 32, quotient 101 to 299, four-digit dividend; the remainder written is the true one plus the divisor.",
+   "notes": "Divisor 12 to 32, quotient 101 to 299, four-digit dividend; the remainder written is the true one plus the divisor. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH09-Q403",
     "CBSE-C5-CH09-Q410",
@@ -21586,11 +21641,10 @@
    "code": "C5-CF-L3-3",
    "chapter": 9,
    "skill": "C5-CF-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 4,
    "competency": "Multi-step application and reasoning",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "d",
@@ -21622,26 +21676,38 @@
      }
     }
    ],
-   "text": "A farm has {d * q + r} coconuts. Every {d} coconuts make 1 litre of oil, and oil sells at ₹{p} a litre. (a) How many complete litres can it make? (b) How many coconuts are left over? (c) How much money does it get for the oil? Show your working.",
-   "answer": "(a) {d * q + r} ÷ {d} = {q} remainder {r}, so {q} litres. (b) {r} {'coconut' if r == 1 else 'coconuts'} left over. (c) {q} × ₹{p} = {q * p:money}.",
-   "steps": [
+   "stimulus": "A farm has {d * q + r:num} coconuts. Every {d} coconuts make 1 litre of oil, and oil sells at ₹{p} a litre. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {q} complete litres."
+     "text": "(a) How many complete litres of oil can it make?",
+     "answer": "q",
+     "unit": "litres",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "Only complete litres can be sold.",
+     "explanation": "{d * q + r:num} ÷ {d} = {q} remainder {r}, so {q} litres."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {r} {'coconut' if r == 1 else 'coconuts'} left over."
+     "text": "(b) How many coconuts are left over?",
+     "answer": "r",
+     "responseFormat": "Integer",
+     "explanation": "The remainder: {r} {'coconut' if r == 1 else 'coconuts'}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {q} × ₹{p} = {q * p:money}. Follow through from (a)."
+     "text": "(c) How much money does it get for the oil, in rupees?",
+     "answer": "q * p",
+     "responseFormat": "Integer",
+     "explanation": "{q} × ₹{p} = {q * p:money}."
     }
    ],
-   "hint": "Divide first. Only complete litres can be sold.",
-   "explanation": "{q} litres with {r} left over; {q} × ₹{p} = {q * p:money}.",
    "misconception": "Divides the wrong quantities, ignores a limiting resource or assumes information that was not given.",
-   "notes": "8 to 12 coconuts a litre, 30 to 90 litres, some left over; ₹120 to ₹200 a litre.",
+   "notes": "8 to 12 coconuts a litre, 30 to 90 litres, some left over; ₹120 to ₹200 a litre. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH09-Q430",
     "CBSE-C5-CH09-Q437",
@@ -21652,11 +21718,10 @@
    "code": "C5-CF-L5-1",
    "chapter": 9,
    "skill": "C5-CF-S13",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Reasoning and problem solving",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "d",
@@ -21678,43 +21743,107 @@
       "min": 1,
       "max": "d - 1"
      }
+    },
+    {
+     "name": "v",
+     "choice": [
+      {
+       "r": "What is left is less than the divisor.",
+       "w1": "What is left is still bigger than the divisor, so it is finished.",
+       "w2": "A four-digit number always needs exactly three take-aways.",
+       "w3": "The quotient already has three digits, which is enough."
+      },
+      {
+       "r": "Another group of the divisor no longer fits in what is left.",
+       "w1": "What is left is more than the divisor.",
+       "w2": "Four-digit numbers stop after three take-aways.",
+       "w3": "The quotient has three digits."
+      },
+      {
+       "r": "What is left is smaller than the divisor, so no more groups fit.",
+       "w1": "What is left is bigger than the divisor.",
+       "w2": "Three take-aways are always enough for a four-digit number.",
+       "w3": "Three-digit quotients are complete."
+      }
+     ]
+    },
+    {
+     "name": "h",
+     "expr": "q // 100"
+    },
+    {
+     "name": "tt",
+     "expr": "(q // 10) % 10"
     }
    ],
    "require": [
     "d * q + r <= 9999",
     "d * q >= 1000",
     "d % 10 != 0",
-    "q % 10 != 0"
+    "q % 10 != 0",
+    "(q // 10) % 10 != 0"
    ],
-   "text": "Divide {d * q + r:num} by {d} using partial quotients. (a) Write each multiple of {d} you take away and what is left each time. (b) Add the partial quotients. (c) Give the remainder and say why it is less than {d}. (d) Check by multiplying and adding. (e) Say whether your quotient is close to an estimate.",
-   "maxWords": 80,
-   "answer": "For example: {d * q + r:num} − {d * 100:num} ({d} × 100) = {d * (q - 100) + r:num}; then take away further multiples of {d} until less than {d} is left. Partial quotients add to {q}. Remainder {r}, less than {d}, so no more groups fit. Check: {d} × {q} + {r} = {d * q + r:num}. Estimate: about {d * q + r:num} ÷ {d} ≈ {round_half_up(q, 10)}, close to {q}.",
-   "steps": [
+   "stimulus": "Divide {d * q + r:num} by {d} using partial quotients. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Takes away valid multiples of {d}, never more than what is left (for example {d} × 100 = {d * 100:num})."
+     "text": "(a) Take away {d} × {100 * h} from {d * q + r:num}. What is left?",
+     "answer": "(d * q + r) - 100 * h * d",
+     "responseFormat": "Integer",
+     "hint": "{d} × 100 = {100 * d:num}.",
+     "explanation": "{d} × {100 * h} = {100 * h * d:num}; {d * q + r:num} − {100 * h * d:num} = {(d * q + r) - 100 * h * d:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Records what is left each time correctly, ending with less than {d}."
+     "text": "(b) From what is left, take away {d} × {10 * tt}. What is left now?",
+     "answer": "(d * q + r) - (100 * h + 10 * tt) * d",
+     "responseFormat": "Integer",
+     "explanation": "{d} × {10 * tt} = {10 * tt * d:num}; {(d * q + r) - 100 * h * d:num} − {10 * tt * d:num} = {(d * q + r) - (100 * h + 10 * tt) * d:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Partial quotients add to {q}. Any valid split gets the marks."
+     "text": "(c) From what is left now, take away {d} × {q % 10}. What is left at the end?",
+     "answer": "r",
+     "responseFormat": "Integer",
+     "explanation": "{d} × {q % 10} = {(q % 10) * d}; {(d * q + r) - (100 * h + 10 * tt) * d:num} − {(q % 10) * d} = {r}. This is the remainder."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) Remainder {r}, and says it is less than {d} so no more groups fit."
+     "text": "(d) Add the partial quotients. What is the quotient of {d * q + r:num} ÷ {d}?",
+     "answer": "q",
+     "responseFormat": "Integer",
+     "explanation": "{100 * h} + {10 * tt} + {q % 10} = {q}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(d) and (e) Check {d} × {q} + {r} = {d * q + r:num}, and a sensible estimate (about {round_half_up(q, 10)})."
+     "text": "(e) Why does the division stop after step (c)?",
+     "options": {
+      "correct": "v.r",
+      "wrong": [
+       {
+        "expr": "v.w1",
+        "mistake": "compares what is left with the divisor the wrong way"
+       },
+       {
+        "expr": "v.w2",
+        "mistake": "follows a fixed number of steps instead of checking what is left"
+       },
+       {
+        "expr": "v.w3",
+        "mistake": "stops when the quotient looks big enough"
+       }
+      ]
+     },
+     "explanation": "{r} is less than {d}, so another {d} cannot be taken away. Check: {d} × {q} + {r} = {d * q + r:num}."
     }
    ],
-   "hint": "Start with {d} × 100. Keep taking away multiples of {d} until less than {d} is left.",
-   "explanation": "{d * q + r:num} ÷ {d} = {q} remainder {r}; check {d} × {q} + {r} = {d * q + r:num}.",
    "misconception": "Underestimates benchmark multiples or accepts a remainder not smaller than the divisor.",
-   "notes": "Divisor 13 to 29 (not 20), quotient 121 to 349 (not a multiple of 10), four-digit dividend, remainder below the divisor.",
+   "notes": "Divisor 13 to 29 (not 20), quotient 121 to 349 (not a multiple of 10, tens digit not 0), four-digit dividend, remainder below the divisor. The steps follow one way of splitting (hundreds, tens, then ones), the third take-away leaving the remainder; the original's 'estimate' step is dropped. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH09-Q398",
     "CBSE-C5-CH09-Q412",
@@ -21726,11 +21855,10 @@
    "code": "C5-CF-L5-2",
    "chapter": 9,
    "skill": "C5-CF-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application and reasoning",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "farm",
@@ -21782,35 +21910,53 @@
    "require": [
     "d * q + r + kept <= 9999"
    ],
-   "text": "{farm} Farm picks {d * q + r + kept:num} coconuts. It keeps {kept} for the family and packs the rest in bags of {d}. Each full bag sells for ₹{p}. (a) How many coconuts are packed? (b) How many full bags are there? (c) How many coconuts are left over? (d) How much money do the full bags bring? (e) Check (b) and (c) by multiplying and adding.",
-   "maxWords": 90,
-   "answer": "(a) {d * q + r + kept:num} − {kept} = {d * q + r:num}. (b) {d * q + r:num} ÷ {d} = {q} remainder {r}, so {q} full bags. (c) {r} left over. (d) {q} × ₹{p} = {q * p:money}. (e) {d} × {q} + {r} = {d * q:num} + {r} = {d * q + r:num}.",
-   "steps": [
+   "stimulus": "{farm} Farm picks {d * q + r + kept:num} coconuts. It keeps {kept} for the family and packs the rest in bags of {d}. Each full bag sells for ₹{p}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {d * q + r:num} coconuts packed."
+     "text": "(a) How many coconuts are packed?",
+     "answer": "d * q + r",
+     "responseFormat": "Integer",
+     "hint": "Take away the coconuts kept first.",
+     "explanation": "{d * q + r + kept:num} − {kept} = {d * q + r:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {q} full bags."
+     "text": "(b) How many full bags are there?",
+     "answer": "q",
+     "responseFormat": "Integer",
+     "explanation": "{d * q + r:num} ÷ {d} = {q} remainder {r}, so {q} full bags."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {r} left over."
+     "text": "(c) How many coconuts are left over?",
+     "answer": "r",
+     "responseFormat": "Integer",
+     "explanation": "The remainder: {r}. Check: {d} × {q} + {r} = {d * q + r:num}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {q} × ₹{p} = {q * p:money} (follow through from (b))."
+     "text": "(d) How much money do the full bags bring, in rupees?",
+     "answer": "q * p",
+     "responseFormat": "Integer",
+     "explanation": "{q} × ₹{p} = {q * p:money}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) Check: {d} × {q} + {r} = {d * q + r:num}."
+     "text": "(e) How many more coconuts would be needed to fill one more bag?",
+     "answer": "d - r",
+     "responseFormat": "Integer",
+     "explanation": "{r} are left over, so {d} − {r} = {d - r} more fill a bag."
     }
    ],
-   "hint": "Take away the coconuts kept first. Then divide.",
-   "explanation": "{d * q + r:num} ÷ {d} = {q} remainder {r}; {q} × ₹{p} = {q * p:money}.",
+   "maxWords": 80,
    "misconception": "Divides the wrong quantities, ignores a limiting resource or assumes information that was not given.",
-   "notes": "Made-up farm names; 20 to 90 kept; bags of 10 to 25; 40 to 200 full bags; ₹150 to ₹400 a bag.",
+   "notes": "Made-up farm names; 20 to 90 kept; bags of 10 to 25; 40 to 200 full bags; ₹150 to ₹400 a bag. The original's multiplication check is in (c)'s explanation; (e) asks what the remainder is short of. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH09-Q497",
     "CBSE-C5-CH09-Q499",
@@ -21822,11 +21968,10 @@
    "code": "C5-CF-L5-3",
    "chapter": 9,
    "skill": "C5-CF-S10",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Multi-step application and reasoning",
-   "responseFormat": "Written working",
    "values": [
     {
      "name": "c",
@@ -21863,40 +22008,94 @@
       "max": 6000,
       "step": 500
      }
+    },
+    {
+     "name": "v",
+     "choice": [
+      {
+       "r": "With only as many buses as the quotient, some people would have no seat.",
+       "w1": "The teachers must travel in a bus of their own.",
+       "w2": "Every bus must leave some seats empty.",
+       "w3": "The quotient is always one less than the answer in a division."
+      },
+      {
+       "r": "The people left over (the remainder) still need a bus.",
+       "w1": "Teachers need their own bus.",
+       "w2": "Buses must always have empty seats, so an extra one is booked.",
+       "w3": "You always add 1 to a quotient."
+      },
+      {
+       "r": "The remainder is not zero, so some people are still without a seat.",
+       "w1": "One bus is kept only for the teachers on the trip.",
+       "w2": "Every bus must have empty seats.",
+       "w3": "Add one because the answer is always more than the quotient."
+      }
+     ]
     }
    ],
    "require": [
     "c * q + r - t >= 100"
    ],
-   "text": "{c * q + r - t} students and {t} teachers go on a trip to a coconut farm. Each bus holds {c} people, and each bus costs {f:money}. (a) How many people go? (b) How many buses are needed? (c) How many seats are empty? (d) What do the buses cost in all? (e) Explain why the answer to (b) is not {q}.",
-   "maxWords": 90,
-   "answer": "(a) {c * q + r - t} + {t} = {c * q + r}. (b) {c * q + r} ÷ {c} = {q} remainder {r}, so {q + 1} buses. (c) {c * (q + 1)} − {c * q + r} = {c - r} empty seats. (d) {q + 1} × {f:money} = {(q + 1) * f:money}. (e) {q} buses carry only {c * q}, leaving {r} people without seats, so one more bus is needed.",
-   "steps": [
+   "stimulus": "{c * q + r - t} students and {t} teachers go on a trip to a coconut farm. Each bus holds {c} people, and each bus costs {f:money}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {c * q + r} people."
+     "text": "(a) How many people go?",
+     "answer": "c * q + r",
+     "responseFormat": "Integer",
+     "explanation": "{c * q + r - t} + {t} = {c * q + r}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {c * q + r} ÷ {c} = {q} remainder {r}, so {q + 1} buses."
+     "text": "(b) How many buses are needed?",
+     "answer": "q + 1",
+     "responseFormat": "Integer",
+     "explanation": "{c * q + r} ÷ {c} = {q} remainder {r}, so {q + 1} buses."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) {c - r} empty seats."
+     "text": "(c) How many seats are empty?",
+     "answer": "c - r",
+     "responseFormat": "Integer",
+     "explanation": "{q + 1} buses hold {c * (q + 1)}; {c * (q + 1)} − {c * q + r} = {c - r} empty seats."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {q + 1} × {f:money} = {(q + 1) * f:money} (follow through from (b))."
+     "text": "(d) What do the buses cost in all, in rupees?",
+     "answer": "(q + 1) * f",
+     "responseFormat": "Integer",
+     "explanation": "{q + 1} × {f:money} = {(q + 1) * f:money}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(e) Explains that {r} people would be left without seats with only {q} buses."
+     "text": "(e) Why is the number of buses one more than the quotient?",
+     "options": {
+      "correct": "v.r",
+      "wrong": [
+       {
+        "expr": "v.w1",
+        "mistake": "assumes information that was not given"
+       },
+       {
+        "expr": "v.w2",
+        "mistake": "thinks empty seats are a rule rather than a result"
+       },
+       {
+        "expr": "v.w3",
+        "mistake": "applies a fixed rule instead of using the remainder"
+       }
+      ]
+     },
+     "explanation": "{q} buses carry only {c * q}, leaving {r} people without seats, so one more bus is needed."
     }
    ],
-   "hint": "Add the people first, then divide by {c}.",
-   "explanation": "{c * q + r} people need {q + 1} buses ({q} full, one with {r}); {c - r} seats are empty; cost {(q + 1) * f:money}.",
    "misconception": "Reports the quotient mechanically when the situation requires rounding up or interpreting leftovers.",
-   "notes": "Buses of 40 to 55, 4 to 9 full and one part full (at least 3 people, at least 5 empty seats); 6 to 15 teachers.",
+   "notes": "Buses of 40 to 55, 4 to 9 full and one part full (at least 3 people, at least 5 empty seats); 6 to 15 teachers. Step question (#208): each step has its own box, marked by the platform.",
    "sources": [
     "CBSE-C5-CH09-Q498",
     "CBSE-C5-CH09-Q301",

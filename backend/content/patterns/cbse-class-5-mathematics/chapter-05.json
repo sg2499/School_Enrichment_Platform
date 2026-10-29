@@ -4,7 +4,7 @@
   "classLevel": "5",
   "course": "MATHEMATICS"
  },
- "about": "Chapter 5, Far and Near: 64 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark written questions, and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
+ "about": "Chapter 5, Far and Near: 64 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them.",
  "patterns": [
   {
    "code": "C5-FN-S01-P1",
@@ -6974,11 +6974,10 @@
    "code": "C5-FN-L3-1",
    "chapter": 5,
    "skill": "C5-FN-S11",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Application in measurement context",
-   "responseFormat": "Measurement plan, number line, table or written reasoning",
    "values": [
     {
      "name": "who",
@@ -7027,26 +7026,43 @@
     "(100 * c + d + e) % 100 != 0",
     "(100 * a + b - 100 * c - d - e) % 100 != 0"
    ],
-   "text": "A tailor has {a} m {b} cm of cloth. {who.name}'s kurta needs {c} m {d} cm and a cap needs {e} cm. How much cloth is left? Show your working.",
-   "answer": "Cloth used: {c} m {d} cm + {e} cm = {(100 * c + d + e) // 100} m {(100 * c + d + e) % 100} cm. Left: {a} m {b} cm − {(100 * c + d + e) // 100} m {(100 * c + d + e) % 100} cm = {(100 * a + b - 100 * c - d - e) // 100} m {(100 * a + b - 100 * c - d - e) % 100} cm.",
-   "steps": [
+   "stimulus": "A tailor has {a} m {b} cm of cloth. {who.name}'s kurta needs {c} m {d} cm and a cushion cover needs {e} cm. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Adds the cloth used: {(100 * c + d + e) // 100} m {(100 * c + d + e) % 100} cm (or {100 * c + d + e} cm)."
+     "text": "(a) How much cloth do the kurta and the cushion cover need together, in cm?",
+     "answer": "100 * c + d + e",
+     "unit": "cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "1 m = 100 cm.",
+     "explanation": "{c} m {d} cm = {100 * c + d} cm; {100 * c + d} + {e} = {100 * c + d + e} cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Subtracts from {a} m {b} cm, borrowing or working in centimetres."
+     "text": "(b) How long is the tailor's cloth, in cm?",
+     "answer": "100 * a + b",
+     "unit": "cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{a} m {b} cm = {100 * a + b} cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "Gives {(100 * a + b - 100 * c - d - e) // 100} m {(100 * a + b - 100 * c - d - e) % 100} cm left."
+     "text": "(c) How much cloth is left? Enter metres; centimetres.",
+     "answer": [
+      "(100 * a + b - 100 * c - d - e) // 100",
+      "(100 * a + b - 100 * c - d - e) % 100"
+     ],
+     "responseFormat": "Mixed-unit length, ordered list, comparison sign or short statement",
+     "explanation": "{100 * a + b} − {100 * c + d + e} = {(100 * a + b - 100 * c - d - e)} cm = {(100 * a + b - 100 * c - d - e) // 100} m {(100 * a + b - 100 * c - d - e) % 100} cm."
     }
    ],
-   "hint": "Find the total cloth used first. Working in centimetres can help.",
-   "explanation": "Used: {100 * c + d + e} cm. Left: {100 * a + b} − {100 * c + d + e} = {100 * a + b - 100 * c - d - e} cm = {(100 * a + b - 100 * c - d - e) // 100} m {(100 * a + b - 100 * c - d - e) % 100} cm.",
    "misconception": "Subtracts the larger sub-unit from the smaller without borrowing or converting.",
-   "notes": "Cloth 6 to 12 m; a kurta of 2 to 3 m and 55 to 90 cm and a cap of 60 to 95 cm.",
+   "notes": "Cloth 6 to 12 m; a kurta of 2 to 3 m and 55 to 90 cm and a cushion cover of 60 to 95 cm (a cap needs far less, so the cap became a cushion cover). Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH05-Q334",
     "CBSE-C5-CH05-Q355",
@@ -7057,11 +7073,10 @@
    "code": "C5-FN-L3-2",
    "chapter": 5,
    "skill": "C5-FN-S07",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Measurement reasoning and problem solving",
-   "responseFormat": "Measurement plan, number line, table or written reasoning",
    "values": [
     {
      "name": "t",
@@ -7072,7 +7087,12 @@
        "far": "station",
        "near": "bank",
        "diff": "1,250",
-       "inm": "bank 600 m; market 950 m; temple 1,600 m; station 1,850 m"
+       "inm": "bank 600 m; market 950 m; temple 1,600 m; station 1,850 m",
+       "o1": "bank",
+       "o2": "market",
+       "o3": "temple",
+       "o4": "station",
+       "diff_n": 1250
       },
       {
        "list": "library 1,200 m; bank 2 km 100 m; bus stand 2 km 50 m; station 1,700 m",
@@ -7080,7 +7100,12 @@
        "far": "bank",
        "near": "library",
        "diff": "900",
-       "inm": "library 1,200 m; station 1,700 m; bus stand 2,050 m; bank 2,100 m"
+       "inm": "library 1,200 m; station 1,700 m; bus stand 2,050 m; bank 2,100 m",
+       "o1": "library",
+       "o2": "station",
+       "o3": "bus stand",
+       "o4": "bank",
+       "diff_n": 900
       },
       {
        "list": "park 2,150 m; hospital 900 m; library 2,300 m; bank 1 km 50 m",
@@ -7088,7 +7113,12 @@
        "far": "library",
        "near": "hospital",
        "diff": "1,400",
-       "inm": "hospital 900 m; bank 1,050 m; park 2,150 m; library 2,300 m"
+       "inm": "hospital 900 m; bank 1,050 m; park 2,150 m; library 2,300 m",
+       "o1": "hospital",
+       "o2": "bank",
+       "o3": "park",
+       "o4": "library",
+       "diff_n": 1400
       },
       {
        "list": "bus stand 850 m; library 2 km 50 m; park 2,450 m; bank 2,300 m",
@@ -7096,7 +7126,12 @@
        "far": "park",
        "near": "bus stand",
        "diff": "1,600",
-       "inm": "bus stand 850 m; library 2,050 m; bank 2,300 m; park 2,450 m"
+       "inm": "bus stand 850 m; library 2,050 m; bank 2,300 m; park 2,450 m",
+       "o1": "bus stand",
+       "o2": "library",
+       "o3": "bank",
+       "o4": "park",
+       "diff_n": 1600
       },
       {
        "list": "bus stand 2,800 m; bank 1 km 150 m; park 1 km 700 m; library 2,350 m",
@@ -7104,7 +7139,12 @@
        "far": "bus stand",
        "near": "bank",
        "diff": "1,650",
-       "inm": "bank 1,150 m; park 1,700 m; library 2,350 m; bus stand 2,800 m"
+       "inm": "bank 1,150 m; park 1,700 m; library 2,350 m; bus stand 2,800 m",
+       "o1": "bank",
+       "o2": "park",
+       "o3": "library",
+       "o4": "bus stand",
+       "diff_n": 1650
       },
       {
        "list": "bus stand 2 km 50 m; temple 1,400 m; post office 2,800 m; station 2,900 m",
@@ -7112,7 +7152,12 @@
        "far": "station",
        "near": "temple",
        "diff": "1,500",
-       "inm": "temple 1,400 m; bus stand 2,050 m; post office 2,800 m; station 2,900 m"
+       "inm": "temple 1,400 m; bus stand 2,050 m; post office 2,800 m; station 2,900 m",
+       "o1": "temple",
+       "o2": "bus stand",
+       "o3": "post office",
+       "o4": "station",
+       "diff_n": 1500
       },
       {
        "list": "hospital 1,900 m; bank 550 m; library 1,650 m; station 2 km 150 m",
@@ -7120,7 +7165,12 @@
        "far": "station",
        "near": "bank",
        "diff": "1,600",
-       "inm": "bank 550 m; library 1,650 m; hospital 1,900 m; station 2,150 m"
+       "inm": "bank 550 m; library 1,650 m; hospital 1,900 m; station 2,150 m",
+       "o1": "bank",
+       "o2": "library",
+       "o3": "hospital",
+       "o4": "station",
+       "diff_n": 1600
       },
       {
        "list": "hospital 1 km 400 m; station 2,800 m; park 2 km 700 m; bus stand 1 km 150 m",
@@ -7128,7 +7178,12 @@
        "far": "station",
        "near": "bus stand",
        "diff": "1,650",
-       "inm": "bus stand 1,150 m; hospital 1,400 m; park 2,700 m; station 2,800 m"
+       "inm": "bus stand 1,150 m; hospital 1,400 m; park 2,700 m; station 2,800 m",
+       "o1": "bus stand",
+       "o2": "hospital",
+       "o3": "park",
+       "o4": "station",
+       "diff_n": 1650
       },
       {
        "list": "bus stand 2,000 m; library 750 m; bank 2 km 650 m; post office 650 m",
@@ -7136,7 +7191,12 @@
        "far": "bank",
        "near": "post office",
        "diff": "2,000",
-       "inm": "post office 650 m; library 750 m; bus stand 2,000 m; bank 2,650 m"
+       "inm": "post office 650 m; library 750 m; bus stand 2,000 m; bank 2,650 m",
+       "o1": "post office",
+       "o2": "library",
+       "o3": "bus stand",
+       "o4": "bank",
+       "diff_n": 2000
       },
       {
        "list": "station 1 km 800 m; temple 2 km 700 m; park 2 km 650 m; bank 2,600 m",
@@ -7144,7 +7204,12 @@
        "far": "temple",
        "near": "station",
        "diff": "900",
-       "inm": "station 1,800 m; bank 2,600 m; park 2,650 m; temple 2,700 m"
+       "inm": "station 1,800 m; bank 2,600 m; park 2,650 m; temple 2,700 m",
+       "o1": "station",
+       "o2": "bank",
+       "o3": "park",
+       "o4": "temple",
+       "diff_n": 900
       },
       {
        "list": "temple 2,850 m; bus stand 1 km 450 m; hospital 1 km 550 m; bank 2,750 m",
@@ -7152,7 +7217,12 @@
        "far": "temple",
        "near": "bus stand",
        "diff": "1,400",
-       "inm": "bus stand 1,450 m; hospital 1,550 m; bank 2,750 m; temple 2,850 m"
+       "inm": "bus stand 1,450 m; hospital 1,550 m; bank 2,750 m; temple 2,850 m",
+       "o1": "bus stand",
+       "o2": "hospital",
+       "o3": "bank",
+       "o4": "temple",
+       "diff_n": 1400
       },
       {
        "list": "post office 850 m; bank 2,850 m; temple 1,750 m; station 2 km 600 m",
@@ -7160,7 +7230,12 @@
        "far": "bank",
        "near": "post office",
        "diff": "2,000",
-       "inm": "post office 850 m; temple 1,750 m; station 2,600 m; bank 2,850 m"
+       "inm": "post office 850 m; temple 1,750 m; station 2,600 m; bank 2,850 m",
+       "o1": "post office",
+       "o2": "temple",
+       "o3": "station",
+       "o4": "bank",
+       "diff_n": 2000
       },
       {
        "list": "station 2 km 150 m; library 1,700 m; bus stand 2,400 m; hospital 1 km",
@@ -7168,7 +7243,12 @@
        "far": "bus stand",
        "near": "hospital",
        "diff": "1,400",
-       "inm": "hospital 1,000 m; library 1,700 m; station 2,150 m; bus stand 2,400 m"
+       "inm": "hospital 1,000 m; library 1,700 m; station 2,150 m; bus stand 2,400 m",
+       "o1": "hospital",
+       "o2": "library",
+       "o3": "station",
+       "o4": "bus stand",
+       "diff_n": 1400
       },
       {
        "list": "library 1 km 450 m; station 2 km 650 m; park 1,000 m; hospital 1,700 m",
@@ -7176,7 +7256,12 @@
        "far": "station",
        "near": "park",
        "diff": "1,650",
-       "inm": "park 1,000 m; library 1,450 m; hospital 1,700 m; station 2,650 m"
+       "inm": "park 1,000 m; library 1,450 m; hospital 1,700 m; station 2,650 m",
+       "o1": "park",
+       "o2": "library",
+       "o3": "hospital",
+       "o4": "station",
+       "diff_n": 1650
       },
       {
        "list": "park 950 m; station 2,000 m; library 1 km 50 m; bus stand 2,200 m",
@@ -7184,7 +7269,12 @@
        "far": "bus stand",
        "near": "park",
        "diff": "1,250",
-       "inm": "park 950 m; library 1,050 m; station 2,000 m; bus stand 2,200 m"
+       "inm": "park 950 m; library 1,050 m; station 2,000 m; bus stand 2,200 m",
+       "o1": "park",
+       "o2": "library",
+       "o3": "station",
+       "o4": "bus stand",
+       "diff_n": 1250
       },
       {
        "list": "market 2,800 m; temple 1,000 m; station 2 km 100 m; post office 1 km 600 m",
@@ -7192,7 +7282,12 @@
        "far": "market",
        "near": "temple",
        "diff": "1,800",
-       "inm": "temple 1,000 m; post office 1,600 m; station 2,100 m; market 2,800 m"
+       "inm": "temple 1,000 m; post office 1,600 m; station 2,100 m; market 2,800 m",
+       "o1": "temple",
+       "o2": "post office",
+       "o3": "station",
+       "o4": "market",
+       "diff_n": 1800
       },
       {
        "list": "bank 1 km; temple 1 km 500 m; bus stand 2 km 100 m; market 1 km 550 m",
@@ -7200,7 +7295,12 @@
        "far": "bus stand",
        "near": "bank",
        "diff": "1,100",
-       "inm": "bank 1,000 m; temple 1,500 m; market 1,550 m; bus stand 2,100 m"
+       "inm": "bank 1,000 m; temple 1,500 m; market 1,550 m; bus stand 2,100 m",
+       "o1": "bank",
+       "o2": "temple",
+       "o3": "market",
+       "o4": "bus stand",
+       "diff_n": 1100
       },
       {
        "list": "bank 2 km 500 m; station 2 km 850 m; park 450 m; temple 1 km 550 m",
@@ -7208,7 +7308,12 @@
        "far": "station",
        "near": "park",
        "diff": "2,400",
-       "inm": "park 450 m; temple 1,550 m; bank 2,500 m; station 2,850 m"
+       "inm": "park 450 m; temple 1,550 m; bank 2,500 m; station 2,850 m",
+       "o1": "park",
+       "o2": "temple",
+       "o3": "bank",
+       "o4": "station",
+       "diff_n": 2400
       },
       {
        "list": "temple 1 km 100 m; hospital 2,550 m; market 1,400 m; library 2 km 200 m",
@@ -7216,7 +7321,12 @@
        "far": "hospital",
        "near": "temple",
        "diff": "1,450",
-       "inm": "temple 1,100 m; market 1,400 m; library 2,200 m; hospital 2,550 m"
+       "inm": "temple 1,100 m; market 1,400 m; library 2,200 m; hospital 2,550 m",
+       "o1": "temple",
+       "o2": "market",
+       "o3": "library",
+       "o4": "hospital",
+       "diff_n": 1450
       },
       {
        "list": "bus stand 1 km 300 m; bank 2 km 500 m; market 650 m; park 1,450 m",
@@ -7224,7 +7334,12 @@
        "far": "bank",
        "near": "market",
        "diff": "1,850",
-       "inm": "market 650 m; bus stand 1,300 m; park 1,450 m; bank 2,500 m"
+       "inm": "market 650 m; bus stand 1,300 m; park 1,450 m; bank 2,500 m",
+       "o1": "market",
+       "o2": "bus stand",
+       "o3": "park",
+       "o4": "bank",
+       "diff_n": 1850
       },
       {
        "list": "market 700 m; temple 800 m; bus stand 2 km 550 m; post office 2,900 m",
@@ -7232,7 +7347,12 @@
        "far": "post office",
        "near": "market",
        "diff": "2,200",
-       "inm": "market 700 m; temple 800 m; bus stand 2,550 m; post office 2,900 m"
+       "inm": "market 700 m; temple 800 m; bus stand 2,550 m; post office 2,900 m",
+       "o1": "market",
+       "o2": "temple",
+       "o3": "bus stand",
+       "o4": "post office",
+       "diff_n": 2200
       },
       {
        "list": "station 2,300 m; hospital 1 km 400 m; temple 1 km 800 m; park 1 km 250 m",
@@ -7240,7 +7360,12 @@
        "far": "station",
        "near": "park",
        "diff": "1,050",
-       "inm": "park 1,250 m; hospital 1,400 m; temple 1,800 m; station 2,300 m"
+       "inm": "park 1,250 m; hospital 1,400 m; temple 1,800 m; station 2,300 m",
+       "o1": "park",
+       "o2": "hospital",
+       "o3": "temple",
+       "o4": "station",
+       "diff_n": 1050
       },
       {
        "list": "park 750 m; library 1 km 400 m; market 850 m; bank 1 km 750 m",
@@ -7248,7 +7373,12 @@
        "far": "bank",
        "near": "park",
        "diff": "1,000",
-       "inm": "park 750 m; market 850 m; library 1,400 m; bank 1,750 m"
+       "inm": "park 750 m; market 850 m; library 1,400 m; bank 1,750 m",
+       "o1": "park",
+       "o2": "market",
+       "o3": "library",
+       "o4": "bank",
+       "diff_n": 1000
       },
       {
        "list": "park 1,150 m; bank 1,350 m; hospital 2 km 50 m; market 850 m",
@@ -7256,7 +7386,12 @@
        "far": "hospital",
        "near": "market",
        "diff": "1,200",
-       "inm": "market 850 m; park 1,150 m; bank 1,350 m; hospital 2,050 m"
+       "inm": "market 850 m; park 1,150 m; bank 1,350 m; hospital 2,050 m",
+       "o1": "market",
+       "o2": "park",
+       "o3": "bank",
+       "o4": "hospital",
+       "diff_n": 1200
       },
       {
        "list": "bus stand 2,400 m; park 2,100 m; bank 1 km 950 m; station 1 km 500 m",
@@ -7264,7 +7399,12 @@
        "far": "bus stand",
        "near": "station",
        "diff": "900",
-       "inm": "station 1,500 m; bank 1,950 m; park 2,100 m; bus stand 2,400 m"
+       "inm": "station 1,500 m; bank 1,950 m; park 2,100 m; bus stand 2,400 m",
+       "o1": "station",
+       "o2": "bank",
+       "o3": "park",
+       "o4": "bus stand",
+       "diff_n": 900
       },
       {
        "list": "bus stand 2 km; bank 2,650 m; park 1 km 850 m; library 1 km 950 m",
@@ -7272,7 +7412,12 @@
        "far": "bank",
        "near": "park",
        "diff": "800",
-       "inm": "park 1,850 m; library 1,950 m; bus stand 2,000 m; bank 2,650 m"
+       "inm": "park 1,850 m; library 1,950 m; bus stand 2,000 m; bank 2,650 m",
+       "o1": "park",
+       "o2": "library",
+       "o3": "bus stand",
+       "o4": "bank",
+       "diff_n": 800
       },
       {
        "list": "bus stand 550 m; park 450 m; station 2,900 m; market 2,850 m",
@@ -7280,7 +7425,12 @@
        "far": "station",
        "near": "park",
        "diff": "2,450",
-       "inm": "park 450 m; bus stand 550 m; market 2,850 m; station 2,900 m"
+       "inm": "park 450 m; bus stand 550 m; market 2,850 m; station 2,900 m",
+       "o1": "park",
+       "o2": "bus stand",
+       "o3": "market",
+       "o4": "station",
+       "diff_n": 2450
       },
       {
        "list": "market 2,250 m; station 1 km 200 m; post office 2,500 m; bank 1 km 900 m",
@@ -7288,7 +7438,12 @@
        "far": "post office",
        "near": "station",
        "diff": "1,300",
-       "inm": "station 1,200 m; bank 1,900 m; market 2,250 m; post office 2,500 m"
+       "inm": "station 1,200 m; bank 1,900 m; market 2,250 m; post office 2,500 m",
+       "o1": "station",
+       "o2": "bank",
+       "o3": "market",
+       "o4": "post office",
+       "diff_n": 1300
       },
       {
        "list": "library 950 m; market 800 m; bus stand 2 km 900 m; post office 1 km 50 m",
@@ -7296,7 +7451,12 @@
        "far": "bus stand",
        "near": "market",
        "diff": "2,100",
-       "inm": "market 800 m; library 950 m; post office 1,050 m; bus stand 2,900 m"
+       "inm": "market 800 m; library 950 m; post office 1,050 m; bus stand 2,900 m",
+       "o1": "market",
+       "o2": "library",
+       "o3": "post office",
+       "o4": "bus stand",
+       "diff_n": 2100
       },
       {
        "list": "station 2 km 200 m; bus stand 900 m; hospital 1 km 900 m; bank 1 km 200 m",
@@ -7304,7 +7464,12 @@
        "far": "station",
        "near": "bus stand",
        "diff": "1,300",
-       "inm": "bus stand 900 m; bank 1,200 m; hospital 1,900 m; station 2,200 m"
+       "inm": "bus stand 900 m; bank 1,200 m; hospital 1,900 m; station 2,200 m",
+       "o1": "bus stand",
+       "o2": "bank",
+       "o3": "hospital",
+       "o4": "station",
+       "diff_n": 1300
       },
       {
        "list": "park 2 km; station 2,900 m; hospital 1,950 m; library 900 m",
@@ -7312,7 +7477,12 @@
        "far": "station",
        "near": "library",
        "diff": "2,000",
-       "inm": "library 900 m; hospital 1,950 m; park 2,000 m; station 2,900 m"
+       "inm": "library 900 m; hospital 1,950 m; park 2,000 m; station 2,900 m",
+       "o1": "library",
+       "o2": "hospital",
+       "o3": "park",
+       "o4": "station",
+       "diff_n": 2000
       },
       {
        "list": "post office 1 km 750 m; bus stand 1 km 300 m; station 1,650 m; temple 550 m",
@@ -7320,7 +7490,12 @@
        "far": "post office",
        "near": "temple",
        "diff": "1,200",
-       "inm": "temple 550 m; bus stand 1,300 m; station 1,650 m; post office 1,750 m"
+       "inm": "temple 550 m; bus stand 1,300 m; station 1,650 m; post office 1,750 m",
+       "o1": "temple",
+       "o2": "bus stand",
+       "o3": "station",
+       "o4": "post office",
+       "diff_n": 1200
       },
       {
        "list": "market 1 km 550 m; library 600 m; park 2 km 100 m; bank 1 km 800 m",
@@ -7328,7 +7503,12 @@
        "far": "park",
        "near": "library",
        "diff": "1,500",
-       "inm": "library 600 m; market 1,550 m; bank 1,800 m; park 2,100 m"
+       "inm": "library 600 m; market 1,550 m; bank 1,800 m; park 2,100 m",
+       "o1": "library",
+       "o2": "market",
+       "o3": "bank",
+       "o4": "park",
+       "diff_n": 1500
       },
       {
        "list": "market 1 km 300 m; hospital 1 km 500 m; bank 1,000 m; temple 2,200 m",
@@ -7336,7 +7516,12 @@
        "far": "temple",
        "near": "bank",
        "diff": "1,200",
-       "inm": "bank 1,000 m; market 1,300 m; hospital 1,500 m; temple 2,200 m"
+       "inm": "bank 1,000 m; market 1,300 m; hospital 1,500 m; temple 2,200 m",
+       "o1": "bank",
+       "o2": "market",
+       "o3": "hospital",
+       "o4": "temple",
+       "diff_n": 1200
       },
       {
        "list": "station 2 km 650 m; bank 1 km 200 m; post office 2,450 m; library 2,300 m",
@@ -7344,7 +7529,12 @@
        "far": "station",
        "near": "bank",
        "diff": "1,450",
-       "inm": "bank 1,200 m; library 2,300 m; post office 2,450 m; station 2,650 m"
+       "inm": "bank 1,200 m; library 2,300 m; post office 2,450 m; station 2,650 m",
+       "o1": "bank",
+       "o2": "library",
+       "o3": "post office",
+       "o4": "station",
+       "diff_n": 1450
       },
       {
        "list": "bank 2 km 650 m; bus stand 600 m; market 1 km 850 m; station 1 km 250 m",
@@ -7352,7 +7542,12 @@
        "far": "bank",
        "near": "bus stand",
        "diff": "2,050",
-       "inm": "bus stand 600 m; station 1,250 m; market 1,850 m; bank 2,650 m"
+       "inm": "bus stand 600 m; station 1,250 m; market 1,850 m; bank 2,650 m",
+       "o1": "bus stand",
+       "o2": "station",
+       "o3": "market",
+       "o4": "bank",
+       "diff_n": 2050
       },
       {
        "list": "market 1 km 850 m; post office 1 km 300 m; bank 550 m; temple 2 km 300 m",
@@ -7360,7 +7555,12 @@
        "far": "temple",
        "near": "bank",
        "diff": "1,750",
-       "inm": "bank 550 m; post office 1,300 m; market 1,850 m; temple 2,300 m"
+       "inm": "bank 550 m; post office 1,300 m; market 1,850 m; temple 2,300 m",
+       "o1": "bank",
+       "o2": "post office",
+       "o3": "market",
+       "o4": "temple",
+       "diff_n": 1750
       },
       {
        "list": "station 2 km 450 m; post office 850 m; market 2 km 550 m; park 650 m",
@@ -7368,7 +7568,12 @@
        "far": "market",
        "near": "park",
        "diff": "1,900",
-       "inm": "park 650 m; post office 850 m; station 2,450 m; market 2,550 m"
+       "inm": "park 650 m; post office 850 m; station 2,450 m; market 2,550 m",
+       "o1": "park",
+       "o2": "post office",
+       "o3": "station",
+       "o4": "market",
+       "diff_n": 1900
       },
       {
        "list": "post office 2,550 m; hospital 2 km 150 m; library 2 km 500 m; temple 450 m",
@@ -7376,7 +7581,12 @@
        "far": "post office",
        "near": "temple",
        "diff": "2,100",
-       "inm": "temple 450 m; hospital 2,150 m; library 2,500 m; post office 2,550 m"
+       "inm": "temple 450 m; hospital 2,150 m; library 2,500 m; post office 2,550 m",
+       "o1": "temple",
+       "o2": "hospital",
+       "o3": "library",
+       "o4": "post office",
+       "diff_n": 2100
       },
       {
        "list": "market 750 m; park 2 km 300 m; hospital 800 m; library 2 km 450 m",
@@ -7384,7 +7594,12 @@
        "far": "library",
        "near": "market",
        "diff": "1,700",
-       "inm": "market 750 m; hospital 800 m; park 2,300 m; library 2,450 m"
+       "inm": "market 750 m; hospital 800 m; park 2,300 m; library 2,450 m",
+       "o1": "market",
+       "o2": "hospital",
+       "o3": "park",
+       "o4": "library",
+       "diff_n": 1700
       },
       {
        "list": "temple 1,200 m; bus stand 700 m; market 2,450 m; station 2,750 m",
@@ -7392,7 +7607,12 @@
        "far": "station",
        "near": "bus stand",
        "diff": "2,050",
-       "inm": "bus stand 700 m; temple 1,200 m; market 2,450 m; station 2,750 m"
+       "inm": "bus stand 700 m; temple 1,200 m; market 2,450 m; station 2,750 m",
+       "o1": "bus stand",
+       "o2": "temple",
+       "o3": "market",
+       "o4": "station",
+       "diff_n": 2050
       },
       {
        "list": "park 1 km 500 m; post office 2 km; market 2 km 550 m; hospital 1,800 m",
@@ -7400,7 +7620,12 @@
        "far": "market",
        "near": "park",
        "diff": "1,050",
-       "inm": "park 1,500 m; hospital 1,800 m; post office 2,000 m; market 2,550 m"
+       "inm": "park 1,500 m; hospital 1,800 m; post office 2,000 m; market 2,550 m",
+       "o1": "park",
+       "o2": "hospital",
+       "o3": "post office",
+       "o4": "market",
+       "diff_n": 1050
       },
       {
        "list": "bus stand 1,850 m; park 650 m; bank 1 km 900 m; station 2 km 250 m",
@@ -7408,7 +7633,12 @@
        "far": "station",
        "near": "park",
        "diff": "1,600",
-       "inm": "park 650 m; bus stand 1,850 m; bank 1,900 m; station 2,250 m"
+       "inm": "park 650 m; bus stand 1,850 m; bank 1,900 m; station 2,250 m",
+       "o1": "park",
+       "o2": "bus stand",
+       "o3": "bank",
+       "o4": "station",
+       "diff_n": 1600
       },
       {
        "list": "market 2 km 50 m; bank 2,600 m; park 550 m; bus stand 900 m",
@@ -7416,7 +7646,12 @@
        "far": "bank",
        "near": "park",
        "diff": "2,050",
-       "inm": "park 550 m; bus stand 900 m; market 2,050 m; bank 2,600 m"
+       "inm": "park 550 m; bus stand 900 m; market 2,050 m; bank 2,600 m",
+       "o1": "park",
+       "o2": "bus stand",
+       "o3": "market",
+       "o4": "bank",
+       "diff_n": 2050
       },
       {
        "list": "bus stand 600 m; temple 2 km 150 m; market 2 km 250 m; station 1,050 m",
@@ -7424,7 +7659,12 @@
        "far": "market",
        "near": "bus stand",
        "diff": "1,650",
-       "inm": "bus stand 600 m; station 1,050 m; temple 2,150 m; market 2,250 m"
+       "inm": "bus stand 600 m; station 1,050 m; temple 2,150 m; market 2,250 m",
+       "o1": "bus stand",
+       "o2": "station",
+       "o3": "temple",
+       "o4": "market",
+       "diff_n": 1650
       },
       {
        "list": "market 1,250 m; post office 2,700 m; bus stand 2 km 400 m; park 1 km 450 m",
@@ -7432,7 +7672,12 @@
        "far": "post office",
        "near": "market",
        "diff": "1,450",
-       "inm": "market 1,250 m; park 1,450 m; bus stand 2,400 m; post office 2,700 m"
+       "inm": "market 1,250 m; park 1,450 m; bus stand 2,400 m; post office 2,700 m",
+       "o1": "market",
+       "o2": "park",
+       "o3": "bus stand",
+       "o4": "post office",
+       "diff_n": 1450
       },
       {
        "list": "bank 2 km 600 m; post office 1 km 800 m; bus stand 1,350 m; hospital 500 m",
@@ -7440,7 +7685,12 @@
        "far": "bank",
        "near": "hospital",
        "diff": "2,100",
-       "inm": "hospital 500 m; bus stand 1,350 m; post office 1,800 m; bank 2,600 m"
+       "inm": "hospital 500 m; bus stand 1,350 m; post office 1,800 m; bank 2,600 m",
+       "o1": "hospital",
+       "o2": "bus stand",
+       "o3": "post office",
+       "o4": "bank",
+       "diff_n": 2100
       },
       {
        "list": "temple 1 km 300 m; park 1,100 m; post office 1 km 600 m; market 2,200 m",
@@ -7448,7 +7698,12 @@
        "far": "market",
        "near": "park",
        "diff": "1,100",
-       "inm": "park 1,100 m; temple 1,300 m; post office 1,600 m; market 2,200 m"
+       "inm": "park 1,100 m; temple 1,300 m; post office 1,600 m; market 2,200 m",
+       "o1": "park",
+       "o2": "temple",
+       "o3": "post office",
+       "o4": "market",
+       "diff_n": 1100
       },
       {
        "list": "post office 450 m; station 900 m; park 2,500 m; bus stand 800 m",
@@ -7456,7 +7711,12 @@
        "far": "park",
        "near": "post office",
        "diff": "2,050",
-       "inm": "post office 450 m; bus stand 800 m; station 900 m; park 2,500 m"
+       "inm": "post office 450 m; bus stand 800 m; station 900 m; park 2,500 m",
+       "o1": "post office",
+       "o2": "bus stand",
+       "o3": "station",
+       "o4": "park",
+       "diff_n": 2050
       },
       {
        "list": "hospital 1,800 m; park 2,550 m; post office 900 m; temple 850 m",
@@ -7464,7 +7724,12 @@
        "far": "park",
        "near": "temple",
        "diff": "1,700",
-       "inm": "temple 850 m; post office 900 m; hospital 1,800 m; park 2,550 m"
+       "inm": "temple 850 m; post office 900 m; hospital 1,800 m; park 2,550 m",
+       "o1": "temple",
+       "o2": "post office",
+       "o3": "hospital",
+       "o4": "park",
+       "diff_n": 1700
       },
       {
        "list": "post office 1,150 m; hospital 1 km 50 m; temple 800 m; library 1 km 450 m",
@@ -7472,7 +7737,12 @@
        "far": "library",
        "near": "temple",
        "diff": "650",
-       "inm": "temple 800 m; hospital 1,050 m; post office 1,150 m; library 1,450 m"
+       "inm": "temple 800 m; hospital 1,050 m; post office 1,150 m; library 1,450 m",
+       "o1": "temple",
+       "o2": "hospital",
+       "o3": "post office",
+       "o4": "library",
+       "diff_n": 650
       },
       {
        "list": "post office 1 km 650 m; market 550 m; bus stand 2 km 350 m; library 2,000 m",
@@ -7480,7 +7750,12 @@
        "far": "bus stand",
        "near": "market",
        "diff": "1,800",
-       "inm": "market 550 m; post office 1,650 m; library 2,000 m; bus stand 2,350 m"
+       "inm": "market 550 m; post office 1,650 m; library 2,000 m; bus stand 2,350 m",
+       "o1": "market",
+       "o2": "post office",
+       "o3": "library",
+       "o4": "bus stand",
+       "diff_n": 1800
       },
       {
        "list": "hospital 2 km 900 m; temple 1 km 500 m; station 1 km 750 m; library 2,100 m",
@@ -7488,7 +7763,12 @@
        "far": "hospital",
        "near": "temple",
        "diff": "1,400",
-       "inm": "temple 1,500 m; station 1,750 m; library 2,100 m; hospital 2,900 m"
+       "inm": "temple 1,500 m; station 1,750 m; library 2,100 m; hospital 2,900 m",
+       "o1": "temple",
+       "o2": "station",
+       "o3": "library",
+       "o4": "hospital",
+       "diff_n": 1400
       },
       {
        "list": "temple 600 m; bus stand 1 km 700 m; station 2 km 250 m; market 2,200 m",
@@ -7496,7 +7776,12 @@
        "far": "station",
        "near": "temple",
        "diff": "1,650",
-       "inm": "temple 600 m; bus stand 1,700 m; market 2,200 m; station 2,250 m"
+       "inm": "temple 600 m; bus stand 1,700 m; market 2,200 m; station 2,250 m",
+       "o1": "temple",
+       "o2": "bus stand",
+       "o3": "market",
+       "o4": "station",
+       "diff_n": 1650
       },
       {
        "list": "library 1 km; post office 2 km; bus stand 1 km 850 m; bank 1,400 m",
@@ -7504,7 +7789,12 @@
        "far": "post office",
        "near": "library",
        "diff": "1,000",
-       "inm": "library 1,000 m; bank 1,400 m; bus stand 1,850 m; post office 2,000 m"
+       "inm": "library 1,000 m; bank 1,400 m; bus stand 1,850 m; post office 2,000 m",
+       "o1": "library",
+       "o2": "bank",
+       "o3": "bus stand",
+       "o4": "post office",
+       "diff_n": 1000
       },
       {
        "list": "bus stand 550 m; market 1,650 m; temple 700 m; station 450 m",
@@ -7512,7 +7802,12 @@
        "far": "market",
        "near": "station",
        "diff": "1,200",
-       "inm": "station 450 m; bus stand 550 m; temple 700 m; market 1,650 m"
+       "inm": "station 450 m; bus stand 550 m; temple 700 m; market 1,650 m",
+       "o1": "station",
+       "o2": "bus stand",
+       "o3": "temple",
+       "o4": "market",
+       "diff_n": 1200
       },
       {
        "list": "station 1,100 m; hospital 1 km 550 m; bus stand 1,300 m; park 1,200 m",
@@ -7520,7 +7815,12 @@
        "far": "hospital",
        "near": "station",
        "diff": "450",
-       "inm": "station 1,100 m; park 1,200 m; bus stand 1,300 m; hospital 1,550 m"
+       "inm": "station 1,100 m; park 1,200 m; bus stand 1,300 m; hospital 1,550 m",
+       "o1": "station",
+       "o2": "park",
+       "o3": "bus stand",
+       "o4": "hospital",
+       "diff_n": 450
       },
       {
        "list": "library 1 km 400 m; station 1,050 m; bank 1,250 m; market 800 m",
@@ -7528,7 +7828,12 @@
        "far": "library",
        "near": "market",
        "diff": "600",
-       "inm": "market 800 m; station 1,050 m; bank 1,250 m; library 1,400 m"
+       "inm": "market 800 m; station 1,050 m; bank 1,250 m; library 1,400 m",
+       "o1": "market",
+       "o2": "station",
+       "o3": "bank",
+       "o4": "library",
+       "diff_n": 600
       },
       {
        "list": "market 2,850 m; library 1 km 200 m; bus stand 1,850 m; park 900 m",
@@ -7536,7 +7841,12 @@
        "far": "market",
        "near": "park",
        "diff": "1,950",
-       "inm": "park 900 m; library 1,200 m; bus stand 1,850 m; market 2,850 m"
+       "inm": "park 900 m; library 1,200 m; bus stand 1,850 m; market 2,850 m",
+       "o1": "park",
+       "o2": "library",
+       "o3": "bus stand",
+       "o4": "market",
+       "diff_n": 1950
       },
       {
        "list": "station 750 m; market 2 km 400 m; hospital 2 km 500 m; bank 2 km 350 m",
@@ -7544,31 +7854,80 @@
        "far": "hospital",
        "near": "station",
        "diff": "1,750",
-       "inm": "station 750 m; bank 2,350 m; market 2,400 m; hospital 2,500 m"
+       "inm": "station 750 m; bank 2,350 m; market 2,400 m; hospital 2,500 m",
+       "o1": "station",
+       "o2": "bank",
+       "o3": "market",
+       "o4": "hospital",
+       "diff_n": 1750
       }
      ]
     }
    ],
-   "text": "Distances from Anu's school: {t.list}. (a) Write the places from nearest to farthest. (b) How much farther is the farthest place than the nearest? Show your working.",
-   "answer": "In metres: {t.inm}. (a) {t.ord}. (b) {t.diff} m.",
-   "steps": [
+   "stimulus": "Distances from Anu's school: {t.list}. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "Changes every distance to metres: {t.inm}."
+     "text": "(a) Which place is nearest to the school?",
+     "options": {
+      "correct": "t.o1",
+      "wrong": [
+       {
+        "expr": "t.o2",
+        "mistake": "does not change every distance to metres before comparing"
+       },
+       {
+        "expr": "t.o3",
+        "mistake": "compares the numbers as written, ignoring km and m"
+       },
+       {
+        "expr": "t.o4",
+        "mistake": "picks the farthest place instead of the nearest"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "hint": "Write all the distances in metres first.",
+     "explanation": "In metres: {t.inm}. The nearest is the {t.near}."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(a) Orders them: {t.ord}."
+     "text": "(b) Which place is farthest from the school?",
+     "options": {
+      "correct": "t.o4",
+      "wrong": [
+       {
+        "expr": "t.o1",
+        "mistake": "picks the nearest place instead of the farthest"
+       },
+       {
+        "expr": "t.o2",
+        "mistake": "compares the numbers as written, ignoring km and m"
+       },
+       {
+        "expr": "t.o3",
+        "mistake": "does not change every distance to metres before comparing"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "In metres: {t.inm}. The farthest is the {t.far}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) Finds the difference between the {t.far} and the {t.near}: {t.diff} m."
+     "text": "(c) How much farther is the farthest place than the nearest, in metres?",
+     "answer": "t.diff_n",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{t.far} minus {t.near}: {t.diff} m."
     }
    ],
-   "hint": "Write all the distances in metres before ordering them.",
-   "explanation": "In metres: {t.inm}. The farthest is the {t.far} and the nearest the {t.near}; the difference is {t.diff} m.",
    "misconception": "Orders by the written numeral without first standardising units.",
-   "notes": "60 sets of four places 450 to 2,900 m away, some written in km and m.",
+   "notes": "60 sets of four places 450 to 2,900 m away, some written in km and m. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH05-Q208",
     "CBSE-C5-CH05-Q229",
@@ -7579,11 +7938,10 @@
    "code": "C5-FN-L3-3",
    "chapter": 5,
    "skill": "C5-FN-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 3,
    "difficulty": 3,
    "competency": "Measurement reasoning and problem solving",
-   "responseFormat": "Measurement plan, number line, table or written reasoning",
    "values": [
     {
      "name": "g",
@@ -7601,28 +7959,75 @@
       "min": 5,
       "max": 14
      }
-    }
-   ],
-   "text": "Volunteers stand every {g} m along a {g * k:num} m race, at the finish but not at the start. A child says there are {k + 1} volunteers. Is the child right? Explain, and give the correct number.",
-   "answer": "No. {g * k:num} ÷ {g} = {k} gaps. There is a volunteer at the end of each gap, and none at the start, so there are {k} volunteers. The child counted the start as well.",
-   "steps": [
-    {
-     "marks": 1,
-     "text": "Finds the number of gaps: {g * k:num} ÷ {g} = {k}."
     },
     {
-     "marks": 1,
-     "text": "Says there is one volunteer at the end of each gap and none at the start: {k} volunteers."
+     "name": "say",
+     "choice": [
+      {
+       "n": "k + 1",
+       "r": "The child counted a volunteer at the start as well.",
+       "w": "The child left out the volunteer at the finish."
+      },
+      {
+       "n": "k - 1",
+       "r": "The child left out the volunteer at the finish.",
+       "w": "The child counted a volunteer at the start as well."
+      }
+     ]
     },
     {
-     "marks": 1,
-     "text": "Explains the mistake: the child counted the start as a volunteer place (says the child is not right)."
+     "name": "claim",
+     "expr": "k + 1 if say.n == 'k + 1' else k - 1"
     }
    ],
-   "hint": "Draw a short line with a few gaps and count the ends that have a volunteer.",
-   "explanation": "{k} gaps of {g} m, with a volunteer at the end of each, make {k} volunteers, not {k + 1}.",
+   "stimulus": "Volunteers stand every {g} m along a {g * k:num} m race, at the finish but not at the start. A child says there are {claim} volunteers. Answer each step in its own box.",
+   "parts": [
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(a) How many volunteers are there?",
+     "answer": "k",
+     "responseFormat": "Integer",
+     "hint": "Draw a short line with a few gaps and count the ends that have a volunteer.",
+     "explanation": "{g * k:num} ÷ {g} = {k} gaps, with one volunteer at the end of each gap and none at the start: {k} volunteers."
+    },
+    {
+     "questionType": "Numeric Entry",
+     "marks": 1,
+     "text": "(b) How far from the start does the last volunteer before the finish stand, in metres?",
+     "answer": "g * (k - 1)",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "The volunteers stand at {g} m, {2 * g} m, and so on; the one before the finish is at {g * k:num} − {g} = {g * (k - 1):num} m."
+    },
+    {
+     "questionType": "Single Select",
+     "marks": 1,
+     "text": "(c) Why is the child's answer of {claim} wrong?",
+     "options": {
+      "correct": "say.r",
+      "wrong": [
+       {
+        "expr": "say.w",
+        "mistake": "mixes up the start and the finish of the race"
+       },
+       {
+        "expr": "'The child divided instead of multiplying.'",
+        "mistake": "does not see that the count of gaps is right"
+       },
+       {
+        "expr": "'The child used gaps of 100 m.'",
+        "mistake": "guesses a reason without checking the gaps"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "There are {k} gaps and a volunteer at the end of each, so {k} volunteers, not {claim}."
+    }
+   ],
    "misconception": "Counts the starting point as a completed interval or subtracts station positions in the wrong order.",
-   "notes": "5 to 14 gaps of 200 to 500 m.",
+   "notes": "5 to 14 gaps of 200 to 500 m. The child's claim is one too many (counts the start) or one too few (misses the finish). Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH05-Q430",
     "CBSE-C5-CH05-Q442"
@@ -7632,11 +8037,10 @@
    "code": "C5-FN-L5-1",
    "chapter": 5,
    "skill": "C5-FN-S10",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Measurement reasoning and problem solving",
-   "responseFormat": "Measurement plan, number line, table or written reasoning",
    "values": [
     {
      "name": "who",
@@ -7645,8 +8049,8 @@
     {
      "name": "a",
      "int": {
-      "min": 2,
-      "max": 6
+      "min": 3,
+      "max": 7
      }
     },
     {
@@ -7660,8 +8064,8 @@
     {
      "name": "c",
      "int": {
-      "min": 1,
-      "max": 5
+      "min": 2,
+      "max": 6
      }
     },
     {
@@ -7684,35 +8088,77 @@
     "(b + d) % 1000 != 0",
     "1000 * (a + c) + b + d != 10000"
    ],
-   "text": "{who.name} cycles {a} km {b} m to a market and then {c} km {d} m to a friend's house. (a) How far is that in all, in km and m? (b) Write it in metres. (c) Is the total more or less than 10 km? (d) How much more or less? (e) The cycling club's challenge is {w} km. How much farther must {who.name} cycle to reach it? Show your working.",
-   "maxWords": 110,
-   "answer": "(a) {a} km {b} m + {c} km {d} m = {(1000 * (a + c) + b + d) // 1000} km {(1000 * (a + c) + b + d) % 1000} m. (b) {1000 * (a + c) + b + d:num} m. (c) {'More' if 1000 * (a + c) + b + d > 10000 else 'Less'} than 10 km. (d) {abs(1000 * (a + c) + b + d - 10000):num} m. (e) {1000 * w - 1000 * (a + c) - b - d:num} m.",
-   "steps": [
+   "stimulus": "{who.name} cycles {a} km {b} m to a market and then {c} km {d} m to a friend's house. The cycling club's challenge is {w} km. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Adds, regrouping metres: {(1000 * (a + c) + b + d) // 1000} km {(1000 * (a + c) + b + d) % 1000} m."
+     "text": "(a) How far does {who.name} cycle in all? Enter kilometres; metres.",
+     "answer": [
+      "(1000 * (a + c) + b + d) // 1000",
+      "(1000 * (a + c) + b + d) % 1000"
+     ],
+     "responseFormat": "Mixed-unit length, ordered list, comparison sign or short statement",
+     "explanation": "{a} km {b} m + {c} km {d} m = {(1000 * (a + c) + b + d) // 1000} km {(1000 * (a + c) + b + d) % 1000} m."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {1000 * (a + c) + b + d:num} m."
+     "text": "(b) Write the total distance in metres.",
+     "answer": "(1000 * (a + c) + b + d)",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "1 km = 1,000 m.",
+     "explanation": "{(1000 * (a + c) + b + d) // 1000} km {(1000 * (a + c) + b + d) % 1000} m = {(1000 * (a + c) + b + d):num} m."
     },
     {
+     "questionType": "Single Select",
      "marks": 1,
-     "text": "(c) Compares with 10,000 m: {'more' if 1000 * (a + c) + b + d > 10000 else 'less'}."
+     "text": "(c) Is the total more or less than 10 km?",
+     "options": {
+      "correct": "'More than 10 km' if (1000 * (a + c) + b + d) > 10000 else 'Less than 10 km'",
+      "wrong": [
+       {
+        "expr": "'Less than 10 km' if (1000 * (a + c) + b + d) > 10000 else 'More than 10 km'",
+        "mistake": "compares the kilometres only and forgets the metres"
+       },
+       {
+        "expr": "'Exactly 10 km'",
+        "mistake": "does not change both distances to the same unit"
+       },
+       {
+        "expr": "'Cannot be told'",
+        "mistake": "thinks the distances can't be compared"
+       }
+      ]
+     },
+     "responseFormat": "Choice or short text",
+     "explanation": "10 km = 10,000 m, and {(1000 * (a + c) + b + d):num} m is {'more' if (1000 * (a + c) + b + d) > 10000 else 'less'}."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) {abs(1000 * (a + c) + b + d - 10000):num} m."
+     "text": "(d) How much more or less than 10 km is it, in metres?",
+     "answer": "abs((1000 * (a + c) + b + d) - 10000)",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "The difference between {(1000 * (a + c) + b + d):num} m and 10,000 m is {abs((1000 * (a + c) + b + d) - 10000):num} m."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(e) {w} km = {1000 * w:num} m; {1000 * w:num} − {1000 * (a + c) + b + d:num} = {1000 * w - 1000 * (a + c) - b - d:num} m."
+     "text": "(e) How much farther must {who.name} cycle to reach the {w} km challenge, in metres?",
+     "answer": "1000 * w - (1000 * (a + c) + b + d)",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{w} km = {1000 * w:num} m; {1000 * w:num} − {(1000 * (a + c) + b + d):num} = {1000 * w - (1000 * (a + c) + b + d):num} m."
     }
    ],
-   "hint": "Work in metres for (b) to (e): 1 km = 1,000 m.",
-   "explanation": "Total {1000 * (a + c) + b + d:num} m. Difference from 10 km: {abs(1000 * (a + c) + b + d - 10000):num} m. Still to cycle: {1000 * w - 1000 * (a + c) - b - d:num} m.",
    "misconception": "Leaves more than 999 metres in the final mixed-unit answer.",
-   "notes": "Two rides of 2 to 6 km and 1 to 5 km with 150 to 900 m; a challenge of 15 to 20 km.",
+   "notes": "Two rides of 3 to 7 km and 2 to 6 km with 150 to 900 m (longer than before, so the total is more than 10 km about half the time); a challenge of 15 to 20 km. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH05-Q298",
     "CBSE-C5-CH05-Q319",
@@ -7723,11 +8169,10 @@
    "code": "C5-FN-L5-2",
    "chapter": 5,
    "skill": "C5-FN-S12",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Application in measurement context",
-   "responseFormat": "Measurement plan, number line, table or written reasoning",
    "values": [
     {
      "name": "n",
@@ -7770,37 +8215,64 @@
    ],
    "require": [
     "100 * roll - n * (100 * a + b) > p",
-    "(n * b) % 100 != 0"
+    "(n * b) % 100 != 0",
+    "(100 * roll - n * (100 * a + b)) % p != 0"
    ],
-   "text": "A school buys a roll of {roll} m of cloth. Each of {n} curtains needs {a} m {b} cm. (a) How much cloth do the curtains need, in m and cm? (b) How much cloth is left? (c) The cloth left is cut into strips of {p} cm. How many whole strips can be cut? Show your working.",
-   "maxWords": 100,
-   "answer": "(a) {n} × {a} m {b} cm = {n * (100 * a + b) // 100} m {n * (100 * a + b) % 100} cm. (b) {roll} m − that = {(100 * roll - n * (100 * a + b)) // 100} m {(100 * roll - n * (100 * a + b)) % 100} cm ({100 * roll - n * (100 * a + b)} cm). (c) {100 * roll - n * (100 * a + b)} ÷ {p} = {(100 * roll - n * (100 * a + b)) // p} whole strips.",
-   "steps": [
+   "stimulus": "A school buys a roll of {roll} m of cloth. Each of {n} curtains needs {a} m {b} cm. The cloth left is then cut into strips of {p} cm. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Multiplies both metres and centimetres: {n} × {100 * a + b} = {n * (100 * a + b)} cm."
+     "text": "(a) How much cloth do the curtains need, in cm?",
+     "answer": "n * (100 * a + b)",
+     "unit": "cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "hint": "Working in centimetres makes every step easier.",
+     "explanation": "{n} × {100 * a + b} cm = {n * (100 * a + b)} cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) Writes it as {n * (100 * a + b) // 100} m {n * (100 * a + b) % 100} cm."
+     "text": "(b) Write that in metres and centimetres. Enter metres; centimetres.",
+     "answer": [
+      "n * (100 * a + b) // 100",
+      "n * (100 * a + b) % 100"
+     ],
+     "responseFormat": "Mixed-unit length, ordered list, comparison sign or short statement",
+     "explanation": "{n * (100 * a + b)} cm = {n * (100 * a + b) // 100} m {n * (100 * a + b) % 100} cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {100 * roll} − {n * (100 * a + b)} = {100 * roll - n * (100 * a + b)} cm left."
+     "text": "(c) How much cloth is left after the curtains, in cm?",
+     "answer": "(100 * roll - n * (100 * a + b))",
+     "unit": "cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{100 * roll} − {n * (100 * a + b)} = {(100 * roll - n * (100 * a + b))} cm."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) Divides by {p}: {(100 * roll - n * (100 * a + b)) // p} {'strip' if ((100 * roll - n * (100 * a + b)) // p) == 1 else 'strips'}."
+     "text": "(d) How many whole strips of {p} cm can be cut?",
+     "answer": "(100 * roll - n * (100 * a + b)) // p",
+     "responseFormat": "Integer",
+     "explanation": "{(100 * roll - n * (100 * a + b))} ÷ {p} gives {(100 * roll - n * (100 * a + b)) // p}, with {(100 * roll - n * (100 * a + b)) % p} cm over, so {(100 * roll - n * (100 * a + b)) // p} can be cut."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) Gives whole strips only (a part strip left over is not counted)."
+     "text": "(e) How many centimetres of cloth are left over after cutting the strips?",
+     "answer": "(100 * roll - n * (100 * a + b)) % p",
+     "unit": "cm",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{(100 * roll - n * (100 * a + b)) // p} × {p} = {(100 * roll - n * (100 * a + b)) // p * p} cm; {(100 * roll - n * (100 * a + b))} − {(100 * roll - n * (100 * a + b)) // p * p} = {(100 * roll - n * (100 * a + b)) % p} cm."
     }
    ],
-   "hint": "Working in centimetres makes every step easier.",
-   "explanation": "Curtains: {n * (100 * a + b)} cm. Left: {100 * roll - n * (100 * a + b)} cm. Strips of {p} cm: {(100 * roll - n * (100 * a + b)) // p}.",
    "misconception": "Multiplies one unit but forgets the other part of a mixed measure.",
-   "notes": "A roll of 10 to 15 m; 3 to 6 curtains of 1 to 2 m and 25 to 75 cm; strips of 20, 25, 40 or 50 cm.",
+   "notes": "A roll of 10 to 15 m; 3 to 6 curtains of 1 to 2 m and 25 to 75 cm; strips of 20, 25, 40 or 50 cm. The strips never use the cloth up exactly. Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH05-Q364",
     "CBSE-C5-CH05-Q406",
@@ -7811,17 +8283,16 @@
    "code": "C5-FN-L5-3",
    "chapter": 5,
    "skill": "C5-FN-S14",
-   "questionType": "Constructed Response",
+   "questionType": "Long Answer",
    "marks": 5,
    "difficulty": 4,
    "competency": "Measurement reasoning and problem solving",
-   "responseFormat": "Measurement plan, number line, table or written reasoning",
    "values": [
     {
      "name": "k",
      "int": {
       "min": 2,
-      "max": 5
+      "max": 8
      }
     },
     {
@@ -7842,37 +8313,61 @@
     }
    ],
    "require": [
-    "(1000 * k + m) % g == 0"
+    "(1000 * k + m) % g == 0",
+    "((1000 * k + m) // g) % 2 == 1"
    ],
-   "text": "A school's fun run is {k} km {m} m long. (a) Write the length in metres. (b) Markers are placed every {g} m, at the finish but not at the start. How many markers are needed? (c) A water point is at every second marker. How many water points are there? (d) How far is the last water point from the finish? Show your working.",
-   "maxWords": 100,
-   "answer": "(a) {1000 * k + m:num} m. (b) {1000 * k + m:num} ÷ {g} = {(1000 * k + m) // g} markers. (c) {(1000 * k + m) // g // 2} water points. (d) {(1000 * k + m) - (1000 * k + m) // g // 2 * 2 * g:num} m.",
-   "steps": [
+   "stimulus": "A school's fun run is {k} km {m} m long. Markers are placed every {g} m: marker 1 is {g} m from the start, and the last marker is at the finish. There is no marker at the start. There is a water point at marker 2, marker 4, marker 6 and so on. Answer each step in its own box.",
+   "parts": [
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(a) {k} km {m} m = {1000 * k + m:num} m."
+     "text": "(a) What is the length of the run in metres?",
+     "answer": "(1000 * k + m)",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "{k} km {m} m = {(1000 * k + m):num} m."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) {1000 * k + m:num} ÷ {g} = {(1000 * k + m) // g} gaps."
+     "text": "(b) How many markers are needed?",
+     "answer": "(1000 * k + m) // g",
+     "responseFormat": "Integer",
+     "hint": "Count the gaps first.",
+     "explanation": "{(1000 * k + m):num} ÷ {g} = {(1000 * k + m) // g} gaps, with a marker at the end of each and none at the start."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(b) One marker at the end of each gap and none at the start: {(1000 * k + m) // g} markers."
+     "text": "(c) How many water points are there?",
+     "answer": "((1000 * k + m) // g // 2)",
+     "responseFormat": "Integer",
+     "explanation": "Markers 2, 4, 6 and so on up to marker {((1000 * k + m) // g // 2) * 2}: {((1000 * k + m) // g // 2)} water points."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(c) Every second marker: {(1000 * k + m) // g // 2} water points."
+     "text": "(d) How far apart are two water points next to each other, in metres?",
+     "answer": "2 * g",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "Water points are at marker 2, marker 4 and so on, two markers apart: 2 × {g} = {2 * g} m."
     },
     {
+     "questionType": "Numeric Entry",
      "marks": 1,
-     "text": "(d) The last water point is at {(1000 * k + m) // g // 2 * 2 * g:num} m, so {(1000 * k + m) - (1000 * k + m) // g // 2 * 2 * g:num} m from the finish."
+     "text": "(e) How far from the start is the last water point, in metres?",
+     "answer": "((1000 * k + m) // g // 2) * 2 * g",
+     "unit": "m",
+     "unitRule": "STATED",
+     "responseFormat": "Integer; unit stated in question",
+     "explanation": "There are {(1000 * k + m) // g} markers, an odd number, so the finish marker (marker {(1000 * k + m) // g}) has no water point. The last water point is at marker {((1000 * k + m) // g // 2) * 2}: {((1000 * k + m) // g // 2) * 2} × {g} = {((1000 * k + m) // g // 2) * 2 * g:num} m."
     }
    ],
-   "hint": "Change to metres first, then count the gaps.",
-   "explanation": "{1000 * k + m:num} m; {(1000 * k + m) // g} markers; {(1000 * k + m) // g // 2} water points; the last is {(1000 * k + m) - (1000 * k + m) // g // 2 * 2 * g:num} m from the finish.",
    "misconception": "Counts the starting point as a completed interval or subtracts station positions in the wrong order.",
-   "notes": "A run of 2 to 5 km and 100 to 900 m (a whole number of 200, 250 or 500 m gaps).",
+   "notes": "A run of 2 to 8 km and 100 to 900 m (a whole, odd number of 200, 250 or 500 m gaps, so the last water point is one gap before the finish). Step question (#208): every step marked by the platform.",
    "sources": [
     "CBSE-C5-CH05-Q430",
     "CBSE-C5-CH05-Q451",

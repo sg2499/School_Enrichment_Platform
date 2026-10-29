@@ -62,6 +62,9 @@ def _items(db, view):
 
 
 def test_a_student_sits_hands_in_and_sees_results_at_once(db_session):
+    """#208: every question marks itself (a 3-mark question comes in steps,
+    each its own box), so the result is final at hand-in; the right answers
+    and solutions follow once the paper closes."""
     db = db_session
     w = _world(db, "MKS1", students=2)
     paper, teacher = _paper(db, w, SMALL)
@@ -74,7 +77,14 @@ def test_a_student_sits_hands_in_and_sees_results_at_once(db_session):
     for secret in ("correctAnswer", "correct_answer", "explanation", "markingSteps", "hint"):
         assert secret not in text
     places = _items(db, view)
-    assert len(view["sections"]) == 2 and len(places) == 4  # 2 one-mark, a pair of 3-mark
+    pair = view["sections"][1]["places"][0]
+    first_half, second_half = pair["halves"]
+    # 2 one-mark questions, then an either/or pair of 3-mark questions in steps.
+    assert len(view["sections"]) == 2 and len(places) == 2 + len(first_half["parts"]) + len(second_half["parts"])
+    assert second_half["stimulus"] and len(second_half["parts"]) >= 2
+    # The steps are lettered by their own text, so no second label ("(a) (a)").
+    assert second_half["parts"][0]["text"].startswith("(a)") and second_half["parts"][1]["text"].startswith("(b)")
+    assert all(p["label"] is None for p in second_half["parts"])
     first = places[0][2]
     _refused(lambda: sit.save_answer(db, a, paper.id, first["id"], "1", now=T1), "READING_TIME")
 
@@ -83,71 +93,102 @@ def test_a_student_sits_hands_in_and_sees_results_at_once(db_session):
     one, two = places[0][2], places[1][2]
     sit.save_answer(db, a, paper.id, one["id"], keys[one["id"]].correct_answer, now=writing)
     sit.save_answer(db, a, paper.id, two["id"], "999999", now=writing)
-    pair = view["sections"][1]["places"][0]
-    first_half, second_half = pair["halves"]
     # Choosing the second half, then answering both: only the chosen counts.
     sit.choose(db, a, paper.id, second_half["slotId"], now=writing)
     sit.save_answer(db, a, paper.id, first_half["parts"][0]["id"], "Not chosen.", now=writing)
-    sit.save_answer(db, a, paper.id, second_half["parts"][0]["id"], "My working and answer.", now=writing)
+    steps = second_half["parts"]
+    right = sum(keys[s["id"]].marks for s in steps[:-1])
+    for s in steps[:-1]:
+        sit.save_answer(db, a, paper.id, s["id"], keys[s["id"]].correct_answer, now=writing)
+    sit.save_answer(db, a, paper.id, steps[-1]["id"], "999999", now=writing)
     again = sit.view(db, a, paper.id, now=writing)
     assert again["sections"][1]["places"][0]["chosenSlotId"] == second_half["slotId"]
     assert again["sections"][0]["places"][0]["halves"][0]["parts"][0]["response"] == keys[one["id"]].correct_answer
 
     done = sit.submit(db, a, paper.id, now=writing + timedelta(minutes=1))
     assert done["sitting"]["status"] == "SUBMITTED" and done["sections"] == []
-    # #208: the marks at once; the right answers and solutions only once the
-    # paper closes (others may still be sitting).
     early = done["result"]
-    assert early["scoreSoFar"] == 1 and early["waiting"] == 1 and early["score"] is None and not early["solutionsOpen"]
+    assert early["waiting"] == 0 and early["score"] == 1 + right == early["scoreSoFar"] and not early["solutionsOpen"]
     for sec in early["sections"]:
         for place in sec["places"]:
             for part in place["parts"]:
                 assert part["correctAnswer"] is None and part["explanation"] is None and part["markingSteps"] is None
     _refused(lambda: sit.save_answer(db, a, paper.id, one["id"], "2", now=writing), "HANDED_IN")
     sitting_a = db.query(MockPaperSitting).filter_by(paper_id=paper.id, student_id=a.id).one()
-    assert sitting_a.auto_score == 1 and sitting_a.final_score is None  # the written answer waits
+    assert sitting_a.final_score == 1 + right  # nothing waits for a teacher
 
     # B starts and never hands in: handed in when the time is up.
     sit.start(db, b, paper.id, now=T1)
     late = T1 + timedelta(minutes=36)
     assert sit.view(db, b, paper.id, now=late)["sitting"]["submittedHow"] == "TIME"
-
-    # The teacher marks the one written answer (B's blank one needs none).
+    # Nothing for the teacher to mark; a step's mark is the platform's.
     marking = sit.marking(db, teacher, paper.id, now=late)
-    assert marking["toMark"] == 1 and len(marking["questions"]) == 1
-    (written,) = marking["questions"][0]["answers"]
-    assert written["response"] == "My working and answer." and written["markingSteps"]
-    _refused(lambda: sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 4}]), "VALIDATION_ERROR")
-    sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 2}])
-    db.commit()
-    db.refresh(sitting_a)
-    assert sitting_a.final_score == 3
+    assert marking["toMark"] == 0 and marking["questions"] == []
+    step_answer = db.query(MockPaperAnswer).filter_by(sitting_id=sitting_a.id, question_id=steps[-1]["id"]).one()
+    _refused(lambda: sit.save_marks(db, teacher, paper.id, [{"answerId": step_answer.id, "score": 1}]), "VALIDATION_ERROR")
 
-    # Marked while the paper is still open: the student's total is final.
-    assert sit.view(db, a, paper.id, now=late)["result"]["score"] == 3
     # Just after closing, a last save may still arrive: no solutions yet.
     just = T0 + timedelta(hours=3, seconds=5)
     assert not sit.view(db, a, paper.id, now=just)["result"]["solutionsOpen"]
     assert not sit.results(db, teacher, paper.id, now=just)["solutionsOpen"]
     closed = T0 + timedelta(hours=3, minutes=1)
     grid = sit.results(db, teacher, paper.id, now=closed)
-    assert grid["solutionsOpen"] and grid["handedIn"] == 2 and [r["score"] for r in grid["students"]].count(3) == 1
+    assert grid["solutionsOpen"] and grid["handedIn"] == 2
     result = sit.view(db, a, paper.id, now=closed)["result"]
-    assert result["score"] == 3 and result["maxScore"] == 5 and result["solutionsOpen"]
-    assert [s["marks"] for s in result["sections"]] == [1, 2]
-    shown = result["sections"][1]["places"][0]["parts"][0]
-    assert shown["response"] == "My working and answer." and shown["score"] == 2 and shown["markingSteps"]
-    assert result["sections"][0]["places"][0]["parts"][0]["correctAnswer"]
-    # A mark can still be changed after closing; the result follows it.
-    sit.save_marks(db, teacher, paper.id, [{"answerId": written["answerId"], "score": 3}])
-    db.commit()
-    assert sit.view(db, a, paper.id, now=closed)["result"]["score"] == 4
+    assert result["score"] == 1 + right and result["maxScore"] == 5 and result["solutionsOpen"]
+    shown = result["sections"][1]["places"][0]["parts"]
+    assert [p["score"] for p in shown] == [keys[s["id"]].marks for s in steps[:-1]] + [0]
+    assert all(p["correctAnswer"] for p in shown)
     listed = sit.student_papers(db, a, now=closed)
-    assert listed[0]["solutionsOpen"] and listed[0]["score"] == 4 and listed[0]["waiting"] == 0
+    assert listed[0]["solutionsOpen"] and listed[0]["score"] == 1 + right and listed[0]["waiting"] == 0
 
     # The unchosen half was saved but not counted.
     unchosen = db.query(MockPaperAnswer).filter_by(sitting_id=sitting_a.id, response_text="Not chosen.").one()
     assert unchosen.counted is False
+
+
+WRITTEN = {
+    "questionType": "Constructed Response", "marks": 3, "responseFormat": "Written working",
+    "values": [{"name": "a", "int": {"min": 120, "max": 480}}, {"name": "b", "int": {"min": 3, "max": 9}}],
+    "text": "Find {a} × {b}. Show your working.", "answer": "{a * b}",
+    "steps": [{"marks": 1, "text": "Sets up {a} × {b}."}, {"marks": 1, "text": "Multiplies."}, {"marks": 1, "text": "{a * b}."}],
+}
+
+
+def test_a_written_answer_still_waits_for_the_teacher(db_session):
+    """A written answer from a pattern not (yet) in steps is the one thing a
+    teacher marks; the total says so far until then, and a mark can be
+    changed at any time."""
+    from app.models.papers import QuestionPattern
+
+    db = db_session
+    w = _world(db, "MKS6", students=1)
+    for p in db.query(QuestionPattern).filter(QuestionPattern.board_course_id == w["chapter"].board_course_id,
+                                              QuestionPattern.marks == 3):
+        spec = json.loads(p.spec_json)
+        keep = {k: spec[k] for k in ("code", "chapter", "skill", "difficulty", "competency") if k in spec}
+        p.spec_json, p.question_type = json.dumps({**keep, **WRITTEN}), "Constructed Response"
+    db.commit()
+    paper, teacher = _paper(db, w, SMALL)
+    (a,) = w["students"]
+    view = sit.start(db, a, paper.id, now=T1)
+    writing = T1 + timedelta(minutes=6)
+    half = view["sections"][1]["places"][0]["halves"][0]
+    (written_part,) = half["parts"]
+    sit.save_answer(db, a, paper.id, written_part["id"], "My working and answer.", now=writing)
+    early = sit.submit(db, a, paper.id, now=writing + timedelta(minutes=1))["result"]
+    assert early["waiting"] == 1 and early["score"] is None and early["scoreSoFar"] == 0
+    marking = sit.marking(db, teacher, paper.id, now=writing + timedelta(minutes=2))
+    assert marking["toMark"] == 1
+    (answer,) = marking["questions"][0]["answers"]
+    assert answer["response"] == "My working and answer." and answer["markingSteps"]
+    _refused(lambda: sit.save_marks(db, teacher, paper.id, [{"answerId": answer["answerId"], "score": 4}]), "VALIDATION_ERROR")
+    sit.save_marks(db, teacher, paper.id, [{"answerId": answer["answerId"], "score": 2}])
+    db.commit()
+    assert sit.view(db, a, paper.id, now=writing + timedelta(minutes=3))["result"]["score"] == 2
+    sit.save_marks(db, teacher, paper.id, [{"answerId": answer["answerId"], "score": 3}])
+    db.commit()
+    assert sit.view(db, a, paper.id, now=T0 + timedelta(hours=4))["result"]["score"] == 3
 
 
 def test_who_can_sit_and_when(db_session):
@@ -166,7 +207,7 @@ def test_who_can_sit_and_when(db_session):
     # A student who joins after approval gets their own version on starting.
     late = _make_sectioned_student(db, w["school"], "mks2-late", class_name="5", section="A")
     view = sit.start(db, late, paper.id, now=T1)
-    assert len(_items(db, view)) == 4
+    assert len(_items(db, view)) >= 6  # 2 one-mark, then two 3-mark questions in steps
     # Closing cuts the time short: the deadline is the closing time.
     short, _t = _paper(db, w, {**SMALL, "timeMinutes": 120, "readingMinutes": 0}, closes=timedelta(minutes=30))
     v = sit.start(db, student, short.id, now=T1)
@@ -221,8 +262,9 @@ def test_the_student_api(client, db_session):
 
 def test_review_fixes(db_session):
     """Choosing is for the writing time; a start with no time left is
-    refused; the admin may mark; number answers with working can be given
-    method marks, which the student's result shows at once."""
+    refused; the admin may mark; #208: a 2-mark number answer keeps its
+    working box, but on a mock the working earns no method marks: the
+    platform's mark is final (a teacher can't change it)."""
     db = db_session
     w = _world(db, "MKS5", students=2)
     fmt = {**SMALL, "readingMinutes": 0, "sections": [
@@ -232,23 +274,29 @@ def test_review_fixes(db_session):
     a, b = w["students"]
     view = sit.start(db, a, paper.id, now=T1)
     q = view["sections"][0]["places"][0]["halves"][0]["parts"][0]
-    assert q["acceptsWorking"]
+    assert q["acceptsWorking"] is True
     sit.save_answer(db, a, paper.id, q["id"], "1", "my steps", working_sent=True, now=T1)
+    assert db.query(MockPaperAnswer).filter_by(question_id=q["id"]).one().working_text == "my steps"
     pair = view["sections"][1]["places"][0]["halves"]
     end = T0 + timedelta(minutes=20)
     _refused(lambda: sit.choose(db, a, paper.id, pair[1]["slotId"], now=end + timedelta(seconds=5)), "TIME_UP")
     # B starts with only seconds left: refused.
     _refused(lambda: sit.start(db, b, paper.id, now=end - timedelta(seconds=30)), "TOO_LATE")
-    # Method marks: the number answer with working is offered for review.
     from tests.test_learning import _make_school_admin
 
     admin = resolve_viewer(db, _make_school_admin(db, w["school"], "mks5"))
     marking = sit.marking(db, admin, paper.id, now=end + timedelta(minutes=1))
     assert marking["canMark"]
-    (group,) = [g for g in marking["questions"] if g["marks"] == 2]
-    (ans,) = group["answers"]
-    assert ans["working"] == "my steps" and ans["autoScore"] == 0
-    sit.save_marks(db, admin, paper.id, [{"answerId": ans["answerId"], "score": 1}])
-    db.commit()
-    result = sit.view(db, a, paper.id, now=end + timedelta(minutes=2))["result"]
-    assert result["sections"][0]["places"][0]["parts"][0]["score"] == 1
+    assert [g for g in marking["questions"] if g["marks"] == 2] == []
+    number = db.query(MockPaperAnswer).filter_by(question_id=q["id"]).one()
+    assert number.auto_score == 0
+    _refused(lambda: sit.save_marks(db, admin, paper.id, [{"answerId": number.id, "score": 1}]), "VALIDATION_ERROR")
+
+
+def test_part_letters_show_once():
+    """A part is lettered by the platform only when its own text isn't
+    (#208 review): "(a) (a)" never shows."""
+    assert sit._part_label({"part": 1, "text": "(a) How many?"}, 3) is None
+    assert sit._part_label({"part": 2, "text": "How many?"}, 3) == "b"
+    assert sit._part_label({"part": 1, "text": "How many?"}, 1) is None
+    assert sit._part_label({"part": None, "text": "How many?"}, 3) is None

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
@@ -108,6 +109,10 @@ def public_question(question: Question) -> dict:
         "marks": question.marks,
         "answerInstruction": learning_service.answer_instruction(question),
         "answerNeedsUnit": learning_service.answer_needs_unit(question),
+        # A 2-mark number answer keeps its working box: many of these
+        # questions say "show your working", and the student sees it again
+        # in their result. #208: on a mock the working earns no method marks;
+        # the platform's mark is final (practice keeps method marks).
         "acceptsWorking": learning_service.accepts_working(question),
         "answerBlanks": learning_service.answer_blanks(question),
         "answerBlankLabels": learning_service.answer_blank_labels(question),
@@ -155,6 +160,18 @@ def _layout(db: Session, paper: MockPaper, version: MockPaperVersion) -> list[di
     return sections
 
 
+_LABELLED = re.compile(r"^\([a-z]\)\s")
+
+
+def _part_label(part: dict, parts: int) -> str | None:
+    """The letter shown before a part of a case study or long answer, unless
+    its text already starts with one ("(a) How many ..."), which the
+    content's parts do: a label twice read "(a) (a)" (review, 29 Oct)."""
+    if not part["part"] or parts < 2 or _LABELLED.match(part["text"] or ""):
+        return None
+    return chr(96 + part["part"])
+
+
 def _phase(sitting: MockPaperSitting, now: datetime) -> str:
     if sitting.status != "IN_PROGRESS":
         return "HANDED_IN"
@@ -195,7 +212,7 @@ def sitting_view(db: Session, paper: MockPaper, student: Student, sitting: MockP
                     "slotId": slot.id,
                     "stimulus": half["stimulus"],
                     "parts": [{
-                        "label": chr(96 + p["part"]) if p["part"] and len(half["parts"]) > 1 else None,
+                        "label": _part_label(p, len(half["parts"])),
                         "text": p["text"],
                         **public_question(p["question"]),
                         "response": answers[p["question"].id].response_text if p["question"].id in answers else None,
@@ -563,16 +580,6 @@ def _load_for_marking(db: Session, viewer: Viewer, paper_id: str):
     return paper, entry
 
 
-def reviewable(answer: MockPaperAnswer, question: Question) -> bool:
-    """An automatic mark a teacher may change for method marks: a number
-    answer worth 2+ marks, not given full marks, with working (#163's
-    rule, kept on papers; review)."""
-    return (
-        bool(answer.counted) and answer.auto_score is not None and answer.auto_score < answer.max_score
-        and bool((answer.working_text or "").strip()) and learning_service.accepts_working(question)
-    )
-
-
 def marking(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = None) -> dict:
     """The written answers waiting for (or given) a teacher's marks, by
     question, each with that student's own question and marking steps."""
@@ -589,7 +596,10 @@ def marking(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
         .all()
     ) if sittings else []
     questions = {q.id: q for q in db.query(Question).filter(Question.id.in_([a.question_id for a in answers]))} if answers else {}
-    written = [a for a in answers if a.auto_score is None or reviewable(a, questions[a.question_id])]
+    # Only an answer the platform can't mark (a written answer from a
+    # pattern not yet in steps) waits here: #208 dropped method marks on
+    # mocks, so a number answer's mark is final.
+    written = [a for a in answers if a.auto_score is None]
     names = _student_names(db, {sittings[a.sitting_id].student_id for a in written})
     number = _numbers(db, paper)
     groups: dict[str, dict] = {}
@@ -643,9 +653,8 @@ def save_marks(db: Session, viewer: Viewer, paper_id: str, marks: list[dict], no
         sitting = db.get(MockPaperSitting, a.sitting_id) if a else None
         if a is None or sitting is None or sitting.paper_id != paper.id:
             api_error(404, "NOT_FOUND", "That answer couldn't be found on this paper.")
-        question = db.get(Question, a.question_id) if a else None
-        if not a.counted or (a.auto_score is not None and not reviewable(a, question)):
-            api_error(422, "VALIDATION_ERROR", "Only written answers, and number answers with working, are marked here.")
+        if not a.counted or a.auto_score is not None:
+            api_error(422, "VALIDATION_ERROR", "Only written answers are marked here; the platform marks the rest.")
         score = m.get("score")
         if score is None:
             a.manual_score, a.graded_by_user_id, a.graded_at = None, None, None
@@ -759,7 +768,7 @@ def student_result(db: Session, paper: MockPaper, student: Student, sitting: Moc
                 score = None if a is None else (a.manual_score if a.manual_score is not None else a.auto_score)
                 marks += score or 0
                 parts.append({
-                    "label": chr(96 + p["part"]) if p["part"] and len(chosen["parts"]) > 1 else None,
+                    "label": _part_label(p, len(chosen["parts"])),
                     "text": p["text"], **public_question(q),
                     "response": a.response_text if a else None, "working": a.working_text if a else None,
                     "score": score, "maxScore": q.marks,
