@@ -424,6 +424,23 @@ export function describeError(error: unknown, options: DescribeOptions = {}): De
   const status = facts.status ?? 0;
   const sentence = facts.sentence;
 
+  if (status === 429 && !facts.code) {
+    // Turned away before it reached Krama, by something in front of it
+    // (#213): the app has already tried again by itself (lib/edgeRetry.ts).
+    // Not "too many attempts": the person made one, and saying otherwise
+    // tells them they did something wrong.
+    const wait = facts.retryAfterSeconds ? spokenWait(facts.retryAfterSeconds) : "a moment";
+    return build(
+      facts,
+      "rateLimited",
+      `${PRODUCT_NAME} is busy`,
+      action
+        ? `${PRODUCT_NAME} is very busy right now, so we couldn't ${action}. Please try again in ${wait}.`
+        : `${PRODUCT_NAME} is very busy right now. Please try again in ${wait}.`,
+      true,
+    );
+  }
+
   if (status === 429) {
     const wait = facts.retryAfterSeconds ? spokenWait(facts.retryAfterSeconds) : "a minute";
     return build(

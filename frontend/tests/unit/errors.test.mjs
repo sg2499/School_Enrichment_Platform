@@ -161,14 +161,32 @@ describe("a response that is not our envelope", () => {
     assertWrittenForAPerson(described);
   });
 
-  test("the rate limiter's raw string is replaced, and the wait comes from the header", () => {
+  test("a refusal that did not come from Krama is not called too many attempts (#213)", () => {
+    // Render's front door, 3 Nov 2026: plain text, no envelope, after one
+    // sign-in attempt. By the time this is shown the app has already tried
+    // again by itself (lib/edgeRetry.ts).
+    const described = describeError(httpError(429, "Too Many Requests", { method: "post" }), { action: "sign you in" });
+    assert.equal(described.kind, "rateLimited");
+    assert.equal(described.message, "Krama is very busy right now, so we couldn't sign you in. Please try again in a moment.");
+    assert.doesNotMatch(described.message, /too many attempts/i);
+    assertWrittenForAPerson(described);
+  });
+
+  test("a raw limiter string is replaced, and the wait comes from the header", () => {
     const described = describeError(
       httpError(429, { error: "Rate limit exceeded: 5 per 1 minute" }, { headers: { "retry-after": "42" } }),
     );
     assert.equal(described.kind, "rateLimited");
     assert.equal(described.retryAfterSeconds, 42);
-    assert.equal(described.message, "Too many attempts in a short time. Please wait about 50 seconds and try again.");
+    assert.equal(described.message, "Krama is very busy right now. Please try again in about 50 seconds.");
     assertWrittenForAPerson(described);
+  });
+
+  test("Krama's own limit still says what it is", () => {
+    const described = describeError(
+      httpError(429, envelope("RATE_LIMITED", "Too many attempts in a short time. Please wait about a minute and try again.", { details: { retryAfterSeconds: 60 } })),
+    );
+    assert.equal(described.message, "Too many attempts in a short time. Please wait about a minute and try again.");
   });
 
   test("a proxy's HTML page is never shown, whatever the status", () => {

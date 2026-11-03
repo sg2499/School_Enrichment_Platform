@@ -116,6 +116,31 @@ COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 
+# Krama's own addresses (#213, 3 Nov 2026). The app is served from
+# krama.zetta-metrics.com and the browser calls this API directly at
+# api.krama.zetta-metrics.com, instead of through Vercel's rewrite. Through
+# the rewrite every school's requests reached Render from Vercel's shared
+# servers, and Render's front door turned some away as "Too Many Requests"
+# before they ever got here -- the sign-in error seen on 3 Nov.
+#
+# COOKIE_DOMAIN: set to the shared parent of the two addresses
+# ("krama.zetta-metrics.com"). A request that arrives on an address under it
+# gets its cookies issued for that parent, so the app's pages (which read the
+# CSRF cookie) and this API (which reads both) see the same cookies. Both
+# addresses are one site, so SameSite=Lax still applies. A request on any
+# other address (the onrender.com one Vercel's rewrite still uses) gets
+# cookies for its own address exactly as before, so nothing changes for it.
+# Unset (local development, and production until the addresses are live):
+# no change at all.
+COOKIE_DOMAIN = (os.getenv("COOKIE_DOMAIN") or "").strip().lstrip(".").lower() or None
+
+# Any further browser origins allowed to call this API with credentials,
+# comma-separated, besides FRONTEND_URL (e.g. the old vercel.app address
+# during the move). Exact origins only: never a wildcard.
+FRONTEND_EXTRA_ORIGINS = [
+    o.strip().rstrip("/") for o in (os.getenv("FRONTEND_EXTRA_ORIGINS") or "").split(",") if o.strip()
+]
+
 # Permanent operator-only credential for POST /api/platform/schools (see
 # routes_platform.py) -- the one endpoint that must work before any admin
 # account exists to log in with, since account creation is otherwise

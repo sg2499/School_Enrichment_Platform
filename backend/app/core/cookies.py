@@ -4,10 +4,13 @@ Retained from MathPath's app/core/cookies.py (Phase 0 audit, "Retain
 as-is" bucket), cookie names renamed from mp_* to se_* only.
 
 Raw JWT access tokens are never put in frontend localStorage (readable by
-any XSS payload) -- this only works because the frontend proxies /api/*
-through its own domain (see frontend/next.config.mjs's rewrites()) so the
-browser treats the cookie as first-party. Do not point these cookies at
-the Render origin directly.
+any XSS payload) -- this only works because the browser treats the cookie
+as first-party. Two ways that holds: the app's pages and this API share one
+site (krama.zetta-metrics.com and api.krama.zetta-metrics.com, #213, with
+COOKIE_DOMAIN set to the parent -- see cookie_domain_for() below), or the
+frontend proxies /api/* through its own domain (frontend/next.config.mjs's
+rewrites(), the arrangement before #213, still the one in local
+development). Never point these cookies at a different site.
 
 Multi-role sessions: a user can be logged into super-admin/admin/teacher/
 student simultaneously in different browser tabs. A single shared cookie
@@ -32,7 +35,7 @@ import secrets
 
 from fastapi import Request, Response
 
-from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, COOKIE_SECURE
+from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES, COOKIE_DOMAIN, COOKIE_SECURE
 
 SESSION_COOKIE_NAMES = {
     "ADMIN": "se_admin_sess",
@@ -51,7 +54,34 @@ def _cookie_name_for_role(role: str) -> str:
     return SESSION_COOKIE_NAMES.get((role or "").upper(), SESSION_COOKIE_NAMES["STUDENT"])
 
 
-def set_session_cookie(response: Response, role: str, token: str) -> None:
+def _request_host(request: Request) -> str:
+    return (request.headers.get("host") or "").split(":")[0].strip().lower().rstrip(".")
+
+
+def cookie_domain_for(request: Request) -> str | None:
+    """The Domain a cookie set in answer to this request carries (#213).
+
+    COOKIE_DOMAIN, when the request came in on an address under it (the
+    browser calling api.krama.zetta-metrics.com directly): the cookie is then
+    for krama.zetta-metrics.com and everything under it, so the app's own
+    pages can read the CSRF cookie and the API receives both. Otherwise None,
+    a host-only cookie, exactly as before #213: the onrender.com address that
+    Vercel's rewrite calls, and local development. A browser refuses a cookie
+    whose Domain does not cover the address that set it, which is why this
+    follows the request's address rather than always applying.
+
+    Setting and clearing use the same answer for the same address, so a
+    cookie is always cleared with the Domain it was set with.
+    """
+    if not COOKIE_DOMAIN:
+        return None
+    host = _request_host(request)
+    if host == COOKIE_DOMAIN or host.endswith("." + COOKIE_DOMAIN):
+        return COOKIE_DOMAIN
+    return None
+
+
+def set_session_cookie(response: Response, role: str, token: str, *, request: Request) -> None:
     response.set_cookie(
         key=_cookie_name_for_role(role),
         value=token,
@@ -60,10 +90,11 @@ def set_session_cookie(response: Response, role: str, token: str) -> None:
         secure=COOKIE_SECURE,
         samesite="lax",
         path=SESSION_COOKIE_PATH,
+        domain=cookie_domain_for(request),
     )
 
 
-def set_csrf_cookie(response: Response) -> str:
+def set_csrf_cookie(response: Response, *, request: Request) -> str:
     """Issue the double-submit CSRF cookie. Deliberately NOT httpOnly -- the
     frontend reads its value and echoes it back as the X-CSRF-Token header
     on every mutating request. A cross-site page can make the browser send
@@ -80,6 +111,7 @@ def set_csrf_cookie(response: Response) -> str:
         secure=COOKIE_SECURE,
         samesite="lax",
         path="/",
+        domain=cookie_domain_for(request),
     )
     return token
 
@@ -110,7 +142,7 @@ def touch_csrf_cookie(request: Request, response: Response) -> None:
     """
     existing = request.cookies.get(CSRF_COOKIE_NAME)
     if not existing:
-        set_csrf_cookie(response)
+        set_csrf_cookie(response, request=request)
         return
     response.set_cookie(
         key=CSRF_COOKIE_NAME,
@@ -120,17 +152,22 @@ def touch_csrf_cookie(request: Request, response: Response) -> None:
         secure=COOKIE_SECURE,
         samesite="lax",
         path="/",
+        domain=cookie_domain_for(request),
     )
 
 
-def clear_session_cookie(response: Response, role: str) -> None:
-    response.delete_cookie(_cookie_name_for_role(role), path=SESSION_COOKIE_PATH)
+def clear_session_cookie(response: Response, role: str, *, request: Request) -> None:
+    response.delete_cookie(_cookie_name_for_role(role), path=SESSION_COOKIE_PATH, domain=cookie_domain_for(request))
 
 
-def clear_all_session_cookies(response: Response) -> None:
+def clear_csrf_cookie(response: Response, *, request: Request) -> None:
+    response.delete_cookie(CSRF_COOKIE_NAME, path="/", domain=cookie_domain_for(request))
+
+
+def clear_all_session_cookies(response: Response, *, request: Request) -> None:
     for cookie_name in set(SESSION_COOKIE_NAMES.values()):
-        response.delete_cookie(cookie_name, path=SESSION_COOKIE_PATH)
-    response.delete_cookie(CSRF_COOKIE_NAME, path="/")
+        response.delete_cookie(cookie_name, path=SESSION_COOKIE_PATH, domain=cookie_domain_for(request))
+    clear_csrf_cookie(response, request=request)
 
 
 def read_session_token(request: Request) -> str | None:
