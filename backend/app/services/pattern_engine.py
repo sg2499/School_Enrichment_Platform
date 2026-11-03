@@ -32,8 +32,11 @@ A pattern spec (JSON, read by clean_spec) holds:
   steps        for 2 marks or more: [{marks, text}], one line per mark step
   stimulus + parts   a case study: one scenario, then parts, each a small
                question of its own (text, answer or options, marks, ...)
-  Long Answer  questionType "Long Answer" (#208, 28 Oct 2026): a 3- or
-               5-mark question in steps. The stimulus is the problem; each
+  Long Answer  questionType "Long Answer" (#208, 28 Oct 2026): a 2-, 3- or
+               5-mark question in steps (2 marks from #214, 3 Nov 2026: two
+               1-mark steps, the working then the answer, because Ashalatha
+               ruled a 2-mark answer that expects a method is never
+               all-or-nothing). The stimulus is the problem; each
                part is one step with its own answer box (number, short
                answer or multiple choice, 1 or 2 marks), so the platform
                marks every step and the marks add up to the question's.
@@ -44,8 +47,10 @@ A pattern spec (JSON, read by clean_spec) holds:
   notes        the limits in words, for the reviewer; sources: the bank
                questions the pattern was drawn from
 
-Formats for blanks: plain (default), num (8,649), money (Rs 8,649 with the
-rupee sign), fraction (3/4), mixed (1 1/2). Expressions follow
+Formats for blanks: plain (default), num (8,649; 1,00,000), money (Rs 8,649
+with the rupee sign), fraction (3/4), mixed (1 1/2). num and money group
+digits the Indian way (#214, Ashalatha, 3 Nov 2026, Q11: "Use the Indian
+number system and comma style from one lakh upward"). Expressions follow
 pattern_expr: safe, exact (fractions, never floats).
 """
 from __future__ import annotations
@@ -63,7 +68,7 @@ from app.services.pattern_expr import ExprError
 
 QUESTION_TYPES = ("Single Select", "Numeric Entry", "Text Entry", "Constructed Response")
 LONG_ANSWER = "Long Answer"
-LONG_ANSWER_MARKS = (3, 5)
+LONG_ANSWER_MARKS = (2, 3, 5)
 STEP_TYPES = ("Single Select", "Numeric Entry", "Text Entry")  # a step is marked by the platform
 ANSWER_FORMATS = ("plain", "fraction")
 BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed")
@@ -350,7 +355,7 @@ def clean_spec(raw: dict) -> Spec:
         if stimulus is None:
             problems.append(f"{where}: a Long Answer needs its problem (the stimulus).")
         if raw.get("marks") not in LONG_ANSWER_MARKS:
-            problems.append(f"{where}: a Long Answer is worth 3 or 5 marks.")
+            problems.append(f"{where}: a Long Answer is worth 2, 3 or 5 marks.")
         for key in ("text", "answer", "steps", "hint", "options", "explanation"):
             if key in raw:
                 # Each step carries its own; a top-level one would never be shown (review).
@@ -376,6 +381,9 @@ def clean_spec(raw: dict) -> Spec:
             total = sum(p.marks for p in parts)
             if len(parts) == len(raw_parts) and raw.get("marks") != total:
                 problems.append(f"{where}: marks must be the total of its steps ({total}).")
+            if raw.get("marks") == 2 and (len(raw_parts) != 2 or any(p.marks != 1 for p in parts)):
+                # #214: the working, then the answer, a mark each.
+                problems.append(f"{where}: a 2-mark Long Answer is two steps of 1 mark each.")
     elif "parts" in raw:
         stimulus = _template(raw.get("stimulus"), f"{where} stimulus", problems, known)
         if stimulus is None:
@@ -392,6 +400,11 @@ def clean_spec(raw: dict) -> Spec:
         if raw.get("marks") != total:
             problems.append(f"{where}: marks must be the total of its parts ({total}).")
     else:
+        if question_type in STEP_TYPES and isinstance(raw.get("marks"), int) and raw["marks"] >= 2:
+            # #214, Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is two
+            # scorable steps; if only the final answer is scored, it is a 1-mark item.
+            problems.append(f"{where}: a question with one answer box is worth 1 mark; "
+                            "for 2 marks, write it as a Long Answer in two 1-mark steps.")
         part = _part(raw, where, problems, known)
         if part:
             parts.append(part)
@@ -447,7 +460,20 @@ def _draw(spec: Spec, rng: random.Random) -> dict:
 
 
 def _comma(n: int) -> str:
-    return f"{n:,}"
+    """8,649; 58,306; 1,00,000; 12,34,567: Indian grouping, the last three
+    digits then pairs (#214). The same as the international style below a
+    lakh. Marking ignores commas, so a student may type either style."""
+    sign, digits = ("-" if n < 0 else ""), str(abs(n))
+    if len(digits) <= 3:
+        return sign + digits
+    head, tail = digits[:-3], digits[-3:]
+    pairs = []
+    while len(head) > 2:
+        pairs.insert(0, head[-2:])
+        head = head[:-2]
+    if head:
+        pairs.insert(0, head)
+    return sign + ",".join(pairs + [tail])
 
 
 def format_value(value, fmt: str = "plain") -> str:

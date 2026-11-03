@@ -262,9 +262,8 @@ def test_the_student_api(client, db_session):
 
 def test_review_fixes(db_session):
     """Choosing is for the writing time; a start with no time left is
-    refused; the admin may mark; #208: a 2-mark number answer keeps its
-    working box, but on a mock the working earns no method marks: the
-    platform's mark is final (a teacher can't change it)."""
+    refused; the admin may mark. #214: a 2-mark place is two 1-mark steps
+    the platform marks, with no working box."""
     db = db_session
     w = _world(db, "MKS5", students=2)
     fmt = {**SMALL, "readingMinutes": 0, "sections": [
@@ -273,10 +272,8 @@ def test_review_fixes(db_session):
     paper, teacher = _paper(db, w, fmt, closes=timedelta(minutes=20))
     a, b = w["students"]
     view = sit.start(db, a, paper.id, now=T1)
-    q = view["sections"][0]["places"][0]["halves"][0]["parts"][0]
-    assert q["acceptsWorking"] is True
-    sit.save_answer(db, a, paper.id, q["id"], "1", "my steps", working_sent=True, now=T1)
-    assert db.query(MockPaperAnswer).filter_by(question_id=q["id"]).one().working_text == "my steps"
+    steps = view["sections"][0]["places"][0]["halves"][0]["parts"]
+    assert [p["marks"] for p in steps] == [1, 1] and not any(p["acceptsWorking"] for p in steps)
     pair = view["sections"][1]["places"][0]["halves"]
     end = T0 + timedelta(minutes=20)
     _refused(lambda: sit.choose(db, a, paper.id, pair[1]["slotId"], now=end + timedelta(seconds=5)), "TIME_UP")
@@ -287,10 +284,62 @@ def test_review_fixes(db_session):
     admin = resolve_viewer(db, _make_school_admin(db, w["school"], "mks5"))
     marking = sit.marking(db, admin, paper.id, now=end + timedelta(minutes=1))
     assert marking["canMark"]
-    assert [g for g in marking["questions"] if g["marks"] == 2] == []
-    number = db.query(MockPaperAnswer).filter_by(question_id=q["id"]).one()
-    assert number.auto_score == 0
+    assert marking["questions"] == []
+    # The Marking tab is for written answers only; a platform mark is
+    # changed through a student's answer (save_review), with a reason.
+    number = db.query(MockPaperAnswer).filter_by(question_id=steps[0]["id"]).one()
     _refused(lambda: sit.save_marks(db, admin, paper.id, [{"answerId": number.id, "score": 1}]), "VALIDATION_ERROR")
+
+
+def test_a_teacher_changes_a_platform_mark_with_a_reason(db_session):
+    """#214, Ashalatha, 3 Nov 2026: a teacher override "where a correct
+    method is rejected solely because an earlier value carried forward". The
+    teacher sees each step with the platform's mark, changes one with a
+    reason the student reads, can put the platform's mark back, and nobody
+    else can change it."""
+    db = db_session
+    w = _world(db, "MKS8", students=2)
+    fmt = {**SMALL, "readingMinutes": 0, "sections": [{"name": "A", "marks": 2, "count": 1, "kind": "NUMBER"}]}
+    paper, teacher = _paper(db, w, fmt, closes=timedelta(minutes=30))
+    a, b = w["students"]
+    view = sit.start(db, a, paper.id, now=T1)
+    steps = view["sections"][0]["places"][0]["halves"][0]["parts"]
+    sit.save_answer(db, a, paper.id, steps[0]["id"], "1", None, now=T1)
+    sit.save_answer(db, a, paper.id, steps[1]["id"], "2", None, now=T1)
+    sit.submit(db, a, paper.id, now=T1 + timedelta(minutes=1))
+    sitting = db.query(MockPaperSitting).filter_by(paper_id=paper.id, student_id=a.id).one()
+    assert sitting.final_score == 0
+    grid = sit.results(db, teacher, paper.id, now=T1 + timedelta(minutes=2))
+    key = grid["columns"][0]["key"]
+    place = sit.review_place(db, teacher, paper.id, a.id, key)
+    assert place["canChange"] and [p["autoScore"] for p in place["parts"]] == [0, 0]
+    assert all(p["correctAnswer"] for p in place["parts"])
+    second = place["parts"][1]["answerId"]
+    # A platform mark is not changed without saying why.
+    _refused(lambda: sit.save_review(db, teacher, paper.id, a.id, [{"answerId": second, "score": 1}], None), "VALIDATION_ERROR")
+    _refused(lambda: sit.save_review(db, teacher, paper.id, a.id, [{"answerId": second, "score": 2}], "Right method."), "VALIDATION_ERROR")
+    sit.save_review(db, teacher, paper.id, a.id, [{"answerId": second, "score": 1}], "  Right method   from (a).  ")
+    db.commit()
+    assert sitting.final_score == 1
+    answer = db.get(MockPaperAnswer, second)
+    assert answer.manual_score == 1 and answer.review_note == "Right method from (a)."
+    grid = sit.results(db, teacher, paper.id, now=T1 + timedelta(minutes=3))
+    me = next(r for r in grid["students"] if r["studentId"] == a.id)
+    assert me["cells"][key]["changed"] and me["score"] == 1
+    # The student reads the change and the reason.
+    mine = sit.student_result(db, paper, a, sitting, solutions=False)
+    part = mine["sections"][0]["places"][0]["parts"][1]
+    assert part["changedByTeacher"] and part["teacherNote"] == "Right method from (a)." and part["score"] == 1
+    # Back to the platform's mark.
+    sit.save_review(db, teacher, paper.id, a.id, [{"answerId": second, "score": None}], None)
+    db.commit()
+    assert sitting.final_score == 0 and db.get(MockPaperAnswer, second).review_note is None
+    # Another student's answer can't be changed through this student's paper,
+    # and the other student hasn't handed in.
+    _refused(lambda: sit.review_place(db, teacher, paper.id, b.id, key), "NOT_FOUND")
+    # A teacher of another school can't open it.
+    other = _world(db, "MKS9", students=1)
+    _refused(lambda: sit.review_place(db, resolve_viewer(db, other["teacher"].user), paper.id, a.id, key), "NOT_FOUND")
 
 
 def test_part_letters_show_once():

@@ -226,6 +226,39 @@ def paper_results(paper_id: str, viewer: Viewer = Depends(_viewer), db: Session 
     return sitting_service.results(db, viewer, paper_id)
 
 
+# #214: a teacher reviews one student's marks on one question, the
+# platform's included (Ashalatha, 3 Nov 2026: a teacher override "where a
+# correct method is rejected solely because an earlier value carried
+# forward", and "for valid equivalent work or a system exception").
+
+
+class ReviewChange(BaseModel):
+    answerId: str = Field(max_length=60)
+    score: int | None = None
+
+
+class ReviewBody(BaseModel):
+    changes: list[ReviewChange] = Field(min_length=1, max_length=12)
+    reason: str | None = Field(default=None, max_length=600)
+
+
+@router.get("/{paper_id}/students/{student_id}/places/{key}")
+def review_place(paper_id: str, student_id: str, key: str, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    return sitting_service.review_place(db, viewer, paper_id, student_id, key)
+
+
+@router.post("/{paper_id}/students/{student_id}/places/{key}")
+@limiter.limit("120/minute")
+def save_review(request: Request, paper_id: str, student_id: str, key: str, body: ReviewBody,
+                viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    count = sitting_service.save_review(db, viewer, paper_id, student_id, [c.model_dump() for c in body.changes], body.reason)
+    log_audit_event(db, "mock_paper.marks_reviewed", user_id=viewer.user.id, request=request,
+                    details={"paperId": paper_id, "studentId": student_id, "place": key, "answers": count,
+                             "reasonGiven": bool((body.reason or "").strip())})
+    db.commit()
+    return sitting_service.review_place(db, viewer, paper_id, student_id, key)
+
+
 # --- step 4: sitting the paper (student) ------------------------------------------------------
 
 student_router = APIRouter(prefix="/api/my-papers", tags=["mock-papers"])

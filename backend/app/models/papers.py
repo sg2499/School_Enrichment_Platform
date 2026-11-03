@@ -216,7 +216,8 @@ class MockPaperSitting(Base):
 class MockPaperAnswer(Base):
     """One question's answer in a sitting. auto_score is the machine's mark
     (none for a written answer); manual_score the teacher's, who marks
-    written answers step by step (the question's marking steps). counted:
+    written answers step by step (the question's marking steps), and since
+    #214 may change a mark the platform gave, saying why (review_note). counted:
     False for the half of an either/or pair the student didn't choose."""
 
     __tablename__ = "mock_paper_answers"
@@ -235,5 +236,8 @@ class MockPaperAnswer(Base):
     manual_score = Column(Integer, nullable=True)
     graded_by_user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     graded_at = Column(DateTime(timezone=True), nullable=True)
+    # #214: when a teacher changes a mark the platform gave (manual_score set
+    # with an auto_score there), why, in words the student reads.
+    review_note = Column(String(300), nullable=True)
 
     __table_args__ = (UniqueConstraint("sitting_id", "question_id", name="uq_mock_paper_answer_question"),)

@@ -59,19 +59,32 @@ MAX_TITLE = 120
 
 def pattern_kind(pattern: QuestionPattern) -> str:
     qtype = pattern.question_type
+    marks = getattr(pattern, "marks", None)
     if qtype == "Case Study":
         return "CASE_STUDY"
+    if qtype == "Long Answer":
+        # A Long Answer (#208) fills the written places of a paper: the
+        # same 3- and 5-mark question, in steps the platform marks. At 2
+        # marks (#214) it is two steps, the working then the answer, and
+        # fills a paper's 2-mark places, where a short answer goes.
+        return "NUMBER" if marks == 2 else "WRITTEN"
+    if qtype == "Constructed Response":
+        return "WRITTEN"
+    if isinstance(marks, int) and marks >= 2:
+        # #214, Ashalatha, 3 Nov 2026: "A question worth 2 marks should not
+        # be all-or-nothing if it expects a method ... If only the final
+        # number is scored, make it a 1-mark item." A 2-mark question with a
+        # single answer box (from before #214) is not put on a paper.
+        return "ONE_BOX"
     if qtype == "Single Select":
         return "CHOICE"
-    if qtype in ("Constructed Response", "Long Answer"):
-        # A Long Answer (#208) fills the written places of a paper: the
-        # same 3- and 5-mark question, in steps the platform marks.
-        return "WRITTEN"
     return "NUMBER"
 
 
 def fits(kind: str, pattern: QuestionPattern) -> bool:
     actual = pattern_kind(pattern)
+    if actual == "ONE_BOX":
+        return False
     if kind == "ANY":
         return actual != "CASE_STUDY"
     return actual == kind
@@ -292,10 +305,18 @@ class Balance:
         if p.concept_lesson_id in section_skills:
             score += 6
         if partner is not None:
-            # An either/or pair: same chapter and difficulty, a different skill.
-            score += 0 if p.chapter_id == partner.chapter_id else 5
-            score += 0 if bucket(p) == bucket(partner) else 4
-            score += 20 if p.concept_lesson_id == partner.concept_lesson_id else 0
+            # An either/or pair (#214, Ashalatha, 3 Nov 2026, Q53): "must test
+            # the same learning outcome or skill, carry the same marks, use
+            # the same response demand and difficulty, and differ only in
+            # numbers or context." Marks are already equal (_choose). Another
+            # pattern of the same skill, kind and difficulty is best; the
+            # partner's own pattern with new numbers is next, and always
+            # there, so a pair never has to cross skills.
+            score = 0.0
+            score += 0 if p.concept_lesson_id == partner.concept_lesson_id else 1000
+            score += 0 if p.question_type == partner.question_type else 200
+            score += 0 if bucket(p) == bucket(partner) else 100
+            score += 3 if p.id == partner.id else 0
             return score
         target = total / max(1, len(self.chapter_ids))
         score += 6.0 * (self.chapter_marks.get(p.chapter_id, 0) + pick.marks) / target
@@ -348,9 +369,10 @@ def plan(fmt: dict, patterns: list[QuestionPattern], chapter_ids: list[str], rng
     for pick in sorted(picks, key=lambda x: (x.kind == "ANY", x.section_index, x.position)):
         section_skills = skills.setdefault(pick.section_index, set())
         partner = by_group.get(pick.choice_group).pattern if pick.alternative and pick.choice_group in by_group else None
-        # An either/or choice is between two different questions.
-        exclude = {partner.id} if partner is not None else ()
-        chosen = _choose(balance, pick, patterns, rng, section_skills=section_skills, partner=partner, exclude=exclude)
+        # An either/or choice is between two different questions; from the
+        # same pattern they differ in their numbers (each place has its own
+        # seed, and a student's version never repeats a question).
+        chosen = _choose(balance, pick, patterns, rng, section_skills=section_skills, partner=partner)
         if chosen is not None:
             pick.pattern = chosen
             pick.seed = uuid.uuid4().hex[:16]
