@@ -41,7 +41,7 @@ from app.api.routes_schools_admin import router as schools_admin_router
 from app.api.routes_teacher_assignments import router as teacher_assignments_router
 from app.api.routes_weekly_reports import router as weekly_reports_router
 from app.core.brand import PRODUCT_NAME
-from app.core.config import FRONTEND_URL, IS_PRODUCTION, SENTRY_DSN
+from app.core.config import FRONTEND_EXTRA_ORIGINS, FRONTEND_URL, IS_PRODUCTION, SENTRY_DSN
 from app.core.error_handling import (
     REQUEST_ID_HEADER,
     SECURITY_HEADERS,
@@ -137,7 +137,13 @@ app.add_middleware(SlowAPIMiddleware)
 # unconditionally. Harmless in the sense that allow_origins is a fixed,
 # server-side list (not reflected from the request), but there is no reason
 # for a deployed backend to trust a local dev origin at all -- dev-only.
-_cors_origins = [FRONTEND_URL] if IS_PRODUCTION else [FRONTEND_URL, "http://localhost:3000"]
+# #213: since the browser calls this API directly (api.krama.zetta-metrics.com
+# from krama.zetta-metrics.com), CORS is no longer a formality: these are the
+# only pages allowed to make credentialed requests. FRONTEND_URL plus any
+# exact extra origins (FRONTEND_EXTRA_ORIGINS), never a wildcard.
+_cors_origins = list(dict.fromkeys([FRONTEND_URL.rstrip("/"), *FRONTEND_EXTRA_ORIGINS]))
+if not IS_PRODUCTION:
+    _cors_origins.append("http://localhost:3000")
 
 app.add_middleware(
     CORSMiddleware,
@@ -150,7 +156,10 @@ app.add_middleware(
     # read any header already; this is for a cross-origin caller, where an
     # unlisted header is invisible to JS. It identifies one request and
     # grants nothing.
-    expose_headers=[REQUEST_ID_HEADER],
+    # Retry-After (#213): read by the frontend's automatic retry when a
+    # request is turned away for coming too fast, now that the frontend is a
+    # cross-origin caller.
+    expose_headers=[REQUEST_ID_HEADER, "Retry-After"],
     # A10 fix (30 Sep 2026 review): X-New-Access-Token used to be exposed
     # here so browser JS could read the sliding-session renewal off the
     # response -- but the browser frontend is entirely cookie-authenticated

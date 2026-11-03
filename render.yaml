@@ -33,7 +33,13 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "1440"
       - key: FRONTEND_URL
-        sync: false   # set manually: the Vercel production URL, once assigned
+        sync: false   # set manually: the app's address, https://krama.zetta-metrics.com (#213)
+      - key: COOKIE_DOMAIN
+        sync: false   # set manually (#213): krama.zetta-metrics.com -- cookies for the app and
+                       # api.krama.zetta-metrics.com together; see app/core/cookies.py
+      - key: FRONTEND_EXTRA_ORIGINS
+        sync: false   # optional (#213): further exact origins allowed to call the API with
+                       # credentials, comma-separated; normally unset
       - key: COOKIE_SECURE
         value: "true"
       - key: SENTRY_DSN

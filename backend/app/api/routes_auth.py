@@ -27,14 +27,14 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.cookies import (
-    CSRF_COOKIE_NAME,
+    clear_csrf_cookie,
     clear_session_cookie,
     read_session_token,
     set_csrf_cookie,
     set_session_cookie,
 )
 from app.core.errors import api_error
-from app.core.rate_limit import get_real_client_ip, limiter
+from app.core.rate_limit import account_or_ip_key, get_real_client_ip, limiter
 from app.core.security import (
     create_access_token,
     decode_token,
@@ -107,6 +107,25 @@ class TwoFactorVerifyLoginRequest(BaseModel):
     code: str
 
 
+def _challenge_key(request: Request) -> str:
+    """Rate-limit key for the second sign-in step: the account the
+    challenge token names, read from the body the route will parse anyway
+    (slowapi calls key functions before the route runs, so the body is read
+    from the request's cache). A token that does not verify falls back to
+    the address."""
+    import json
+
+    body = getattr(request, "_body", None)
+    token = None
+    if body:
+        try:
+            token = (json.loads(body) or {}).get("challengeToken")
+        except (ValueError, AttributeError):
+            token = None
+    subject = decode_two_factor_challenge_token(token) if isinstance(token, str) and token else None
+    return f"challenge:{subject}" if subject else get_real_client_ip(request)
+
+
 @router.post("/login")
 # A6 fix (30 Sep 2026 review): raised from 5/minute now that rate_limit.py
 # keys on the real caller IP instead of a shared proxy hop (see
@@ -115,7 +134,13 @@ class TwoFactorVerifyLoginRequest(BaseModel):
 # bucket. 60/minute is deliberately generous: a whole class signing in from
 # one school router/NAT at the start of a period is normal legitimate
 # traffic now that it isn't lumped in with every other school's traffic too.
-@limiter.limit("60/minute")
+# #213 (3 Nov 2026): 120/minute, keyed on the address explicitly (the
+# limiter's default key is now the account, and nobody is signed in yet).
+# A class of forty signing in at the start of a period, a few of them
+# mistyping, is up to about a hundred attempts from one school connection;
+# guessing at one account is still stopped by the per-account lockout
+# (five wrong passwords lock it for fifteen minutes, auth_service.py).
+@limiter.limit("120/minute", key_func=get_real_client_ip)
 def login_route(request: Request, response: Response, payload: LoginRequest, db: Session = Depends(get_db)):
     result = login(db, payload.identifier, payload.password, request=request, sign_in_as=payload.signInAs)
     if result.get("twoFactorRequired"):
@@ -123,8 +148,8 @@ def login_route(request: Request, response: Response, payload: LoginRequest, db:
 
     # Session lives in an httpOnly cookie, not the response body -- returning
     # the raw token in JSON here would defeat the point of httpOnly.
-    set_session_cookie(response, result["user"]["role"], result["accessToken"])
-    set_csrf_cookie(response)
+    set_session_cookie(response, result["user"]["role"], result["accessToken"], request=request)
+    set_csrf_cookie(response, request=request)
     return {"tokenType": result["tokenType"], "user": result["user"]}
 
 
@@ -346,40 +371,16 @@ def upload_profile_photo(
     return {"updated": True, "photoUrl": PublicPhotoUrl, "user": UpdatedUser}
 
 
-def _own_account_key(request: Request) -> str:
-    """Rate-limit key for something a signed-in person does to their OWN
-    account: the account, not the network address.
-
-    The address is the wrong key for change-password. A classroom is thirty
-    students behind one school connection, and since 3 Oct 2026 every one of
-    them goes through this endpoint the first time they sign in: at the old
-    5-a-minute-per-address, the sixth student was refused and left unable to
-    do the one thing the server would let them do. (Login was raised for the
-    same shared-connection reason on 30 Sep.) What the limit is FOR is
-    stopping guesses at one account's current password, and that is a
-    per-account matter.
-
-    The account is read from a token whose signature verifies, so nobody can
-    spend another account's allowance. No valid token: the address, as
-    before -- the request is about to be refused with a 401 anyway.
-    """
-    token = None
-    authorization = request.headers.get("authorization", "")
-    if authorization.lower().startswith("bearer "):
-        token = authorization[7:].strip()
-    if not token:
-        token = read_session_token(request)
-    payload = decode_token(token) if token else None
-    subject = payload.get("sub") if payload else None
-    return f"account:{subject}" if subject else get_real_client_ip(request)
+# _own_account_key moved to app/core/rate_limit.py as account_or_ip_key (#213),
+# where it is now the limiter's default key for every route.
 
 
 @router.post("/change-password")
 # Two limits. Per account: enough for someone to get it wrong a few times,
 # far too few to guess a current password. Per address: a ceiling that a
 # whole class signing in for the first time does not reach.
-@limiter.limit("10/minute", key_func=_own_account_key)
-@limiter.limit("120/minute")
+@limiter.limit("10/minute", key_func=account_or_ip_key)
+@limiter.limit("120/minute", key_func=get_real_client_ip)
 def change_password(
     request: Request,
     response: Response,
@@ -473,7 +474,7 @@ def change_password(
         # The cookie it came in on now carries a dead token; removing it
         # saves the browser a refused request to find that out.
         if UsedCookie:
-            clear_session_cookie(response, user.role)
+            clear_session_cookie(response, user.role, request=request)
         return {
             "updated": True,
             "staySignedIn": False,
@@ -487,6 +488,7 @@ def change_password(
         response,
         user.role,
         create_access_token(user.id, user.role, session_id=SessionId, password_hash=NewHash),
+        request=request,
     )
     return {
         "updated": True,
@@ -515,8 +517,8 @@ def logout(
         revoke_session(db, session_id)
     log_audit_event(db, "auth.logout", user_id=user.id, request=request)
     db.commit()
-    clear_session_cookie(response, user.role)
-    response.delete_cookie(CSRF_COOKIE_NAME, path="/")
+    clear_session_cookie(response, user.role, request=request)
+    clear_csrf_cookie(response, request=request)
     return {"loggedOut": True}
 
 
@@ -583,8 +585,8 @@ def delete_session(
         # Revoking the device you're currently on -- clear its cookies too,
         # same as /logout, so the browser doesn't keep sending a token that
         # the next request would just reject anyway.
-        clear_session_cookie(response, user.role)
-        response.delete_cookie(CSRF_COOKIE_NAME, path="/")
+        clear_session_cookie(response, user.role, request=request)
+        clear_csrf_cookie(response, request=request)
     return {"updated": True}
 
 
@@ -715,7 +717,12 @@ def two_factor_regenerate_backup_codes(
 
 
 @router.post("/2fa/verify-login")
-@limiter.limit("10/minute")
+# #213: ten a minute per sign-in being completed (the account the challenge
+# token names), and a ceiling per address. Before, it was ten a minute per
+# address alone -- every admin in a school, and through Vercel's rewrite
+# every admin anywhere, sharing one allowance.
+@limiter.limit("10/minute", key_func=_challenge_key)
+@limiter.limit("60/minute", key_func=get_real_client_ip)
 def two_factor_verify_login(request: Request, response: Response, payload: TwoFactorVerifyLoginRequest, db: Session = Depends(get_db)):
     UserId = decode_two_factor_challenge_token(payload.challengeToken)
     if not UserId:
@@ -767,8 +774,8 @@ def two_factor_verify_login(request: Request, response: Response, payload: TwoFa
         log_audit_event(db, event_type, user_id=user.id, request=request)
         db.commit()
         token = create_access_token(user.id, user.role, session_id=session_id, password_hash=PasswordHash)
-        set_session_cookie(response, user.role, token)
-        set_csrf_cookie(response)
+        set_session_cookie(response, user.role, token, request=request)
+        set_csrf_cookie(response, request=request)
         return {"tokenType": "Bearer", "user": user_payload(db, user)}
 
     # A9 replay guard: valid_window=1 means a code stays acceptable across

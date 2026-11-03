@@ -17,9 +17,11 @@ import json
 from typing import Any
 
 from fastapi import Request
-from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
+# The person's address, not Render's ingress hop (#213): the same rule the
+# rate limits use, see app/core/rate_limit.py.
+from app.core.rate_limit import get_real_client_ip
 from app.models import AuditLog
 
 
@@ -35,7 +37,7 @@ def log_audit_event(
     user_agent = None
     if request is not None:
         try:
-            ip_address = get_remote_address(request)
+            ip_address = get_real_client_ip(request)
         except Exception:
             ip_address = None
         user_agent = request.headers.get("user-agent")

@@ -64,6 +64,7 @@ const UNITS = [
   "lib/schoolSetup.ts",
   "lib/schools.ts",
   "lib/curriculumStudio.ts",
+  "lib/edgeRetry.ts",
 ];
 
 /**

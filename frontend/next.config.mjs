@@ -19,6 +19,24 @@ function resolveBackendOrigin() {
   return raw.endsWith("/api") ? raw.slice(0, -4) : raw;
 }
 
+// Krama's own addresses (#213, 3 Nov 2026). NEXT_PUBLIC_API_ORIGIN is the
+// API the browser calls directly (https://api.krama.zetta-metrics.com, see
+// lib/api.ts); SITE_HOST is the one address the app is served on
+// (krama.zetta-metrics.com). Both unset: everything as before #213.
+function apiOrigin() {
+  const raw = (process.env.NEXT_PUBLIC_API_ORIGIN || "").trim().replace(/\/+$/, "");
+  if (!raw) return null;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    throw new Error(`NEXT_PUBLIC_API_ORIGIN is not a web address: ${raw}`);
+  }
+}
+
+function siteHost() {
+  return (process.env.SITE_HOST || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "") || null;
+}
+
 // Content-Security-Policy (2026-08-19 security hardening -- previously
 // absent entirely, flagged as a concrete gap in the security audit).
 //
@@ -61,7 +79,8 @@ function buildCsp() {
     // (see backend/app/core/totp.py's totp_qr_code_data_url()); blob: for
     // the backup-codes .txt download link (URL.createObjectURL).
     "img-src": ["'self'", "data:", "blob:"],
-    "connect-src": ["'self'", "https://*.sentry.io", "https://*.ingest.sentry.io"],
+    // #213: the API's own address, when the browser calls it directly.
+    "connect-src": ["'self'", ...(apiOrigin() ? [apiOrigin()] : []), "https://*.sentry.io", "https://*.ingest.sentry.io"],
     "base-uri": ["'self'"],
     "form-action": ["'self'"],
     "frame-ancestors": ["'none'"],
@@ -86,7 +105,25 @@ const nextConfig = {
     ];
   },
   async redirects() {
+    // #213: the app has one address. Any other one it is reached on in
+    // production (school-enrichment-frontend.vercel.app, from old links and
+    // bookmarks) sends the person to the same page there -- their sign-in
+    // only works on Krama's own address, where its cookies are issued.
+    // Production only: preview deployments keep their own addresses.
+    const host = siteHost();
+    const canonical =
+      host && process.env.VERCEL_ENV === "production"
+        ? [
+            {
+              source: "/:path*",
+              missing: [{ type: "host", value: host }],
+              destination: `https://${host}/:path*`,
+              permanent: false,
+            },
+          ]
+        : [];
     return [
+      ...canonical,
       // RFC 9116 recommends /.well-known/security.txt as the canonical
       // location (that's where the real file lives, in public/), but some
       // older scanners still only check the bare root path -- redirect

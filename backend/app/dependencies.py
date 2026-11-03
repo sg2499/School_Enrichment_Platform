@@ -325,7 +325,7 @@ def get_current_user(
                 # it to its cookie jar with no JS involved, so nothing is
                 # lost by not also exposing it as a header.
                 if used_cookie_auth:
-                    set_session_cookie(response, user.role, new_token)
+                    set_session_cookie(response, user.role, new_token, request=request)
                 else:
                     response.headers["X-New-Access-Token"] = new_token
         except Exception:

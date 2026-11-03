@@ -7,6 +7,7 @@ import {
   PASSWORD_CHANGE_PATH,
   roleForCurrentPage,
 } from "./auth";
+import { edgeRetryDelayMs } from "./edgeRetry";
 import { describeError, type DescribedError } from "./errors";
 import { readSignedOutNotice, rememberSignedOut } from "./sessionNotice";
 
@@ -30,20 +31,32 @@ declare module "axios" {
     pageSessionCheck?: boolean;
     /** Internal: marks the one automatic re-send after a CSRF refusal. */
     csrfRetried?: boolean;
+    /** Internal: how many times this request has been re-sent after being
+     * turned away before it reached Krama (lib/edgeRetry.ts). */
+    edgeRetries?: number;
   }
 }
 
-// Retained from MathPath's lib/api.ts (Phase 0 audit, "Retain as-is"
-// bucket). Relative, same-origin base URL -- the actual backend is reached
-// via the Next.js rewrite in next.config.mjs, which proxies /api/* to the
-// real Render URL server-side. The browser itself never makes a
-// cross-origin request, which is what lets the session cookie be
-// first-party (SameSite=Lax) instead of needing the cross-site None that
-// Safari/iOS block by default.
+// Where the API is (#213, 3 Nov 2026).
+//
+// In production, Krama's own API address (NEXT_PUBLIC_API_ORIGIN,
+// https://api.krama.zetta-metrics.com), called directly from the app's own
+// address (https://krama.zetta-metrics.com). The two are one site, so the
+// session cookie is still first-party (SameSite=Lax) -- the property the
+// arrangement below was built to keep -- and the backend issues it for both
+// (backend/app/core/cookies.py, cookie_domain_for).
+//
+// Before #213, and still when NEXT_PUBLIC_API_ORIGIN is unset (local
+// development): "/api" on the page's own address, which the Next.js rewrite
+// in next.config.mjs proxies to the backend server-side. In production that
+// sent every school's requests to Render from Vercel's shared servers, and
+// Render's front door sometimes refused them as "Too Many Requests" before
+// they reached Krama (3 Nov 2026).
 const DEFAULT_API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS || "90000");
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_ORIGIN || "").trim().replace(/\/+$/, "");
 
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: API_ORIGIN ? `${API_ORIGIN}/api` : "/api",
   timeout: DEFAULT_API_TIMEOUT_MS,
   // Session lives in an httpOnly cookie (see backend/app/core/cookies.py)
   // instead of a token read out of localStorage -- withCredentials is what
@@ -100,6 +113,18 @@ api.interceptors.response.use(
 
     const status = error?.response?.status;
     const code = error?.response?.data?.detail?.code;
+
+    // Turned away before it reached Krama (lib/edgeRetry.ts): wait a moment
+    // and send it again, up to twice, before the person hears anything.
+    if (typeof window !== "undefined" && error?.config) {
+      const attempts = error.config.edgeRetries ?? 0;
+      const wait = edgeRetryDelayMs(status, error?.response?.data, error?.response?.headers?.["retry-after"], attempts);
+      if (wait !== null) {
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        return api.request({ ...error.config, edgeRetries: attempts + 1 });
+      }
+    }
+
     if (typeof window !== "undefined") {
       if (describeError(error).kind === "session") {
         handleSessionEnded(error);
