@@ -218,6 +218,9 @@ export interface ResultPart extends SitPart {
   explanation: string | null;
   markingSteps: string | null;
   note: string | null;
+  /** #214: the teacher changed the platform's mark, and why. */
+  changedByTeacher?: boolean;
+  teacherNote?: string | null;
 }
 
 export interface PaperResult {
@@ -258,7 +261,7 @@ export interface ResultsGrid {
     score: number | null;
     autoScore: number | null;
     submittedHow: string | null;
-    cells: Record<string, { score: number; max: number; waiting: boolean; blank: boolean }>;
+    cells: Record<string, { score: number; max: number; waiting: boolean; blank: boolean; changed?: boolean }>;
     sectionMarks: number[];
   }[];
   handedIn: number;
@@ -266,6 +269,31 @@ export interface ResultsGrid {
   inProgress: number;
   solutionsOpen: boolean;
   closesAt: string;
+}
+
+/** #214: one student's answer to one question, every step with the
+ *  platform's mark and any change the teacher made. */
+export interface ReviewPart extends SitPart {
+  answerId: string | null;
+  correctAnswer: string | null;
+  acceptedVariants: string | null;
+  markingSteps: string | null;
+  maxScore: number;
+  autoScore: number | null;
+  score: number | null;
+  reviewNote: string | null;
+  note: string | null;
+}
+
+export interface ReviewPlace {
+  studentId: string;
+  student: string;
+  studentCode: string;
+  number: number;
+  marks: number;
+  stimulus: string | null;
+  parts: ReviewPart[];
+  canChange: boolean;
 }
 
 export interface MarkingView {

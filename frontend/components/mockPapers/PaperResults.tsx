@@ -9,9 +9,15 @@
  * numbers differ); a mark can be changed at any time. With every long
  * answer in steps (#208 part 2) and no method marks on mocks, this tab is
  * normally empty.
+ *
+ * #214 (3 Nov 2026): any mark on the Results grid opens that student's
+ * answer, step by step, and the teacher may change a mark the platform
+ * gave, saying why (the student reads it). Ashalatha: a teacher override
+ * "where a correct method is rejected solely because an earlier value
+ * carried forward", and "for valid equivalent work or a system exception".
  */
 import { useState } from "react";
-import { Save } from "lucide-react";
+import { PencilLine, Save } from "lucide-react";
 import { api, describeApiError } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { RESULT_STATE_LABEL } from "@/lib/mockPapers";
@@ -22,13 +28,15 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { TableSkeleton } from "@/components/ui/Table";
-import type { MarkingView, ResultsGrid } from "@/types/mockPapers";
+import type { MarkingView, ResultsGrid, ReviewPlace } from "@/types/mockPapers";
 
 const STATE_TONE = { NOT_STARTED: "neutral", IN_PROGRESS: "brand", TO_MARK: "warning", MARKED: "success" } as const;
 
 export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boolean }) {
   const grid = useApiQuery<ResultsGrid>(`/mock-papers/${paperId}/results`, {}, { action: "load the results" });
+  const [open, setOpen] = useState<{ studentId: string; key: string; title: string } | null>(null);
   if (grid.problem) return <LoadError problem={grid.problem} onRetry={grid.reload} />;
   if (!grid.data) return <TableSkeleton label="Loading the results" rows={5} />;
   const g = grid.data;
@@ -52,6 +60,12 @@ export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boo
       </div>
       {g.shuffled ? (
         <p className="text-xs text-content-subtle">Columns follow the paper as built; each student saw the questions in their own order.</p>
+      ) : null}
+      {g.handedIn ? (
+        <p className="text-xs text-content-subtle">
+          Choose a mark to see that student&apos;s answer, step by step{canAct && g.canChange ? ", and change a mark if it needs it" : ""}.
+          A mark you changed has a dot.
+        </p>
       ) : null}
       {g.students.length === 0 ? (
         <Card className="p-6">
@@ -106,20 +120,16 @@ export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boo
                     </td>
                     {g.columns.map((c) => {
                       const cell = s.cells[c.key];
+                      const reviewable = Boolean(cell) && (s.state === "TO_MARK" || s.state === "MARKED");
                       const text = !cell ? "–" : cell.waiting ? "…" : `${cell.score}`;
                       const label = !cell
                         ? `Question ${c.number}: not handed in`
                         : cell.waiting
                           ? `Question ${c.number}: waiting for marks`
                           : `Question ${c.number}: ${cell.score} of ${cell.max}${cell.blank ? ", left blank" : ""}`;
-                      return (
-                        <td key={c.key} className="border-b border-line px-1 py-2 text-center">
-                          <span
-                            role="img"
-                            aria-label={label}
-                            title={label}
-                            className={cn(
-                              "inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1 text-xs font-bold",
+                      const fullLabel = `${label}${cell?.changed ? ", changed by a teacher" : ""}`;
+                      const chip = cn(
+                              "relative inline-flex h-7 min-w-7 items-center justify-center rounded-md px-1 text-xs font-bold",
                               !cell
                                 ? "text-content-faint"
                                 : cell.waiting
@@ -129,10 +139,29 @@ export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boo
                                     : cell.score > 0
                                       ? "bg-saffron-100 text-saffron-900"
                                       : "bg-coral-100 text-coral-800",
-                            )}
-                          >
-                            {text}
-                          </span>
+                            );
+                      const dot = cell?.changed ? (
+                        <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brand-600 ring-2 ring-surface" />
+                      ) : null;
+                      return (
+                        <td key={c.key} className="border-b border-line px-1 py-2 text-center">
+                          {reviewable ? (
+                            <button
+                              type="button"
+                              aria-label={`${fullLabel}. Open ${s.name}'s answer`}
+                              title={fullLabel}
+                              onClick={() => setOpen({ studentId: s.studentId, key: c.key, title: `${s.name}, Question ${c.number}` })}
+                              className={cn(chip, "cursor-pointer transition hover:ring-2 hover:ring-brand-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500")}
+                            >
+                              {text}
+                              {dot}
+                            </button>
+                          ) : (
+                            <span role="img" aria-label={fullLabel} title={fullLabel} className={chip}>
+                              {text}
+                              {dot}
+                            </span>
+                          )}
                         </td>
                       );
                     })}
@@ -143,7 +172,198 @@ export function ResultsPanel({ paperId, canAct }: { paperId: string; canAct: boo
           </div>
         </Card>
       )}
+      {open ? (
+        <ReviewDialog
+          paperId={paperId}
+          studentId={open.studentId}
+          placeKey={open.key}
+          title={open.title}
+          canAct={canAct}
+          onClose={() => setOpen(null)}
+          onSaved={grid.reload}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/** #214: one student's answer to one question, each step with the
+ *  platform's mark; the teacher may change a mark, saying why. */
+function ReviewDialog({
+  paperId,
+  studentId,
+  placeKey,
+  title,
+  canAct,
+  onClose,
+  onSaved,
+}: {
+  paperId: string;
+  studentId: string;
+  placeKey: string;
+  title: string;
+  canAct: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const path = `/mock-papers/${paperId}/students/${studentId}/places/${encodeURIComponent(placeKey)}`;
+  const view = useApiQuery<ReviewPlace>(path, {}, { action: "load this answer" });
+  const [data, setData] = useState<ReviewPlace | null>(null);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const shown = data ?? view.data;
+  const editable = Boolean(canAct && shown?.canChange);
+  const current = (p: ReviewPlace["parts"][number]) => (p.score !== null ? String(p.score) : "");
+  const changed = shown ? shown.parts.filter((p) => p.answerId && draft[p.answerId] !== undefined && draft[p.answerId] !== current(p)) : [];
+  // A platform mark being changed needs a reason (the student reads it).
+  const needsReason = changed.some((p) => p.autoScore !== null && draft[p.answerId!] !== "" && Number(draft[p.answerId!]) !== p.autoScore);
+  const reasonText = reason.trim();
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      eyebrow="Review Marks"
+      title={title}
+      footer={
+        editable ? (
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Close
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              leadingIcon={<Save className="h-4 w-4" />}
+              disabled={changed.length === 0 || (needsReason && !reasonText) || reasonText.length > 300}
+              loading={busy}
+              loadingLabel="Saving"
+              onClick={async () => {
+                setBusy(true);
+                setProblem(null);
+                setNotice(null);
+                try {
+                  const { data: next } = await api.post<ReviewPlace>(path, {
+                    changes: changed.map((p) => ({ answerId: p.answerId, score: draft[p.answerId!] === "" ? null : Number(draft[p.answerId!]) })),
+                    reason: reasonText || null,
+                  });
+                  setData(next);
+                  setDraft({});
+                  setReason("");
+                  setNotice("Saved. The student's marks, My Progress and reports follow the change.");
+                  onSaved();
+                } catch (err) {
+                  setProblem(describeApiError(err, "save these marks").message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Save Changes
+            </Button>
+          </div>
+        ) : undefined
+      }
+    >
+      {view.problem && !shown ? (
+        <LoadError problem={view.problem} onRetry={view.reload} />
+      ) : !shown ? (
+        <TableSkeleton label="Loading the answer" rows={3} />
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-content-muted">
+            {shown.student} <span className="text-content-subtle">{shown.studentCode}</span> · {shown.marks} marks. Their numbers
+            were their own, so this is their question as they saw it.
+          </p>
+          {shown.stimulus ? (
+            <p className="whitespace-pre-line rounded-xl bg-surface-brand p-3 text-sm text-content">{shown.stimulus}</p>
+          ) : null}
+          {problem ? <AlertBanner tone="error" message={problem} /> : null}
+          {notice ? <AlertBanner tone="success" message={notice} /> : null}
+          <ol className="space-y-3">
+            {shown.parts.map((p) => {
+              const value = p.answerId && draft[p.answerId] !== undefined ? draft[p.answerId] : current(p);
+              const overridden = p.score !== null && p.autoScore !== null;
+              return (
+                <li key={p.id} className="space-y-2 rounded-xl border border-line p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <p className="whitespace-pre-line text-sm text-content">
+                      {p.label ? <span className="font-semibold">({p.label}) </span> : null}
+                      {p.text}
+                    </p>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-content">
+                      Mark
+                      <select
+                        value={value}
+                        disabled={!editable || !p.answerId}
+                        onChange={(e) => setDraft({ ...draft, [p.answerId!]: e.target.value })}
+                        className="h-10 rounded-xl border border-line-field bg-surface px-3 text-sm"
+                      >
+                        <option value="">
+                          {p.autoScore !== null ? `Platform's mark (${p.autoScore} of ${p.maxScore})` : "Not marked"}
+                        </option>
+                        {Array.from({ length: p.maxScore + 1 }, (_, i) => (
+                          <option key={i} value={String(i)}>
+                            {i} of {p.maxScore}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <p className="text-sm">
+                    <span className="font-semibold text-content">Their answer:</span>{" "}
+                    <span className="whitespace-pre-line text-content-muted">{p.response || "Left blank"}</span>
+                  </p>
+                  {p.working ? (
+                    <p className="text-sm">
+                      <span className="font-semibold text-content">Their working:</span>{" "}
+                      <span className="whitespace-pre-line text-content-muted">{p.working}</span>
+                    </p>
+                  ) : null}
+                  <p className="text-sm text-content-muted">
+                    <span className="font-semibold text-content">Right answer:</span>{" "}
+                    {p.questionType === "Single Select"
+                      ? `${p.correctAnswer}. ${p[`option${p.correctAnswer}` as "optionA"] ?? ""}`
+                      : p.correctAnswer}
+                  </p>
+                  {overridden ? (
+                    <p className="flex items-start gap-2 text-sm text-brand-800">
+                      <PencilLine className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                      <span>
+                        Changed from the platform&apos;s {p.autoScore} of {p.maxScore}
+                        {p.reviewNote ? `: ${p.reviewNote}` : "."}
+                      </span>
+                    </p>
+                  ) : p.note ? (
+                    <p className="text-sm text-saffron-800">{p.note}</p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
+          {editable ? (
+            <label className="block space-y-1.5">
+              <span className="text-sm font-semibold text-content">
+                Why are you changing the mark?{needsReason ? "" : " (needed when you change the platform's mark)"}
+              </span>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={2}
+                maxLength={300}
+                placeholder="For example: the method in (c) is right; it used the answer from (a)."
+                className="w-full rounded-xl border border-line-field bg-surface px-3 py-2 text-sm"
+              />
+              <span className="block text-xs text-content-subtle">The student reads this beside the mark. At most 300 characters.</span>
+            </label>
+          ) : null}
+        </div>
+      )}
+    </Modal>
   );
 }
 

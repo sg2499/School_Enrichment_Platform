@@ -114,7 +114,9 @@ def test_every_chapter_1_pattern_works():
         assert sum(q["marks"] for q in made.questions) == spec.marks
         if spec.skill in bank_notes:
             assert made.misconception == bank_notes[spec.skill], code
-    assert kinds["3"] >= 3 and kinds["4"] >= 3 and kinds["5"] >= 3 and kinds["2"] >= 15
+    # #214: the 2-mark ones are now in two steps (14), and the one 2-mark
+    # multiple choice is 1 mark.
+    assert kinds["3"] >= 3 and kinds["4"] >= 3 and kinds["5"] >= 3 and kinds["2"] >= 14
 
 
 def test_chapters_2_to_15_patterns_work():
@@ -297,13 +299,13 @@ def test_long_answers_in_steps_mark_themselves():
 
     from app.services import mock_paper_service
 
-    assert mock_paper_service.pattern_kind(SimpleNamespace(question_type="Long Answer")) == "WRITTEN"
-    assert mock_paper_service.fits("ANY", SimpleNamespace(question_type="Long Answer"))
+    assert mock_paper_service.pattern_kind(SimpleNamespace(question_type="Long Answer", marks=3)) == "WRITTEN"
+    assert mock_paper_service.fits("ANY", SimpleNamespace(question_type="Long Answer", marks=3))
     # A written step, a 4-mark total, a 3-mark step or a wrong total is refused.
     written = {**STEPS["parts"][0], "questionType": "Constructed Response", "answer": "{a * b}"}
     for bad, words in (
         ({**STEPS, "parts": [written, STEPS["parts"][1]]}, "must be marked by the platform"),
-        ({**STEPS, "marks": 4}, "worth 3 or 5 marks"),
+        ({**STEPS, "marks": 4}, "worth 2, 3 or 5 marks"),
         ({**STEPS, "parts": [STEPS["parts"][0], {**STEPS["parts"][1], "marks": 3}]}, "worth 1 or 2 marks"),
         ({**STEPS, "marks": 5}, "total of its steps (3)"),
         ({**STEPS, "stimulus": None}, "needs its problem"),
@@ -537,3 +539,52 @@ def test_only_the_super_admin_sees_patterns(client, db_session):
     other = TestClient(app)
     teacher_headers = {**_login(other, teacher.user.email), "x-auth-role": "TEACHER"}
     assert other.get("/api/question-patterns", headers=teacher_headers).status_code == 403
+
+
+def test_a_two_mark_question_is_two_one_mark_steps():
+    """#214, Ashalatha, 3 Nov 2026: "A question worth 2 marks should not be
+    all-or-nothing if it expects a method. Split it into two scorable
+    steps ... If only the final number is scored, make it a 1-mark item." """
+    from types import SimpleNamespace
+
+    from app.services import mock_paper_service
+
+    two = {**STEPS, "code": "T-TWO", "marks": 2,
+           "parts": [STEPS["parts"][0], {**STEPS["parts"][1], "marks": 1, "steps": None}]}
+    two["parts"][1] = {k: v for k, v in two["parts"][1].items() if k != "steps"}
+    spec = pattern_engine.clean_spec(two)
+    made = pattern_engine.make(spec, "s")
+    assert [q["marks"] for q in made.questions] == [1, 1]
+    two_mark_steps = SimpleNamespace(question_type="Long Answer", marks=2)
+    assert mock_paper_service.pattern_kind(two_mark_steps) == "NUMBER"
+    assert mock_paper_service.fits("NUMBER", two_mark_steps) and mock_paper_service.fits("ANY", two_mark_steps)
+    assert not mock_paper_service.fits("WRITTEN", two_mark_steps)
+    # Three steps is not a 2-mark question in steps.
+    with pytest.raises(PatternError) as err:
+        pattern_engine.clean_spec({**two, "parts": [two["parts"][0], {**two["parts"][1], "text": "(b) x"}, {**two["parts"][1], "text": "(c) y"}]})
+    assert any("two steps of 1 mark each" in p or "total of its steps" in p for p in err.value.problems), err.value.problems
+    # A new 2-mark question with one answer box is refused when it is loaded ...
+    for qtype in ("Numeric Entry", "Text Entry"):
+        with pytest.raises(PatternError) as err:
+            pattern_engine.clean_spec({
+                "code": "T-ONE-BOX", "chapter": 1, "skill": "S1", "questionType": qtype, "marks": 2,
+                "values": [{"name": "n", "int": {"min": 1, "max": 9}}], "text": "What is {n} + {n}?", "answer": "2 * n",
+                "steps": [{"marks": 1, "text": "Adds."}, {"marks": 1, "text": "{2 * n}."}]})
+        assert any("worth 1 mark" in p for p in err.value.problems), err.value.problems
+    # ... and one already in the bank (from before #214) is never put on a paper.
+    for qtype in ("Numeric Entry", "Single Select", "Text Entry"):
+        old = SimpleNamespace(question_type=qtype, marks=2)
+        assert mock_paper_service.pattern_kind(old) == "ONE_BOX"
+        assert not any(mock_paper_service.fits(k, old) for k in ("ANY", "CHOICE", "NUMBER", "WRITTEN", "CASE_STUDY"))
+    assert mock_paper_service.pattern_kind(SimpleNamespace(question_type="Single Select", marks=1)) == "CHOICE"
+
+
+def test_numbers_are_written_the_indian_way():
+    """#214, Ashalatha, 3 Nov 2026, Q11: "Use the Indian number system and
+    comma style from one lakh upward." """
+    fmt = pattern_engine.format_value
+    assert [fmt(n, "num") for n in (999, 8649, 58306, 99999, 100000, 900000, 1234567, 10000000)] == [
+        "999", "8,649", "58,306", "99,999", "1,00,000", "9,00,000", "12,34,567", "1,00,00,000"]
+    assert fmt(250000, "money") == "₹2,50,000"
+    assert fmt(-123456, "num") == "-1,23,456"
+    assert fmt(100000) == "100000", "plain stays plain"

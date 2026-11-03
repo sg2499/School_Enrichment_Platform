@@ -13,7 +13,8 @@ A format (JSON):
                     count   questions to answer, 1 to 50
                     choices how many of them come as an either/or pair, 0 to count
                     kind    ANY | CHOICE (multiple choice) | NUMBER (number or
-                            short answers) | WRITTEN (3- and 5-mark long answers,
+                            short answers, and 2-mark questions in two steps:
+                            #214) | WRITTEN (3- and 5-mark long answers,
                             in steps the platform marks: #208) |
                             CASE_STUDY (4-mark case study, the only kind at 4 marks)
   timeMinutes     5 to 240; readingMinutes 0 to 15
@@ -117,8 +118,10 @@ def clean_format(raw) -> dict:
             problems.append(f"{where}: choose the kind of question.")
         elif (marks == 4) != (kind == "CASE_STUDY"):
             problems.append(f"{where}: 4-mark questions are case studies, and case studies are worth 4 marks.")
-        elif kind == "CHOICE" and marks not in (1, 2):
-            problems.append(f"{where}: multiple-choice questions are worth 1 or 2 marks.")
+        elif kind == "CHOICE" and marks != 1:
+            # #214, Ashalatha, 3 Nov 2026: a 2-mark question expects a
+            # method, which a multiple-choice answer can't show.
+            problems.append(f"{where}: multiple-choice questions are worth 1 mark; a 2-mark question has its working marked.")
         elif kind == "WRITTEN" and marks not in (3, 5):
             # Long answers in steps are 3 or 5 marks (#208 review): a 1- or
             # 2-mark one has no question to fill it.

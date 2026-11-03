@@ -96,8 +96,13 @@ def test_formats_are_checked_in_words():
     assert "long answers in steps are worth 3 or 5 marks" in written.value.problems[0]
     text = " | ".join(bad.value.problems)
     for words in ("Give the test format a name", "4-mark questions are case studies", "can't be more than the questions",
-                  "multiple-choice questions are worth 1 or 2 marks", "keep it to 200", "from 5 minutes", "add up to 100%"):
+                  "multiple-choice questions are worth 1 mark", "keep it to 200", "from 5 minutes", "add up to 100%"):
         assert words in text, words
+    # #214: multiple choice is 1 mark; a 2-mark question has its working marked.
+    with pytest.raises(FormatError) as two:
+        paper_formats.clean_format({**paper_formats.STARTING_POINTS[2], "sections": [
+            {"name": "A", "marks": 2, "count": 3, "kind": "CHOICE"}]})
+    assert "multiple-choice questions are worth 1 mark" in two.value.problems[0]
 
 
 def test_a_teacher_builds_previews_and_approves_a_full_paper(client, db_session):
@@ -123,9 +128,12 @@ def test_a_teacher_builds_previews_and_approves_a_full_paper(client, db_session)
     assert all(slot["sample"] and slot["pattern"] for slot in slots)
     case = detail["sections"][4]["slots"][0]
     assert case["sample"]["stimulus"] and len(case["sample"]["questions"]) == 4
-    # An either/or pair: same marks, a different skill.
+    # An either/or pair (#214, Ashalatha, Q53): the same skill, marks, kind
+    # and difficulty, differing only in numbers or context, and still two
+    # different questions.
     pair = [slot for slot in detail["sections"][2]["slots"] if slot["choiceGroup"]]
-    assert len(pair) == 2 and pair[1]["alternative"] and pair[0]["pattern"]["skill"] != pair[1]["pattern"]["skill"]
+    assert len(pair) == 2 and pair[1]["alternative"] and pair[0]["pattern"]["skill"] == pair[1]["pattern"]["skill"]
+    assert pair[0]["sample"] != pair[1]["sample"]
     # No pattern fills more than two places.
     codes = [slot["pattern"]["code"] for slot in slots]
     assert max(codes.count(c) for c in codes) <= 2

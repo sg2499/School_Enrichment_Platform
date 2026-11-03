@@ -34,10 +34,13 @@ export const DIFFICULTY_LABEL = { easy: "Easy", medium: "Medium", hard: "Challen
 export const MARK_CHOICES = [1, 2, 3, 4, 5] as const;
 
 /** The kinds a question of these marks can be (4 marks is the case study;
- *  long answers in steps are 3 or 5 marks, #208). */
+ *  long answers in steps are 3 or 5 marks, #208; multiple choice is 1 mark,
+ *  because a 2-mark question has its working marked: #214, Ashalatha,
+ *  3 Nov 2026). */
 export function kindsFor(marks: number): QuestionKind[] {
   if (marks === 4) return ["CASE_STUDY"];
-  if (marks <= 2) return ["ANY", "CHOICE", "NUMBER"];
+  if (marks === 1) return ["ANY", "CHOICE", "NUMBER"];
+  if (marks === 2) return ["ANY", "NUMBER"];
   return ["ANY", "NUMBER", "WRITTEN"];
 }
 

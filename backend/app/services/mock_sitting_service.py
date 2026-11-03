@@ -669,6 +669,109 @@ def save_marks(db: Session, viewer: Viewer, paper_id: str, marks: list[dict], no
     return len(marks)
 
 
+# --- #214: a teacher reviews one student's marks on one question --------------------------
+
+MAX_REVIEW_NOTE = 300
+
+
+def _place_for(db: Session, paper: MockPaper, version: MockPaperVersion, sitting: MockPaperSitting, key: str):
+    """The question place `key` (a slot id, or "g<group>" for an either/or
+    pair) on this student's paper, with the half they answered."""
+    choices = _choices(sitting)
+    number = 0
+    for sec in _layout(db, paper, version):
+        for halves in sec["places"]:
+            number += 1
+            first = halves[0]["slot"]
+            place_key = f"g{first.choice_group}" if first.choice_group else first.id
+            if place_key != key:
+                continue
+            group = first.choice_group
+            chosen = next((h for h in halves if not group or choices.get(str(group)) == h["slot"].id), halves[0])
+            return number, sec, chosen
+    return None
+
+
+def review_place(db: Session, viewer: Viewer, paper_id: str, student_id: str, key: str) -> dict:
+    """One student's answer to one question, every step with the platform's
+    mark and any change the teacher made, for the teacher to review."""
+    paper, entry = papers.load_paper(db, viewer, paper_id)
+    if paper.status != "APPROVED":
+        api_error(409, "NOT_APPROVED", "This paper hasn't been approved.")
+    student = db.get(Student, student_id)
+    version = _version(db, paper, student) if student else None
+    sitting = _sitting(db, paper, student) if student else None
+    if version is None or sitting is None or sitting.status != "SUBMITTED":
+        api_error(404, "NOT_FOUND", "That student hasn't handed this paper in.")
+    found = _place_for(db, paper, version, sitting, key)
+    if found is None:
+        api_error(404, "NOT_FOUND", "That question isn't on this paper.")
+    number, _sec, chosen = found
+    answers = _answers(db, sitting)
+    name, code = _student_names(db, {student.id}).get(student.id, ("", ""))
+    parts = []
+    for p in chosen["parts"]:
+        q = p["question"]
+        a = answers.get(q.id)
+        parts.append({
+            "answerId": a.id if a else None,
+            "label": _part_label(p, len(chosen["parts"])),
+            "text": p["text"], **public_question(q),
+            "response": a.response_text if a else None, "working": a.working_text if a else None,
+            "correctAnswer": q.correct_answer, "acceptedVariants": q.accepted_variants,
+            "markingSteps": q.teacher_note,
+            "maxScore": q.marks,
+            "autoScore": a.auto_score if a else None,
+            "score": a.manual_score if a else None,
+            "reviewNote": a.review_note if a else None,
+            "note": learning_service.grading_note_words(
+                a.grading_note, marks_lost=(a.max_score - a.auto_score) if a and a.auto_score is not None else None) if a else None,
+        })
+    return {
+        "studentId": student.id, "student": name, "studentCode": code, "number": number,
+        "marks": chosen["slot"].marks, "stimulus": chosen["stimulus"], "parts": parts,
+        "canChange": can_mark(viewer, entry),
+    }
+
+
+def save_review(db: Session, viewer: Viewer, paper_id: str, student_id: str, changes: list[dict], reason: str | None,
+                now: datetime | None = None) -> int:
+    """Change marks on one student's paper, including marks the platform
+    gave (#214). A changed platform mark needs a reason, which the student
+    reads; a score of None puts the platform's own mark back."""
+    paper, _entry = _load_for_marking(db, viewer, paper_id)
+    now = _now(now)
+    student = db.get(Student, student_id)
+    sitting = _sitting(db, paper, student) if student else None
+    if sitting is None or sitting.status != "SUBMITTED":
+        api_error(404, "NOT_FOUND", "That student hasn't handed this paper in.")
+    reason = " ".join((reason or "").split()) or None
+    if reason and len(reason) > MAX_REVIEW_NOTE:
+        api_error(422, "VALIDATION_ERROR", f"Keep the reason to {MAX_REVIEW_NOTE} characters.")
+    ids = [c.get("answerId") for c in changes]
+    rows = {a.id: a for a in db.query(MockPaperAnswer).filter(MockPaperAnswer.id.in_(ids))} if ids else {}
+    for c in changes:
+        a = rows.get(c.get("answerId"))
+        if a is None or a.sitting_id != sitting.id:
+            api_error(404, "NOT_FOUND", "That answer couldn't be found on this student's paper.")
+        if not a.counted:
+            api_error(422, "VALIDATION_ERROR", "That answer is the half of an either/or pair the student didn't choose.")
+        score = c.get("score")
+        if score is not None and (not isinstance(score, int) or isinstance(score, bool) or not 0 <= score <= a.max_score):
+            api_error(422, "VALIDATION_ERROR", f"A mark must be a whole number from 0 to {a.max_score}.")
+        if score is None or (a.auto_score is not None and score == a.auto_score):
+            # Back to the platform's mark (or, for a written answer, unmarked).
+            a.manual_score, a.graded_by_user_id, a.graded_at, a.review_note = None, None, None, None
+            continue
+        if a.auto_score is not None and not reason:
+            api_error(422, "VALIDATION_ERROR", "Say why you are changing the platform's mark; the student reads it.")
+        a.manual_score, a.graded_by_user_id, a.graded_at = score, viewer.user.id, now
+        a.review_note = reason if a.auto_score is not None else a.review_note
+    db.flush()
+    _recompute(db, sitting)
+    return len(changes)
+
+
 def results(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = None) -> dict:
     """Question by student, with each student's total, for the teacher and
     the school's admin."""
@@ -706,8 +809,9 @@ def results(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
                 if not a.counted:
                     continue
                 k = key_of[a.slot_id]
-                cell = cells.setdefault(k, {"score": 0, "max": 0, "waiting": False, "blank": True})
+                cell = cells.setdefault(k, {"score": 0, "max": 0, "waiting": False, "blank": True, "changed": False})
                 score = a.manual_score if a.manual_score is not None else a.auto_score
+                cell["changed"] = cell["changed"] or (a.manual_score is not None and a.auto_score is not None)
                 cell["max"] += a.max_score
                 cell["blank"] = cell["blank"] and not (a.response_text or "").strip()
                 if score is None:
@@ -776,6 +880,10 @@ def student_result(db: Session, paper: MockPaper, student: Student, sitting: Moc
                     "acceptedVariants": q.accepted_variants if solutions else None,
                     "explanation": q.explanation if solutions else None,
                     "markingSteps": q.teacher_note if solutions else None,
+                    # #214: a mark the teacher changed from the platform's,
+                    # and the reason they gave, which the student reads.
+                    "changedByTeacher": bool(a and a.manual_score is not None and a.auto_score is not None),
+                    "teacherNote": a.review_note if a else None,
                     "note": learning_service.grading_note_words(
                         a.grading_note, marks_lost=(a.max_score - a.auto_score) if a and a.auto_score is not None else None) if a else None,
                 })

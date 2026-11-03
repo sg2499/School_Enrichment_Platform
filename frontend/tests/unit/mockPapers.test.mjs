@@ -22,18 +22,20 @@ import {
 } from "../../.test-build/lib/mockPapers.mjs";
 
 describe("sections", () => {
-  test("4 marks is the case study, and multiple choice is for 1 or 2 marks", () => {
+  test("4 marks is the case study, and multiple choice is for 1 mark", () => {
     assert.deepEqual(kindsFor(4), ["CASE_STUDY"]);
-    assert.ok(kindsFor(2).includes("CHOICE"));
+    assert.ok(kindsFor(1).includes("CHOICE") && !kindsFor(2).includes("CHOICE"), "multiple choice is 1 mark (#214)");
     assert.ok(!kindsFor(3).includes("CHOICE") && !kindsFor(5).includes("CASE_STUDY"));
     // #208: long answers in steps are 3 or 5 marks.
     assert.ok(!kindsFor(1).includes("WRITTEN") && !kindsFor(2).includes("WRITTEN") && kindsFor(3).includes("WRITTEN"));
   });
 
   test("changing the marks keeps the kind when it still fits", () => {
-    const s = { name: "A", marks: 1, count: 5, choices: 0, kind: "CHOICE" };
-    assert.equal(withMarks(s, 2).kind, "CHOICE");
-    assert.equal(withMarks(s, 3).kind, "ANY");
+    const s = { name: "A", marks: 1, count: 5, choices: 0, kind: "NUMBER" };
+    assert.equal(withMarks(s, 2).kind, "NUMBER");
+    assert.equal(withMarks({ ...s, kind: "CHOICE" }, 2).kind, "ANY", "multiple choice doesn't carry to 2 marks (#214)");
+    assert.equal(withMarks({ ...s, kind: "CHOICE" }, 3).kind, "ANY");
+    assert.equal(withMarks(s, 3).kind, "NUMBER");
     assert.equal(withMarks(s, 4).kind, "CASE_STUDY");
     assert.equal(withMarks(withMarks(s, 4), 5).kind, "ANY");
   });

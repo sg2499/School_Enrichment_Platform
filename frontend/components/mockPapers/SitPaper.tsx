@@ -65,8 +65,16 @@ function Rules({ view }: { view: SittingView }) {
           ? "You go through the sections in order. Once you move to the next section you can't go back."
           : "You can move between the sections in any order."}
       </li>
+      <li>
+        A question in steps, (a), (b) and so on, has each step marked on its own answer. If a step uses a wrong answer from an
+        earlier step, it can lose its mark too. Your teacher sees every step and can change a mark.
+      </li>
+      <li>Show your working where a question asks for it, and write the unit when the question asks for one. Calculators are not allowed.</li>
       <li>Your answers save as you type. When the time is up, your paper is handed in with what you saved.</li>
-      <li>You sit this paper once. You see your marks as soon as you hand in, and the answers and solutions once the paper closes.</li>
+      <li>
+        You sit this paper once. It is practice, so it doesn&apos;t count in your term marks. You see your marks as soon as you hand in,
+        and the answers and solutions once the paper closes.
+      </li>
     </ul>
   );
 }
@@ -166,6 +174,12 @@ function ResultView({ result }: { result: PaperResult }) {
           </ul>
         </CardBody>
       </Card>
+      {result.sections.some((s) => s.places.some((p) => p.parts.length > 1)) ? (
+        <p className="text-sm text-content-muted">
+          In a question with steps, each step is marked on its own answer. If a step lost its mark only because it used a wrong answer
+          from an earlier step, tell your teacher, who can look at it and change the mark.
+        </p>
+      ) : null}
       {result.solutionsOpen ? null : (
         <p className="rounded-2xl bg-surface-muted px-4 py-3 text-sm text-content-muted">
           The right answers and solutions show here when the paper closes, {formatDateTime(result.solutionsAt)}, once everyone has finished.
@@ -213,7 +227,14 @@ function ResultView({ result }: { result: PaperResult }) {
                               <span className="whitespace-pre-line text-content-muted">{part.working}</span>
                             </p>
                           ) : null}
-                          {part.note ? <p className="text-sm text-saffron-800">{part.note}</p> : null}
+                          {part.changedByTeacher ? (
+                            <p className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800">
+                              <span className="font-semibold">Your teacher changed this mark</span>
+                              {part.teacherNote ? `: ${part.teacherNote}` : "."}
+                            </p>
+                          ) : part.note ? (
+                            <p className="text-sm text-saffron-800">{part.note}</p>
+                          ) : null}
                           {result.solutionsOpen ? (
                             <div className="space-y-1.5 rounded-xl bg-surface-muted px-3 py-2 text-sm text-content-muted">
                               <p>

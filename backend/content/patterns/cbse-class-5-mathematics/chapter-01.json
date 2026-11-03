@@ -309,13 +309,10 @@
       "code": "C5-WT1-S01-P4",
       "chapter": 1,
       "skill": "C5-WT1-S01",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer; unit stated in question",
-      "unit": "km",
-      "unitRule": "STATED",
       "values": [
         {
           "name": "vehicle",
@@ -358,22 +355,31 @@
       "require": [
         "per % 100 != 0"
       ],
-      "text": "The odometer of a {vehicle} reads {start:num} km. The reading goes up by {per} km each day. What will it read after {days} days?",
-      "answer": "start + total",
-      "steps": [
+      "stimulus": "The odometer of a {vehicle} reads {start:num} km. The reading goes up by {per} km each day. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Finds the total increase: {days} × {per} = {total:num} km."
+          "text": "(a) By how many km does the reading go up in {days} days?",
+          "answer": "total",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{per} × {days} = {total:num} km.",
+          "unit": "km",
+          "unitRule": "STATED"
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Adds it to the first reading: {start:num} + {total:num} = {start + total:num} km."
+          "text": "(b) What will the odometer read after {days} days?",
+          "answer": "start + total",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{start:num} + {total:num} = {start + total:num} km.",
+          "unit": "km",
+          "unitRule": "STATED"
         }
       ],
-      "hint": "Find the total increase for {days} equal days first.",
-      "explanation": "The increase is {per} × {days} = {total:num} km. The new reading is {start:num} + {total:num} = {start + total:num} km.",
       "misconception": "Looks only at the last digit or repeats visible digits without checking a constant change.",
-      "notes": "Start reading 10,000 to 85,000 km (a multiple of 10); 45 to 495 km a day (a multiple of 5, not of 100); 3 to 8 days. The answer stays below 99,999 and is in km, stated in the question.",
+      "notes": "Start reading 10,000 to 85,000 km (a multiple of 10); 45 to 495 km a day (a multiple of 5, not of 100); 3 to 8 days. The answer stays below 99,999 and is in km, stated in the question. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q007",
         "CBSE-C5-CH01-Q160",
@@ -665,11 +671,10 @@
       "code": "C5-WT1-S02-P4",
       "chapter": 1,
       "skill": "C5-WT1-S02",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Two integers separated by a semicolon",
       "values": [
         {
           "name": "th",
@@ -856,25 +861,27 @@
           "expr": "dd.d * 10 if kind == 1 else dd.d * 100"
         }
       ],
-      "text": "A railway office prints two ticket numbers: (a) {th.w} thousand {wa}, and (b) {th.w} thousand {wb}. Write both as numerals.",
-      "answer": [
-        "th.n * 1000 + va",
-        "th.n * 1000 + vb"
-      ],
-      "steps": [
+      "stimulus": "A railway office prints two ticket numbers. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(a) writes {th.n * 1000 + va:num}, keeping the zero placeholders."
+          "text": "(a) Write {th.w} thousand {wa} as a numeral.",
+          "answer": "th.n * 1000 + va",
+          "responseFormat": "Integer",
+          "explanation": "{th.w} thousand {wa} is {th.n * 1000 + va:num}, keeping the zero placeholders."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(b) writes {th.n * 1000 + vb:num}, with the {dd.d} in the {'tens' if kind == 1 else 'hundreds'} place."
+          "text": "(b) Write {th.w} thousand {wb} as a numeral.",
+          "answer": "th.n * 1000 + vb",
+          "responseFormat": "Integer",
+          "explanation": "{th.w} thousand {wb} is {th.n * 1000 + vb:num}."
         }
       ],
-      "hint": "Both numbers start with {th.n * 1000:num}. Check which place the last part goes in.",
-      "explanation": "In numerals, {th.w} thousand is {th.n * 1000:num}. (a) {wa} is {va}, so {th.n * 1000 + va:num}. (b) {wb} is {vb}, so {th.n * 1000 + vb:num}.",
       "misconception": "Drops internal zeroes or places commas after every three digits from the left.",
-      "notes": "Same thousands part (twelve to ninety-nine thousand) for both; the last parts use the same digit 1 to 9 as ones and tens, ones and hundreds, or tens and hundreds, so only careful zero placeholders separate them.",
+      "notes": "Same thousands part (twelve to ninety-nine thousand) for both; the last parts use the same digit 1 to 9 as ones and tens, ones and hundreds, or tens and hundreds, so only careful zero placeholders separate them. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q496",
         "CBSE-C5-CH01-Q193",
@@ -1088,11 +1095,10 @@
       "code": "C5-WT1-S03-P4",
       "chapter": 1,
       "skill": "C5-WT1-S03",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "n",
@@ -1176,22 +1182,27 @@
         "digit(n, pp.lo) == d",
         "count_digit(n, d) == 2"
       ],
-      "text": "The digit {d} appears twice in {n:num}. What is the difference between the place values of the two {d}s?",
-      "answer": "d * pp.hi - d * pp.lo",
-      "steps": [
+      "stimulus": "The digit {d} appears twice in {n:num}. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Gives the two place values: {d * pp.hi:num} ({pp.hiw}) and {d * pp.lo:num} ({pp.low})."
+          "text": "(a) What is the place value of the {d} that is further to the left?",
+          "answer": "d * pp.hi",
+          "responseFormat": "Integer",
+          "explanation": "That {d} is in the {pp.hiw} place, so its place value is {d * pp.hi:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Subtracts: {d * pp.hi:num} − {d * pp.lo:num} = {d * pp.hi - d * pp.lo:num}."
+          "text": "(b) What is the difference between the place values of the two {d}s?",
+          "answer": "d * pp.hi - d * pp.lo",
+          "responseFormat": "Integer",
+          "explanation": "The other {d} is worth {d * pp.lo:num} ({pp.low}). {d * pp.hi:num} − {d * pp.lo:num} = {d * pp.hi - d * pp.lo:num}."
         }
       ],
-      "hint": "Each {d} has a different value because it is in a different place.",
-      "explanation": "The {d}s are in the {pp.hiw} and {pp.low} places, so they stand for {d * pp.hi:num} and {d * pp.lo:num}. The difference is {d * pp.hi:num} − {d * pp.lo:num} = {d * pp.hi - d * pp.lo:num}.",
       "misconception": "Confuses a digit's face value with the value created by its position.",
-      "notes": "n: 10,000 to 99,999 with one non-zero digit appearing exactly twice, in any two places; the other three digits are different from it.",
+      "notes": "n: 10,000 to 99,999 with one non-zero digit appearing exactly twice, in any two places; the other three digits are different from it. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q028",
         "CBSE-C5-CH01-Q211",
@@ -1363,11 +1374,10 @@
       "code": "C5-WT1-S04-P4",
       "chapter": 1,
       "skill": "C5-WT1-S04",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "n",
@@ -1433,22 +1443,27 @@
         "s1 >= 2",
         "c >= 2 if mode == 1 else b >= 3"
       ],
-      "text": "Complete: {n:num} = {s1} ten-thousands + {s2} thousands + {s3} hundreds + {r} ones.",
-      "answer": "ans",
-      "steps": [
+      "stimulus": "Complete: {n:num} = {s1} ten-thousands + {s2} thousands + {s3} hundreds + {r} ones. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Takes away the known groups: {n:num} − {known:num} = {rest:num}."
+          "text": "(a) Take away the groups you already know from {n:num}. What is left?",
+          "answer": "rest",
+          "responseFormat": "Integer",
+          "explanation": "{n:num} − {known:num} = {rest:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Writes {rest:num} as {ans} {unitw}."
+          "text": "(b) What number goes in the blank?",
+          "answer": "ans",
+          "responseFormat": "Integer",
+          "explanation": "{rest:num} is {ans} {unitw}."
         }
       ],
-      "hint": "Work out the value of the groups you know and subtract it from {n:num}.",
-      "explanation": "The known groups make {known:num}. {n:num} − {known:num} = {rest:num}, which is {ans} {unitw}.",
       "misconception": "Writes zero-value places as extra digits or assumes each place can have only 0–9 groups.",
-      "notes": "n: 20,000 to 99,999, last two digits 10 or more. Either one ten-thousand is regrouped into the thousands (blank is 10 to 19 thousands) or one thousand into the hundreds (blank is 10 to 19 hundreds); every other group in the sum is 2 or more (never 0 or 1).",
+      "notes": "n: 20,000 to 99,999, last two digits 10 or more. Either one ten-thousand is regrouped into the thousands (blank is 10 to 19 thousands) or one thousand into the hundreds (blank is 10 to 19 hundreds); every other group in the sum is 2 or more (never 0 or 1). #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q040",
         "CBSE-C5-CH01-Q234",
@@ -1691,11 +1706,10 @@
       "code": "C5-WT1-S05-P4",
       "chapter": 1,
       "skill": "C5-WT1-S05",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "x",
@@ -1765,22 +1779,27 @@
         "a != c",
         "mid != nc"
       ],
-      "text": "Arrange {na:num}; {ne:num}; {nc:num}; {nd:num}; {nb:num} from smallest to greatest. Which number is in the middle?",
-      "answer": "mid",
-      "steps": [
+      "stimulus": "Arrange {na:num}; {ne:num}; {nc:num}; {nd:num}; {nb:num} from smallest to greatest. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Orders the numbers: {nd:num}; {small:num}; {mid:num}; {big:num}; {ne:num}."
+          "text": "(a) Which number comes first, the smallest?",
+          "answer": "nd",
+          "responseFormat": "Integer",
+          "explanation": "In order: {nd:num}; {small:num}; {mid:num}; {big:num}; {ne:num}. The smallest is {nd:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Picks the third of the five, {mid:num}."
+          "text": "(b) Which number is in the middle?",
+          "answer": "mid",
+          "responseFormat": "Integer",
+          "explanation": "The third of the five is {mid:num}."
         }
       ],
-      "hint": "The middle of five ordered numbers is the third number.",
-      "explanation": "The order is {nd:num}; {small:num}; {mid:num}; {big:num}; {ne:num}. The middle number is {mid:num}.",
       "misconception": "Compares only the first visible digit rather than number of digits and left-to-right place value.",
-      "notes": "Three numbers share a thousands part (11 to 97 thousand) and use the same three different digits in other orders; one has one thousand less and one has one thousand more. The middle number is never the third one listed.",
+      "notes": "Three numbers share a thousands part (11 to 97 thousand) and use the same three different digits in other orders; one has one thousand less and one has one thousand more. The middle number is never the third one listed. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q050",
         "CBSE-C5-CH01-Q257"
@@ -2003,11 +2022,10 @@
       "code": "C5-WT1-S06-P4",
       "chapter": 1,
       "skill": "C5-WT1-S06",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "p",
@@ -2097,22 +2115,27 @@
         "q != s",
         "r != s"
       ],
-      "text": "Using the digits {s1}, {s2}, {s3}, {s4} and {s5} once each, make the greatest and the smallest five-digit numbers. Subtract the smallest from the greatest.",
-      "answer": "great - small",
-      "steps": [
+      "stimulus": "Use the digits {s1}, {s2}, {s3}, {s4} and {s5} once each to make five-digit numbers. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Forms both numbers correctly: greatest {great:num} and smallest {small:num} (the smallest does not begin with 0)."
+          "text": "(a) What is the greatest five-digit number you can make?",
+          "answer": "great",
+          "responseFormat": "Integer",
+          "explanation": "The digits from greatest to smallest give {great:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Subtracts correctly: {great:num} − {small:num} = {great - small:num}."
+          "text": "(b) Make the smallest five-digit number too (it can't begin with 0). Subtract it from the greatest. What is the difference?",
+          "answer": "great - small",
+          "responseFormat": "Integer",
+          "explanation": "The smallest is {small:num}. {great:num} − {small:num} = {great - small:num}."
         }
       ],
-      "hint": "Form both numbers first. The smallest cannot begin with 0.",
-      "explanation": "Greatest = {great:num} (digits from greatest to smallest). Smallest = {small:num} ({lo} first, then 0). Difference = {great:num} − {small:num} = {great - small:num}.",
       "misconception": "Creates a leading zero or changes more than the allowed digits.",
-      "notes": "Four different non-zero digits (1 to 9) and one 0, listed in a mixed order with the 0 never first. The answer is always a positive five-digit number.",
+      "notes": "Four different non-zero digits (1 to 9) and one 0, listed in a mixed order with the 0 never first. The answer is always a positive five-digit number. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q060",
         "CBSE-C5-CH01-Q285"
@@ -2278,11 +2301,10 @@
       "code": "C5-WT1-S07-P4",
       "chapter": 1,
       "skill": "C5-WT1-S07",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "c",
@@ -2319,22 +2341,27 @@
           "expr": "b - a - 1"
         }
       ],
-      "text": "How many whole numbers lie strictly between {a:num} and {b:num}?",
-      "answer": "ans",
-      "steps": [
+      "stimulus": "Think of the whole numbers that lie strictly between {a:num} and {b:num}. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Starts at {a + 1:num} and stops at {b - 1:num}, leaving out both boundary numbers."
+          "text": "(a) What is the greatest of these numbers?",
+          "answer": "b - 1",
+          "responseFormat": "Integer",
+          "explanation": "Strictly between leaves out {b:num} itself, so the greatest is {b - 1:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Counts them correctly: {ans} numbers."
+          "text": "(b) How many whole numbers lie strictly between {a:num} and {b:num}?",
+          "answer": "ans",
+          "responseFormat": "Integer",
+          "explanation": "They run from {a + 1:num} to {b - 1:num}: {ans} numbers."
         }
       ],
-      "hint": "Do not count {a:num} or {b:num} themselves.",
-      "explanation": "The numbers are {a + 1:num}, {a + 2:num}, … up to {b - 1:num}. That is {b:num} − {a:num} − 1 = {ans} numbers.",
       "misconception": "Includes one or both boundary numbers when the wording says 'between'.",
-      "notes": "The two numbers sit 2 to 9 either side of a whole hundred or thousand (1,100 to 99,000), so the list crosses it, as in the bank's 5,996 and 6,002. Answer 3 to 17. Counting one boundary gives one more; counting both gives two more.",
+      "notes": "The two numbers sit 2 to 9 either side of a whole hundred or thousand (1,100 to 99,000), so the list crosses it, as in the bank's 5,996 and 6,002. Answer 3 to 17. Counting one boundary gives one more; counting both gives two more. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q068",
         "CBSE-C5-CH01-Q302",
@@ -2474,11 +2501,10 @@
       "code": "C5-WT1-S08-P4",
       "chapter": 1,
       "skill": "C5-WT1-S08",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "ctx",
@@ -2533,22 +2559,27 @@
         "b % 10 != 0",
         "(ra > a) != (rb > b)"
       ],
-      "text": "{ctx} carried {a:num} passengers in {mo.m1} and {b:num} in {mo.m2}. Round each number to the nearest 10, then add to estimate the total.",
-      "answer": "ra + rb",
-      "steps": [
+      "stimulus": "{ctx} carried {a:num} passengers in {mo.m1} and {b:num} in {mo.m2}. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Rounds both numbers correctly: {a:num} → {ra:num} and {b:num} → {rb:num}."
+          "text": "(a) Round {a:num} to the nearest 10.",
+          "answer": "ra",
+          "responseFormat": "Integer",
+          "explanation": "{a:num} → {ra:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Adds the rounded numbers: {ra:num} + {rb:num} = {ra + rb:num}."
+          "text": "(b) Round {b:num} to the nearest 10 too, then add the two rounded numbers to estimate the total.",
+          "answer": "ra + rb",
+          "responseFormat": "Integer",
+          "explanation": "{b:num} → {rb:num}, and {ra:num} + {rb:num} = {ra + rb:num}."
         }
       ],
-      "hint": "Round each number first, then add.",
-      "explanation": "{a:num} → {ra:num} and {b:num} → {rb:num}. Estimated total = {ra:num} + {rb:num} = {ra + rb:num}.",
       "misconception": "Looks at the tens digit instead of the ones digit or rounds a 5 downward.",
-      "notes": "Two counts of 1,001 to 49,994, neither a multiple of 10; one rounds up and the other rounds down, so both directions are tested.",
+      "notes": "Two counts of 1,001 to 49,994, neither a multiple of 10; one rounds up and the other rounds down, so both directions are tested. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q331",
         "CBSE-C5-CH01-Q498"
@@ -2761,7 +2792,7 @@
       "chapter": 1,
       "skill": "C5-WT1-S09",
       "questionType": "Single Select",
-      "marks": 2,
+      "marks": 1,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
       "responseFormat": "Choice or short text",
@@ -2844,20 +2875,10 @@
           }
         ]
       },
-      "steps": [
-        {
-          "marks": 1,
-          "text": "Rounds the numbers to the nearest 100 correctly (for example {wb:num} → {round_half_up(wb, 100):num})."
-        },
-        {
-          "marks": 1,
-          "text": "Compares with the nearest 1,000 and chooses {cor:num}, which gives {r:num} both ways."
-        }
-      ],
       "hint": "Round each number to the nearest 100 and then to the nearest 1,000.",
       "explanation": "{cor:num} rounds to {r:num} both ways. {wa:num} gives {round_half_up(wa, 100):num} and {round_half_up(wa, 1000):num}; {wb:num} gives {round_half_up(wb, 100):num} and {round_half_up(wb, 1000):num}; {we:num} gives {round_half_up(we, 100):num} and {round_half_up(we, 1000):num}.",
       "misconception": "Looks at the hundreds digit instead of the tens digit.",
-      "notes": "All four options are in the same thousand (2,000s to 98,000s). The right one ends in 001 to 049 or in 951 to 999. Wrong ones end in 150 to 449, in 450 to 499 (hundreds digit 4 but rounds up to 500), or in 510 to 940.",
+      "notes": "All four options are in the same thousand (2,000s to 98,000s). The right one ends in 001 to 049 or in 951 to 999. Wrong ones end in 150 to 449, in 450 to 499 (hundreds digit 4 but rounds up to 500), or in 510 to 940. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
       "sources": [
         "CBSE-C5-CH01-Q090",
         "CBSE-C5-CH01-Q356",
@@ -2917,7 +2938,7 @@
       "hint": "Compare the number with the halfway number between the two thousands.",
       "explanation": "{n:num} lies between {lo:num} and {lo + 1000:num}. The halfway number is {lo + 500:num}, and {n:num} is {'above' if n > lo + 500 else ('equal to' if n == lo + 500 else 'below')} it, so it rounds to {rn:num} km.",
       "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
-      "notes": "n: 1,001 to 99,999 km, not a whole thousand (a number from 99,500 rounds to 1,00,000 = 100,000). The unit km is stated in the question.",
+      "notes": "n: 1,001 to 99,999 km, not a whole thousand (a number from 99,500 rounds to 1,00,000). The unit km is stated in the question.",
       "sources": [
         "CBSE-C5-CH01-Q368",
         "CBSE-C5-CH01-Q369",
@@ -3005,11 +3026,10 @@
       "code": "C5-WT1-S10-P4",
       "chapter": 1,
       "skill": "C5-WT1-S10",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
       "values": [
         {
           "name": "ctx",
@@ -3077,22 +3097,27 @@
         "b % 1000 != 0",
         "(ra > a) != (rb > b)"
       ],
-      "text": "{ctx.place} had {a:num} {ctx.what} in {mo.m1} and {b:num} in {mo.m2}. Round each number to the nearest 1,000 and estimate how many more came in {mo.m2}.",
-      "answer": "rb - ra",
-      "steps": [
+      "stimulus": "{ctx.place} had {a:num} {ctx.what} in {mo.m1} and {b:num} in {mo.m2}. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Rounds both numbers correctly: {a:num} → {ra:num} and {b:num} → {rb:num}."
+          "text": "(a) Round {a:num} to the nearest 1,000.",
+          "answer": "ra",
+          "responseFormat": "Integer",
+          "explanation": "{a:num} → {ra:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Subtracts the rounded numbers: {rb:num} − {ra:num} = {rb - ra:num}."
+          "text": "(b) Round {b:num} to the nearest 1,000 too, and estimate how many more came in {mo.m2}.",
+          "answer": "rb - ra",
+          "responseFormat": "Integer",
+          "explanation": "{b:num} → {rb:num}, and {rb:num} − {ra:num} = {rb - ra:num}."
         }
       ],
-      "hint": "Round each number first, then subtract.",
-      "explanation": "{a:num} → {ra:num} and {b:num} → {rb:num}. About {rb:num} − {ra:num} = {rb - ra:num} more {ctx.what} came in {mo.m2}.",
       "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
-      "notes": "First count 10,001 to 60,000; the second is 3,000 to 35,000 more (at most 95,000). Neither is a whole thousand; one rounds up and the other down.",
+      "notes": "First count 10,001 to 60,000; the second is 3,000 to 35,000 more (at most 95,000). Neither is a whole thousand; one rounds up and the other down. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q378",
         "CBSE-C5-CH01-Q377"
@@ -3271,12 +3296,10 @@
       "code": "C5-WT1-S11-P4",
       "chapter": 1,
       "skill": "C5-WT1-S11",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
-      "maxWords": 40,
       "values": [
         {
           "name": "op",
@@ -3326,22 +3349,27 @@
         "x % 1000 != 500",
         "y % 1000 != 500"
       ],
-      "text": "Estimate the {op.word} {x:num} {op.sign} {y:num} by rounding both numbers to the nearest 1,000.",
-      "answer": "ans",
-      "hint": "Look at the hundreds digit of each number to round it to the nearest 1,000.",
-      "explanation": "{x:num} rounds to {rx:num} and {y:num} rounds to {ry:num}. So the estimate is {rx:num} {op.sign} {ry:num} = {ans:num}.",
-      "steps": [
+      "stimulus": "Estimate the {op.word} {x:num} {op.sign} {y:num} by rounding both numbers to the nearest 1,000. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Rounds both numbers to the nearest 1,000: {x:num} to {rx:num} and {y:num} to {ry:num}."
+          "text": "(a) Round {x:num} to the nearest 1,000.",
+          "answer": "rx",
+          "responseFormat": "Integer",
+          "explanation": "{x:num} → {rx:num}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Works out {rx:num} {op.sign} {ry:num} = {ans:num}."
+          "text": "(b) Round {y:num} to the nearest 1,000 too. What is the estimated {op.word}?",
+          "answer": "ans",
+          "responseFormat": "Integer",
+          "explanation": "{y:num} → {ry:num}, and {rx:num} {op.sign} {ry:num} = {ans:num}."
         }
       ],
       "misconception": "Treats an estimate as an exact answer or chooses units that are not plausible.",
-      "notes": "A sum or a difference of two 5-digit numbers. First number 20,000 to 89,999; second 10,000 up to 3,000 less than the first, and for a sum small enough that the two add to at most 99,999. Neither number is a whole thousand or ends in exactly 500 (no ties). Answer: the rounded sum or difference.",
+      "notes": "A sum or a difference of two 5-digit numbers. First number 20,000 to 89,999; second 10,000 up to 3,000 less than the first, and for a sum small enough that the two add to at most 99,999. Neither number is a whole thousand or ends in exactly 500 (no ties). Answer: the rounded sum or difference. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q401",
         "CBSE-C5-CH01-Q393"
@@ -3558,14 +3586,10 @@
       "code": "C5-WT1-S12-P4",
       "chapter": 1,
       "skill": "C5-WT1-S12",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer; unit stated in question",
-      "unit": "km",
-      "unitRule": "STATED",
-      "maxWords": 40,
       "values": [
         {
           "name": "v",
@@ -3613,22 +3637,31 @@
           "expr": "s * h"
         }
       ],
-      "text": "A {v.one} travels {s} km each hour. After {h} hours, it still has {left} km to go. How long is the whole route?",
-      "answer": "done + left",
-      "hint": "First find how far the {v.one} has already gone, then add the part still to go.",
-      "explanation": "In {h} hours the {v.one} goes {s} × {h} = {done} km. The whole route is {done} + {left} = {done + left} km.",
-      "steps": [
+      "stimulus": "A {v.one} travels {s} km each hour. After {h} hours, it still has {left} km to go. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Finds the distance already covered: {s} × {h} = {done} km."
+          "text": "(a) How far has it travelled in the {h} hours?",
+          "answer": "done",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{s} × {h} = {done} km.",
+          "unit": "km",
+          "unitRule": "STATED"
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Adds the distance still to go: {done} + {left} = {done + left} km."
+          "text": "(b) How long is the whole route?",
+          "answer": "done + left",
+          "responseFormat": "Integer; unit stated in question",
+          "explanation": "{done} + {left} = {done + left} km.",
+          "unit": "km",
+          "unitRule": "STATED"
         }
       ],
       "misconception": "Adds the rate once instead of multiplying by the number of equal intervals.",
-      "notes": "A bus 35 to 65 km each hour, a train 50 to 90, a truck 40 to 60; 3 to 7 hours; 12 to 99 km still to go. Answer in km, stated in the question.",
+      "notes": "A bus 35 to 65 km each hour, a train 50 to 90, a truck 40 to 60; 3 to 7 hours; 12 to 99 km still to go. Answer in km, stated in the question. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q425",
         "CBSE-C5-CH01-Q120",
@@ -3878,12 +3911,10 @@
       "code": "C5-WT1-S13-P4",
       "chapter": 1,
       "skill": "C5-WT1-S13",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
-      "maxWords": 40,
       "values": [
         {
           "name": "v",
@@ -3941,22 +3972,27 @@
       "require": [
         "t % cap != 0"
       ],
-      "text": "A camp has {a} children and {b} adults. Each {v.one} seats {cap} people. How many {v.many} are needed to take everyone?",
-      "answer": "need",
-      "hint": "Add the children and adults first, then think about the people left over.",
-      "explanation": "{a} + {b} = {t} people. {need - 1} {v.many} seat {(need - 1) * cap} people, leaving {t % cap}, so {need} {v.many} are needed.",
-      "steps": [
+      "stimulus": "A camp has {a} children and {b} adults. Each {v.one} seats {cap} people. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Adds the two groups: {a} + {b} = {t} people."
+          "text": "(a) How many people are there in all?",
+          "answer": "t",
+          "responseFormat": "Integer",
+          "explanation": "{a} + {b} = {t} people."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Divides by {cap} ({need - 1} remainder {t % cap}) and adds one more for the {t % cap} left over: {need} {v.many}."
+          "text": "(b) How many {v.many} are needed to take everyone?",
+          "answer": "need",
+          "responseFormat": "Integer",
+          "explanation": "{t} ÷ {cap} = {need - 1} remainder {t % cap}; the {t % cap} left over need one more, so {need} {v.many}."
         }
       ],
       "misconception": "Drops the remainder even when every person or object must be accommodated.",
-      "notes": "120 to 360 children and 12 to 48 adults. A bus seats 35 to 50, a coach 40 to 56, a minibus 20 to 30. The total never fills the vehicles exactly, so the answer is always one more than the full vehicles (3 to 21).",
+      "notes": "120 to 360 children and 12 to 48 adults. A bus seats 35 to 50, a coach 40 to 56, a minibus 20 to 30. The total never fills the vehicles exactly, so the answer is always one more than the full vehicles (3 to 21). #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q130",
         "CBSE-C5-CH01-Q441",
@@ -4121,12 +4157,10 @@
       "code": "C5-WT1-S14-P4",
       "chapter": 1,
       "skill": "C5-WT1-S14",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Quotient and remainder separated by a semicolon",
-      "maxWords": 40,
       "values": [
         {
           "name": "who",
@@ -4158,25 +4192,27 @@
       "require": [
         "r != 0"
       ],
-      "text": "{who.name} wants to change {amt:money} into {note:money} notes. How many complete notes can {who.he} get, and how many rupees are left over? Enter notes;rupees left.",
-      "answer": [
-        "q",
-        "r"
-      ],
-      "hint": "Find the greatest multiple of {note} that is not more than {amt:num}.",
-      "explanation": "{q:num} × {note} = {q * note:num}, and one more note would need {(q + 1) * note:num}. So {who.he} gets {q:num} notes and {amt:money} − {q * note:money} = {r:money} is left.",
-      "steps": [
+      "stimulus": "{who.name} wants to change {amt:money} into {note:money} notes. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Finds the complete notes: {q:num} × {note} = {q * note:num}, and {q + 1} notes would need {(q + 1) * note:num}, which is too much. So {q:num} notes."
+          "text": "(a) How many complete {note:money} notes can {who.he} get?",
+          "answer": "q",
+          "responseFormat": "Integer",
+          "explanation": "{q:num} × {note} = {q * note:num}, and {q + 1} notes would need {(q + 1) * note:num}, which is too much. So {q:num} notes."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Finds what is left: {amt:num} − {q * note:num} = {r} {'rupee' if (r) == 1 else 'rupees'}."
+          "text": "(b) How many rupees are left over?",
+          "answer": "r",
+          "responseFormat": "Integer",
+          "explanation": "{amt:num} − {q * note:num} = {r} {'rupee' if (r) == 1 else 'rupees'}."
         }
       ],
       "misconception": "Reports the digit in a place instead of the number of complete groups in the whole quantity.",
-      "notes": "An amount from ₹5,000 to ₹99,999 changed into ₹200 or ₹500 notes, never an exact number of notes. Two boxes: the complete notes (10 to 499) and the rupees left (1 to 499).",
+      "notes": "An amount from ₹5,000 to ₹99,999 changed into ₹200 or ₹500 notes, never an exact number of notes. Two boxes: the complete notes (10 to 499) and the rupees left (1 to 499). #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q140",
         "CBSE-C5-CH01-Q470",
@@ -4315,12 +4351,10 @@
       "code": "C5-WT1-S15-P4",
       "chapter": 1,
       "skill": "C5-WT1-S15",
-      "questionType": "Numeric Entry",
+      "questionType": "Long Answer",
       "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer",
-      "maxWords": 40,
       "values": [
         {
           "name": "obj",
@@ -4352,22 +4386,27 @@
           "expr": "2 * l + 2 * s"
         }
       ],
-      "text": "A rectangular border has {l} {obj} on each long side and {s} on each short side, counting the {obj} at all four corners. How many {obj} are there in all?",
-      "answer": "sides - 4",
-      "hint": "Add all four sides, then think about the corners.",
-      "explanation": "The four sides add up to {l} + {l} + {s} + {s} = {sides}. Each of the 4 corner {obj} was counted on two sides, so there are {sides} − 4 = {sides - 4} {obj}.",
-      "steps": [
+      "stimulus": "A rectangular border has {l} {obj} on each long side and {s} on each short side, counting the {obj} at all four corners. Answer each step in its own box.",
+      "parts": [
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Adds the four sides: {l} + {l} + {s} + {s} = {sides}."
+          "text": "(a) Add the {obj} counted on all four sides. What do you get?",
+          "answer": "sides",
+          "responseFormat": "Integer",
+          "explanation": "{l} + {l} + {s} + {s} = {sides}."
         },
         {
+          "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "Takes away the 4 corner {obj} counted twice: {sides} − 4 = {sides - 4}."
+          "text": "(b) Each corner was counted twice. How many {obj} are there in all?",
+          "answer": "sides - 4",
+          "responseFormat": "Integer",
+          "explanation": "Take away the 4 corners counted twice: {sides} − 4 = {sides - 4}."
         }
       ],
       "misconception": "Counts a shared object more than once or tests cases without preserving the puzzle rule.",
-      "notes": "Long sides 5 to 15 objects, short sides 3 up to one fewer than the long side, corners included. Answer: twice each side added, minus 4.",
+      "notes": "Long sides 5 to 15 objects, short sides 3 up to one fewer than the long side, corners included. Answer: twice each side added, minus 4. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
       "sources": [
         "CBSE-C5-CH01-Q480",
         "CBSE-C5-CH01-Q487",
