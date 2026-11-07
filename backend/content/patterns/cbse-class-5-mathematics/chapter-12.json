@@ -18004,7 +18004,7 @@
       "require": [
         "h + (a + n * p + b) // 60 >= 13"
       ],
-      "stimulus": "A school starts at {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}. It has {n} periods of {p} minutes and one lunch break of {b} minutes. Answer each step in its own box.",
+      "stimulus": "A school starts at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} It has {n} periods of {p} minutes and one lunch break of {b} minutes. Answer each step in its own box.",
       "parts": [
         {
           "questionType": "Numeric Entry",
@@ -18012,9 +18012,9 @@
           "text": "(a) How many minutes of teaching are there?",
           "answer": "n * p",
           "responseFormat": "Integer; unit stated in question",
-          "explanation": "{n} × {p} = {n * p} minutes.",
           "unit": "min",
-          "unitRule": "STATED"
+          "unitRule": "STATED",
+          "explanation": "{n} × {p} = {n * p} minutes."
         },
         {
           "questionType": "Numeric Entry",
@@ -18030,40 +18030,39 @@
         {
           "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(c) At what time does school end, in 24-hour time? Enter hours; minutes.",
-          "answer": [
-            "h + (a + n * p + b) // 60",
-            "(a + n * p + b) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "The day is {n * p} + {b} = {n * p + b} minutes after {'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a}: {'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60}."
+          "text": "(c) How many minutes long is the school day, teaching and lunch together?",
+          "answer": "n * p + b",
+          "responseFormat": "Integer; unit stated in question",
+          "unit": "min",
+          "unitRule": "STATED",
+          "explanation": "{n * p} + {b} = {n * p + b} minutes."
         },
         {
           "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(d) Write the end time in 12-hour time (it is p.m.). Enter hours; minutes.",
+          "text": "(d) At what time does school end? Enter hours; minutes.",
           "answer": [
-            "(h + (a + n * p + b) // 60 - 1) % 12 + 1",
+            "((h + (a + n * p + b) // 60) - 1) % 12 + 1",
             "(a + n * p + b) % 60"
           ],
           "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{'0' if (h + (a + n * p + b) // 60) < 10 else ''}{h + (a + n * p + b) // 60}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} is {(h + (a + n * p + b) // 60 - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} p.m."
+          "explanation": "{n * p + b} minutes after the start is {((h + (a + n * p + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} {'a.m.' if (h + (a + n * p + b) // 60) < 12 else 'p.m.'}"
         },
         {
           "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(e) If every period is {k} minutes shorter, when does school end, in 24-hour time? Enter hours; minutes.",
+          "text": "(e) If every period is {k} minutes shorter, at what time does school end? Enter hours; minutes.",
           "answer": [
-            "h + (a + n * (p - k) + b) // 60",
+            "((h + (a + n * (p - k) + b) // 60) - 1) % 12 + 1",
             "(a + n * (p - k) + b) % 60"
           ],
           "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{n} × {k} = {n * k} minutes earlier: {'0' if (h + (a + n * (p - k) + b) // 60) < 10 else ''}{h + (a + n * (p - k) + b) // 60}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60}."
+          "explanation": "{n} × {k} = {n * k} minutes earlier: {((h + (a + n * (p - k) + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60} {'a.m.' if (h + (a + n * (p - k) + b) // 60) < 12 else 'p.m.'}"
         }
       ],
       "maxWords": 80,
       "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-      "notes": "Starts 07:30 to 08:50; 5 to 7 periods of 35 or 40 minutes; lunch 20, 25 or 30 minutes; periods 5 or 10 minutes shorter in (e); ends after 1 p.m., so the 12-hour time differs from the 24-hour time. Step question (#208): each step has its own box, marked by the platform.",
+      "notes": "Starts 7:30 a.m. to 8:50 a.m.; 5 to 7 periods of 35 or 40 minutes; lunch 20, 25 or 30 minutes; periods 5 or 10 minutes shorter in (e); ends after 1 p.m. Step question (#208): each step has its own box, marked by the platform. #214, Ashalatha's decision of 5 Nov 2026: 12-hour clock only (the 24-hour conversion steps were taken out; conversion is practised under skill S08); an answer's hours are on the 12-hour clock.",
       "sources": [
         "CBSE-C5-CH12-Q493",
         "CBSE-C5-CH12-Q463",
