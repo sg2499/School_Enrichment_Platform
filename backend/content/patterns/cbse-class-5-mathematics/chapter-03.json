@@ -405,18 +405,6 @@
               "an": "one quarter turn"
             },
             {
-              "a": 1,
-              "b": 4,
-              "k": 5,
-              "c": "One and a quarter turns",
-              "w1": "Full turn",
-              "w2": "One and a half turns",
-              "w3": "Three-quarter turn",
-              "aw": "a quarter turn",
-              "bn": "4 more quarter turns",
-              "an": "one quarter turn"
-            },
-            {
               "a": 2,
               "b": 1,
               "k": 3,
@@ -426,18 +414,6 @@
               "w3": "Quarter turn",
               "aw": "a half turn",
               "bn": "one more quarter turn",
-              "an": "2 quarter turns"
-            },
-            {
-              "a": 2,
-              "b": 4,
-              "k": 6,
-              "c": "One and a half turns",
-              "w1": "Two full turns",
-              "w2": "One and three-quarter turns",
-              "w3": "Half turn",
-              "aw": "a half turn",
-              "bn": "4 more quarter turns",
               "an": "2 quarter turns"
             },
             {
@@ -451,30 +427,6 @@
               "aw": "a three-quarter turn",
               "bn": "one more quarter turn",
               "an": "3 quarter turns"
-            },
-            {
-              "a": 4,
-              "b": 1,
-              "k": 5,
-              "c": "One and a quarter turns",
-              "w1": "Full turn",
-              "w2": "One and a half turns",
-              "w3": "Three-quarter turn",
-              "aw": "a full turn",
-              "bn": "one more quarter turn",
-              "an": "4 quarter turns"
-            },
-            {
-              "a": 4,
-              "b": 2,
-              "k": 6,
-              "c": "One and a half turns",
-              "w1": "Two full turns",
-              "w2": "One and three-quarter turns",
-              "w3": "Half turn",
-              "aw": "a full turn",
-              "bn": "2 more quarter turns",
-              "an": "4 quarter turns"
             }
           ]
         },
@@ -503,7 +455,7 @@
       },
       "hint": "Count all the quarter turns. Four quarter turns make a full turn.",
       "explanation": "{t.a} + {t.b} = {t.k} quarter turns. Four quarter turns make a full turn, so {t.k} quarter turns is: {t.c}.",
-      "notes": "1 to 4 quarter turns, then 1 to 4 more (total 3 to 6 quarter turns). The two numbers differ and multiply to at most 8, so multiplying or taking one from the other gives a wrong option; the right answer is the second or third largest option. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
+      "notes": "1 to 4 quarter turns, then 1 to 4 more (total 3 to 6 quarter turns). The two numbers differ and multiply to at most 8, so multiplying or taking one from the other gives a wrong option; the right answer is the second or third largest option. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D7): at most one full turn (4 of 8 settings kept).",
       "sources": [
         "CBSE-C5-CH03-Q029",
         "CBSE-C5-CH03-Q030",
@@ -879,194 +831,98 @@
           "choice": [
             {
               "s": "North",
-              "n": 5,
-              "c": "East",
-              "opp": "West",
+              "n": 2,
+              "c": "South",
+              "opp": "North",
               "stay": "North",
-              "rest": "South",
-              "full": 1,
-              "left": 1,
-              "fw": "1 full turn",
-              "lw": "1 quarter turn"
+              "rest": "West",
+              "full": 0,
+              "left": 2,
+              "fw": "no full turn",
+              "lw": "2 quarter turns"
             },
             {
               "s": "North",
-              "n": 7,
+              "n": 3,
               "c": "West",
               "opp": "East",
               "stay": "North",
               "rest": "South",
-              "full": 1,
+              "full": 0,
               "left": 3,
-              "fw": "1 full turn",
+              "fw": "no full turn",
               "lw": "3 quarter turns"
             },
             {
-              "s": "North",
-              "n": 9,
+              "s": "East",
+              "n": 2,
+              "c": "West",
+              "opp": "East",
+              "stay": "East",
+              "rest": "North",
+              "full": 0,
+              "left": 2,
+              "fw": "no full turn",
+              "lw": "2 quarter turns"
+            },
+            {
+              "s": "East",
+              "n": 3,
+              "c": "North",
+              "opp": "South",
+              "stay": "East",
+              "rest": "West",
+              "full": 0,
+              "left": 3,
+              "fw": "no full turn",
+              "lw": "3 quarter turns"
+            },
+            {
+              "s": "South",
+              "n": 2,
+              "c": "North",
+              "opp": "South",
+              "stay": "South",
+              "rest": "East",
+              "full": 0,
+              "left": 2,
+              "fw": "no full turn",
+              "lw": "2 quarter turns"
+            },
+            {
+              "s": "South",
+              "n": 3,
               "c": "East",
               "opp": "West",
-              "stay": "North",
+              "stay": "South",
+              "rest": "North",
+              "full": 0,
+              "left": 3,
+              "fw": "no full turn",
+              "lw": "3 quarter turns"
+            },
+            {
+              "s": "West",
+              "n": 2,
+              "c": "East",
+              "opp": "West",
+              "stay": "West",
               "rest": "South",
-              "full": 2,
-              "left": 1,
-              "fw": "2 full turns",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "North",
-              "n": 11,
-              "c": "West",
-              "opp": "East",
-              "stay": "North",
-              "rest": "South",
-              "full": 2,
-              "left": 3,
-              "fw": "2 full turns",
-              "lw": "3 quarter turns"
-            },
-            {
-              "s": "East",
-              "n": 5,
-              "c": "South",
-              "opp": "North",
-              "stay": "East",
-              "rest": "West",
-              "full": 1,
-              "left": 1,
-              "fw": "1 full turn",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "East",
-              "n": 7,
-              "c": "North",
-              "opp": "South",
-              "stay": "East",
-              "rest": "West",
-              "full": 1,
-              "left": 3,
-              "fw": "1 full turn",
-              "lw": "3 quarter turns"
-            },
-            {
-              "s": "East",
-              "n": 9,
-              "c": "South",
-              "opp": "North",
-              "stay": "East",
-              "rest": "West",
-              "full": 2,
-              "left": 1,
-              "fw": "2 full turns",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "East",
-              "n": 11,
-              "c": "North",
-              "opp": "South",
-              "stay": "East",
-              "rest": "West",
-              "full": 2,
-              "left": 3,
-              "fw": "2 full turns",
-              "lw": "3 quarter turns"
-            },
-            {
-              "s": "South",
-              "n": 5,
-              "c": "West",
-              "opp": "East",
-              "stay": "South",
-              "rest": "North",
-              "full": 1,
-              "left": 1,
-              "fw": "1 full turn",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "South",
-              "n": 7,
-              "c": "East",
-              "opp": "West",
-              "stay": "South",
-              "rest": "North",
-              "full": 1,
-              "left": 3,
-              "fw": "1 full turn",
-              "lw": "3 quarter turns"
-            },
-            {
-              "s": "South",
-              "n": 9,
-              "c": "West",
-              "opp": "East",
-              "stay": "South",
-              "rest": "North",
-              "full": 2,
-              "left": 1,
-              "fw": "2 full turns",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "South",
-              "n": 11,
-              "c": "East",
-              "opp": "West",
-              "stay": "South",
-              "rest": "North",
-              "full": 2,
-              "left": 3,
-              "fw": "2 full turns",
-              "lw": "3 quarter turns"
+              "full": 0,
+              "left": 2,
+              "fw": "no full turn",
+              "lw": "2 quarter turns"
             },
             {
               "s": "West",
-              "n": 5,
-              "c": "North",
-              "opp": "South",
-              "stay": "West",
-              "rest": "East",
-              "full": 1,
-              "left": 1,
-              "fw": "1 full turn",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "West",
-              "n": 7,
+              "n": 3,
               "c": "South",
               "opp": "North",
               "stay": "West",
               "rest": "East",
-              "full": 1,
+              "full": 0,
               "left": 3,
-              "fw": "1 full turn",
-              "lw": "3 quarter turns"
-            },
-            {
-              "s": "West",
-              "n": 9,
-              "c": "North",
-              "opp": "South",
-              "stay": "West",
-              "rest": "East",
-              "full": 2,
-              "left": 1,
-              "fw": "2 full turns",
-              "lw": "1 quarter turn"
-            },
-            {
-              "s": "West",
-              "n": 11,
-              "c": "South",
-              "opp": "North",
-              "stay": "West",
-              "rest": "East",
-              "full": 2,
-              "left": 3,
-              "fw": "2 full turns",
+              "fw": "no full turn",
               "lw": "3 quarter turns"
             }
           ]
@@ -1129,7 +985,7 @@
       },
       "hint": "Every 4 quarter turns make a full turn and bring it back to {x.s}. How many quarter turns are left over?",
       "explanation": "{x.n} quarter turns = {x.fw} and {x.lw} more. Every full turn brings it back to {x.s}; {x.lw} more clockwise ends at {x.c}.",
-      "notes": "Any start; 5, 6, 7, 9, 10 or 11 quarter turns clockwise, keeping only those where turning anticlockwise would give a different direction. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
+      "notes": "Any start; 5, 6, 7, 9, 10 or 11 quarter turns clockwise, keeping only those where turning anticlockwise would give a different direction. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D7): at most one full turn: 2 or 3 quarter turns from each start (was 16 settings of 5 to 11 turns).",
       "sources": [
         "CBSE-C5-CH03-Q054",
         "CBSE-C5-CH03-Q065",
@@ -4340,27 +4196,6 @@
               "why": "more than 1/4 but less than 1/2"
             },
             {
-              "f": "1/6",
-              "t": "5/12",
-              "c": "Obtuse",
-              "o": "Straight",
-              "why": "more than 1/4 but less than 1/2"
-            },
-            {
-              "f": "1/10",
-              "t": "7/20",
-              "c": "Obtuse",
-              "o": "Straight",
-              "why": "more than 1/4 but less than 1/2"
-            },
-            {
-              "f": "1/5",
-              "t": "9/20",
-              "c": "Obtuse",
-              "o": "Straight",
-              "why": "more than 1/4 but less than 1/2"
-            },
-            {
               "f": "1/16",
               "t": "5/16",
               "c": "Obtuse",
@@ -4455,7 +4290,7 @@
       },
       "hint": "1/4 is a right angle. Add the second turn, then compare the total with 1/2.",
       "explanation": "1/4 + {x.f} = {x.t}. That is {x.why}, so the angle is: {x.c}.",
-      "notes": "A quarter turn plus 1/16 to 1/5 (obtuse, seven turns) or plus another quarter turn written as 1/4, 2/8 or 3/12 (straight, three turns). #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
+      "notes": "A quarter turn plus 1/16 to 1/5 (obtuse, seven turns) or plus another quarter turn written as 1/4, 2/8 or 3/12 (straight, three turns). #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D5): kept only turns with equivalent or like denominators (7 of 10 settings).",
       "sources": [
         "CBSE-C5-CH03-Q194",
         "CBSE-C5-CH03-Q227"
@@ -8216,7 +8051,7 @@
       "answer": "frac(1, x.p) + frac(1, x.q)",
       "hint": "The pieces are different sizes. Change both to the same denominator first.",
       "explanation": "1/{x.p} = {x.l // x.p}/{x.l} and 1/{x.q} = {x.l // x.q}/{x.l}. Together: {x.l // x.p + x.l // x.q}/{x.l} = {x.t} of a full turn.",
-      "notes": "Two unit-fraction turns from one family (halves, quarters, eighths; thirds, sixths, twelfths; fifths and tenths), in either order. A book cover never opens more than a half turn. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
+      "notes": "Two unit-fraction turns from one family (halves, quarters, eighths; thirds, sixths, twelfths; fifths and tenths), in either order. A book cover never opens more than a half turn. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D5): kept only turns with equivalent or like denominators (52 of 52 settings).",
       "sources": [
         "CBSE-C5-CH03-Q326"
       ],
@@ -11404,17 +11239,6 @@
           "name": "x",
           "choice": [
             {
-              "f": "1/3",
-              "c": "Obtuse",
-              "w1": "Acute",
-              "w2": "Right",
-              "w3": "Straight",
-              "a": "1/8",
-              "b": "1/8",
-              "c3": "1/12",
-              "t": "1/3"
-            },
-            {
               "f": "3/8",
               "c": "Obtuse",
               "w1": "Acute",
@@ -11448,17 +11272,6 @@
               "t": "5/12"
             },
             {
-              "f": "7/24",
-              "c": "Obtuse",
-              "w1": "Acute",
-              "w2": "Right",
-              "w3": "Straight",
-              "a": "1/8",
-              "b": "1/12",
-              "c3": "1/12",
-              "t": "7/24"
-            },
-            {
               "f": "1/3",
               "c": "Obtuse",
               "w1": "Acute",
@@ -11479,17 +11292,6 @@
               "b": "1/12",
               "c3": "1/6",
               "t": "1/3"
-            },
-            {
-              "f": "5/12",
-              "c": "Obtuse",
-              "w1": "Acute",
-              "w2": "Right",
-              "w3": "Straight",
-              "a": "1/8",
-              "b": "1/8",
-              "c3": "1/6",
-              "t": "5/12"
             },
             {
               "f": "1/2",
@@ -11512,17 +11314,6 @@
               "b": "1/12",
               "c3": "1/24",
               "t": "5/24"
-            },
-            {
-              "f": "5/12",
-              "c": "Obtuse",
-              "w1": "Acute",
-              "w2": "Right",
-              "w3": "Straight",
-              "a": "1/6",
-              "b": "1/8",
-              "c3": "1/8",
-              "t": "5/12"
             },
             {
               "f": "1/2",
@@ -11566,7 +11357,7 @@
       },
       "hint": "Add the three openings using a common denominator, then compare with 1/4 and 1/2.",
       "explanation": "{x.a} + {x.b} + {x.c3} = {x.t} of a full turn. Compared with 1/4 and 1/2, the angle is: {x.c}.",
-      "notes": "Twelve combinations of eighths, sixths, twelfths and a twenty-fourth. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
+      "notes": "Twelve combinations of eighths, sixths, twelfths and a twenty-fourth. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D5): kept only turns with equivalent or like denominators (8 of 12 settings).",
       "sources": [
         "CBSE-C5-CH03-Q491",
         "CBSE-C5-CH03-Q500"

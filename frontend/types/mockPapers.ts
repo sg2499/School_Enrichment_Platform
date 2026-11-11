@@ -85,6 +85,7 @@ export interface PaperSummary {
 
 export interface SampleQuestion {
   text: string;
+  figureSvg?: string | null;
   questionType: string;
   marks: number;
   options: { letter: string; text: string }[] | null;
@@ -173,6 +174,7 @@ export interface SitPart {
   optionD: string | null;
   marks: number;
   answerInstruction: string | null;
+  figureSvg?: string | null;
   answerNeedsUnit: boolean;
   acceptsWorking: boolean;
   answerBlanks: number;

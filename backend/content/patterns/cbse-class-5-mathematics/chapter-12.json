@@ -3519,9 +3519,9 @@
         "m"
       ],
       "hint": "Morning times keep their hour (but 12 a.m. is 00). Afternoon and evening times add 12 (but 12 p.m. stays 12).",
-      "explanation": "{t.h}:{'0' if (m) < 10 else ''}{m} {t.ap} is {'0' if (t.H) < 10 else ''}{t.H}:{'0' if (m) < 10 else ''}{m} in 24-hour time.",
+      "explanation": "{t.h}:{'0' if (m) < 10 else ''}{m} {t.ap} is {'0' if (t.H) < 10 else ''}{t.H}:{'0' if (m) < 10 else ''}{m} in 24-hour time. Remember: 12 a.m. is midnight (00 in 24-hour time) and 12 p.m. is noon (12 in 24-hour time).",
       "misconception": "Adds 12 to morning times, writes p.m. with 24-hour time, or confuses 12 noon with 12 midnight.",
-      "notes": "Every hour 1 to 12, a.m. and p.m., including 12 a.m. (00) and 12 p.m. (12); minutes 05 to 55; two boxes.",
+      "notes": "Every hour 1 to 12, a.m. and p.m., including 12 a.m. (00) and 12 p.m. (12); minutes 05 to 55; two boxes. Ashalatha, 10 Nov 2026 (D17): the explanation teaches 12 a.m. = midnight and 12 p.m. = noon.",
       "sources": [
         "CBSE-C5-CH12-Q232",
         "CBSE-C5-CH12-Q250",
@@ -4746,11 +4746,11 @@
       "code": "C5-RS-S09-P3",
       "chapter": 12,
       "skill": "C5-RS-S09",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 3,
       "competency": "Conceptual understanding and fluency",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "h",
@@ -4786,18 +4786,16 @@
       "require": [
         "d < e"
       ],
-      "text": "{ev} ends at {((h) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h) < 12 else 'p.m.'} after {d} minutes. At what time did it begin? Show your working. Enter hours; minutes.",
-      "answer": [
-        "((h) - 1) % 12 + 1",
-        "e - d"
-      ],
+      "text": "{ev} ends at {((h) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h) < 12 else 'p.m.'} after {d} minutes. At what time did it begin? Show your working. Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h) + (e - d)",
       "hint": "Count back {d} minutes from the end.",
       "explanation": "{e} − {d} = {e - d}, so it began at {((h) - 1) % 12 + 1}:{'0' if (e - d) < 10 else ''}{e - d} {'a.m.' if (h) < 12 else 'p.m.'}",
       "misconception": "Subtracts clock digits as whole numbers or includes the starting minute as an extra minute.",
-      "notes": "Start and end in the same hour; two boxes. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Start and end in the same hour; two boxes. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q295"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S09-P4",
@@ -5581,11 +5579,11 @@
       "code": "C5-RS-S11-P1",
       "chapter": 12,
       "skill": "C5-RS-S11",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 1,
       "competency": "Conceptual understanding and fluency",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "h",
@@ -5614,28 +5612,26 @@
           ]
         }
       ],
-      "text": "A lesson starts at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} and lasts {d} minutes. At what time does it finish? Enter hours; minutes.",
-      "answer": [
-        "((h + (a + d) // 60) - 1) % 12 + 1",
-        "(a + d) % 60"
-      ],
+      "text": "A lesson starts at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} and lasts {d} minutes. At what time does it finish? Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h + (a + d) // 60) + ((a + d) % 60)",
       "hint": "Add the minutes. If you reach 60, move on to the next hour.",
       "explanation": "{a} + {d} = {a + d} minutes after {((h) - 1) % 12 + 1}:{'0' if (0) < 10 else ''}{0} {'a.m.' if (h) < 12 else 'p.m.'}, so it finishes at {((h + (a + d) // 60) - 1) % 12 + 1}:{'0' if ((a + d) % 60) < 10 else ''}{(a + d) % 60} {'a.m.' if (h + (a + d) // 60) < 12 else 'p.m.'}",
       "misconception": "Adds minutes without carrying each complete group of 60 into hours.",
-      "notes": "Starts 07:05 to 15:55, lessons of 25 to 50 minutes; often crosses the hour; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Starts 07:05 to 15:55, lessons of 25 to 50 minutes; often crosses the hour; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q331"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S11-P2",
       "chapter": 12,
       "skill": "C5-RS-S11",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 2,
       "competency": "Application in context",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "h",
@@ -5680,19 +5676,17 @@
       "require": [
         "h + x + (a + y) // 60 <= 23"
       ],
-      "text": "{ev} leaves at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} and the journey takes {x} {'hour' if x == 1 else 'hours'} {y} minutes. At what time does it arrive? Enter hours; minutes.",
-      "answer": [
-        "((h + x + (a + y) // 60) - 1) % 12 + 1",
-        "(a + y) % 60"
-      ],
+      "text": "{ev} leaves at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} and the journey takes {x} {'hour' if x == 1 else 'hours'} {y} minutes. At what time does it arrive? Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h + x + (a + y) // 60) + ((a + y) % 60)",
       "hint": "Add the hours, then the minutes. If the minutes reach 60, add another hour.",
       "explanation": "Add {x} h: {((h + x) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h + x) < 12 else 'p.m.'} Add {y} min: {((h + x + (a + y) // 60) - 1) % 12 + 1}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} {'a.m.' if (h + x + (a + y) // 60) < 12 else 'p.m.'}",
       "misconception": "Adds minutes without carrying each complete group of 60 into hours.",
-      "notes": "Journeys of 1 to 3 hours and 10 to 50 minutes, arriving the same day; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Journeys of 1 to 3 hours and 10 to 50 minutes, arriving the same day; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q331",
         "CBSE-C5-CH12-Q355"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S11-P3",
@@ -8861,11 +8855,11 @@
       "code": "C5-RS-S11-P4",
       "chapter": 12,
       "skill": "C5-RS-S11",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 3,
       "competency": "Application in context",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "h",
@@ -8903,29 +8897,27 @@
       "require": [
         "a + e >= 60"
       ],
-      "text": "{ev} was planned to finish at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} It runs {e} minutes over time. At what time does it finish now? Show your working. Enter hours; minutes.",
-      "answer": [
-        "((h + 1) - 1) % 12 + 1",
-        "a + e - 60"
-      ],
+      "text": "{ev} was planned to finish at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} It runs {e} minutes over time. At what time does it finish now? Show your working. Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h + 1) + (a + e - 60)",
       "hint": "Add {e} minutes to {a} minutes past {h}. 60 minutes make an hour.",
       "explanation": "{a} + {e} = {a + e} minutes = 1 h {a + e - 60} min, so the new finish is {((h + 1) - 1) % 12 + 1}:{'0' if (a + e - 60) < 10 else ''}{a + e - 60} {'a.m.' if (h + 1) < 12 else 'p.m.'}",
       "misconception": "Adds minutes without carrying each complete group of 60 into hours.",
-      "notes": "The extra minutes always take it into the next hour; times up to 5:45 p.m.; two boxes. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "The extra minutes always take it into the next hour; times up to 5:45 p.m.; two boxes. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026). #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q355",
         "CBSE-C5-CH12-Q361"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S12-P1",
       "chapter": 12,
       "skill": "C5-RS-S12",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 1,
       "competency": "Conceptual understanding and fluency",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "h",
@@ -8955,21 +8947,19 @@
           ]
         }
       ],
-      "text": "A programme ends at {((h) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h) < 12 else 'p.m.'} after lasting {d} minutes. At what time did it start? Enter hours; minutes.",
-      "answer": [
-        "((h - 1 if e < d else h) - 1) % 12 + 1",
-        "e + 60 - d if e < d else e - d"
-      ],
+      "text": "A programme ends at {((h) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h) < 12 else 'p.m.'} after lasting {d} minutes. At what time did it start? Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h - 1 if e < d else h) + (e + 60 - d if e < d else e - d)",
       "hint": "Count back {d} minutes. If you go past the hour, borrow 60 minutes.",
       "explanation": "Going back {d} minutes from {((h) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h) < 12 else 'p.m.'} gives {((h - 1 if e < d else h) - 1) % 12 + 1}:{'0' if (e + 60 - d if e < d else e - d) < 10 else ''}{e + 60 - d if e < d else e - d} {'a.m.' if (h - 1 if e < d else h) < 12 else 'p.m.'}",
       "misconception": "Subtracts hours and minutes independently without borrowing 60 minutes.",
-      "notes": "Ends 08:00 to 17:40; 25 to 55 minutes long; often the child must borrow an hour; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Ends 08:00 to 17:40; 25 to 55 minutes long; often the child must borrow an hour; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q364"
       ],
       "require": [
         "e != d"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S12-P2",
@@ -9028,19 +9018,17 @@
           "unitRule": "STATED"
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(b) At what time did it start? Enter hours; minutes.",
-          "answer": [
-            "(((60 * h + e - x - y) // 60) - 1) % 12 + 1",
-            "(60 * h + e - x - y) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{x + y} minutes before the end is {(((60 * h + e - x - y) // 60) - 1) % 12 + 1}:{'0' if ((60 * h + e - x - y) % 60) < 10 else ''}{(60 * h + e - x - y) % 60} {'a.m.' if ((60 * h + e - x - y) // 60) < 12 else 'p.m.'}"
+          "text": "(b) At what time did it start? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * ((60 * h + e - x - y) // 60) + ((60 * h + e - x - y) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{x + y} minutes before the end is {(((60 * h + e - x - y) // 60) - 1) % 12 + 1}:{'0' if ((60 * h + e - x - y) % 60) < 10 else ''}{(60 * h + e - x - y) % 60} {'a.m.' if ((60 * h + e - x - y) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         }
       ],
       "misconception": "Subtracts hours and minutes independently without borrowing 60 minutes.",
-      "notes": "Two parts of 35 to 65 minutes in all, always going back past the hour; two boxes. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
+      "notes": "Two parts of 35 to 65 minutes in all, always going back past the hour; two boxes. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q370",
         "CBSE-C5-CH12-Q376"
@@ -9050,11 +9038,11 @@
       "code": "C5-RS-S12-P3",
       "chapter": 12,
       "skill": "C5-RS-S12",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 2,
       "competency": "Application in context",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "who",
@@ -9086,18 +9074,16 @@
       "require": [
         "k > s"
       ],
-      "text": "{who.name} must arrive {k} minutes before a match that starts at {((h) - 1) % 12 + 1}:{'0' if (s) < 10 else ''}{s} {'a.m.' if (h) < 12 else 'p.m.'} By what time must {who.he} arrive? Enter hours; minutes.",
-      "answer": [
-        "((h - 1) - 1) % 12 + 1",
-        "60 + s - k"
-      ],
+      "text": "{who.name} must arrive {k} minutes before a match that starts at {((h) - 1) % 12 + 1}:{'0' if (s) < 10 else ''}{s} {'a.m.' if (h) < 12 else 'p.m.'} By what time must {who.he} arrive? Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h - 1) + (60 + s - k)",
       "hint": "Count back {k} minutes from {((h) - 1) % 12 + 1}:{'0' if (s) < 10 else ''}{s} {'a.m.' if (h) < 12 else 'p.m.'} You will go back past the hour.",
       "explanation": "Back {k} minutes from {((h) - 1) % 12 + 1}:{'0' if (s) < 10 else ''}{s} {'a.m.' if (h) < 12 else 'p.m.'} is {((h - 1) - 1) % 12 + 1}:{'0' if (60 + s - k) < 10 else ''}{60 + s - k} {'a.m.' if (h - 1) < 12 else 'p.m.'}",
       "misconception": "Subtracts hours and minutes independently without borrowing 60 minutes.",
-      "notes": "A start on or just after the hour, with 10 to 25 minutes to count back, so the hour always changes; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "A start on or just after the hour, with 10 to 25 minutes to count back, so the hour always changes; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q388"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S12-P4",
@@ -9154,30 +9140,26 @@
       "stimulus": "{ev} ends at {((h) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h) < 12 else 'p.m.'} It lasted {x} {'hour' if x == 1 else 'hours'} {y} minutes. Answer each step in its own box.",
       "parts": [
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(a) What time is it {x} {'hour' if x == 1 else 'hours'} before the end? Enter hours; minutes.",
-          "answer": [
-            "((h - x) - 1) % 12 + 1",
-            "e"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "Going back {x} h: {((h - x) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h - x) < 12 else 'p.m.'}"
+          "text": "(a) What time is it {x} {'hour' if x == 1 else 'hours'} before the end? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h - x) + (e)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "Going back {x} h: {((h - x) - 1) % 12 + 1}:{'0' if (e) < 10 else ''}{e} {'a.m.' if (h - x) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(b) At what time did it start? Enter hours; minutes.",
-          "answer": [
-            "(((60 * h + e - 60 * x - y) // 60) - 1) % 12 + 1",
-            "(60 * h + e - 60 * x - y) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "Going back {y} more minutes: {(((60 * h + e - 60 * x - y) // 60) - 1) % 12 + 1}:{'0' if ((60 * h + e - 60 * x - y) % 60) < 10 else ''}{(60 * h + e - 60 * x - y) % 60} {'a.m.' if ((60 * h + e - 60 * x - y) // 60) < 12 else 'p.m.'}"
+          "text": "(b) At what time did it start? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * ((60 * h + e - 60 * x - y) // 60) + ((60 * h + e - 60 * x - y) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "Going back {y} more minutes: {(((60 * h + e - 60 * x - y) // 60) - 1) % 12 + 1}:{'0' if ((60 * h + e - 60 * x - y) % 60) < 10 else ''}{(60 * h + e - 60 * x - y) % 60} {'a.m.' if ((60 * h + e - 60 * x - y) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         }
       ],
       "misconception": "Subtracts hours and minutes independently without borrowing 60 minutes.",
-      "notes": "Ends 13:00 to 21:50 after 1 hour 10 minutes to 3 hours; two boxes. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
+      "notes": "Ends 13:00 to 21:50 after 1 hour 10 minutes to 3 hours; two boxes. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q364",
         "CBSE-C5-CH12-Q382",
@@ -12808,11 +12790,11 @@
       "code": "C5-RS-S15-P1",
       "chapter": 12,
       "skill": "C5-RS-S15",
-      "questionType": "Numeric Entry",
+      "questionType": "Text Entry",
       "marks": 1,
       "difficulty": 1,
       "competency": "Application in context",
-      "responseFormat": "Clock time in two boxes (hours; minutes)",
+      "responseFormat": "Time with a.m. or p.m.",
       "values": [
         {
           "name": "h",
@@ -12847,18 +12829,16 @@
           ]
         }
       ],
-      "text": "A class begins at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} and lasts {x} minutes. Then there is a {y}-minute break. At what time does the break end? Enter hours; minutes.",
-      "answer": [
-        "((h + (a + x + y) // 60) - 1) % 12 + 1",
-        "(a + x + y) % 60"
-      ],
+      "text": "A class begins at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} and lasts {x} minutes. Then there is a {y}-minute break. At what time does the break end? Write the time with a.m. or p.m., for example 9:05 a.m.",
+      "answer": "60 * (h + (a + x + y) // 60) + ((a + x + y) % 60)",
       "hint": "Add the class time and the break time, then add the total to the start.",
       "explanation": "{x} + {y} = {x + y} minutes. {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} + {x + y} minutes = {((h + (a + x + y) // 60) - 1) % 12 + 1}:{'0' if ((a + x + y) % 60) < 10 else ''}{(a + x + y) % 60} {'a.m.' if (h + (a + x + y) // 60) < 12 else 'p.m.'}",
       "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-      "notes": "Morning classes of 30 to 45 minutes with a 10 to 20 minute break; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Morning classes of 30 to 45 minutes with a 10 to 20 minute break; two boxes. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q463"
-      ]
+      ],
+      "answerFormat": "time12"
     },
     {
       "code": "C5-RS-S15-P2",
@@ -13040,19 +13020,17 @@
           "unitRule": "STATED"
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(b) At what time does school end? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + n * p + b) // 60) - 1) % 12 + 1",
-            "(a + n * p + b) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{n * p + b} minutes after the start is {((h + (a + n * p + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} {'a.m.' if (h + (a + n * p + b) // 60) < 12 else 'p.m.'}"
+          "text": "(b) At what time does school end? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + n * p + b) // 60) + ((a + n * p + b) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{n * p + b} minutes after the start is {((h + (a + n * p + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} {'a.m.' if (h + (a + n * p + b) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         }
       ],
       "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-      "notes": "4 to 6 periods of 35 to 45 minutes and one break; school ends between 10:35 and 14:45; two boxes. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing).",
+      "notes": "4 to 6 periods of 35 to 45 minutes and one break; school ends between 10:35 and 14:45; two boxes. #214: two 1-mark steps, the working then the answer (Ashalatha, 3 Nov 2026: a 2-mark answer that expects a method is never all-or-nothing). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q493",
         "CBSE-C5-CH12-Q463"
@@ -13238,19 +13216,17 @@
           "explanation": "{x + y + z} minutes = {(x + y + z) // 60} hour {(x + y + z) % 60} minutes."
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(c) At what time does it end? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + (x + y + z)) // 60) - 1) % 12 + 1",
-            "(a + (x + y + z)) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{x + y + z} minutes after {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} is {((h + (a + (x + y + z)) // 60) - 1) % 12 + 1}:{'0' if ((a + (x + y + z)) % 60) < 10 else ''}{(a + (x + y + z)) % 60} {'a.m.' if (h + (a + (x + y + z)) // 60) < 12 else 'p.m.'}"
+          "text": "(c) At what time does it end? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + (x + y + z)) // 60) + ((a + (x + y + z)) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{x + y + z} minutes after {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} is {((h + (a + (x + y + z)) // 60) - 1) % 12 + 1}:{'0' if ((a + (x + y + z)) % 60) < 10 else ''}{(a + (x + y + z)) % 60} {'a.m.' if (h + (a + (x + y + z)) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         }
       ],
       "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-      "notes": "Morning start; three parts adding to 75 to 110 minutes. Step question (#208): each step has its own box, marked by the platform. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Morning start; three parts adding to 75 to 110 minutes. Step question (#208): each step has its own box, marked by the platform. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q463",
         "CBSE-C5-CH12-Q493",
@@ -16776,15 +16752,13 @@
           "explanation": "{'0' if (h) < 10 else ''}{h}:{'0' if (a) < 10 else ''}{a} + {x} h {y} min = {'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60}."
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(c) Write that arrival time in 12-hour time (it is p.m.). Enter hours; minutes.",
-          "answer": [
-            "h + x + (a + y) // 60 - 12",
-            "(a + y) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} is {h + x + (a + y) // 60 - 12}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} p.m."
+          "text": "(c) Write that arrival time on the 12-hour clock, with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + x + (a + y) // 60) + (a + y) % 60",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{'0' if (h + x + (a + y) // 60) < 10 else ''}{h + x + (a + y) // 60}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} is {h + x + (a + y) // 60 - 12}:{'0' if ((a + y) % 60) < 10 else ''}{(a + y) % 60} p.m.",
+          "answerFormat": "time12"
         },
         {
           "questionType": "Numeric Entry",
@@ -16811,7 +16785,7 @@
       ],
       "maxWords": 80,
       "misconception": "Adds 12 to morning times, writes p.m. with 24-hour time, or confuses 12 noon with 12 midnight.",
-      "notes": "Morning departures 6 to 10 a.m., journeys of 5 to 8 hours and some minutes, due after 1 p.m. so the 12-hour time is p.m. Step question (#208): each step has its own box, marked by the platform.",
+      "notes": "Morning departures 6 to 10 a.m., journeys of 5 to 8 hours and some minutes, due after 1 p.m. so the 12-hour time is p.m. Step question (#208): each step has its own box, marked by the platform. Ashalatha, 10 Nov 2026 (D8): step (c) is written with a.m. or p.m. in one box; the stem no longer says it is p.m.",
       "sources": [
         "CBSE-C5-CH12-Q232",
         "CBSE-C5-CH12-Q262",
@@ -18038,31 +18012,27 @@
           "explanation": "{n * p} + {b} = {n * p + b} minutes."
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(d) At what time does school end? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + n * p + b) // 60) - 1) % 12 + 1",
-            "(a + n * p + b) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{n * p + b} minutes after the start is {((h + (a + n * p + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} {'a.m.' if (h + (a + n * p + b) // 60) < 12 else 'p.m.'}"
+          "text": "(d) At what time does school end? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + n * p + b) // 60) + ((a + n * p + b) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{n * p + b} minutes after the start is {((h + (a + n * p + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * p + b) % 60) < 10 else ''}{(a + n * p + b) % 60} {'a.m.' if (h + (a + n * p + b) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(e) If every period is {k} minutes shorter, at what time does school end? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + n * (p - k) + b) // 60) - 1) % 12 + 1",
-            "(a + n * (p - k) + b) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{n} × {k} = {n * k} minutes earlier: {((h + (a + n * (p - k) + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60} {'a.m.' if (h + (a + n * (p - k) + b) // 60) < 12 else 'p.m.'}"
+          "text": "(e) If every period is {k} minutes shorter, at what time does school end? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + n * (p - k) + b) // 60) + ((a + n * (p - k) + b) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{n} × {k} = {n * k} minutes earlier: {((h + (a + n * (p - k) + b) // 60) - 1) % 12 + 1}:{'0' if ((a + n * (p - k) + b) % 60) < 10 else ''}{(a + n * (p - k) + b) % 60} {'a.m.' if (h + (a + n * (p - k) + b) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         }
       ],
       "maxWords": 80,
       "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-      "notes": "Starts 7:30 a.m. to 8:50 a.m.; 5 to 7 periods of 35 or 40 minutes; lunch 20, 25 or 30 minutes; periods 5 or 10 minutes shorter in (e); ends after 1 p.m. Step question (#208): each step has its own box, marked by the platform. #214, Ashalatha's decision of 5 Nov 2026: 12-hour clock only (the 24-hour conversion steps were taken out; conversion is practised under skill S08); an answer's hours are on the 12-hour clock.",
+      "notes": "Starts 7:30 a.m. to 8:50 a.m.; 5 to 7 periods of 35 or 40 minutes; lunch 20, 25 or 30 minutes; periods 5 or 10 minutes shorter in (e); ends after 1 p.m. Step question (#208): each step has its own box, marked by the platform. #214, Ashalatha's decision of 5 Nov 2026: 12-hour clock only (the 24-hour conversion steps were taken out; conversion is practised under skill S08); an answer's hours are on the 12-hour clock. Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q493",
         "CBSE-C5-CH12-Q463",
@@ -19163,37 +19133,31 @@
       "stimulus": "Case study: A school bus leaves at {((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} It drives {x} minutes to a museum, stops there for {st} minutes to pick up a guide, and then drives {y} minutes to a wildlife park.",
       "parts": [
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(a) At what time does the bus reach the museum? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + x) // 60) - 1) % 12 + 1",
-            "(a + x) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} + {x} minutes = {((h + (a + x) // 60) - 1) % 12 + 1}:{'0' if ((a + x) % 60) < 10 else ''}{(a + x) % 60} {'a.m.' if (h + (a + x) // 60) < 12 else 'p.m.'}"
+          "text": "(a) At what time does the bus reach the museum? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + x) // 60) + ((a + x) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{((h) - 1) % 12 + 1}:{'0' if (a) < 10 else ''}{a} {'a.m.' if (h) < 12 else 'p.m.'} + {x} minutes = {((h + (a + x) // 60) - 1) % 12 + 1}:{'0' if ((a + x) % 60) < 10 else ''}{(a + x) % 60} {'a.m.' if (h + (a + x) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(b) At what time does it leave the museum? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + x + st) // 60) - 1) % 12 + 1",
-            "(a + x + st) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{st} minutes later: {((h + (a + x + st) // 60) - 1) % 12 + 1}:{'0' if ((a + x + st) % 60) < 10 else ''}{(a + x + st) % 60} {'a.m.' if (h + (a + x + st) // 60) < 12 else 'p.m.'}"
+          "text": "(b) At what time does it leave the museum? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + x + st) // 60) + ((a + x + st) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{st} minutes later: {((h + (a + x + st) // 60) - 1) % 12 + 1}:{'0' if ((a + x + st) % 60) < 10 else ''}{(a + x + st) % 60} {'a.m.' if (h + (a + x + st) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         },
         {
-          "questionType": "Numeric Entry",
+          "questionType": "Text Entry",
           "marks": 1,
-          "text": "(c) At what time does it reach the wildlife park? Enter hours; minutes.",
-          "answer": [
-            "((h + (a + x + st + y) // 60) - 1) % 12 + 1",
-            "(a + x + st + y) % 60"
-          ],
-          "responseFormat": "Clock time in two boxes (hours; minutes)",
-          "explanation": "{y} minutes more: {((h + (a + x + st + y) // 60) - 1) % 12 + 1}:{'0' if ((a + x + st + y) % 60) < 10 else ''}{(a + x + st + y) % 60} {'a.m.' if (h + (a + x + st + y) // 60) < 12 else 'p.m.'}"
+          "text": "(c) At what time does it reach the wildlife park? Write the time with a.m. or p.m., for example 9:05 a.m.",
+          "answer": "60 * (h + (a + x + st + y) // 60) + ((a + x + st + y) % 60)",
+          "responseFormat": "Time with a.m. or p.m.",
+          "explanation": "{y} minutes more: {((h + (a + x + st + y) // 60) - 1) % 12 + 1}:{'0' if ((a + x + st + y) % 60) < 10 else ''}{(a + x + st + y) % 60} {'a.m.' if (h + (a + x + st + y) // 60) < 12 else 'p.m.'}",
+          "answerFormat": "time12"
         },
         {
           "questionType": "Numeric Entry",
@@ -19207,7 +19171,7 @@
         }
       ],
       "misconception": "Combines clock times as durations or misses waiting and break intervals.",
-      "notes": "Morning trips; drives of 35 to 50 and 25 to 40 minutes with a 10 to 20 minute stop. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026).",
+      "notes": "Morning trips; drives of 35 to 50 and 25 to 40 minutes with a 10 to 20 minute stop. #214: clock times on the 12-hour clock with a.m. or p.m.; an answer's hours are on the 12-hour clock (Ashalatha, 3 Nov 2026). Ashalatha, 10 Nov 2026 (D8): 12-hour answers are written with a.m. or p.m. in one box.",
       "sources": [
         "CBSE-C5-CH12-Q463",
         "CBSE-C5-CH12-Q304",

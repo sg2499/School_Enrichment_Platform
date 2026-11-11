@@ -4338,8 +4338,8 @@
       },
       "hint": "The two numbers are {big} and {small}.",
       "explanation": "The numbers are {big} and {small}, and {big} − {small} = {big - small}.",
-      "misconception": "Counts a shared object more than once or tests cases without preserving the puzzle rule.",
-      "notes": "Two different digits from 1 to 9 (no 0, so both numbers are two-digit). Right answer: 9 × the difference of the digits. Wrong options: column-by-column subtraction without regrouping, the sum of the numbers, the difference of the digits.",
+      "misconception": "Swaps the digits but then subtracts the smaller digit from the larger, or forgets that each swap changes the tens and the ones (reversed-digit, one-swap place-value reasoning).",
+      "notes": "Two different digits from 1 to 9 (no 0, so both numbers are two-digit). Right answer: 9 × the difference of the digits. Wrong options: column-by-column subtraction without regrouping, the sum of the numbers, the difference of the digits. Ashalatha, 10 Nov 2026 (D9): misconception note now about reversed digits and place value.",
       "sources": [
         "CBSE-C5-CH01-Q146",
         "CBSE-C5-CH01-Q147",

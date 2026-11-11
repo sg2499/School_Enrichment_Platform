@@ -36,6 +36,7 @@ import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { PaperResult, SitPart, SitPlace, SitSection, SittingView } from "@/types/mockPapers";
+import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 type SaveState = "saving" | "saved" | "error";
 
@@ -126,6 +127,7 @@ function PartBlock({
           [{part.marks} {part.marks === 1 ? "mark" : "marks"}]
         </span>
       </p>
+        <QuestionFigure svg={part.figureSvg} />
       <fieldset disabled={locked} className={cn(locked && "opacity-60")}>
         <QuestionInput question={part} value={value} onChange={onChange} maxLength={2000} />
         {part.acceptsWorking ? (
@@ -210,6 +212,7 @@ function ResultView({ result }: { result: PaperResult }) {
                               {part.label ? <span className="font-semibold">({part.label}) </span> : null}
                               {part.text}
                             </p>
+                              <QuestionFigure svg={part.figureSvg} />
                             <Badge
                               tone={waiting ? "neutral" : full ? "success" : part.score ? "warning" : "danger"}
                               icon={full ? <CheckCircle2 className="h-3 w-3" /> : undefined}

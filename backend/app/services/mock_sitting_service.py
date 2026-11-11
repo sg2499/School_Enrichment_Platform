@@ -40,7 +40,7 @@ from app.models.papers import (
     MockPaperVersion,
     MockPaperVersionItem,
 )
-from app.services import learning_service
+from app.services import figures, learning_service
 from app.services import mock_paper_service as papers
 from app.services.mock_paper_service import _aware
 from app.services.practice_access_service import Viewer
@@ -108,6 +108,7 @@ def public_question(question: Question) -> dict:
         "optionD": question.option_d,
         "marks": question.marks,
         "answerInstruction": learning_service.answer_instruction(question),
+        "figureSvg": figures.svg_for(question),
         "answerNeedsUnit": learning_service.answer_needs_unit(question),
         # A 2-mark number answer keeps its working box: many of these
         # questions say "show your working", and the student sees it again

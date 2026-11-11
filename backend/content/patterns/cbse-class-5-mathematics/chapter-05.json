@@ -8523,24 +8523,24 @@
           "name": "t",
           "choice": [
             {
-              "a": "Nashik",
-              "b": "Shirdi",
-              "c": "Aurangabad"
+              "a": "Amrapur",
+              "b": "Bansipur",
+              "c": "Chandanpur"
             },
             {
-              "a": "Mysuru",
-              "b": "Mandya",
-              "c": "Bengaluru"
+              "a": "Dhanpur",
+              "b": "Elachi Nagar",
+              "c": "Gulabpur"
             },
             {
-              "a": "Udaipur",
-              "b": "Chittorgarh",
-              "c": "Kota"
+              "a": "Hiranpur",
+              "b": "Indrapuri",
+              "c": "Jamunagaon"
             },
             {
-              "a": "Madurai",
-              "b": "Dindigul",
-              "c": "Tiruchirappalli"
+              "a": "Kesarpur",
+              "b": "Lalpur Khurd",
+              "c": "Moti Nagar"
             }
           ]
         },
@@ -8580,7 +8580,7 @@
         "x1 != x2",
         "1000 * x1 + y1 != 1000 * x2 + y2"
       ],
-      "stimulus": "Case study: A bus goes from {t.a} to {t.b}, a distance of {x1} km {y1} m. Then it goes from {t.b} to {t.c}, a distance of {x2} km {y2} m.",
+      "stimulus": "Case study: In a made-up district, a bus goes from {t.a} to {t.b}, a distance of {x1} km {y1} m. Then it goes from {t.b} to {t.c}, a distance of {x2} km {y2} m.",
       "parts": [
         {
           "questionType": "Numeric Entry",
@@ -8638,7 +8638,7 @@
         }
       ],
       "misconception": "Leaves more than 999 metres in the final mixed-unit answer.",
-      "notes": "Two parts of 40 to 95 km with 100 to 900 m, whose metres add to more than 1,000.",
+      "notes": "Two parts of 40 to 95 km with 100 to 900 m, whose metres add to more than 1,000. Ashalatha, 10 Nov 2026 (D12): invented town names; the district is said to be made up.",
       "sources": [
         "CBSE-C5-CH05-Q298",
         "CBSE-C5-CH05-Q319",

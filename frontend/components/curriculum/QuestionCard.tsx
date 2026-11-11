@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { hasMarkingSettings } from "@/lib/marking";
 import { cn } from "@/lib/utils";
 import type { QualityStatus, QuestionDetail, QuestionStatus } from "@/types/curriculum";
+import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 const QUALITY_STATUS_ICON: Record<QualityStatus, typeof ShieldCheck> = {
   UNCHECKED: HelpCircle,
@@ -93,6 +94,7 @@ export function QuestionCard({
             {question.marks === 1 ? "" : "s"}
           </p>
           <p className="mt-1 text-sm font-medium leading-normal text-content">{question.stem}</p>
+          <QuestionFigure svg={question.figureSvg} />
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">

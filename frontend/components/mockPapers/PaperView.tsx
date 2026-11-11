@@ -36,6 +36,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { MarkingPanel, ResultsPanel } from "@/components/mockPapers/PaperResults";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { PaperDetail, PaperSlot, SampleQuestion } from "@/types/mockPapers";
+import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
   return (
@@ -47,6 +48,7 @@ function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
           [{q.marks} {q.marks === 1 ? "mark" : "marks"}]
         </span>
       </p>
+        <QuestionFigure svg={q.figureSvg} />
       {q.options ? (
         <ol className="grid gap-1 text-sm text-content sm:grid-cols-2">
           {q.options.map((o) => (

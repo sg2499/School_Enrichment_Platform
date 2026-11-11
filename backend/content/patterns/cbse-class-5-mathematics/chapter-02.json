@@ -1378,13 +1378,18 @@
     },
     {
       "code": "C5-FR2-S05-P4",
+      "chapter": 2,
       "skill": "C5-FR2-S05",
-      "questionType": "Text Entry",
-      "marks": 1,
+      "sources": [
+        "CBSE-C5-CH02-Q153",
+        "CBSE-C5-CH02-Q154",
+        "CBSE-C5-CH02-Q155",
+        "CBSE-C5-CH02-Q158"
+      ],
+      "questionType": "Long Answer",
+      "marks": 2,
       "difficulty": 3,
       "competency": "Reasoning and problem solving",
-      "responseFormat": "Integer; fraction a/b",
-      "answerFormat": "fraction",
       "values": [
         {
           "name": "who",
@@ -1415,22 +1420,28 @@
       "require": [
         "gcd(n - a - b, n) == 1"
       ],
-      "text": "{who.name} is making one whole with pieces of 1/{n}. {who.name} puts down {a} pieces, then {b} more. How many more pieces are needed, and what fraction of the whole is still missing? Enter pieces;fraction missing.",
-      "answer": [
-        "n - a - b",
-        "frac(n - a - b, n)"
+      "stimulus": "{who.name} is making one whole with pieces of 1/{n}. {who.name} puts down {a} pieces, then {b} more. Answer each step in its own box.",
+      "parts": [
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "text": "(a) How many more pieces are needed to make one whole?",
+          "answer": "n - a - b",
+          "responseFormat": "Integer",
+          "explanation": "{a} + {b} = {a + b} pieces are down, and one whole is {n} pieces, so {n} − {a + b} = {n - a - b} more {'piece is' if n - a - b == 1 else 'pieces are'} needed."
+        },
+        {
+          "questionType": "Text Entry",
+          "marks": 1,
+          "answerFormat": "fraction",
+          "text": "(b) What fraction of the whole is still missing? Write it as a/b.",
+          "answer": "frac(n - a - b, n)",
+          "responseFormat": "Fraction a/b",
+          "explanation": "{n - a - b} {'piece' if n - a - b == 1 else 'pieces'} of 1/{n} {'is' if n - a - b == 1 else 'are'} missing: {n - a - b}/{n} of the whole."
+        }
       ],
-      "hint": "One whole is {n} pieces of 1/{n}.",
-      "explanation": "{a} + {b} = {a + b} pieces are down, so {n} − {a + b} = {n - a - b} more are needed. They make {n - a - b}/{n} of the whole.",
       "misconception": "Changes the denominator when combining equal-sized pieces.",
-      "notes": "6 to 15 pieces in the whole; the missing fraction is in simplest form. #214: 1 mark (was 2): a multiple-choice or one-word answer can't show a method (Ashalatha, 3 Nov 2026).",
-      "sources": [
-        "CBSE-C5-CH02-Q153",
-        "CBSE-C5-CH02-Q154",
-        "CBSE-C5-CH02-Q155",
-        "CBSE-C5-CH02-Q158"
-      ],
-      "chapter": 2
+      "notes": " Ashalatha, 10 Nov 2026 (D3): two outputs now two separately marked 1-mark steps, (a) pieces and (b) fraction (2 marks)."
     },
     {
       "code": "C5-FR2-S06-P1",
@@ -6004,15 +6015,14 @@
         {
           "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(e) How much more did that child eat than the child who ate the least? Give the answer as a fraction of a {item} in simplest form.",
-          "answer": "frac(top - bot, l)",
-          "answerFormat": "fraction",
-          "responseFormat": "Fraction in simplest form",
-          "explanation": "{top}/{l} − {bot}/{l} = {top - bot}/{l} = {frac(top - bot, l):fraction}."
+          "text": "(e) How many more of the 1/{l} pieces did that child eat than the child who ate the least?",
+          "answer": "top - bot",
+          "responseFormat": "Integer",
+          "explanation": "{top} pieces of 1/{l} − {bot} pieces of 1/{l} = {top - bot} pieces."
         }
       ],
       "misconception": "Compares numerators or denominators separately without creating a common basis.",
-      "notes": "Ten sets of three denominators (2 to 15) with a common denominator up to 60; three different amounts; three different children. Step question (#208): (a) to (c) the numerators over the lowest common denominator {l}, (d) who ate the most (a name), (e) the difference in simplest form. Ten sets of denominators where none is the common denominator itself, so every step is a real conversion (common denominator 12 to 30). Putting all three in order is no longer a separate step.",
+      "notes": "Ten sets of three denominators (2 to 15) with a common denominator up to 60; three different amounts; three different children. Step question (#208): (a) to (c) the numerators over the lowest common denominator {l}, (d) who ate the most (a name), (e) the difference in simplest form. Ten sets of denominators where none is the common denominator itself, so every step is a real conversion (common denominator 12 to 30). Putting all three in order is no longer a separate step. Ashalatha, 10 Nov 2026 (D4): step (e) no longer subtracts unlike fractions; it compares numbers of equal 1/l pieces (equivalent-fraction reasoning).",
       "sources": [
         "CBSE-C5-CH02-Q455",
         "CBSE-C5-CH02-Q456",
@@ -6316,7 +6326,7 @@
         "m + k != d",
         "2 * m != d"
       ],
-      "stimulus": "Case study: A 1 km walking track in a park has markers that split it into {d} equal parts, like a number line from 0 km to 1 km. {who.name} starts at 0 and stops at marker number {k}, counting the markers after 0.",
+      "stimulus": "Case study: A 1 km walking track in a park is marked like a number line from 0 km to 1 km. Tick marks at 0, at 1 km and in between split it into {d} equal gaps. {who.name} starts at 0 and stops at the {k}th tick mark after 0. Count the equal gaps, not the tick marks.",
       "parts": [
         {
           "questionType": "Text Entry",
@@ -6324,7 +6334,7 @@
           "answerFormat": "fraction",
           "text": "(a) What fraction of a kilometre has {who.name} walked? Write it as a/b.",
           "answer": "frac(k, d)",
-          "explanation": "Each part is 1/{d} km, so marker {k} is {k}/{d} km."
+          "explanation": "Each part is 1/{d} km, so tick mark {k} is {k}/{d} km."
         },
         {
           "questionType": "Text Entry",
@@ -6337,14 +6347,14 @@
         {
           "questionType": "Numeric Entry",
           "marks": 1,
-          "text": "(c) There is also a marker at 0 km and one at 1 km. How many markers are there in all?",
+          "text": "(c) How many tick marks are there in all, counting the ones at 0 and at 1 km?",
           "answer": "d + 1",
-          "explanation": "{d} parts need {d - 1} markers in between, plus the two at the ends: {d + 1}."
+          "explanation": "{d} parts need {d - 1} tick marks in between, plus the two at the ends: {d + 1}."
         },
         {
           "questionType": "Single Select",
           "marks": 1,
-          "text": "(d) A friend is at marker number {m}, counting the markers after 0. Is the friend more or less than halfway along the track?",
+          "text": "(d) A friend is at tick mark number {m}, counting the tick marks after 0. Is the friend more or less than halfway along the track?",
           "options": {
             "correct": "'More than halfway' if 2 * m > d else 'Less than halfway'",
             "wrong": [
@@ -6362,11 +6372,11 @@
               }
             ]
           },
-          "explanation": "Halfway is marker {d / 2:mixed}; marker {m} is {'more' if 2 * m > d else 'less'} than halfway."
+          "explanation": "Halfway is tick mark {d / 2:mixed}; tick mark {m} is {'more' if 2 * m > d else 'less'} than halfway."
         }
       ],
       "misconception": "Counts tick marks instead of intervals or starts the numerator count at one rather than zero.",
-      "notes": "Tracks split into 4, 5, 6, 8 or 10 equal parts; the friend is never exactly halfway.",
+      "notes": "Tracks split into 4, 5, 6, 8 or 10 equal parts; the friend is never exactly halfway. Ashalatha, 10 Nov 2026 (D10): says tick marks, that 0 and 1 km are marked, and to count equal gaps.",
       "sources": [
         "CBSE-C5-CH02-Q364",
         "CBSE-C5-CH02-Q369",

@@ -80,6 +80,7 @@ export type QuestionDetail = {
   difficulty: number | null;
   competency: string | null;
   stem: string;
+  figureSvg?: string | null;
   optionA: string | null;
   optionB: string | null;
   optionC: string | null;

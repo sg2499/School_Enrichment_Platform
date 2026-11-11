@@ -157,11 +157,12 @@ def test_unreadable_stored_fields_are_ignored_not_fatal():
 # --- no fields set: marked exactly as before -------------------------------
 
 
-def test_with_no_marking_fields_a_written_unit_is_still_ignored_as_before():
-    # Today's behaviour, kept until a unit is recorded for the question.
+def test_with_no_marking_fields_the_number_alone_is_right_and_a_stray_unit_is_not():
+    # Ashalatha, 10 Nov 2026 (rule 1): the right number in a unit the
+    # question does not ask for is wrong, even with no unit recorded.
     q = _q(response_format=STATED_FORMAT)
     assert grade_answer(q, "250") == (True, 1)
-    assert grade_answer(q, "250 kg") == (True, 1)
+    assert grade_answer(q, "250 kg") == (False, 0)
     assert grade_answer(q, "251") == (False, 0)
     assert grade_answer_detail(q, "250").note is None
 
@@ -277,7 +278,8 @@ def test_tolerance_for_a_reading():
     assert grade_answer(q, "36.7") == (True, 1)
     assert grade_answer(q, "36.3") == (True, 1)
     assert grade_answer(q, "36.71") == (False, 0)
-    assert grade_answer(q, "36.5 degrees") == (True, 1)  # rule NONE: a written unit is ignored
+    # Rule NONE: since 10 Nov 2026 (rule 1) a unit the answer does not use is wrong.
+    assert grade_answer(q, "36.5 degrees") == (False, 0)
 
 
 def test_decimal_places_round_the_final_answer_half_up():
@@ -303,9 +305,14 @@ def test_rounding_tolerance_and_unit_together():
 
 def test_accepted_variants_win_over_the_unit_rules():
     q = _q("2050", variants="2 kg 50 g|2.05 kg", unit_rule="REQUIRED", answer_unit="g", marks=2)
-    assert grade_answer(q, "2 kg 50 g") == (True, 2)  # a mixed measure, listed
-    assert grade_answer(q, "2 KG 50 G") == (True, 2)
-    assert grade_answer(q, "2.05 kg") == (True, 2)  # listed, so right without conversion
+    # Since 10 Nov 2026 (rules 1 and 2) a listed variant in another unit or a
+    # mixed form counts only with Allow Conversion.
+    assert grade_answer(q, "2 kg 50 g") == (False, 0)
+    assert grade_answer(q, "2.05 kg") == (False, 0)
+    allowed = _q("2050", variants="2 kg 50 g|2.05 kg", unit_rule="REQUIRED", answer_unit="g", marks=2, allow_unit_conversion=True)
+    assert grade_answer(allowed, "2 kg 50 g") == (True, 2)
+    assert grade_answer(allowed, "2 KG 50 G") == (True, 2)
+    assert grade_answer(allowed, "2.05 kg") == (True, 2)
     assert grade_answer(q, "2050 g") == (True, 2)
     assert grade_answer_detail(q, "2050") == GradeResult(False, 1, UNIT_MISSING)
     assert grade_answer(q, "2 kg 60 g") == (False, 0)
@@ -348,8 +355,9 @@ def test_a_key_these_rules_cannot_read_is_marked_the_old_way():
 
 def test_formats_the_old_marking_accepted_are_still_right():
     q = _q("250", numeric_tolerance="1")  # rule NONE: no unit to check
-    for given in ("250.", "$250", "250 days", "250 kg"):
-        assert grade_answer(q, given) == (True, 1), given
+    assert grade_answer(q, "250.") == (True, 1)
+    for given in ("$250", "250 days", "250 kg"):  # rule 1, 10 Nov 2026
+        assert grade_answer(q, given) == (False, 0), given
     stated = _q("250", response_format=STATED_FORMAT, answer_unit="g")
     assert grade_answer(stated, "250.") == (True, 1)
     # "5 m" beside an answer in minutes means minutes.
@@ -358,9 +366,10 @@ def test_formats_the_old_marking_accepted_are_still_right():
     assert grade_answer_detail(_q("5", response_format=STATED_FORMAT, answer_unit="cm"), "5 m") == GradeResult(False, 0, WRONG_UNIT)
 
 
-def test_rule_none_ignores_a_unit_inside_the_key():
+def test_rule_none_takes_the_number_alone_or_the_keys_own_unit():
     q = _q("250 g", unit_rule="NONE", numeric_tolerance="1")
-    assert grade_answer_detail(q, "250 kg") == GradeResult(True, 1)
+    assert grade_answer_detail(q, "250 kg") == GradeResult(False, 0)  # rule 1, 10 Nov 2026
+    assert grade_answer_detail(q, "250 g") == GradeResult(True, 1)
     assert grade_answer_detail(q, "250") == GradeResult(True, 1)
 
 
@@ -411,13 +420,19 @@ def test_nothing_is_read_where_the_question_does_not_say():
     for stem in ("How many children wear glasses?", "A rectangle has area 35 cm² and breadth 5 cm. Find its length."):
         q = _q("8", response_format=STATED_FORMAT, stem=stem)
         assert marking_rule(q).answer_unit is None
-        assert grade_answer(q, "8 kg") == (True, 1)  # as before: number alone
+        assert grade_answer(q, "8") == (True, 1)
+        assert grade_answer(q, "8 kg") == (False, 0)  # rule 1, 10 Nov 2026
 
 
 def test_a_rule_none_question_is_never_read():
     q = _q("200", stem="2 m equals how many centimetres?")  # Response Format without "unit stated"
     assert marking_rule(q).answer_unit is None
-    assert grade_answer(q, "200 m") == (True, 1)  # as before
+    assert grade_answer(q, "200") == (True, 1)
+    # With no unit recorded, a unit the question names is taken (it cannot
+    # be told which it asks for); any other is wrong (rule 1, 10 Nov 2026).
+    # Every Class 5 measured answer now has its unit recorded.
+    assert grade_answer(q, "200 cm") == (True, 1)
+    assert grade_answer(q, "200 kg") == (False, 0)
 
 
 def test_a_variant_in_another_unit_no_longer_makes_a_wrong_unit_right():
@@ -430,10 +445,16 @@ def test_a_variant_in_another_unit_no_longer_makes_a_wrong_unit_right():
         assert grade_answer_detail(q, wrong) == GradeResult(False, 0, WRONG_UNIT), wrong
 
 
-def test_a_variant_that_is_the_same_amount_in_another_unit_still_counts():
+def test_a_variant_in_another_unit_counts_only_with_allow_conversion():
+    # Ashalatha, 10 Nov 2026 (rules 1 and 2): no equal amount in another unit,
+    # and no mixed form, unless Allow Conversion is Yes.
     q = _q("6550", variants="6.55 km|6 km 550 m", response_format=STATED_FORMAT, stem="6 km 550 m equals how many metres?")
-    assert grade_answer(q, "6.55 km") == (True, 1)  # listed, and the same amount
-    assert grade_answer(q, "6 km 550 m") == (True, 1)
+    assert grade_answer(q, "6.55 km") == (False, 0)
+    assert grade_answer(q, "6 km 550 m") == (False, 0)
+    assert grade_answer(q, "6550 m") == (True, 1)
+    allowed = _q("6550", variants="6.55 km|6 km 550 m", response_format=STATED_FORMAT, answer_unit="m", allow_unit_conversion=True)
+    assert grade_answer(allowed, "6.55 km") == (True, 1)
+    assert grade_answer(allowed, "6 km 550 m") == (True, 1)
     assert grade_answer_detail(q, "6.5 km") == GradeResult(False, 0)  # not listed, conversion off
 
 
@@ -451,14 +472,17 @@ def test_the_student_is_told_the_unit_read_from_the_question():
     assert answer_unit_label(q) == "centimetres"
 
 
-def test_an_equivalent_variant_within_the_questions_tolerance_or_rounding_still_counts():
+def test_an_equivalent_variant_within_the_questions_tolerance_or_rounding_counts_with_conversion():
     # Found in review: the equal-amount check ignored the question's own rule.
-    rounded = _q("3.33", variants="333.3 cm", response_format=STATED_FORMAT, answer_unit="m", decimal_places=2)
+    # Since 10 Nov 2026 such a variant needs Allow Conversion (rule 1).
+    rounded = _q("3.33", variants="333.3 cm", response_format=STATED_FORMAT, answer_unit="m", decimal_places=2, allow_unit_conversion=True)
     assert grade_answer(rounded, "333.3 cm") == (True, 1)
-    near = _q("2.5", variants="245 cm", response_format=STATED_FORMAT, answer_unit="m", numeric_tolerance="0.1")
+    near = _q("2.5", variants="245 cm", response_format=STATED_FORMAT, answer_unit="m", numeric_tolerance="0.1", allow_unit_conversion=True)
     assert grade_answer(near, "245 cm") == (True, 1)
+    off = _q("2.5", variants="245 cm", response_format=STATED_FORMAT, answer_unit="m", numeric_tolerance="0.1")
+    assert grade_answer(off, "245 cm") == (False, 0)
     approx = _q("20", variants="0.33 h", response_format=STATED_FORMAT, answer_unit="min")
-    assert grade_answer(approx, "0.33 h") == (True, 1)  # a different number, listed on purpose
+    assert grade_answer(approx, "0.33 h") == (False, 0)
     blanket = _q("20", variants="20 h|20 s", response_format=STATED_FORMAT, answer_unit="min")
     assert grade_answer_detail(blanket, "20 h") == GradeResult(False, 0, WRONG_UNIT)
 

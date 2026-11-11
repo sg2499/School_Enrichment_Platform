@@ -64,6 +64,7 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
+from app.services import figures
 from app.services import learning_service, mock_results_service, practice_access_service, progress_service
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
@@ -909,6 +910,7 @@ def _attempt_review_payload(db: Session, viewer: Viewer, attempt: Attempt, assig
             "questionCode": question.code,
             "questionType": question.question_type,
             "stem": question.stem,
+            "figureSvg": figures.svg_for(question),
             "options": {
                 letter: text
                 for letter, text in (

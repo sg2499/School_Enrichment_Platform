@@ -55,6 +55,7 @@ import { MY_PROGRESS_HREF, MY_PROGRESS_NAME } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { ActivityType, AttemptAnswerResult, AttemptDetail, AttemptQuestion, AttemptResult, StudentAssignmentSummary } from "@/types/learning";
+import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 /*
  * Taking a practice set, and reading its result -- Phase 2b/c visual pass
@@ -340,6 +341,7 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                   </Badge>
                 </div>
                 <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty">{answer.stem}</p>
+                <QuestionFigure svg={answer.figureSvg} />
                 <AnswerBody answer={answer} state={state} />
                 {/* Phase 4 (#164): why a right number lost marks -- a
                     missing or wrong unit -- said in words, so "1 of 2"
@@ -1160,6 +1162,7 @@ export default function StudentAttemptPage() {
                       </span>
                     </div>
                     <p className="text-[1rem] font-medium leading-relaxed text-content text-pretty">{question.stem}</p>
+                    <QuestionFigure svg={question.figureSvg} />
                     <QuestionInput
                       question={question}
                       value={answers[question.id] ?? ""}

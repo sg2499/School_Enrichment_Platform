@@ -155,6 +155,7 @@ export type AttemptQuestion = {
   // or "Write the number and the unit." Null when the unit plays no part.
   // Optional: an older server does not send it.
   answerInstruction?: string | null;
+  figureSvg?: string | null;
   // The unit must be written (a Required unit), so the box offers letters.
   answerNeedsUnit?: boolean;
   // The student's own previously-saved answer on THIS attempt (30 Sep 2026),
@@ -198,6 +199,7 @@ export type AttemptAnswerResult = {
   questionType?: string;
   options?: Record<string, string>;
   stem: string;
+  figureSvg?: string | null;
   responseText: string | null;
   isCorrect: boolean | null;
   autoScore: number | null;

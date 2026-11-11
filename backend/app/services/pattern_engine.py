@@ -63,14 +63,14 @@ import uuid
 from dataclasses import dataclass, field
 from fractions import Fraction
 
-from app.services import pattern_expr
+from app.services import figures, pattern_expr
 from app.services.pattern_expr import ExprError
 
 QUESTION_TYPES = ("Single Select", "Numeric Entry", "Text Entry", "Constructed Response")
 LONG_ANSWER = "Long Answer"
 LONG_ANSWER_MARKS = (2, 3, 5)
 STEP_TYPES = ("Single Select", "Numeric Entry", "Text Entry")  # a step is marked by the platform
-ANSWER_FORMATS = ("plain", "fraction")
+ANSWER_FORMATS = ("plain", "fraction", "time12")
 BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed")
 DEFAULT_MAX_WORDS = 60
 MAX_TRIES = 200  # value draws per question before a pattern is called unworkable
@@ -151,10 +151,41 @@ class Spec:
     notes: str | None
     sources: list[str] = field(default_factory=list)
     raw: dict = field(default_factory=dict)
+    # A drawn picture for every part (#218): the figure description with
+    # "=expression" strings in place of values (see _figure_tree).
+    figure: object = None
 
     @property
     def is_group(self) -> bool:
         return self.stimulus is not None
+
+
+def _figure_tree(node, where, problems, known):
+    """A pattern's figure (#218): JSON like a question's figure, where any
+    text starting with "=" is an expression worked out for each copy, e.g.
+    {"type": "grid", "rows": 5, "cols": 10, "shaded": [["=r", "=c"]]}."""
+    if isinstance(node, dict):
+        return {k: _figure_tree(v, f"{where}.{k}", problems, known) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_figure_tree(v, f"{where}[{i}]", problems, known) for i, v in enumerate(node)]
+    if isinstance(node, str) and node.startswith("="):
+        return ("expr", _expr(node[1:], where, problems, known))
+    return node
+
+
+def _figure_value(node, env):
+    if isinstance(node, dict):
+        return {k: _figure_value(v, env) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_figure_value(v, env) for v in node]
+    if isinstance(node, tuple) and node and node[0] == "expr":
+        value = pattern_expr.evaluate(node[1], env)
+        if isinstance(value, Fraction):
+            if value.denominator != 1:
+                raise GenerationError("A figure value is not a whole number.")
+            value = int(value)
+        return value
+    return node
 
 
 def _template(text, where, problems, known) -> Template | None:
@@ -274,6 +305,8 @@ def _part(data, where, problems, known, *, top_type=None) -> Part | None:
             problems.append(f"{where}: unit {unit!r} is not one the platform marks.")
         elif answer_format == "fraction":
             problems.append(f"{where}: a fraction answer can't also carry a unit (the platform can't mark both yet).")
+    if answer_format == "time12" and (qtype != "Text Entry" or len(answer) != 1):
+        problems.append(f"{where}: a 12-hour time answer (time12) is one Text Entry box.")
     response_format = data.get("responseFormat")
     if response_format is not None and (not isinstance(response_format, str) or len(response_format) > 255):
         problems.append(f"{where}: responseFormat must be text of at most 255 characters.")
@@ -412,6 +445,7 @@ def clean_spec(raw: dict) -> Spec:
     competency = raw.get("competency")
     if competency is not None and (not isinstance(competency, str) or len(competency) > 150):
         problems.append(f"{where}: competency must be text of at most 150 characters.")
+    figure = _figure_tree(raw["figure"], f"{where} figure", problems, known) if raw.get("figure") is not None else None
     max_words = raw.get("maxWords", DEFAULT_MAX_WORDS)
     if not isinstance(max_words, int) or not 10 <= max_words <= 250:
         problems.append(f"{where}: maxWords must be from 10 to 250.")
@@ -427,6 +461,7 @@ def clean_spec(raw: dict) -> Spec:
         values=values, require=[r for r in require if r is not None], parts=parts, stimulus=stimulus,
         misconception=misconception,
         max_words=max_words, notes=raw.get("notes"), sources=list(raw.get("sources") or []), raw=raw,
+        figure=figure,
     )
 
 
@@ -517,10 +552,34 @@ def _answer_text(value, answer_format: str) -> str:
         return value.strip()
     if isinstance(value, bool) or isinstance(value, dict):
         raise ExprError("An answer must be a number or text.")
+    if answer_format == "time12":
+        return clock_12(value)
     value = Fraction(value)
     if value.denominator != 1 and answer_format != "fraction":
         raise ExprError(f"The answer {value} is not a whole number.")
     return format_value(value, "fraction" if value.denominator != 1 else "plain")
+
+
+def clock_12(minutes) -> str:
+    """A time of day, given as minutes after midnight, on the 12-hour clock
+    with a.m. or p.m. (Ashalatha, 10 Nov 2026: "the a.m./p.m. part must not
+    disappear from a 12-hour answer"): 795 -> "1:15 p.m.", 725 -> "12:05 p.m.",
+    5 -> "12:05 a.m."."""
+    value = Fraction(minutes)
+    if value.denominator != 1:
+        raise ExprError("A time must be a whole number of minutes.")
+    total = int(value) % (24 * 60)
+    hours, mins = divmod(total, 60)
+    return f"{(hours - 1) % 12 + 1}:{mins:02d} {'a.m.' if hours < 12 else 'p.m.'}"
+
+
+def clock_12_variants(key: str) -> str:
+    """The same time written the other usual ways: 1:15 pm, 1:15 PM, 1:15pm,
+    1.15 p.m. (Text Entry is compared without regard to capitals)."""
+    time, half = key.split(" ")
+    short = half.replace(".", "")
+    out = [f"{time} {short}", f"{time}{short}", f"{time}{half}", f"{time.replace(':', '.')} {half}", f"{time.replace(':', '.')} {short}"]
+    return "|".join(dict.fromkeys(o for o in out if o != key))
 
 
 def _fraction_variants(key: str) -> str | None:
@@ -592,7 +651,9 @@ def _build_part(spec: Spec, part: Part, env: dict, rng: random.Random, stimulus:
         if any(not b for b in boxes):
             raise GenerationError("An answer box would be empty.")
         question["correct_answer"] = ";".join(boxes)
-        if len(boxes) == 1 and "/" in boxes[0]:
+        if len(boxes) == 1 and part.answer_format == "time12":
+            question["accepted_variants"] = clock_12_variants(boxes[0])
+        elif len(boxes) == 1 and "/" in boxes[0]:
             question["accepted_variants"] = _fraction_variants(boxes[0])
     else:
         question["correct_answer"] = _render(part.answer[0], env)
@@ -650,6 +711,13 @@ def make(spec: Spec, seed: str, *, version: int = 1) -> Made:
                 continue
             stimulus = _render(spec.stimulus, env)
             questions = [_build_part(spec, part, env, rng, stimulus) for part in spec.parts]
+            if spec.figure is not None:
+                try:
+                    drawn = json.dumps(figures.check(_figure_value(spec.figure, env)))
+                except figures.FigureError as exc:
+                    raise GenerationError(f"The figure cannot be drawn: {exc}") from exc
+                for question in questions:
+                    question["figure"] = drawn
         except (ExprError, GenerationError, ArithmeticError) as exc:
             last = str(exc)
             continue
@@ -681,7 +749,11 @@ def preview(spec: Spec, count: int, seed: str = "preview", *, version: int = 1) 
         out.append({
             "seed": made.seed, "values": made.values, "stimulus": made.stimulus,
             "misconception": made.misconception,
-            "questions": [{k: v for k, v in q.items() if v is not None} for q in made.questions],
+            "questions": [
+                {**{k: v for k, v in q.items() if v is not None},
+                 **({"figureSvg": figures.render_svg(q["figure"])} if q.get("figure") else {})}
+                for q in made.questions
+            ],
         })
     return out
 
@@ -713,6 +785,7 @@ def build_rows(pattern, made: Made, *, school_id: str, student_id: str | None) -
             competency=pattern.competency, response_format=data["response_format"],
             teacher_note=data["teacher_note"], answer_unit=data["answer_unit"],
             unit_rule=data["unit_rule"], status="APPROVED", quality_status="VERIFIED",
+            figure=data.get("figure"),
         )
         record = GeneratedQuestion(
             question_id=question.id, pattern_id=pattern.id, pattern_version=pattern.version,
