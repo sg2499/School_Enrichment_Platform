@@ -122,7 +122,7 @@ _CHAPTER_NUM = {
     "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
     "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
     "API8B": 27, "FR4": 28, "RES1": 29, "RES2": 30, "FR5": 31, "FR6": 32,
-    "UNIT1": 33,
+    "UNIT1": 33, "RN1": 34,
 }
 
 
@@ -276,6 +276,67 @@ def test_classify_assignment_code_does_not_guess_unrecognised_codes():
     assert classify_assignment_code("CH01-SOMETHING-NEW") == (None, False)
     assert classify_assignment_code(None) == (None, False)
     assert classify_assignment_code("") == (None, False)
+
+
+def test_set_names_are_distinct_for_one_skill():
+    from app.services.learning_service import activity_title
+
+    codes = [
+        ("CORE_PRACTICE", "CH01-P09"),
+        ("EXTRA_PRACTICE", "CH01-XA-S09"),
+        ("EXTRA_PRACTICE", "CH01-XB-S09"),
+        ("REMEDIATION", "CH01-REM-S09"),
+        ("CHALLENGE", "CH01-ADV-S09"),
+        ("PREREQUISITE_CHECK", "CH01-DIAG"),
+        ("PREREQUISITE_CHECK", "CH01-DIAG-B"),
+    ]
+    names = [activity_title("Rounding to the nearest 100", t, c) for t, c in codes]
+    assert len(set(names)) == len(names)
+    assert "Rounding to the nearest 100 — Extra Practice A" in names
+    assert "Rounding to the nearest 100 — Extra Practice B" in names
+    assert "Rounding to the nearest 100 — Core Practice" in names
+    assert activity_title("We the Travellers", "CHAPTER_MASTERY", "CH01-MASTERY") == "We the Travellers — Chapter Mastery"
+
+
+def test_rename_migration_renames_only_generated_names_and_reverses(db_session):
+    import importlib.util
+    import pathlib
+
+    from sqlalchemy import text
+
+    path = pathlib.Path(__file__).resolve().parents[1] / "alembic" / "versions" / "d2e9a4c7b631_distinct_practice_set_names.py"
+    spec = importlib.util.spec_from_file_location("rename_migration", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    chapter, (skill, _other) = _make_chapter_with_skills(db_session, "RN1")
+    made = []
+    for code, title in [
+        ("CH01-XA-S01", f"{skill.title} — Extra Practice"),
+        ("CH01-XB-S01", f"{skill.title} — Extra Practice"),
+        ("CH01-XA-S02", "Renamed by hand"),
+    ]:
+        activity = LearningActivity(
+            chapter_id=chapter.id, concept_lesson_id=skill.id, activity_type="EXTRA_PRACTICE", title=title,
+            sequence=1, status="DRAFT", source_assignment_code=code,
+        )
+        db_session.add(activity)
+        made.append(activity)
+    db_session.commit()
+    ids = [a.id for a in made]
+
+    def titles():
+        db_session.expire_all()
+        return sorted(
+            r[0] for r in db_session.execute(
+                text("SELECT title FROM learning_activities WHERE id IN (:a, :b, :c)"), dict(zip("abc", ids))
+            )
+        )
+
+    module._rename(db_session.connection(), True)
+    assert titles() == sorted([f"{skill.title} — Extra Practice A", f"{skill.title} — Extra Practice B", "Renamed by hand"])
+    module._rename(db_session.connection(), False)
+    assert titles() == sorted([f"{skill.title} — Extra Practice"] * 2 + ["Renamed by hand"])
 
 
 # --- grade_answer -----------------------------------------------------

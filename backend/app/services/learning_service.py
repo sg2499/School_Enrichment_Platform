@@ -122,6 +122,25 @@ _TITLE_SUFFIX = {
 }
 
 
+def activity_title(subject: str, activity_type: str, assignment_code: str | None) -> str:
+    """The name a set carries, so no two sets of one skill read the same.
+
+    A skill has one Core Practice, Remediation and Challenge set, but two
+    Extra Practice sets (codes -XA- and -XB-) and two Prerequisite Checks
+    (DIAG and DIAG-B). Those pairs are told apart by a letter, A or B, so a
+    teacher choosing one, or a student seeing both on My Progress, can tell
+    them apart."""
+    suffix = _TITLE_SUFFIX[activity_type]
+    code = (assignment_code or "").strip()
+    letter = None
+    if activity_type == "EXTRA_PRACTICE":
+        match = re.search(r"-X([AB])-", code)
+        letter = match.group(1) if match else None
+    elif activity_type == "PREREQUISITE_CHECK":
+        letter = "B" if code.endswith("-B") else "A"
+    return f"{subject} — {suffix}" + (f" {letter}" if letter else "")
+
+
 def classify_assignment_code(code: str) -> tuple[str | None, bool]:
     """Returns (activity_type, is_chapter_scoped) for a real
     Question.assignment_code, or (None, False) for a code that doesn't match
@@ -185,10 +204,10 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
 
         concept_lesson = group_questions[0].concept_lesson
         if concept_lesson_id:
-            title = f"{concept_lesson.title} — {_TITLE_SUFFIX[activity_type]}"
+            title = activity_title(concept_lesson.title, activity_type, assignment_code)
             sequence = concept_lesson.sequence
         else:
-            title = f"{chapter.title} — {_TITLE_SUFFIX[activity_type]}"
+            title = activity_title(chapter.title, activity_type, assignment_code)
             sequence = 9999  # chapter-scoped capstones sort after every skill's own activities
 
         activity = LearningActivity(
