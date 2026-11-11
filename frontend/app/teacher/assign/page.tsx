@@ -60,7 +60,6 @@ import { cn } from "@/lib/utils";
 import { readAssignPrefill, type AssignPrefill } from "@/lib/analytics";
 import { api, describeApiError, errorMessage } from "@/lib/api";
 import type { DescribedError } from "@/lib/errors";
-import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { Assignment, AssignmentReason, LearningActivity } from "@/types/learning";
 import type { SchoolCurriculumMapEntry } from "@/types/curriculum";
 
@@ -520,7 +519,7 @@ export default function AssignPracticePage() {
                       </option>
                       {activities.map((activity) => (
                         <option key={activity.id} value={activity.id}>
-                          {activity.title} &middot; {ACTIVITY_TYPE_LABEL[activity.activityType]}
+                          {activity.title} &middot; {activity.estimatedMinutes ?? 10} min
                         </option>
                       ))}
                     </SelectField>
