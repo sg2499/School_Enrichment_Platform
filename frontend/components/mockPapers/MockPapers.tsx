@@ -749,6 +749,25 @@ export function MockPapers({ role }: { role: Role }) {
   const shown = (papers.data?.papers ?? []).filter((p) => p.scope === section?.key);
   const canBuild = role === "TEACHER" && Boolean(section?.canChange);
 
+  if (role === "SUPER_ADMIN") {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          surface="masthead"
+          eyebrow="Assessment"
+          title="Mock Papers"
+          description="Practice papers for exams and tests, with fresh questions for every student. You preview and approve each paper; students then each get their own version."
+        />
+        <Card className="p-6">
+          <EmptyState
+            title="One School at a Time"
+            description="Mock papers belong to a school. Sign in as that school's admin to see them."
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -795,14 +814,6 @@ export function MockPapers({ role }: { role: Role }) {
         </MastheadSelect>
       </PageHeader>
 
-      {role === "SUPER_ADMIN" ? (
-        <Card className="p-6">
-          <EmptyState
-            title="One School at a Time"
-            description="Mock papers belong to a school. Sign in as that school's admin to see them."
-          />
-        </Card>
-      ) : null}
       {sections.problem ? <LoadError problem={sections.problem} onRetry={sections.reload} /> : null}
       {list && list.length === 0 ? (
         <Card className="p-6">

@@ -148,6 +148,7 @@ export function WeeklyReports({
       ? `${section.classLevelId}|${section.section}|${weekStart}`
       : "";
 
+  const weekIsCurrent = weeks.find((w) => w.start === weekStart)?.isCurrent ?? false;
   const week = useApiQuery<SectionWeek>(
     scope ? "/weekly-reports/week" : null,
     {
@@ -334,6 +335,25 @@ export function WeeklyReports({
   const weekLabel =
     data?.week.label ?? weeks.find((w) => w.start === weekStart)?.label ?? "";
 
+  if (role === "SUPER_ADMIN") {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          surface="masthead"
+          eyebrow="Parents"
+          title="Weekly Reports"
+          description="Each child's week for their parents, drafted from their practice. Add a note, issue the section in one step, and print or send the pages."
+        />
+        <Card className="p-6">
+          <EmptyState
+            title="One School at a Time"
+            description="Weekly reports belong to one school. Sign in as that school's admin or teacher to see them."
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -365,7 +385,7 @@ export function WeeklyReports({
                   : "—",
           },
           {
-            label: "This Week",
+            label: weekIsCurrent ? "This Week" : "Selected Week",
             value: week.problem
               ? "—"
               : data
@@ -424,14 +444,6 @@ export function WeeklyReports({
         </div>
       </PageHeader>
 
-      {role === "SUPER_ADMIN" ? (
-        <Card className="p-6">
-          <EmptyState
-            title="One School at a Time"
-            description="Weekly reports belong to one school. Sign in as that school's admin or teacher to see them."
-          />
-        </Card>
-      ) : null}
       {sections.problem ? (
         <LoadError problem={sections.problem} onRetry={sections.reload} />
       ) : null}

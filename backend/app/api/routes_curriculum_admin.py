@@ -344,6 +344,7 @@ def list_chapters(
     # sees published chapters only and has no use for it.
     progress = _review_progress(db, [c.id for c in chapters]) if user.role == "SUPER_ADMIN" else {}
     published_lessons: dict[str, int] = {}
+    draft_activities: dict[str, int] = {}
     if user.role == "SUPER_ADMIN" and chapters:
         from sqlalchemy import func
 
@@ -353,6 +354,12 @@ def list_chapters(
             .group_by(ConceptLesson.chapter_id)
         ):
             published_lessons[chapter_id] = n
+        for chapter_id, n in (
+            db.query(LearningActivity.chapter_id, func.count(LearningActivity.id))
+            .filter(LearningActivity.chapter_id.in_([c.id for c in chapters]), LearningActivity.status == "DRAFT")
+            .group_by(LearningActivity.chapter_id)
+        ):
+            draft_activities[chapter_id] = n
     for chapter in chapters:
         lesson_count, question_count = _chapter_counts(db, chapter.id)
         summary = _chapter_summary(chapter, lesson_count, question_count)
@@ -361,6 +368,7 @@ def list_chapters(
             summary["approvedQuestionCount"] = sum(x["approved"] for x in lessons)
             summary["flaggedQuestionCount"] = sum(x["flagged"] for x in lessons)
             summary["publishedLessonCount"] = published_lessons.get(chapter.id, 0)
+            summary["draftActivityCount"] = draft_activities.get(chapter.id, 0)
         payload.append(summary)
     return {"chapters": payload}
 
@@ -413,6 +421,12 @@ def get_chapter(
 
     result = _chapter_summary(chapter, len(lessons), total_questions)
     result["conceptLessons"] = lesson_payload
+    if user.role == "SUPER_ADMIN":
+        result["draftActivityCount"] = (
+            db.query(LearningActivity)
+            .filter(LearningActivity.chapter_id == chapter.id, LearningActivity.status == "DRAFT")
+            .count()
+        )
     return result
 
 
