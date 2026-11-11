@@ -613,6 +613,40 @@ def test_approve_and_publish_chapters_in_one_call(client, db_session):
     assert q_bad.status == "DRAFT"
 
 
+def test_published_chapter_with_draft_practice_sets_is_finished_by_approve_and_publish(client, db_session):
+    from app.models import LearningActivity, LearningActivityQuestion
+
+    chapter, _ = _make_chapter(db_session, "pub02", status="PUBLISHED")
+    lesson = ConceptLesson(chapter_id=chapter.id, code="SKL-pub02", title="c", status="PUBLISHED")
+    db_session.add(lesson)
+    db_session.commit()
+    db_session.refresh(lesson)
+    question = _add_question(db_session, lesson, "Q-PUB02-A", stem="Round 6,849 to the nearest 10.", correct_answer="6850", status="APPROVED")
+    activity = LearningActivity(
+        chapter_id=chapter.id, concept_lesson_id=lesson.id, activity_type="CORE_PRACTICE", title="c - Core Practice",
+        sequence=1, status="DRAFT", source_assignment_code="CH77-P01",
+    )
+    db_session.add(activity)
+    db_session.flush()
+    db_session.add(LearningActivityQuestion(learning_activity_id=activity.id, question_id=question.id, sequence=1))
+    db_session.commit()
+    _make_super_admin(db_session, "sa-approvepub02@example.com")
+    csrf = _login(client, "sa-approvepub02@example.com")
+
+    def mine():
+        rows = client.get("/api/curriculum-admin/chapters", headers=csrf).json()["chapters"]
+        return next(r for r in rows if r["id"] == chapter.id)
+
+    assert mine()["draftActivityCount"] == 1
+    assert client.get(f"/api/curriculum-admin/chapters/{chapter.id}", headers=csrf).json()["draftActivityCount"] == 1
+    response = client.post(
+        "/api/curriculum-admin/chapters/approve-and-publish", json={"chapterIds": [chapter.id]}, headers=csrf
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["activitiesPublished"] == 1
+    assert mine()["draftActivityCount"] == 0
+
+
 def test_bulk_approve_is_super_admin_only(client, db_session):
     chapter, _ = _make_chapter(db_session, "bulk04")
     lesson, _ = _add_lesson_with_question(db_session, chapter, "bulk04")

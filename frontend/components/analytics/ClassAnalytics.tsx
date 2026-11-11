@@ -412,6 +412,25 @@ export function ClassAnalytics({ role }: { role: "TEACHER" | "ADMIN" | "SUPER_AD
   const canAssign = role === "TEACHER" && Boolean(section?.isCurrent);
   const chosenSet = setsData?.sets.find((s) => s.learningActivityId === setId) ?? null;
 
+  if (role === "SUPER_ADMIN") {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          surface="masthead"
+          eyebrow="Insight"
+          title="Class Analytics"
+          description="How a section did on each question, and the mistakes it makes most, from the practice and mock papers it has handed in."
+        />
+        <Card className="p-6">
+          <EmptyState
+            title="One School at a Time"
+            description="Class Analytics shows a school's own sections. Sign in as that school's admin to see them."
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -443,14 +462,6 @@ export function ClassAnalytics({ role }: { role: "TEACHER" | "ADMIN" | "SUPER_AD
         </MastheadSelect>
       </PageHeader>
 
-      {role === "SUPER_ADMIN" ? (
-        <Card className="p-6">
-          <EmptyState
-            title="One School at a Time"
-            description="Class Analytics shows a school's own sections. Sign in as that school's admin to see them."
-          />
-        </Card>
-      ) : null}
       {sections.problem ? <LoadError problem={sections.problem} onRetry={sections.reload} /> : null}
 
       {list && list.length === 0 ? (

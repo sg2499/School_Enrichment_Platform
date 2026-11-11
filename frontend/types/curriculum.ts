@@ -35,6 +35,8 @@ export type ChapterSummary = {
   approvedQuestionCount?: number;
   flaggedQuestionCount?: number;
   publishedLessonCount?: number;
+  /** Practice sets still in draft: a published chapter with some is not finished (Approve and Publish completes it). */
+  draftActivityCount?: number;
 };
 
 // "DRAFT" | "REVIEW" | "PUBLISHED" | "ARCHIVED" -- same lifecycle shape as
