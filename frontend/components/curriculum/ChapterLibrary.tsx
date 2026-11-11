@@ -32,7 +32,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
 import { api, errorMessage } from "@/lib/api";
 import { useUrlState } from "@/lib/hooks/useUrlState";
-import type { ChapterStatus, ChapterSummary } from "@/types/curriculum";
+import type { BulkApproveResult, ChapterStatus, ChapterSummary } from "@/types/curriculum";
 
 type StatusFilter = ChapterStatus | "ALL";
 
@@ -66,6 +66,7 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
   const [asking, setAsking] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  const [approvingAll, setApprovingAll] = useState(false);
   const classes = useMemo(() => classLevelsForBoard(boardId), [classLevelsForBoard, boardId]);
   const scoped = Boolean(boardId || classLevelId || disciplineId);
 
@@ -133,6 +134,29 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
     }
   }
 
+  async function approveAll() {
+    setApprovingAll(true);
+    setSent(null);
+    setProblem(null);
+    try {
+      const { data } = await api.post<BulkApproveResult>("/curriculum-admin/chapters/questions/bulk-approve", {
+        chapterIds: shown.map((c) => c.id),
+        includeUnverified: true,
+      });
+      setSent(
+        `Approved ${countOf(data.approvedCount, "question")}.` +
+          (data.skippedFlaggedCount > 0 ? ` ${data.skippedFlaggedCount} flagged, left for you to read.` : "") +
+          (data.skippedAlreadyDoneCount > 0 ? ` ${data.skippedAlreadyDoneCount} were already approved.` : ""),
+      );
+      await load();
+      onChanged();
+    } catch (err) {
+      setProblem(errorMessage(err, "approve the questions"));
+    } finally {
+      setApprovingAll(false);
+    }
+  }
+
   return (
     <Card>
       <CardBody className="space-y-5">
@@ -182,6 +206,17 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
             delayMs={150}
             className="w-full sm:ml-auto sm:w-64"
           />
+          <Button
+            type="button"
+            size="sm"
+            leadingIcon={<Check className="h-4 w-4" />}
+            loading={approvingAll}
+            loadingLabel="Approving"
+            disabled={!chapters || loading || shown.length === 0 || approvingAll}
+            onClick={() => void approveAll()}
+          >
+            {`Approve All Questions${scoped ? " Listed" : ""}`}
+          </Button>
           <Button
             type="button"
             size="sm"

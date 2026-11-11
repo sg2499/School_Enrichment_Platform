@@ -792,6 +792,11 @@ class BulkApproveRequest(BaseModel):
     includeUnverified: bool = False
 
 
+class BulkApproveManyRequest(BaseModel):
+    chapterIds: list[str] | None = None  # None = every chapter
+    includeUnverified: bool = True
+
+
 def _bulk_approve_questions(
     db: Session,
     questions: list[Question],
@@ -901,6 +906,34 @@ def bulk_approve_chapter_questions(
         db, questions, payload.includeUnverified,
         user=user, request=request,
         scope={"chapterId": chapter.id, "chapterCode": chapter.code},
+    )
+
+
+@router.post("/chapters/questions/bulk-approve")
+def bulk_approve_many_chapters(
+    payload: BulkApproveManyRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """One-click approval across many chapters (Shailesh, 11 Nov 2026: approving
+    question by question, then chapter by chapter, is laborious). Same gate as
+    the per-chapter version -- FLAGGED questions are never touched -- but spans
+    every chapter listed (or all of them) in a single call. Archived chapters
+    are left alone."""
+    query = (
+        db.query(Question)
+        .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
+        .join(Chapter, ConceptLesson.chapter_id == Chapter.id)
+        .filter(Question.origin == "BANK", Chapter.status != "ARCHIVED")
+    )
+    if payload.chapterIds is not None:
+        query = query.filter(Chapter.id.in_(payload.chapterIds))
+    questions = query.order_by(Question.code).all()
+    return _bulk_approve_questions(
+        db, questions, payload.includeUnverified,
+        user=user, request=request,
+        scope={"chapterIds": payload.chapterIds, "allChapters": payload.chapterIds is None},
     )
 
 

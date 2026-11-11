@@ -547,6 +547,37 @@ def test_bulk_approve_chapter_spans_every_lesson(client, db_session):
     assert q_b.status == "APPROVED"
 
 
+def test_bulk_approve_many_chapters_in_one_call(client, db_session):
+    ch_a, _ = _make_chapter(db_session, "bulk05a")
+    ch_b, _ = _make_chapter(db_session, "bulk05b")
+    qs = []
+    flagged = None
+    for ch, tag in ((ch_a, "a"), (ch_b, "b")):
+        lesson = ConceptLesson(chapter_id=ch.id, code=f"SKL-bulk05{tag}", title=tag, status="DRAFT")
+        db_session.add(lesson)
+        db_session.commit()
+        db_session.refresh(lesson)
+        qs.append(_add_question(db_session, lesson, f"Q-BULK05-{tag}V", stem=f"Round {4236 if tag == 'a' else 5378} to the nearest 10.", correct_answer="4240" if tag == "a" else "5380"))
+        qs.append(_add_question(db_session, lesson, f"Q-BULK05-{tag}U", stem=f"Explain your reasoning in one sentence ({tag}).", correct_answer="Because."))
+        if tag == "a":
+            flagged = _add_question(db_session, lesson, "Q-BULK05-aF", stem="", correct_answer="")
+    _make_super_admin(db_session, "sa-bulk05@example.com")
+    csrf = _login(client, "sa-bulk05@example.com")
+    response = client.post(
+        "/api/curriculum-admin/chapters/questions/bulk-approve",
+        json={"chapterIds": [ch_a.id, ch_b.id]},
+        headers=csrf,
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["approvedCount"] == 4, body
+    assert body["skippedFlaggedCount"] == 1
+    for q in qs + [flagged]:
+        db_session.refresh(q)
+    assert all(q.status == "APPROVED" for q in qs)
+    assert flagged.status == "DRAFT"
+
+
 def test_bulk_approve_is_super_admin_only(client, db_session):
     chapter, _ = _make_chapter(db_session, "bulk04")
     lesson, _ = _add_lesson_with_question(db_session, chapter, "bulk04")

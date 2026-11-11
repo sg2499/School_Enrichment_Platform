@@ -221,7 +221,6 @@ function BulkApprove({
   compact?: boolean;
 }) {
   const [mode, setMode] = useState<"verified" | "unverified" | null>(null);
-  const [asking, setAsking] = useState(false);
   const [result, setResult] = useState<BulkApproveResult | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -232,39 +231,38 @@ function BulkApprove({
     try {
       const { data } = await api.post<BulkApproveResult>(path, { includeUnverified });
       setResult(data);
-      setAsking(false);
       await onDone();
     } catch (err) {
       setProblem(errorMessage(err, `approve ${scopeLabel}'s questions`));
-      setAsking(false);
     } finally {
       setMode(null);
     }
   }
 
   const buttons = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Button
         type="button"
         size="sm"
-        variant="secondary"
         leadingIcon={<ShieldCheck className="h-4 w-4" />}
-        loading={mode === "verified"}
+        loading={mode === "unverified"}
         loadingLabel="Checking and approving"
-        disabled={mode === "unverified"}
-        onClick={() => void run(false)}
+        disabled={mode === "verified"}
+        onClick={() => void run(true)}
       >
-        Approve All Verified
+        Approve All Questions
       </Button>
       <Button
         type="button"
         size="sm"
         variant="ghost"
         leadingIcon={<ShieldAlert className="h-4 w-4" />}
-        disabled={mode !== null}
-        onClick={() => setAsking(true)}
+        loading={mode === "verified"}
+        loadingLabel="Checking and approving"
+        disabled={mode === "unverified"}
+        onClick={() => void run(false)}
       >
-        Also Approve Unverified…
+        Verified Only
       </Button>
     </div>
   );
@@ -278,37 +276,12 @@ function BulkApprove({
     </p>
   ) : null;
 
-  const confirm = (
-    <Modal
-      open={asking}
-      onClose={() => (mode ? undefined : setAsking(false))}
-      size="sm"
-      title="Also Approve Unverified Questions?"
-      footer={
-        <>
-          <Button type="button" variant="ghost" disabled={mode !== null} onClick={() => setAsking(false)}>
-            Cancel
-          </Button>
-          <Button type="button" loading={mode === "unverified"} loadingLabel="Approving" onClick={() => void run(true)}>
-            Approve Verified and Unverified
-          </Button>
-        </>
-      }
-    >
-      <p className="text-sm text-content">
-        This also approves {scopeLabel}&apos;s questions that no automated check could confirm: their answer keys have only the import
-        behind them. Flagged questions are still left out, and any approved question can be sent back later.
-      </p>
-    </Modal>
-  );
-
   if (compact) {
     return (
       <div className="space-y-2">
         {buttons}
         {outcome}
         {problem ? <ErrorBanner message={problem} /> : null}
-        {confirm}
       </div>
     );
   }
@@ -320,8 +293,7 @@ function BulkApprove({
           Approve in Bulk
         </CardTitle>
         <CardDescription>
-          Runs the automated checks over every question in the chapter and approves the ones they confirm. Flagged questions, and those no
-          check can confirm either way, are left for you to read one by one under Questions.
+          One click approves every question in the chapter. Questions the automated checks flagged are left for you to read under Questions, and any approved question can be sent back later.
         </CardDescription>
       </CardHeader>
       <CardBody className="space-y-3">
@@ -329,7 +301,6 @@ function BulkApprove({
         {outcome}
         {problem ? <ErrorBanner message={problem} /> : null}
       </CardBody>
-      {confirm}
     </Card>
   );
 }
