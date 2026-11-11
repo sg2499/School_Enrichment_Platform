@@ -21,6 +21,7 @@ team correction and re-export, blueprint Section 15.1's own "support
 export... for correction and re-import" workflow) updates existing rows
 rather than duplicating them.
 """
+import json
 from dataclasses import dataclass, field
 
 import openpyxl
@@ -38,6 +39,7 @@ from app.models import (
     Question,
     SubjectGroup,
 )
+from app.services import figures
 from app.services.learning_service import MARKING_FIELD_LABELS, clean_marking_fields
 
 # Question Bank sheet column positions (0-indexed) -- see module docstring.
@@ -272,6 +274,7 @@ def import_chapter_workbook(
         raise ValueError("Question Bank sheet does not start with the expected header row")
     qb_data_rows = [r for r in qb_rows[1:] if r and r[QB_QUESTION_ID]]
     marking_columns = _marking_columns(qb_rows[0])
+    figure_column = next((i for i, cell in enumerate(qb_rows[0]) if cell is not None and str(cell).strip().lower() == "figure"), None)
 
     sm_rows = list(wb["Skill Map"].iter_rows(values_only=True))
     sm_header_idx = _find_header_row(sm_rows, "Skill ID")
@@ -415,6 +418,17 @@ def import_chapter_workbook(
                 setattr(question, key, value)
             for _field, problem in problems:
                 result.warnings.append(f"Question {code}: {problem} Left as it was.")
+        if figure_column is not None:
+            # #218: a drawn picture. Like the marking columns, an absent column
+            # leaves what is stored alone; an empty cell clears it.
+            raw = row[figure_column] if figure_column < len(row) else None
+            if raw is None or not str(raw).strip():
+                question.figure = None
+            else:
+                try:
+                    question.figure = json.dumps(figures.check(str(raw)))
+                except figures.FigureError as exc:
+                    result.warnings.append(f"Question {code}: the figure cannot be drawn ({exc}) Left as it was.")
 
         if is_new:
             db.add(question)

@@ -188,7 +188,7 @@ export function WeeklyReportView({
           <Tile label="Done on Time" value={t.given ? String(t.onTime) : "—"} />
           <Tile label="Questions Answered" value={String(n.answered)} />
           <Tile
-            label="Marks Earned"
+            label="Practice Score"
             value={n.percent !== null ? `${n.percent}%` : "—"}
           />
         </dl>
@@ -215,9 +215,12 @@ export function WeeklyReportView({
             />
           </div>
           <p className="text-xs text-content-subtle">
-            Skills are judged on the practice and mock papers handed in by the
-            end of this week, the most recent answer to each question counting.
+            This report shows the latest completed result; teachers also retain
+            first-attempt performance for analysis.
           </p>
+          {report.nextStep ? (
+            <p className="text-sm font-semibold text-content">{report.nextStep}</p>
+          ) : null}
         </section>
       ) : null}
 

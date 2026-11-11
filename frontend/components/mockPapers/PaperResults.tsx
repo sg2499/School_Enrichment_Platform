@@ -31,6 +31,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { MarkingView, ResultsGrid, ReviewPlace } from "@/types/mockPapers";
+import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 const STATE_TONE = { NOT_STARTED: "neutral", IN_PROGRESS: "brand", TO_MARK: "warning", MARKED: "success" } as const;
 
@@ -295,6 +296,7 @@ function ReviewDialog({
                       {p.label ? <span className="font-semibold">({p.label}) </span> : null}
                       {p.text}
                     </p>
+                      <QuestionFigure svg={p.figureSvg} />
                     <label className="flex items-center gap-2 text-sm font-semibold text-content">
                       Mark
                       <select

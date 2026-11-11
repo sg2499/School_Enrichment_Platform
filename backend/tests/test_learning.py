@@ -313,8 +313,12 @@ def test_grade_answer_numeric_entry_tolerates_unit_currency_sign_and_decimal_noi
     # correct_answer of "19250" was marked incorrect even though it's the
     # mathematically correct value -- grade_answer must never flag a
     # correct answer as wrong just because of formatting.
-    q = Question(question_type="Numeric Entry", correct_answer="19250", marks=1, auto_gradable=True)
+    # Since 10 Nov 2026 (Ashalatha, rule 1) a written unit counts only when it
+    # is the question's own: this question is in km and rupees.
+    q = Question(question_type="Numeric Entry", correct_answer="19250", marks=1, auto_gradable=True,
+                 stem="A bus odometer reads 19,000 km and the fare is in rupees. What does it read after 250 km more?")
     assert grade_answer(q, "19,250 km")[0] is True
+    assert grade_answer(q, "19,250 kg")[0] is False
     assert grade_answer(q, "19250km")[0] is True
     assert grade_answer(q, "19250.0")[0] is True
     assert grade_answer(q, "+19250")[0] is True
@@ -322,11 +326,11 @@ def test_grade_answer_numeric_entry_tolerates_unit_currency_sign_and_decimal_noi
     assert grade_answer(q, "19251")[0] is False  # genuinely wrong value stays wrong
     assert grade_answer(q, "192500")[0] is False  # off by a factor of ten stays wrong
 
-    percent_q = Question(question_type="Numeric Entry", correct_answer="45", marks=1, auto_gradable=True)
+    percent_q = Question(question_type="Numeric Entry", correct_answer="45", marks=1, auto_gradable=True, stem="What percent is shaded?")
     assert grade_answer(percent_q, "45%")[0] is True
     assert grade_answer(percent_q, "45 percent")[0] is True
 
-    decimal_q = Question(question_type="Numeric Entry", correct_answer="3.5", marks=1, auto_gradable=True)
+    decimal_q = Question(question_type="Numeric Entry", correct_answer="3.5", marks=1, auto_gradable=True, stem="How long is the pencil in cm?")
     assert grade_answer(decimal_q, "3.50 cm")[0] is True
     assert grade_answer(decimal_q, "3.5cm")[0] is True
 
@@ -343,7 +347,7 @@ def test_grade_answer_numeric_fallback_never_creates_a_false_positive_from_embed
 
 
 def test_grade_answer_ordering_tolerates_comma_and_unit_noise_per_item():
-    q = Question(question_type="Ordering", correct_answer="1,000;5,000;9,000", marks=1, auto_gradable=True)
+    q = Question(question_type="Ordering", correct_answer="1,000;5,000;9,000", marks=1, auto_gradable=True, stem="Order the distances 9,000 km, 1,000 km and 5,000 km.")
     assert grade_answer(q, "1000;5000;9000")[0] is True
     assert grade_answer(q, "1000 km;5000 km;9000 km")[0] is True
     assert grade_answer(q, "9000;5000;1000")[0] is False
@@ -1713,7 +1717,7 @@ def test_a_measured_answer_is_marked_with_its_unit_end_to_end(client, db_session
     assert all("answerUnitLabel" not in q and "correctAnswer" not in q for q in attempt["questions"])
     assert {q["code"]: q["answerNeedsUnit"] for q in attempt["questions"]} == {"UNIT1-Q1": False, "UNIT1-Q2": True, "UNIT1-Q3": False}
 
-    for question, given in ((stated, "250 kg"), (required, "12"), (untouched, "40 kg")):
+    for question, given in ((stated, "250 kg"), (required, "12"), (untouched, "40")):  # a stray unit on Q3 would be wrong since 10 Nov 2026
         saved = client.put(
             f"/api/learning/attempts/{attempt['id']}/answers", json={"questionId": question.id, "responseText": given}, headers=headers,
         )

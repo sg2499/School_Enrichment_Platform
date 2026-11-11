@@ -57,6 +57,7 @@ import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { ReadOnlyBadge, ScoreBadge } from "@/components/tracker/TrackerBits";
 import { formatDateTime, plural, scopeShort, studentClassLabel } from "@/lib/tracker";
 import type { AttemptReview, MethodMarksRow, Paginated, ReviewAnswer, ReviewQueueRow } from "@/types/tracker";
+import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 type Drafts = Record<string, number | null>;
 
@@ -447,6 +448,7 @@ function AnswerCard({
         </div>
 
         <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty">{answer.stem}</p>
+        <QuestionFigure svg={answer.figureSvg} />
 
         {optionEntries.length > 0 ? (
           <ul className="grid gap-1.5 sm:grid-cols-2">

@@ -43,7 +43,7 @@ from app.models.papers import (
     PaperFormat,
     QuestionPattern,
 )
-from app.services import analytics_service, paper_formats, pattern_engine
+from app.services import analytics_service, figures, paper_formats, pattern_engine
 from app.services.analytics_service import Scope
 from app.services.paper_formats import FormatError
 from app.services.practice_access_service import Viewer
@@ -623,6 +623,7 @@ def _render_slot(slot, pattern) -> dict | None:
             "answer": q["correct_answer"], "acceptedVariants": q.get("accepted_variants"),
             "answerUnit": q.get("answer_unit"), "markingSteps": q.get("teacher_note"),
             "explanation": q.get("explanation"), "mistakes": q.get("mistakes"),
+            "figureSvg": figures.render_svg(q["figure"]) if q.get("figure") else None,
         })
     return {"stimulus": made.stimulus, "questions": questions}
 

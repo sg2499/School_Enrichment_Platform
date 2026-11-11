@@ -257,3 +257,21 @@ def test_pdf_uses_the_product_typefaces():
     }
     pdf = weekly_report_pdf.render([page, page])
     assert pdf[:4] == b"%PDF" and pdf.count(b"/Type /Page\n") + pdf.count(b"/Type /Page ") >= 2
+
+
+def test_every_report_names_one_clear_next_step():
+    # Ashalatha, 10 Nov 2026: "Next step: [one skill or set to practise next]."
+    from app.services.weekly_report_service import next_step
+
+    weak = {"strong": [], "workOn": [{"title": "Rounding to the nearest 100", "chapterNo": 1}]}
+    assert next_step(weak, {}) == "Next step: practise Rounding to the nearest 100 (Chapter 1)."
+    assert next_step({"strong": [], "workOn": []}, {"notDone": 1}) == "Next step: finish the practice sets not done yet."
+    assert next_step({"strong": [], "workOn": []}, {}) == "Next step: keep up the practice your teacher sets each week."
+
+
+def test_the_report_says_practice_score_and_how_results_are_kept():
+    from pathlib import Path
+
+    text = (Path(__file__).resolve().parents[1] / "app" / "services" / "weekly_report_pdf.py").read_text()
+    assert "Marks Earned" not in text and "Practice Score" in text
+    assert "This report shows the latest completed result; teachers also retain first-attempt performance for analysis." in text

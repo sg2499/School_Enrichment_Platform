@@ -771,9 +771,9 @@ def _glance(page: dict) -> list:
         if done
         else {"label": "Done on Time", "value": "—", "note": "Nothing handed in"},
         {"label": "Questions Answered", "value": str(n["answered"]), "note": "Handed in this week"},
-        {"label": "Marks Earned", "value": f"{n['percent']}%", "percent": n["percent"], "ink": BRAND}
+        {"label": "Practice Score", "value": f"{n['percent']}%", "percent": n["percent"], "ink": BRAND}
         if n.get("percent") is not None
-        else {"label": "Marks Earned", "value": "—", "note": "No marked answers yet"},
+        else {"label": "Practice Score", "value": "—", "note": "No marked answers yet"},
     ]
     out: list = [Tiles(tiles)]
     extra = []
@@ -882,8 +882,8 @@ def _skills(page: dict) -> list:
     return [
         table,
         Spacer(1, 2 * mm),
-        _p("Judged on the practice and mock papers handed in by the end of this week; the most recent answer to each question counts.", S_SMALL),
-    ]
+        _p("This report shows the latest completed result; teachers also retain first-attempt performance for analysis.", S_SMALL),
+    ] + ([Spacer(1, 2 * mm), _p(f"<b>{escape(page['nextStep'])}</b>", S_NOTE)] if page.get("nextStep") else [])
 
 
 def _notes(page: dict) -> list:

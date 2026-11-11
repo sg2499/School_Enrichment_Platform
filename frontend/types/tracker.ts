@@ -179,6 +179,7 @@ export type ReviewAnswer = {
   questionCode: string;
   questionType: string;
   stem: string;
+  figureSvg?: string | null;
   options: Partial<Record<"A" | "B" | "C" | "D", string>>;
   responseText: string | null;
   isCorrect: boolean | null;

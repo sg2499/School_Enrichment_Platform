@@ -117,6 +117,8 @@ export interface WeeklyReportData {
   totals: WeekTotals;
   weekNumbers: WeekNumbers;
   skills?: { strong: WeeklySkill[]; workOn: WeeklySkill[] };
+  // Ashalatha, 10 Nov 2026: one clear next step (pages issued before it have none).
+  nextStep?: string;
   // #207: mock papers handed in that week (pages issued before it have none).
   mockPapers?: MockPaperResult[];
   notes: { section: string | null; child: string | null };

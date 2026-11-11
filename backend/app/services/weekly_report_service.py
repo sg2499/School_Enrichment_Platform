@@ -564,6 +564,19 @@ def _totals(rows: list[dict]) -> dict:
     }
 
 
+def next_step(skills: dict, totals: dict) -> str:
+    """One clear next step on every report (Ashalatha, Q70; wording approved
+    10 Nov 2026): "Next step: [one skill or set to practise next]." The
+    weakest skill first; else the sets not yet done; else keep going."""
+    if skills.get("workOn"):
+        skill = skills["workOn"][0]
+        where = f" (Chapter {skill['chapterNo']})" if skill.get("chapterNo") else ""
+        return f"Next step: practise {skill['title']}{where}."
+    if totals.get("notDone") or totals.get("open"):
+        return "Next step: finish the practice sets not done yet."
+    return "Next step: keep up the practice your teacher sets each week."
+
+
 def _skills(db: Session, student: Student, week_start: date) -> dict:
     """Strong skills and skills to work on, from the practice handed in, and
     the mock papers handed in, by the end of the week (so a
@@ -634,6 +647,7 @@ def build(
         }
         if with_skills:
             page["skills"] = _skills(db, student, week_start)
+            page["nextStep"] = next_step(page["skills"], page["totals"])
             # #207: mock papers handed in this week (none: no block).
             start, end = week_window(week_start)
             page["mockPapers"] = mock_results_service.papers_for(db, student.id, handed_from=start, handed_before=end)

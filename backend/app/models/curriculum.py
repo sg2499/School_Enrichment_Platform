@@ -417,6 +417,10 @@ class Question(Base):
     numeric_tolerance = Column(String(20), nullable=True)
     decimal_places = Column(Integer, nullable=True)
     unit_mark = Column(Integer, nullable=True)
+    # A drawn picture (#218, 11 Nov 2026): a JSON description checked and
+    # drawn as SVG by app/services/figures.py (a mirror line on a grid, block
+    # letters, map symbols). Empty for most questions.
+    figure = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

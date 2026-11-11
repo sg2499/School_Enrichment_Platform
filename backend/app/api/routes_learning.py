@@ -69,6 +69,7 @@ from app.models import (
     User,
 )
 from app.services import (
+    figures,
     foundation_repair_service,
     learning_service,
     practice_access_service,
@@ -120,6 +121,7 @@ def _question_public_dict(question: Question) -> dict:
         # Phase 4 (#164): "Answer in grams." or "Write the number and the
         # unit." Says how to answer, never what the answer is.
         "answerInstruction": learning_service.answer_instruction(question),
+        "figureSvg": figures.svg_for(question),
         "answerNeedsUnit": learning_service.answer_needs_unit(question),
         # #163 (22 Oct 2026): a "Your working" box goes under the answer on
         # a Numeric Entry question worth 2 or more marks, for method marks.
@@ -870,6 +872,7 @@ def get_attempt_result(
                     if text
                 },
                 "stem": question.stem,
+                "figureSvg": figures.svg_for(question),
                 "responseText": answer.response_text,
                 "isCorrect": answer.is_correct,
                 "autoScore": answer.auto_score,

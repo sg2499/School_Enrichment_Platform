@@ -548,17 +548,70 @@ def _numeric_value(text: str) -> float | None:
         return None
 
 
-def _blank_matches(response_blank: str, candidate_blank: str) -> bool:
+# A Required unit with none recorded: the unit cannot be checked, so any is
+# taken, as before.
+ANY_UNIT = "*"
+
+
+def _written_unit(text: str) -> str | None:
+    """The currency or unit written with a number ("₹480" -> "rupee", "16 cm"
+    -> "cm"), as a units code where there is one, else the word itself;
+    None for a bare number."""
+    cleaned = re.sub(r"\s+", " ", text.replace(",", "")).strip()
+    if _LEADING_CURRENCY_RE.match(cleaned):
+        return "rupee"
+    match = _TRAILING_UNIT_RE.search(cleaned)
+    if not match:
+        return None
+    word = match.group(1).lower().rstrip(".")
+    if word in ("km/h", "kmph"):
+        return "km"  # a speed in kilometres an hour, for an answer recorded in km
+    if word in ("%", "percent"):
+        return "percent"
+    return units.unit_code(word) or word
+
+
+def units_named_in(stem: str | None) -> frozenset:
+    """The units a question's own wording names ("A bus travels 450 km" ->
+    {"km"}), so a child who writes the question's unit is never marked down
+    where no answer unit is recorded."""
+    found = set()
+    for word in re.findall(r"[A-Za-z]+|%", stem or ""):
+        lowered = word.lower()
+        if lowered in ("%", "percent"):
+            found.add("percent")
+            continue
+        code = units.unit_code(lowered) if len(lowered) > 1 or lowered in ("g", "m", "l", "h", "s") else None
+        if code:
+            found.add(code)
+    if "₹" in (stem or "") or re.search(r"\brupees?\b|\brs\b", stem or "", re.IGNORECASE):
+        found.add("rupee")
+    return frozenset(found)
+
+
+def _blank_matches(response_blank: str, candidate_blank: str, question_unit=None) -> bool:
     if _normalize_value(response_blank) == _normalize_value(candidate_blank):
         return True
     response_value = _numeric_value(response_blank)
     candidate_value = _numeric_value(candidate_blank)
-    return response_value is not None and candidate_value is not None and response_value == candidate_value
+    if response_value is None or candidate_value is None or response_value != candidate_value:
+        return False
+    # Ashalatha, 10 Nov 2026 (rule 1): the number alone is right, and so is
+    # the number with the answer's own unit; the right number with another
+    # unit, money or a word the answer does not use is wrong ("16 cm" for 16
+    # steps, "₹480" for 480 children). Before, any trailing unit was ignored.
+    # The unit the question itself asks for (recorded, or read from its
+    # wording, as marking_rule does) also counts.
+    written = _written_unit(response_blank)
+    if written is None or question_unit == ANY_UNIT or written == _written_unit(candidate_blank):
+        return True
+    allowed = question_unit if isinstance(question_unit, frozenset) else frozenset({question_unit} - {None})
+    return written in allowed
 
 
-def _blanks_match(response_blanks: list[str], candidate_blanks: list[str]) -> bool:
+def _blanks_match(response_blanks: list[str], candidate_blanks: list[str], question_unit: str | None = None) -> bool:
     return len(response_blanks) == len(candidate_blanks) and all(
-        _blank_matches(r, c) for r, c in zip(response_blanks, candidate_blanks)
+        _blank_matches(r, c, question_unit) for r, c in zip(response_blanks, candidate_blanks)
     )
 
 
@@ -879,8 +932,11 @@ def _mark_against(given: units.Measurement, expected: units.Measurement, rule: M
 
     if given.unit is None or expected_unit is None:
         # No unit written, or none to check against (rule NONE, or the
-        # answer unit not yet recorded): the number decides, and a written
-        # unit is ignored, as marking always has.
+        # answer unit not yet recorded): the number decides. A unit written
+        # where the answer has none is wrong (Ashalatha, 10 Nov 2026, rule 1:
+        # "250 kg" or "₹250" for a count), unless it is the key's own.
+        if given.unit is not None and expected_unit is None and given.unit != expected.unit:
+            return GradeResult(False, 0)
         if not same(given.number):
             return GradeResult(False, 0)
         if given.unit is None and expected_unit is not None and rule.unit_rule == "REQUIRED":
@@ -916,8 +972,18 @@ def _variant_fits_unit(variant: str, key: str | None, rule: MarkingRule) -> bool
     does one that is the same amount within the question's own tolerance
     and rounding (found in review, 13 Oct 2026)."""
     written = units.parse_measurement(variant)
+    if written is None and not rule.allow_conversion:
+        # A mixed amount such as "2 kg 50 g" for an answer in grams: another
+        # form of the answer, so only with Allow Conversion (rule 2).
+        words = {units.unit_code(word) for word in re.findall(r"[A-Za-z]+", variant)} - {None}
+        return not words or words == {rule.answer_unit}
     if written is None or written.unit is None or written.unit == rule.answer_unit:
         return True
+    if not rule.allow_conversion:
+        # Ashalatha, 10 Nov 2026 (rule 1): an amount in another unit counts
+        # only when Allow Conversion is Yes, even when it is equal ("2.05 kg"
+        # for 2050 g). The key's own unit, and no unit, still count.
+        return False
     expected = units.parse_measurement(key)
     if expected is None:
         return True  # a key these rules cannot read: the author's list stands
@@ -964,7 +1030,7 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
         if expected is None:
             # A key these rules cannot read ("60 km/h", "1/2") is compared
             # the old way, so it can never make a question impossible.
-            if _blank_matches(response, candidate):
+            if _blank_matches(response, candidate, rule.answer_unit):
                 return GradeResult(True, marks)
             continue
         if given is None:
@@ -980,9 +1046,10 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
         # An answer these rules cannot read at all ("60 km/h") is never
         # marked down by them: it gets what marking always gave it (found
         # in review, 13 Oct 2026).
-        is_correct, score = _grade_answer_text(question, response)
-        if is_correct:
-            return GradeResult(is_correct, score)
+        # Against the same filtered list, so a variant ruled out above (a
+        # mixed form or another unit) cannot come back this way.
+        if any(_blank_matches(response, candidate, rule.answer_unit) for candidate in candidates):
+            return GradeResult(True, marks)
     return best
 
 
@@ -1034,8 +1101,17 @@ def _grade_answer_text(question: Question, response_text: str | None) -> tuple[b
             is_correct = False
         else:
             response_blanks = [p for p in response.split(";") if p.strip()]
+            question_unit = None
+            if question_type in ("Numeric Entry", "Ordering"):
+                rule = marking_rule(question)
+                if rule.answer_unit:
+                    question_unit = rule.answer_unit
+                elif rule.unit_rule == "REQUIRED":
+                    question_unit = ANY_UNIT
+                else:
+                    question_unit = units_named_in(question.stem)
             is_correct = any(
-                _blanks_match(response_blanks, [p for p in candidate.split(";") if p.strip()])
+                _blanks_match(response_blanks, [p for p in candidate.split(";") if p.strip()], question_unit)
                 for candidate in _candidate_answers(question)
             )
     else:

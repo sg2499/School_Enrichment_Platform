@@ -61,7 +61,7 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import units
+from app.services import figures, units
 from app.services.audit_service import log_audit_event
 from app.services.learning_service import clean_marking_fields, marking_notes, marking_rule
 from app.services.question_quality_service import run_quality_checks
@@ -569,6 +569,8 @@ def _question_detail(question: Question) -> dict:
         "responseFormat": question.response_format,
         "mediaRequired": question.media_required,
         "teacherNote": question.teacher_note,
+        "figure": question.figure,
+        "figureSvg": figures.svg_for(question),
         "status": question.status,
         "qualityStatus": question.quality_status,
         "qualityFlags": json.loads(question.quality_flags) if question.quality_flags else [],
