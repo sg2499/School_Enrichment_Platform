@@ -202,8 +202,10 @@ def _norm_name(text: str) -> str:
 
 
 def _courses(db: Session, school: School) -> dict[tuple[str, str], list[BoardCourse]]:
-    """(class code, subject key) -> the school's board's published courses
-    of that name (one, normally)."""
+    """(class code, subject key) -> the school's board's courses of that
+    name (one, normally). Setup does not wait for content: a course still in
+    DRAFT or REVIEW counts, because teachers and students are onboarded
+    before chapters are published. Only an ARCHIVED course is left out."""
     out: dict[tuple[str, str], list[BoardCourse]] = {}
     if not school.board:
         return out
@@ -211,7 +213,7 @@ def _courses(db: Session, school: School) -> dict[tuple[str, str], list[BoardCou
         db.query(BoardCourse, ClassLevel)
         .join(Board, Board.id == BoardCourse.board_id)
         .join(ClassLevel, ClassLevel.id == BoardCourse.class_level_id)
-        .filter(func.upper(Board.code) == school.board.strip().upper(), BoardCourse.status == "PUBLISHED")
+        .filter(func.upper(Board.code) == school.board.strip().upper(), BoardCourse.status != "ARCHIVED")
         .all()
     )
     for course, level in rows:
