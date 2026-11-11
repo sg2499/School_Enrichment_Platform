@@ -26,6 +26,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SelectField } from "@/components/ui/Field";
 import { FilterChips } from "@/components/ui/FilterChips";
+import { ApproveAndPublish } from "@/components/curriculum/ApproveAndPublish";
 import { Modal } from "@/components/ui/Modal";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -206,9 +207,20 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
             delayMs={150}
             className="w-full sm:ml-auto sm:w-64"
           />
+          <ApproveAndPublish
+            chapterIds={shown.filter((c) => c.status !== "PUBLISHED").map((c) => c.id)}
+            label={`Approve and Publish${scoped ? " Listed" : " All"}`}
+            scopeLabel={scoped ? "the chapters listed" : "every chapter"}
+            variant="primary"
+            onDone={async () => {
+              await load();
+              onChanged();
+            }}
+          />
           <Button
             type="button"
             size="sm"
+            variant="secondary"
             leadingIcon={<Check className="h-4 w-4" />}
             loading={approvingAll}
             loadingLabel="Approving"

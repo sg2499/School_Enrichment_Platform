@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { ApproveAndPublish } from "@/components/curriculum/ApproveAndPublish";
 import { QuestionCard } from "@/components/curriculum/QuestionCard";
 import { CHAPTER_STATUS_TONE, ErrorBanner, LESSON_STATUS_TONE, LIST_KEY, STATUS_LABEL, countOf } from "@/components/curriculum/shared";
 import { LoadError } from "@/components/ui/AlertBanner";
@@ -752,6 +753,15 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <StatusCard chapter={chapter} onChanged={refresh} />
           <div className="space-y-6">
+            {chapter.status !== "PUBLISHED" && chapter.status !== "ARCHIVED" ? (
+              <ApproveAndPublish
+                chapterIds={[chapter.id]}
+                label="Approve and Publish This Chapter"
+                scopeLabel="this chapter"
+                variant="primary"
+                onDone={refresh}
+              />
+            ) : null}
             <BulkApprove
               path={`/curriculum-admin/chapters/${chapter.id}/questions/bulk-approve`}
               scopeLabel="this chapter"

@@ -409,6 +409,30 @@ def get_chapter(
     return result
 
 
+def _chapter_publish_blocker(db: Session, chapter: Chapter) -> dict | None:
+    """Why this chapter can't be published yet, or None when it can."""
+    lessons = db.query(ConceptLesson).filter(ConceptLesson.chapter_id == chapter.id).all()
+    if not lessons:
+        return {"message": "This chapter has no concept lessons yet, so it can't be published."}
+    missing = [
+        lesson.code
+        for lesson in lessons
+        if not db.query(Question)
+        .filter(
+            Question.concept_lesson_id == lesson.id,
+            Question.status.in_(_READY_QUESTION_STATUSES),
+            Question.origin == "BANK",
+        )
+        .first()
+    ]
+    if missing:
+        return {
+            "message": "Every concept lesson needs at least one approved question before the chapter can be published.",
+            "details": {"conceptLessonsMissingQuestions": missing},
+        }
+    return None
+
+
 @router.patch("/chapters/{chapter_id}/status")
 def update_chapter_status(
     chapter_id: str,
@@ -425,27 +449,9 @@ def update_chapter_status(
     _apply_transition(chapter.status, requested_status, _CHAPTER_TRANSITIONS, "Chapter")
 
     if requested_status == "PUBLISHED":
-        lessons = db.query(ConceptLesson).filter(ConceptLesson.chapter_id == chapter.id).all()
-        if not lessons:
-            api_error(409, "CHAPTER_NOT_READY", "This chapter has no concept lessons yet, so it can't be published.")
-        lessons_missing_questions = [
-            lesson.code
-            for lesson in lessons
-            if not db.query(Question)
-            .filter(
-                Question.concept_lesson_id == lesson.id,
-                Question.status.in_(_READY_QUESTION_STATUSES),
-                Question.origin == "BANK",
-            )
-            .first()
-        ]
-        if lessons_missing_questions:
-            api_error(
-                409,
-                "CHAPTER_NOT_READY",
-                "Every concept lesson needs at least one approved question before the chapter can be published.",
-                {"conceptLessonsMissingQuestions": lessons_missing_questions},
-            )
+        not_ready = _chapter_publish_blocker(db, chapter)
+        if not_ready:
+            api_error(409, "CHAPTER_NOT_READY", not_ready["message"], not_ready.get("details"))
 
     previous_status = chapter.status
     chapter.status = requested_status
@@ -460,6 +466,71 @@ def update_chapter_status(
     db.refresh(chapter)
     lesson_count, question_count = _chapter_counts(db, chapter.id)
     return _chapter_summary(chapter, lesson_count, question_count)
+
+
+class ApproveAndPublishRequest(BaseModel):
+    chapterIds: list[str]
+    includeUnverified: bool = True
+
+
+@router.post("/chapters/approve-and-publish")
+def approve_and_publish_chapters(
+    payload: ApproveAndPublishRequest,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """The whole path in one click (Shailesh, 11 Nov 2026): approve every
+    question the gate allows, send Draft chapters to review, and publish each
+    chapter that clears the normal readiness gate. FLAGGED questions are still
+    left for a human, so a chapter whose lessons depend on them stays in
+    Review and is reported back rather than published. Archived chapters are
+    never touched."""
+    chapters = (
+        db.query(Chapter).filter(Chapter.id.in_(payload.chapterIds), Chapter.status != "ARCHIVED").order_by(Chapter.code).all()
+        if payload.chapterIds
+        else []
+    )
+    questions = (
+        db.query(Question)
+        .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
+        .filter(ConceptLesson.chapter_id.in_([c.id for c in chapters]), Question.origin == "BANK")
+        .order_by(Question.code)
+        .all()
+        if chapters
+        else []
+    )
+    approval = _bulk_approve_questions(
+        db, questions, payload.includeUnverified,
+        user=user, request=request,
+        scope={"chapterIds": [c.id for c in chapters], "via": "approve-and-publish"},
+    )
+    published: list[str] = []
+    already: list[str] = []
+    held: list[dict] = []
+    for chapter in chapters:
+        if chapter.status == "PUBLISHED":
+            already.append(chapter.code)
+            continue
+        blocker = _chapter_publish_blocker(db, chapter)
+        if blocker:
+            if chapter.status == "DRAFT":
+                chapter.status = "REVIEW"
+            held.append({"code": chapter.code, "title": chapter.title, "reason": blocker["message"]})
+            continue
+        if chapter.status == "DRAFT":
+            chapter.status = "REVIEW"
+        chapter.status = "PUBLISHED"
+        published.append(chapter.code)
+    log_audit_event(
+        db,
+        "curriculum.chapter.bulk_published",
+        user_id=user.id,
+        request=request,
+        details={"published": published, "alreadyPublished": already, "held": [h["code"] for h in held]},
+    )
+    db.commit()
+    return {**approval, "publishedChapters": published, "alreadyPublishedChapters": already, "heldChapters": held}
 
 
 class BulkChapterStatusRequest(BaseModel):

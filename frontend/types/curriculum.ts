@@ -133,6 +133,12 @@ export type BulkApproveResult = {
   skippedAlreadyDoneCount: number;
 };
 
+export type ApproveAndPublishResult = BulkApproveResult & {
+  publishedChapters: string[];
+  alreadyPublishedChapters: string[];
+  heldChapters: { code: string; title: string; reason: string }[];
+};
+
 export type BoardCourseOption = {
   id: string;
   code: string;
