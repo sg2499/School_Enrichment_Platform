@@ -6326,7 +6326,7 @@
         "m + k != d",
         "2 * m != d"
       ],
-      "stimulus": "Case study: A 1 km walking track in a park is marked like a number line from 0 km to 1 km. Tick marks at 0, at 1 km and in between split it into {d} equal gaps. {who.name} starts at 0 and stops at the {k}th tick mark after 0. Count the equal gaps, not the tick marks.",
+      "stimulus": "Case study: A 1 km walking track in a park is marked like a number line from 0 km to 1 km. Tick marks at 0, at 1 km and in between split it into {d} equal gaps. {who.name} starts at 0 and stops at the {k:ord} tick mark after 0. Count the equal gaps, not the tick marks.",
       "parts": [
         {
           "questionType": "Text Entry",

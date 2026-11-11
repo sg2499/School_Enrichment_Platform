@@ -32346,7 +32346,7 @@
         ]
       },
       "hint": "Look for {r.ask} in the key. If it is not there, it needs its own new symbol in the key.",
-      "explanation": "The answer is: {r.c}. each symbol in a key stands for one thing, and every symbol used must be in the key.",
+      "explanation": "The answer is: {r.c}. Each symbol in a key stands for one thing, and every symbol used must be in the key.",
       "misconception": "Treats a symbol as the real size or confuses the key with a route instruction.",
       "notes": "Sometimes the place is in the key (use its symbol), sometimes not (add a new symbol to the key); about 60% are in the key. Ashalatha, 10 Nov 2026 (D16): the child's name comes from the approved names list. Ashalatha, 10 Nov 2026 (D15): the symbols are drawn by Krama in the figure (no font), named in words in the options.",
       "sources": [
@@ -34635,7 +34635,7 @@
           "text": "(a) How many {r.s} symbols are on the map?",
           "answer": "r.n1",
           "responseFormat": "Integer",
-          "explanation": "Counting them: {r.n1} {r.s} symbols. There are {r.n2} {r.t} symbols."
+          "explanation": "Counting them: {r.n1} {r.s} {'symbol' if r.n1 == 1 else 'symbols'}. There {'is' if r.n2 == 1 else 'are'} {r.n2} {r.t} {'symbol' if r.n2 == 1 else 'symbols'}."
         },
         {
           "questionType": "Numeric Entry",
