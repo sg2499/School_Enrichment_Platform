@@ -385,3 +385,22 @@ def test_review_fixes(client, db_session):
     refused = _post(client, headers, "setup/check", out.getvalue())
     assert refused.status_code == 422 and "row" in refused.json()["detail"]["message"]
     assert time.monotonic() - start < 5
+
+
+def test_setup_does_not_wait_for_published_content(client, db_session):
+    """Teachers and students are onboarded before chapters are published, so a
+    course still in DRAFT must not stop a teacher row; an ARCHIVED one still does."""
+    db = db_session
+    school, admin, course = _world(db, "SET6")
+    headers = {**_login(client, admin.email), "x-auth-role": "ADMIN"}
+    data = _xlsx([("Meera Kapoor", "meera.set6@example.com", "9000000066", "", "5A")], [("Aarav Sen", "5", "A", "1")])
+
+    course.status = "DRAFT"
+    db.commit()
+    body = _post(client, headers, "setup/check", data).json()
+    assert body["ok"] and body["problems"] == []
+
+    course.status = "ARCHIVED"
+    db.commit()
+    body = _post(client, headers, "setup/check", data).json()
+    assert not body["ok"] and "no Mathematics" in body["problems"][0]["message"]
