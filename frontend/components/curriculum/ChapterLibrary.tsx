@@ -208,7 +208,9 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
             className="w-full sm:ml-auto sm:w-64"
           />
           <ApproveAndPublish
-            chapterIds={shown.filter((c) => c.status !== "PUBLISHED").map((c) => c.id)}
+            chapterIds={shown
+              .filter((c) => c.status === "DRAFT" || c.status === "REVIEW" || (c.status === "PUBLISHED" && (c.publishedLessonCount ?? c.conceptLessonCount) < c.conceptLessonCount))
+              .map((c) => c.id)}
             label={`Approve and Publish${scoped ? " Listed" : " All"}`}
             scopeLabel={scoped ? "the chapters listed" : "every chapter"}
             variant="primary"

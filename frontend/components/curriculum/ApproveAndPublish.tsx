@@ -72,7 +72,8 @@ export function ApproveAndPublish({
         <div role="status" className="space-y-1 text-xs leading-relaxed text-content-muted">
           <p>
             Approved <strong className="text-jade-700">{result.approvedCount}</strong> questions and published{" "}
-            <strong className="text-jade-700">{countOf(result.publishedChapters.length, "chapter")}</strong>.
+            <strong className="text-jade-700">{countOf(result.publishedChapters.length, "chapter")}</strong>, with{" "}
+            {countOf(result.lessonsPublished, "lesson")} and {countOf(result.activitiesPublished, "practice set")} made ready for teachers.
             {result.skippedFlaggedCount > 0 ? ` ${result.skippedFlaggedCount} flagged questions are left for you to read.` : ""}
           </p>
           {result.heldChapters.length > 0 ? (
@@ -100,8 +101,8 @@ export function ApproveAndPublish({
         }
       >
         <p className="text-sm text-content">
-          This approves every question in {scopeLabel} except the flagged ones, then publishes each chapter that is ready, so schools can
-          see it. A chapter that still needs a flagged question read is held in Review. A published chapter can be archived later.
+          This approves every question in {scopeLabel} except the flagged ones, then publishes each chapter that is ready, with its lessons and practice sets, so schools can
+          see and use it. A chapter that still needs a flagged question read is held in Review. A published chapter can be archived later.
         </p>
       </Modal>
     </div>

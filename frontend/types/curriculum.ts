@@ -137,6 +137,8 @@ export type ApproveAndPublishResult = BulkApproveResult & {
   publishedChapters: string[];
   alreadyPublishedChapters: string[];
   heldChapters: { code: string; title: string; reason: string }[];
+  lessonsPublished: number;
+  activitiesPublished: number;
 };
 
 export type BoardCourseOption = {

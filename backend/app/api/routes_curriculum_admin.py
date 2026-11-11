@@ -54,6 +54,8 @@ from app.models import (
     CourseDisciplineMap,
     CurriculumVersion,
     Discipline,
+    LearningActivity,
+    LearningActivityQuestion,
     Question,
     School,
     SchoolAdmin,
@@ -63,7 +65,12 @@ from app.models import (
 )
 from app.services import figures, units
 from app.services.audit_service import log_audit_event
-from app.services.learning_service import clean_marking_fields, marking_notes, marking_rule
+from app.services.learning_service import (
+    clean_marking_fields,
+    generate_activities_for_chapter,
+    marking_notes,
+    marking_rule,
+)
 from app.services.question_quality_service import run_quality_checks
 
 router = APIRouter(prefix="/api/curriculum-admin", tags=["curriculum-admin"])
@@ -468,6 +475,56 @@ def update_chapter_status(
     return _chapter_summary(chapter, lesson_count, question_count)
 
 
+def _release_chapter_content(db: Session, chapter: Chapter, user: User) -> tuple[int, int]:
+    """What "published" has to mean for a chapter to be usable: its concept
+    lessons published (the student skill map reads only published lessons),
+    its practice activities generated, and every activity whose questions are
+    all approved published (teachers assign from published activities).
+    Returns (lessons published, activities published). Idempotent."""
+    lessons_published = 0
+    for lesson in db.query(ConceptLesson).filter(ConceptLesson.chapter_id == chapter.id).all():
+        if lesson.status in ("PUBLISHED", "ARCHIVED"):
+            continue
+        has_ready = (
+            db.query(Question.id)
+            .filter(
+                Question.concept_lesson_id == lesson.id,
+                Question.status.in_(_READY_QUESTION_STATUSES),
+                Question.origin == "BANK",
+            )
+            .first()
+        )
+        if not has_ready:
+            continue
+        if lesson.status == "DRAFT":
+            lesson.status = "REVIEW"
+        lesson.status = "PUBLISHED"
+        lessons_published += 1
+    db.flush()
+    generate_activities_for_chapter(db, chapter, user.id)
+
+    not_ready = (
+        db.query(LearningActivityQuestion.learning_activity_id)
+        .join(Question, LearningActivityQuestion.question_id == Question.id)
+        .filter(Question.status.notin_(_READY_QUESTION_STATUSES))
+        .distinct()
+    )
+    has_questions = db.query(LearningActivityQuestion.learning_activity_id).distinct()
+    activities = (
+        db.query(LearningActivity)
+        .filter(
+            LearningActivity.chapter_id == chapter.id,
+            LearningActivity.status == "DRAFT",
+            LearningActivity.id.in_(has_questions),
+            LearningActivity.id.notin_(not_ready),
+        )
+        .all()
+    )
+    for activity in activities:
+        activity.status = "PUBLISHED"
+    return lessons_published, len(activities)
+
+
 class ApproveAndPublishRequest(BaseModel):
     chapterIds: list[str]
     includeUnverified: bool = True
@@ -508,9 +565,14 @@ def approve_and_publish_chapters(
     published: list[str] = []
     already: list[str] = []
     held: list[dict] = []
+    lessons_published = 0
+    activities_published = 0
     for chapter in chapters:
         if chapter.status == "PUBLISHED":
             already.append(chapter.code)
+            n_lessons, n_activities = _release_chapter_content(db, chapter, user)
+            lessons_published += n_lessons
+            activities_published += n_activities
             continue
         blocker = _chapter_publish_blocker(db, chapter)
         if blocker:
@@ -522,15 +584,31 @@ def approve_and_publish_chapters(
             chapter.status = "REVIEW"
         chapter.status = "PUBLISHED"
         published.append(chapter.code)
+        n_lessons, n_activities = _release_chapter_content(db, chapter, user)
+        lessons_published += n_lessons
+        activities_published += n_activities
     log_audit_event(
         db,
         "curriculum.chapter.bulk_published",
         user_id=user.id,
         request=request,
-        details={"published": published, "alreadyPublished": already, "held": [h["code"] for h in held]},
+        details={
+            "published": published,
+            "alreadyPublished": already,
+            "held": [h["code"] for h in held],
+            "lessonsPublished": lessons_published,
+            "activitiesPublished": activities_published,
+        },
     )
     db.commit()
-    return {**approval, "publishedChapters": published, "alreadyPublishedChapters": already, "heldChapters": held}
+    return {
+        **approval,
+        "publishedChapters": published,
+        "alreadyPublishedChapters": already,
+        "heldChapters": held,
+        "lessonsPublished": lessons_published,
+        "activitiesPublished": activities_published,
+    }
 
 
 class BulkChapterStatusRequest(BaseModel):
