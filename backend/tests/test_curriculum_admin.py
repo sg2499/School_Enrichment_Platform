@@ -604,6 +604,11 @@ def test_approve_and_publish_chapters_in_one_call(client, db_session):
         db_session.refresh(o)
     assert ready.status == "PUBLISHED"
     assert blocked.status == "REVIEW"
+    db_session.refresh(lesson_r)
+    db_session.refresh(lesson_b)
+    assert lesson_r.status == "PUBLISHED"
+    assert lesson_b.status == "DRAFT"
+    assert body["lessonsPublished"] == 1
     assert q_ok.status == "APPROVED"
     assert q_bad.status == "DRAFT"
 

@@ -4,7 +4,7 @@
  * Assessment Schemes (#165): how each subject's result is worked out for a
  * school year. A school admin keeps the school's years and schemes here;
  * a Super Admin picks a school first, and also keeps the templates
- * schools start from (drafts until Ashalatha has checked them).
+ * schools start from (drafts until reviewed).
  */
 import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -121,7 +121,7 @@ function AssessmentSchemesPage() {
       setNotice(
         data.created.length === 0
           ? "The standard templates already exist."
-          : `Made ${data.created.length} standard ${data.created.length === 1 ? "template" : "templates"} as drafts. Publish each once Ashalatha has checked it.`,
+          : `Made ${data.created.length} standard ${data.created.length === 1 ? "template" : "templates"} as drafts. Publish each once it has been reviewed.`,
       );
       templates.reload();
     } catch (err) {
@@ -316,7 +316,7 @@ function AssessmentSchemesPage() {
               <CardTitle>Templates</CardTitle>
               <CardDescription>
                 {isPlatformAdmin
-                  ? "Starting points every school can copy. A template stays a draft until Ashalatha has checked it."
+                  ? "Starting points every school can copy. A template stays a draft until it has been reviewed."
                   : "Starting points for a new scheme. You can change everything after copying one."}
               </CardDescription>
             </div>

@@ -173,7 +173,9 @@ const MODULES: StudentModule[] = [
     // the admin dashboard marks its equivalent "Reports" module Planned for
     // the same reason. What students *do* have today is each set's own
     // score, in Daily Practice -- that's a result, not this module.
-    status: "planned",
+    // Live since the Phase 6 My Progress page (/student/progress).
+    status: "live",
+    href: "/student/progress",
   },
   {
     icon: <FileSpreadsheet className="h-5 w-5" aria-hidden />,
@@ -184,7 +186,9 @@ const MODULES: StudentModule[] = [
     // exists anywhere in backend/app or frontend/app (checked 30 Sep 2026);
     // README records the paper/mock generator (Phases 5-8) as "not
     // started"; the admin dashboard's "Papers & Mocks" module is Planned.
-    status: "planned",
+    // Live since Phase 5 (/student/papers).
+    status: "live",
+    href: "/student/papers",
   },
 ];
 

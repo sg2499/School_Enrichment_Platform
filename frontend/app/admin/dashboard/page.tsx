@@ -10,10 +10,10 @@ import {
   CheckCircle2,
   Circle,
   CircleDashed,
-  Database,
   FileSpreadsheet,
   GraduationCap,
   Library,
+  ListChecks,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -47,12 +47,10 @@ import type { ChapterStatus, ChapterSummary, SchoolCurriculumMapEntry, SchoolOpt
  * Sep 2026, and IMPLEMENTATION_ROADMAP.md's "where we are" block, which
  * agree with each other).
  *
- * Re-verified 30 Sep 2026 (Phase 2a admin pass) after a live-product audit
- * found a real, completed student practice attempt with a real score while
- * this list still called the whole learning loop "planned". Update
- * ROLLOUT_VERIFIED_ON whenever a state here is re-checked.
+ * Re-checked 11 Nov 2026 against the live product: the marking engine,
+ * assessment schemes, report cards, mock papers, analytics and weekly
+ * reports are all in use, so they are listed as live.
  */
-const ROLLOUT_VERIFIED_ON = "30 Sep 2026";
 
 // "partial" (added 30 Sep 2026) exists because the learning loop is
 // genuinely half-shipped: its core is in students' hands, but part of what
@@ -131,29 +129,14 @@ const STAGES: Stage[] = [
   },
   {
     title: "School Marking Engine",
-    body: "Part marks, method marks and teacher-awarded scores, so results match what teachers give on paper.",
-    // "planned" until 1 Oct 2026, now "partial". LIVE: teacher-awarded
-    // marks for answers auto-marking can't score -- Constructed Response
-    // attempts land in the Practice Tracker's Needs Review queue and a
-    // teacher marks each answer 0..its marks (POST
-    // /learning/tracker/attempts/{id}/grades; Evaluation.teacher_score,
-    // final_score = auto + teacher, FINALISED once all are marked).
-    // NOT LIVE: grade_answer is still all-or-nothing on auto-marked
-    // questions (no method/part marks there, no teacher override of an
-    // automatic mark), no rubric tables, and the measurement/unit-tolerance
-    // spec is its own separate pass.
-    state: "partial",
-    shipped: ["Teachers mark written answers question by question"],
-    pending: ["Part and method marks on auto-marked questions", "Unit and tolerance rules for measurement answers"],
+    body: "Part marks, method marks and teacher-awarded scores, with assessment schemes and report cards, so results match what teachers give on paper.",
+    state: "done",
   },
   {
     title: "Papers, Mocks and Reports",
-    body: "Board-format papers and the analytics your leadership team will ask for.",
-    platformBody: "Board-format papers and the analytics a school's leadership team will ask for.",
-    // Left "planned" after checking, 30 Sep 2026: no paper/mock/report
-    // model, route or page exists in backend/app or frontend/app. README
-    // records Phases 5-8 as "not started".
-    state: "planned",
+    body: "Mock papers, class analytics, weekly parent reports and each student's progress.",
+    platformBody: "Mock papers, class analytics, weekly parent reports and each student's progress, for every school.",
+    state: "done",
   },
 ];
 
@@ -222,6 +205,9 @@ type Module = {
   /** Only live modules link anywhere -- the same rule RoleShell's rail
    *  follows (no href, no pretend link). */
   href?: string;
+  /** Lives inside one school, so a Super Admin (who sees every school) is
+   *  not shown a card that leads nowhere. */
+  schoolOnly?: boolean;
 };
 
 // Ordered by what an admin can use today, then by how close the rest are.
@@ -258,51 +244,40 @@ const MODULES: Module[] = [
     href: "/admin/people",
   },
   {
-    icon: <Database className="h-5 w-5" aria-hidden />,
-    title: "Question Bank",
-    // A school admin neither imports nor reviews questions (both are the
-    // Super Admin's, inside Curriculum Studio), so their card says what the
-    // bank is to them rather than what they cannot do in it.
-    description: "The reviewed questions behind every published chapter.",
-    platformDescription: "Import from spreadsheets, review quality, and map every question to a chapter.",
-    tone: "accent",
-    // Left "In Build" after checking, 30 Sep 2026: question review and the
-    // automated quality checks are live, but only inside Curriculum
-    // Studio's chapter review. There is no import endpoint or upload UI
-    // (import is backend/scripts/import_class5_maths.py, run by an
-    // operator) and no standalone Question Bank route (RoleShell: soon).
-    status: "build",
-  },
-  {
     icon: <GraduationCap className="h-5 w-5" aria-hidden />,
     title: "Classes & Sections",
-    description: "The structure everything else hangs off — classes, sections and which teacher owns each.",
+    description: "Set up teachers and students from one workbook, print sign-in slips, and see who is in each section.",
+    platformDescription: "Set up any school's teachers and students from one workbook, print sign-in slips, and see who is in each section.",
     tone: "brand",
-    // Left "Soon" after checking, 30 Sep 2026: the teacher<->section
-    // assignment API landed 20 Aug 2026 (routes_teacher_assignments.py,
-    // mounted in main.py), but no page calls it and there is no route
-    // (RoleShell: soon). Class and section are still free-text fields on
-    // each student. Foundation laid, nothing an admin can open yet.
-    status: "soon",
+    status: "live",
+    href: "/admin/sections",
+  },
+  {
+    icon: <ListChecks className="h-5 w-5" aria-hidden />,
+    title: "Assessment & Report Cards",
+    description: "Set how each subject's result is worked out, then issue Term 1 and Year-End report cards.",
+    platformDescription: "Keep the standard templates schools start from, and see any school's report cards.",
+    tone: "accent",
+    status: "live",
+    href: "/admin/assessment",
   },
   {
     icon: <FileSpreadsheet className="h-5 w-5" aria-hidden />,
-    title: "Papers & Mocks",
-    description: "Generate board-format papers from published content, with answer keys.",
-    tone: "accent",
-    // Left "Planned": no paper/mock model, route or page exists (checked 30 Sep 2026).
-    status: "planned",
+    title: "Mock Papers",
+    description: "Practice papers for exams and tests, with a fresh set of questions for every student.",
+    tone: "coral",
+    status: "live",
+    href: "/admin/papers",
+    schoolOnly: true,
   },
   {
     icon: <BarChart3 className="h-5 w-5" aria-hidden />,
-    title: "Reports",
-    description: "Chapter mastery and cohort trends for class teachers and school leadership.",
+    title: "Analytics & Weekly Reports",
+    description: "How each section did, question by question, and a weekly page for every child's parents.",
     tone: "jade",
-    // Left "Planned" (checked 30 Sep 2026). Teachers do have a per-
-    // assignment results view (GET /learning/assignments/{id}/targets), but
-    // that is one assignment's scores, not the mastery/cohort reporting
-    // this card describes, and nothing reaches an admin.
-    status: "planned",
+    status: "live",
+    href: "/admin/analytics",
+    schoolOnly: true,
   },
 ];
 
@@ -851,7 +826,8 @@ export default function AdminDashboardPage() {
   // true.)
   const liveCount = STAGES.filter((s) => s.state === "done").length;
   const currentStage = STAGES.find((s) => s.state === "partial" || s.state === "active");
-  const liveModules = MODULES.filter((m) => m.status === "live").length;
+  const modules = MODULES.filter((m) => !(isPlatformAdmin && m.schoolOnly));
+  const liveModules = modules.filter((m) => m.status === "live").length;
 
   // A read that has failed is treated as not known, even when an older
   // answer is still held from before (useApiQuery keeps the last one): a
@@ -1158,14 +1134,6 @@ export default function AdminDashboardPage() {
                 })}
               </ol>
 
-              {/* Dated, so a reader can judge how fresh the claims above are
-                  -- and so the next person editing STAGES has a visible
-                  reason to re-check them rather than just add to them. */}
-              <PanelFooter>
-                <p className="text-xs text-content-subtle">
-                  Status last verified on {ROLLOUT_VERIFIED_ON}.
-                </p>
-              </PanelFooter>
             </PanelStack>
           </StretchCard>
 
@@ -1221,11 +1189,11 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <Badge tone="neutral">
-              {liveModules} Live &middot; {MODULES.length - liveModules} Coming
+              {liveModules} Live{modules.length > liveModules ? <> &middot; {modules.length - liveModules} Coming</> : null}
             </Badge>
           </div>
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {MODULES.map((module, index) => {
+            {modules.map((module, index) => {
               const card = (
                 <ModuleCard
                   icon={module.icon}

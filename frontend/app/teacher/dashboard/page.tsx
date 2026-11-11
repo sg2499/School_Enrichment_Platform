@@ -532,8 +532,7 @@ function ReadinessCard({ checks }: { checks: Check[] }) {
 
       <PanelFooter>
         <p className="text-xs text-content-subtle">
-          Live rows are re-read on every visit. The planned row was checked against the build on{" "}
-          {STATIC_CLAIMS_VERIFIED_ON}.
+          Checked live against your school each time you open this page.
         </p>
       </PanelFooter>
     </PanelStack>
@@ -934,7 +933,9 @@ const MODULES: Module[] = [
     // "Planned": the per-assignment results view (GET /learning/assignments/
     // {id}/targets) is one assignment's scores, not mastery analytics; no
     // analytics route exists.
-    status: "planned",
+    // Live since Phase 6 (/teacher/analytics).
+    status: "live",
+    href: "/teacher/analytics",
   },
 ];
 
@@ -1066,19 +1067,13 @@ export default function TeacherDashboardPage() {
             its footer pins level with the other column's last card.
             Order on a phone: sections, practice, checklist, profile. */}
         <SplitLayout columns="lg:grid-cols-[1.1fr_0.9fr]">
-          <SplitColumn fill="last">
+          <SplitColumn fill="none">
             <StretchCard className="animate-fade-up animation-delay-70" bodyClassName="sm:p-8">
               <SectionsPanel sections={signals.sections} maps={signals.maps} />
             </StretchCard>
 
             <StretchCard className="animate-fade-up animation-delay-210">
               <RecentPractice assignments={signals.assignments} />
-            </StretchCard>
-          </SplitColumn>
-
-          <SplitColumn fill="first">
-            <StretchCard className="animate-fade-up animation-delay-140">
-              <ReadinessCard checks={checks} />
             </StretchCard>
 
             <Card tone="brand" className="animate-fade-up animation-delay-280">
@@ -1097,6 +1092,13 @@ export default function TeacherDashboardPage() {
                 </dl>
               </CardBody>
             </Card>
+          </SplitColumn>
+
+          <SplitColumn fill="first">
+            <StretchCard className="animate-fade-up animation-delay-140">
+              <ReadinessCard checks={checks} />
+            </StretchCard>
+
           </SplitColumn>
         </SplitLayout>
 

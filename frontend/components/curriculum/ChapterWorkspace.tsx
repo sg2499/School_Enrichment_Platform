@@ -753,7 +753,7 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <StatusCard chapter={chapter} onChanged={refresh} />
           <div className="space-y-6">
-            {chapter.status !== "PUBLISHED" && chapter.status !== "ARCHIVED" ? (
+            {chapter.status !== "ARCHIVED" && (chapter.status !== "PUBLISHED" || chapter.conceptLessons.some((l) => l.status !== "PUBLISHED")) ? (
               <ApproveAndPublish
                 chapterIds={[chapter.id]}
                 label="Approve and Publish This Chapter"
