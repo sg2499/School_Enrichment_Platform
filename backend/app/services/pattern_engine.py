@@ -71,7 +71,7 @@ LONG_ANSWER = "Long Answer"
 LONG_ANSWER_MARKS = (2, 3, 5)
 STEP_TYPES = ("Single Select", "Numeric Entry", "Text Entry")  # a step is marked by the platform
 ANSWER_FORMATS = ("plain", "fraction", "time12")
-BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed")
+BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed", "ord")
 DEFAULT_MAX_WORDS = 60
 MAX_TRIES = 200  # value draws per question before a pattern is called unworkable
 MAX_INT_RANGE = 10**9
@@ -511,6 +511,14 @@ def _comma(n: int) -> str:
     return sign + ",".join(pairs + [tail])
 
 
+def ordinal(n: int) -> str:
+    """1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, 22nd, 101st, 111th (her
+    11 Nov review: the samples showed "1th" and "3th")."""
+    if 10 <= abs(n) % 100 <= 20:
+        return f"{n}th"
+    return f"{n}" + {1: "st", 2: "nd", 3: "rd"}.get(abs(n) % 10, "th")
+
+
 def format_value(value, fmt: str = "plain") -> str:
     if isinstance(value, bool):
         raise ExprError("True/False can't be written into a question.")
@@ -525,6 +533,8 @@ def format_value(value, fmt: str = "plain") -> str:
             return _comma(n)
         if fmt == "money":
             return f"₹{_comma(n)}"
+        if fmt == "ord":
+            return ordinal(n)
         return str(n)
     if fmt == "mixed" and abs(value) > 1:
         whole = int(value)  # toward zero

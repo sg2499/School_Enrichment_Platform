@@ -55147,7 +55147,7 @@
           "list": "names"
         }
       ],
-      "text": "On a bar graph where each line stands for {r.k}, {who.name} drew the bar for {r.v} up to the {r.drawn}th line. How many lines too high is it?",
+      "text": "On a bar graph where each line stands for {r.k}, {who.name} drew the bar for {r.v} up to the {r.drawn:ord} line. How many lines too high is it?",
       "answer": "r.ans",
       "hint": "Work out how many lines {r.v} needs.",
       "explanation": "{r.v} ÷ {r.k} = {r.drawn - r.ans} {'line' if (r.drawn - r.ans) == 1 else 'lines'}, so the bar is {r.drawn} − {r.drawn - r.ans} = {r.ans} too high.",

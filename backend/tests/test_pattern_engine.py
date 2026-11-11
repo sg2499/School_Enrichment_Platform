@@ -588,3 +588,10 @@ def test_numbers_are_written_the_indian_way():
     assert fmt(250000, "money") == "₹2,50,000"
     assert fmt(-123456, "num") == "-1,23,456"
     assert fmt(100000) == "100000", "plain stays plain"
+
+
+def test_ordinal_suffixes_are_right_including_teens():
+    from app.services.pattern_engine import ordinal
+
+    got = [ordinal(n) for n in (1, 2, 3, 4, 9, 11, 12, 13, 21, 22, 23, 101, 111)]
+    assert got == ["1st", "2nd", "3rd", "4th", "9th", "11th", "12th", "13th", "21st", "22nd", "23rd", "101st", "111th"]
