@@ -64,6 +64,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadError } from "@/components/ui/AlertBanner";
 import { Modal } from "@/components/ui/Modal";
+import { Table } from "@/components/ui/Table";
 import { SessionGate } from "@/components/SessionGate";
 import { TextField } from "@/components/ui/Field";
 import { RosterIllustration } from "@/components/brand/Graphics";
@@ -923,11 +924,7 @@ function RosterTable({
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-2xl border border-line">
-            <table className="w-full min-w-3xl border-collapse text-left text-[0.8125rem]">
-              <caption className="sr-only">
-                {ROLE_LABEL[role]}, page {pageSafe} of {totalPages}
-              </caption>
+          <Table caption={`${ROLE_LABEL[role]}, page ${pageSafe} of ${totalPages}`} minWidth="48rem">
               {/* content-subtle on surface-muted: 6.0:1. */}
               <thead className="bg-surface-muted text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">
                 <tr>
@@ -988,8 +985,8 @@ function RosterTable({
                         {person.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center justify-end gap-2">
+                    <td data-unlabelled className="px-4 py-3">
+                      <span className="flex flex-wrap items-center justify-end gap-2">
                         {/* The answer to "I've forgotten my password"
                             (3 Oct 2026): the sign-in page sends people to
                             their school admin, and this is what the admin
@@ -1029,8 +1026,7 @@ function RosterTable({
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+          </Table>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <p className="text-[0.75rem] text-content-subtle tabular">
