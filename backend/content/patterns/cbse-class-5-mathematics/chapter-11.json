@@ -16676,7 +16676,7 @@
           ]
         }
       ],
-      "stimulus": "{who.name} has {t.n} square quilt patches, each 1 unit by 1 unit. {who.name} can sew them into a {t.a} × {t.b} rectangle or a {t.c} × {t.d} rectangle, and will put border ribbon all around it. Answer each step in its own box.",
+      "stimulus": "{who.name} has {t.n} square quilt patches, each 1 unit by 1 unit. {who.name} can sew them into {t.a:a} × {t.b} rectangle or {t.c:a} × {t.d} rectangle, and will put border ribbon all around it. Answer each step in its own box.",
       "parts": [
         {
           "questionType": "Numeric Entry",

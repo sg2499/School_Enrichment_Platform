@@ -595,3 +595,13 @@ def test_ordinal_suffixes_are_right_including_teens():
 
     got = [ordinal(n) for n in (1, 2, 3, 4, 9, 11, 12, 13, 21, 22, 23, 101, 111)]
     assert got == ["1st", "2nd", "3rd", "4th", "9th", "11th", "12th", "13th", "21st", "22nd", "23rd", "101st", "111th"]
+
+
+def test_article_follows_how_the_number_is_said():
+    from app.services.pattern_engine import article, format_value
+
+    assert [article(n) for n in (7, 8, 11, 12, 18, 80, 800, 1200, 8000, 11000, 18000)] == [
+        "a", "an", "an", "a", "an", "an", "an", "a", "an", "an", "an",
+    ]
+    assert article(8, capital=True) == "An"
+    assert format_value(8, "a") == "an 8" and format_value(1200, "a") == "a 1,200" and format_value(11, "A") == "An 11"

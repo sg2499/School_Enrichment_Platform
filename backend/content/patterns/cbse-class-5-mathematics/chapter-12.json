@@ -472,7 +472,7 @@
           ]
         }
       ],
-      "text": "A {n}-second {act} is done {k} times without a break. Find the total time in seconds.",
+      "text": "{n:A}-second {act} is done {k} times without a break. Find the total time in seconds.",
       "answer": "n * k",
       "hint": "Multiply the time for one by the number of times.",
       "explanation": "{k} × {n} seconds = {n * k} seconds.",
