@@ -39,28 +39,43 @@ import type { PaperDetail, PaperSlot, SampleQuestion } from "@/types/mockPapers"
 import { QuestionFigure } from "@/components/ui/QuestionFigure";
 
 function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
+  const labelled = letter && !/^\([a-z]\)\s/.test(q.text);
   return (
-    <div className="space-y-2">
-      <p className="whitespace-pre-line text-sm text-content">
-        {letter && !/^\([a-z]\)\s/.test(q.text) ? <span className="font-semibold">({letter}) </span> : null}
-        {q.text}
-        <span className="ml-2 text-xs text-content-subtle">
-          [{q.marks} {q.marks === 1 ? "mark" : "marks"}]
+    <div className={cn("space-y-3", letter && "border-l-2 border-line pl-4")}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 flex-1 whitespace-pre-line text-[0.9375rem] leading-relaxed text-content">
+          {labelled ? <span className="font-semibold">({letter}) </span> : null}
+          {q.text}
+        </p>
+        <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-content-muted">
+          {q.marks} {q.marks === 1 ? "mark" : "marks"}
         </span>
-      </p>
-        <QuestionFigure svg={q.figureSvg} />
+      </div>
+      <QuestionFigure svg={q.figureSvg} />
       {q.options ? (
-        <ol className="grid gap-1 text-sm text-content sm:grid-cols-2">
+        <ol className="grid gap-2 sm:grid-cols-2">
           {q.options.map((o) => (
-            <li key={o.letter}>
-              <span className="font-semibold">{o.letter}.</span> {o.text}
+            <li
+              key={o.letter}
+              className="flex items-start gap-3 rounded-xl border border-line bg-surface-muted/60 px-3.5 py-2.5 text-sm leading-relaxed text-content"
+            >
+              <span
+                aria-hidden
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-surface text-xs font-bold text-content-subtle ring-1 ring-inset ring-line"
+              >
+                {o.letter}
+              </span>
+              <span className="min-w-0 flex-1 wrap-break-word pt-0.5 font-medium">
+                <span className="sr-only">Option {o.letter}: </span>
+                {o.text}
+              </span>
             </li>
           ))}
         </ol>
       ) : null}
-      <details className="rounded-xl bg-surface-muted px-3 py-2 text-xs text-content-muted">
-        <summary className="cursor-pointer font-semibold text-content">Answer and Marking</summary>
-        <div className="mt-2 space-y-1.5">
+      <details className="group rounded-xl border border-line bg-surface-muted/40 text-xs text-content-muted">
+        <summary className="cursor-pointer select-none px-3.5 py-2.5 font-semibold text-content">Answer and Marking</summary>
+        <div className="space-y-2 border-t border-line px-3.5 py-3 leading-relaxed">
           <p>
             <span className="font-semibold text-content">Answer:</span> {q.answer}
             {q.answerUnit ? ` ${q.answerUnit}` : ""}
@@ -99,13 +114,13 @@ function Slot({
   return (
     <li
       className={cn(
-        "rounded-2xl border p-4",
-        slot.problem ? "border-coral-200 bg-coral-50" : "border-line",
+        "rounded-2xl border p-4 sm:p-5",
+        slot.problem ? "border-coral-200 bg-coral-50" : "border-line bg-surface",
         slot.alternative && "ml-4 sm:ml-8",
       )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-content-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line pb-3">
+        <p className="min-w-0 text-xs font-semibold uppercase tracking-wide text-content-subtle">
           {slot.alternative ? "Or" : `Question ${number}`}
           {slot.pattern ? (
             <span className="ml-2 font-normal normal-case tracking-normal">
@@ -154,9 +169,9 @@ function Slot({
         </p>
       ) : null}
       {slot.sample ? (
-        <div className="mt-3 space-y-4">
+        <div className="mt-4 space-y-5">
           {slot.sample.stimulus ? (
-            <p className="whitespace-pre-line rounded-xl bg-surface-brand p-3 text-sm text-content">{slot.sample.stimulus}</p>
+            <p className="whitespace-pre-line rounded-xl bg-surface-brand px-4 py-3 text-[0.9375rem] leading-relaxed text-content">{slot.sample.stimulus}</p>
           ) : null}
           {parts.map((q, i) => (
             <Question key={i} q={q} letter={parts.length > 1 ? String.fromCharCode(97 + i) : null} />

@@ -210,7 +210,7 @@ export function MarksEntry({
           No students are in section {section} of this class yet.
         </p>
       ) : data ? (
-        <Table caption={`${component?.name} marks for section ${section}`} minWidth="36rem" busy={sheet.loading}>
+        <Table caption={`${component?.name} marks for section ${section}`} minWidth="36rem" busy={sheet.loading} stack={false}>
           <THead>
             <TH>Student</TH>
             <TH>Code</TH>
