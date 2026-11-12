@@ -72,14 +72,13 @@ export function QuestionBank() {
 
       {groups.map(([label, chapters]) => (
         <Card key={label}>
-          <CardHeader>
+          <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
             <CardTitle>{label}</CardTitle>
             <CardDescription>{plural(chapters.length, "chapter")}</CardDescription>
           </CardHeader>
           <CardBody>
             <Table caption={`Questions in ${label}, by chapter`} minWidth="46rem">
               <THead>
-                <tr>
                   <TH>Chapter</TH>
                   <TH align="right">Skills</TH>
                   <TH align="right">Questions</TH>
@@ -87,8 +86,7 @@ export function QuestionBank() {
                   {platform ? <TH align="right">In Review</TH> : null}
                   {platform ? <TH align="right">Flagged</TH> : null}
                   <TH>Difficulty</TH>
-                </tr>
-              </THead>
+                </THead>
               <TBody>
                 {chapters.map((chapter) => {
                   const expanded = open === chapter.id;

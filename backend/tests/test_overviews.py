@@ -211,3 +211,18 @@ def test_my_classes_is_a_teachers_alone(client, db_session):
     admin = _make_school_admin(db_session, school, "ov9")
     _login(client, admin.email)
     assert client.get("/api/overview/my-classes").status_code == 403
+
+
+def test_activity_labels_for_team_scripts_and_two_factor_events_are_words(client, db_session):
+    for event in ("content.patterns.loaded", "auth.login.password_ok_awaiting_2fa", "auth.2fa.enabled"):
+        db_session.add(AuditLog(event_type=event, event_data_json="{}"))
+    db_session.commit()
+    sa = _make_super_admin(db_session, "ov10")
+    headers = _login(client, sa.email)
+    body = client.get("/api/overview/activity", params={"pageSize": 100}, headers=headers).json()
+    seen = {i["event"]: i["group"] for i in body["items"]}
+    assert seen["Mock Paper Patterns Loaded"] == "Content"
+    assert seen["Password Accepted, Second Step Pending"] == "Sign-In and Accounts"
+    assert seen["Two-Factor Turned On"] == "Sign-In and Accounts"
+    content = client.get("/api/overview/activity", params={"category": "Content", "pageSize": 100}, headers=headers).json()
+    assert any(i["event"] == "Mock Paper Patterns Loaded" for i in content["items"])

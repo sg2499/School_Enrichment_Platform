@@ -71,20 +71,18 @@ export function CurriculumMap() {
       ) : null}
       {groups.map(([code, entries]) => (
         <Card key={code}>
-          <CardHeader>
+          <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
             <CardTitle>Class {code}</CardTitle>
             <CardDescription>{entries.length} chapters on the calendar</CardDescription>
           </CardHeader>
           <CardBody>
             <Table caption={`Chapter calendar for Class ${code}`} minWidth="36rem">
               <THead>
-                <tr>
                   <TH>Chapter</TH>
                   <TH>Planned</TH>
                   <TH>Textbook</TH>
                   <TH>Status</TH>
-                </tr>
-              </THead>
+                </THead>
               <TBody>
                 {entries.map((entry) => {
                   const state = when(entry, today);
