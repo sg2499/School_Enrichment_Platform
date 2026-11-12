@@ -67,7 +67,7 @@ export function MyClasses() {
       <div className="grid gap-4 lg:grid-cols-2">
         {classes.map((c) => (
           <Card key={c.id}>
-            <CardHeader>
+            <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
               <CardTitle>
                 {c.className} {c.section}
               </CardTitle>

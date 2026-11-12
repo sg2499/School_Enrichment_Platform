@@ -64,22 +64,20 @@ export function PatternOverview() {
 
       {groups.map(([label, chapters]) => (
         <Card key={label}>
-          <CardHeader>
+          <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
             <CardTitle>{label}</CardTitle>
             <CardDescription>{plural(chapters.length, "chapter")} with patterns</CardDescription>
           </CardHeader>
           <CardBody>
             <Table caption={`Mock paper patterns in ${label}, by chapter`} minWidth="40rem">
               <THead>
-                <tr>
                   <TH>Chapter</TH>
                   <TH align="right">Patterns</TH>
                   <TH align="right">Approved</TH>
                   <TH align="right">Draft</TH>
                   <TH align="right">Retired</TH>
                   <TH>By Marks</TH>
-                </tr>
-              </THead>
+                </THead>
               <TBody>
                 {chapters.map((chapter) => (
                   <TR key={chapter.id}>

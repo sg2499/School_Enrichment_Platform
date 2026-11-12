@@ -47,14 +47,13 @@ export function UsageReport() {
 
       {data && data.schools.length > 0 ? (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
             <CardTitle>Every School</CardTitle>
             <CardDescription>Counted {activityTime(data.asOf)}. Handed in is the number of times students handed work in.</CardDescription>
           </CardHeader>
           <CardBody>
             <Table caption="Usage of Krama by school" minWidth="62rem">
               <THead>
-                <tr>
                   <TH>School</TH>
                   <TH align="right">Students</TH>
                   <TH align="right">Teachers</TH>
@@ -64,8 +63,7 @@ export function UsageReport() {
                   <TH align="right">Mock Papers</TH>
                   <TH align="right">Report Cards</TH>
                   <TH align="right">Weekly Reports</TH>
-                </tr>
-              </THead>
+                </THead>
               <TBody>
                 {data.schools.map((school) => (
                   <TR key={school.id}>
