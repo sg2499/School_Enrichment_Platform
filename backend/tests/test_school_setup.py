@@ -108,8 +108,9 @@ def test_template_and_a_clean_import(client, db_session):
     template = client.get("/api/roster/setup-template", headers=headers)
     assert template.status_code == 200
     wb = load_workbook(io.BytesIO(template.content))
-    assert wb.sheetnames == ["How to Fill In", "Teachers", "Students"]
-    assert [c.value for c in wb["Teachers"][1]] == setup.TEACHER_COLUMNS
+    assert wb.sheetnames == ["Start Here", "Teachers", "Students", "Your School", "Lists"]
+    assert wb["Lists"].sheet_state == "hidden"
+    assert [c.value for c in wb["Teachers"][1]][: len(setup.TEACHER_COLUMNS)] == setup.TEACHER_COLUMNS
 
     data = _xlsx(GOOD_TEACHERS, GOOD_STUDENTS)
     checked = _post(client, headers, "setup/check", data)

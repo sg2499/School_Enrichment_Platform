@@ -699,7 +699,7 @@ def _header_key(header) -> str:
 _BULK_COLUMN_FOR_HEADER = {_header_key(column): column for column in _BULK_COLUMNS}
 
 
-def _parse_bulk_rows(filename: str, raw: bytes) -> tuple[list[dict], list[str], list[str]]:
+def _parse_bulk_rows(filename: str, raw: bytes, role: str | None = None) -> tuple[list[dict], list[str], list[str]]:
     """The sheet's rows, keyed by the column names in _BULK_COLUMNS; the
     headings that were not used (in sheet order, as typed); and the columns
     that were found.
@@ -717,7 +717,11 @@ def _parse_bulk_rows(filename: str, raw: bytes) -> tuple[list[dict], list[str], 
         from openpyxl import load_workbook
 
         wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
-        ws = wb.active
+        # The sheet named for the role ("Teachers", "Students") if there is
+        # one -- the People template has a Start Here sheet beside it --
+        # else the active sheet, as before.
+        wanted = {"TEACHER": "teachers", "STUDENT": "students"}.get(role or "")
+        ws = next((wb[name] for name in wb.sheetnames if _header_key(name) == wanted), None) or wb.active
         rows_iter = ws.iter_rows(values_only=True)
         header = [str(h).strip() if h is not None else "" for h in next(rows_iter, [])]
         raw_rows = []
@@ -749,6 +753,8 @@ def _parse_bulk_rows(filename: str, raw: bytes) -> tuple[list[dict], list[str], 
         {column: raw_row.get(heading) for column, heading in heading_for_column.items()}
         for raw_row in raw_rows
     ]
+    # The template's grey example row, if it was left in, is not a person.
+    rows = [r for r in rows if not str(r.get("fullName") or "").strip().lower().startswith("example:")]
     return rows, unused, sorted(heading_for_column)
 
 
@@ -777,7 +783,7 @@ def bulk_create_people(
     school = _resolve_school(db, user, schoolId)
     raw = file.file.read()
     try:
-        rows, unrecognised_columns, columns_found = _parse_bulk_rows(file.filename, raw)
+        rows, unrecognised_columns, columns_found = _parse_bulk_rows(file.filename, raw, role)
     except Exception:
         api_error(422, "VALIDATION_ERROR", "We couldn't read that file. Check that it's a .csv or .xlsx file with a header row.")
 
@@ -908,6 +914,27 @@ def bulk_create_people(
     }
 
 
+@router.get("/people-template")
+def people_template(
+    role: str,
+    schoolId: str | None = None,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """The bulk-import workbook for teachers or students (People > Bulk Import)."""
+    from app.services import roster_templates
+
+    role = role.strip().upper()
+    if role not in BULK_ROLES:
+        api_error(422, "VALIDATION_ERROR", "Choose teachers or students.")
+    school = _resolve_school(db, user, schoolId)
+    return Response(
+        content=roster_templates.people_template_bytes(db, school, role),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="Krama_Add_{"Students" if role == "STUDENT" else "Teachers"}.xlsx"'},
+    )
+
+
 # --- School setup in one workbook, and sign-in slips (#210, 29 Oct 2026) -----------------------
 # PHASE8_SCHOOL_SETUP_DESIGN.md. The workbook (Teachers, Students) is checked
 # whole and imported all or nothing; teachers get the sections they teach.
@@ -941,11 +968,11 @@ def setup_template(
     user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
     db: Session = Depends(get_db),
 ):
-    from app.services import school_setup_service as setup
+    from app.services import roster_templates
 
     school = _resolve_school(db, user, schoolId)
     return Response(
-        content=setup.template_bytes(school),
+        content=roster_templates.setup_template_bytes(db, school),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="Krama_School_Setup.xlsx"'},
     )

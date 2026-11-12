@@ -170,13 +170,6 @@ const ROLE_LABEL: Record<PersonRole, string> = { ADMIN: "School Admins", TEACHER
 const ROLE_LABEL_SINGULAR: Record<PersonRole, string> = { ADMIN: "School Admin", TEACHER: "Teacher", STUDENT: "Student" };
 const STATUS_FILTER_LABEL: Record<StatusFilter, string> = { all: "All", active: "Active", inactive: "Inactive" };
 const PAGE_SIZE = 25;
-// `password` is last and optional: a first password the school chooses for
-// that row. Blank means the system generates one (routes_roster.py).
-// Headings a person can read. The import matches a heading by its letters
-// alone -- capitals and spaces are ignored (routes_roster.py, _header_key)
-// -- so "Full Name" and the older "fullName" are the same column, and a
-// sheet built from an earlier template still imports.
-const BULK_TEMPLATE_HEADER = "Full Name,Email,Class Name,Section,Designation,Subject Specialization,Qualification,Password";
 
 /** Shared look for the small segmented toggles on this page (role tabs sit
  *  one level up and have their own, heavier treatment). Pressed state is
@@ -1415,6 +1408,7 @@ function BulkImportForm({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [templateBusy, setTemplateBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The role is kept with the result: this form stays mounted when the
   // Teachers/Students tab changes, and the credentials file must be named
@@ -1422,19 +1416,29 @@ function BulkImportForm({
   const [result, setResult] = useState<(BulkImportResult & { role: "TEACHER" | "STUDENT" }) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleDownloadTemplate() {
-    const exampleRow =
-      role === "STUDENT" ? "Ananya Rao,,5,A,,,," : "Ravi Kumar,ravi.kumar@example.com,,,TGT,Mathematics,B.Ed,";
-    const csv = `${BULK_TEMPLATE_HEADER}\n${exampleRow}\n`;
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${role.toLowerCase()}-roster-template.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  /** The workbook is built by the server for this school: its board's classes
+   *  and subjects as dropdowns, a Row Check column, a Start Here sheet. */
+  async function handleDownloadTemplate() {
+    setTemplateBusy(true);
+    setError(null);
+    try {
+      const { data } = await api.get<Blob>("/roster/people-template", {
+        responseType: "blob",
+        params: { role, ...(isPlatformAdmin ? { schoolId } : {}) },
+      });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = role === "STUDENT" ? "Krama_Add_Students.xlsx" : "Krama_Add_Teachers.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setError(errorMessage(err, "download the template"));
+    } finally {
+      setTemplateBusy(false);
+    }
   }
 
   const createdRows = result ? result.results.filter((r) => r.status === "created") : [];
@@ -1498,10 +1502,10 @@ function BulkImportForm({
             this, and the cap broke a note that fits on one line in two. */}
         <p className="text-[0.8125rem] leading-relaxed text-content-muted text-pretty">
           Upload a .csv or .xlsx file with a header row. Only <strong className="text-content">Full Name</strong> is
-          required; the template has every column in the right order.
+          required. The template is an Excel workbook with dropdowns, a check on every row and a Start Here sheet.
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="ghost" size="sm" leadingIcon={<Download className="h-3.5 w-3.5" />} onClick={handleDownloadTemplate}>
+          <Button type="button" variant="ghost" size="sm" leadingIcon={<Download className="h-3.5 w-3.5" />} onClick={handleDownloadTemplate} loading={templateBusy}>
             Download Template
           </Button>
           <Button
