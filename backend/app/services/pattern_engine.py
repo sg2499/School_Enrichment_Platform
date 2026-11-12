@@ -71,7 +71,7 @@ LONG_ANSWER = "Long Answer"
 LONG_ANSWER_MARKS = (2, 3, 5)
 STEP_TYPES = ("Single Select", "Numeric Entry", "Text Entry")  # a step is marked by the platform
 ANSWER_FORMATS = ("plain", "fraction", "time12")
-BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed", "ord")
+BLANK_FORMATS = ("plain", "num", "money", "fraction", "mixed", "ord", "a", "A")
 DEFAULT_MAX_WORDS = 60
 MAX_TRIES = 200  # value draws per question before a pattern is called unworkable
 MAX_INT_RANGE = 10**9
@@ -511,6 +511,16 @@ def _comma(n: int) -> str:
     return sign + ",".join(pairs + [tail])
 
 
+def article(n: int, capital: bool = False) -> str:
+    """a or an before a number, by how it is said: an 8, an 11, an 18, an 80,
+    an 800, an 8,000, an 18,000; a 7, a 12, a 100, a 1,200 (her 11 Nov review
+    found "a 8/20 turn" and "A 11 km route")."""
+    digits = str(abs(int(n)))
+    spoken_vowel = digits[0] == "8" or (digits[:2] in ("11", "18") and len(digits) % 3 == 2)
+    word = "an" if spoken_vowel else "a"
+    return word.capitalize() if capital else word
+
+
 def ordinal(n: int) -> str:
     """1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, 22nd, 101st, 111th (her
     11 Nov review: the samples showed "1th" and "3th")."""
@@ -535,6 +545,8 @@ def format_value(value, fmt: str = "plain") -> str:
             return f"₹{_comma(n)}"
         if fmt == "ord":
             return ordinal(n)
+        if fmt in ("a", "A"):
+            return article(n, fmt == "A") + " " + _comma(n)
         return str(n)
     if fmt == "mixed" and abs(value) > 1:
         whole = int(value)  # toward zero

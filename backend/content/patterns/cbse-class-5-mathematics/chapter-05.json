@@ -6333,7 +6333,7 @@
         "(1000 * k) % n == 0",
         "k % n != 0"
       ],
-      "text": "A {k} km route is divided into {n} equal sections. How many metres long is each section?",
+      "text": "{k:A} km route is divided into {n} equal sections. How many metres long is each section?",
       "answer": "1000 * k // n",
       "hint": "Change {k} km to metres first.",
       "explanation": "{k} km = {1000 * k:num} m. {1000 * k:num} ÷ {n} = {1000 * k // n:num} m.",
@@ -6449,7 +6449,7 @@
           ]
         }
       ],
-      "text": "On a {g * k:num} m race route, water tables are placed every {g} m, {how.t}. How many water tables are there?",
+      "text": "On {g * k:a} m race route, water tables are placed every {g} m, {how.t}. How many water tables are there?",
       "answer": "k + how.add",
       "hint": "First find how many {g} m gaps there are. Then think about the ends.",
       "explanation": "{g * k:num} ÷ {g} = {k} gaps. With tables {how.t}, there are {k + how.add} tables.",

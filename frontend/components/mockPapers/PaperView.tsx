@@ -42,7 +42,7 @@ function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
   return (
     <div className="space-y-2">
       <p className="whitespace-pre-line text-sm text-content">
-        {letter ? <span className="font-semibold">({letter}) </span> : null}
+        {letter && !/^\([a-z]\)\s/.test(q.text) ? <span className="font-semibold">({letter}) </span> : null}
         {q.text}
         <span className="ml-2 text-xs text-content-subtle">
           [{q.marks} {q.marks === 1 ? "mark" : "marks"}]

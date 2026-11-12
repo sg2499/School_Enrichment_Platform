@@ -360,7 +360,7 @@
       "text": "A full turn of {ob.t} is divided into {m.n} equal mini-turns. How many mini-turns make {m.w}?",
       "answer": "m.ans",
       "hint": "A quarter turn is 1 of 4 equal parts of the full turn. How many mini-turns is that?",
-      "explanation": "{m.n} mini-turns make a full turn, so a quarter turn is {m.n} ÷ 4 = {m.n // 4} mini-turns, and {m.w} is {m.ans} mini-turns.",
+      "explanation": "{m.n} mini-turns make a full turn, so a quarter turn is {m.n} ÷ 4 = {m.n // 4} {'mini-turn' if m.n // 4 == 1 else 'mini-turns'}, and {m.w} is {m.ans} mini-turns.",
       "notes": "A full turn split into 4, 8, 12, 16, 20 or 24 mini-turns; asks for a quarter, half or three-quarter turn.",
       "sources": [
         "CBSE-C5-CH03-Q017"
@@ -4547,7 +4547,7 @@
           "list": "names"
         }
       ],
-      "text": "{who.name} says a {x.k}/{x.n} turn is {x.says} because {x.why}. What is the best correction?",
+      "text": "{who.name} says {x.k:a}/{x.n} turn is {x.says} because {x.why}. What is the best correction?",
       "options": {
         "correct": "x.c",
         "wrong": [
