@@ -663,7 +663,7 @@ export function PublishedChapters({ onChanged }: { onChanged: () => void }) {
             <THead>
               <TH className="w-12">No.</TH>
               <TH>Chapter</TH>
-              <TH align="right">Lessons</TH>
+              <TH align="right">Skills</TH>
               <TH>In Your Calendar</TH>
               <TH align="right">
                 <span className="sr-only">Actions</span>

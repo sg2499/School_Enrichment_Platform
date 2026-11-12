@@ -278,7 +278,7 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
               <THead>
                 <TH className="w-12">No.</TH>
                 <TH>Chapter</TH>
-                <TH align="right">Lessons Published</TH>
+                <TH align="right">Skills Published</TH>
                 <TH align="right">Questions</TH>
                 <TH className="w-56">Questions Approved</TH>
                 <TH>Status</TH>

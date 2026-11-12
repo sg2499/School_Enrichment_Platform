@@ -144,7 +144,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Teaching",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/teacher/dashboard" },
-        { label: "My Classes", icon: Users, soon: true },
+        // #224: the sections the teacher teaches, and what each has going on.
+        { label: "My Classes", icon: Users, href: "/teacher/classes" },
         // 1 Oct 2026: the old single "Assignments" page (assign form,
         // results list and a results modal on one screen) is now two
         // routes -- setting practice and reviewing it are different jobs.
@@ -168,7 +169,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         // #186: the question-by-student grid and the misconception report.
         { label: "Class Analytics", icon: BarChart3, href: "/teacher/analytics" },
-        { label: "Curriculum Map", icon: Compass, soon: true },
+        // #224: the school's chapter calendar for their classes.
+        { label: "Curriculum Map", icon: Compass, href: "/teacher/curriculum-map" },
       ],
     },
   ],
@@ -187,7 +189,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
         { label: "Assessment Schemes", icon: ListChecks, href: "/admin/assessment" },
-        { label: "Question Bank", icon: Database, soon: true },
+        { label: "Question Bank", icon: Database, href: "/admin/question-bank" },
         // #166: every section's mock papers, and the school's test formats.
         { label: "Mock Papers", icon: FileSpreadsheet, href: "/admin/papers" },
       ],
@@ -227,17 +229,17 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       items: [
         { label: "Curriculum Studio", icon: Library, href: "/admin/curriculum" },
         { label: "Assessment Schemes", icon: ListChecks, href: "/admin/assessment" },
-        { label: "Question Bank", icon: Database, soon: true },
-        { label: "Papers & Mocks", icon: FileSpreadsheet, soon: true },
+        { label: "Question Bank", icon: Database, href: "/admin/question-bank" },
+        { label: "Papers & Mocks", icon: FileSpreadsheet, href: "/admin/papers" },
       ],
     },
     {
       section: "Operations",
       items: [
         { label: "Report Cards", icon: ScrollText, href: "/admin/report-cards" },
-        { label: "Reports", icon: BarChart3, soon: true },
+        { label: "Reports", icon: BarChart3, href: "/admin/reports" },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },
-        { label: "Settings", icon: Settings, soon: true },
+        { label: "Settings", icon: Settings, href: "/admin/settings" },
       ],
     },
   ],

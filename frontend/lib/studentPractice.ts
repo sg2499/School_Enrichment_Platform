@@ -159,7 +159,14 @@ export function averageScore(summary: PracticeSummary): { percent: number; sets:
     percents.push((evaluation.finalScore / evaluation.maxScore) * 100);
   }
   if (percents.length === 0) return null;
-  return { percent: Math.round(percents.reduce((sum, value) => sum + value, 0) / percents.length), sets: percents.length };
+  return { percent: wholePercent(percents.reduce((sum, value) => sum + value, 0) / percents.length), sets: percents.length };
+}
+
+/** One rule for every percentage a child or parent sees: round DOWN, so 6 of 9
+ *  is 66% here, on My Progress and on the Weekly Report alike (12 Nov 2026:
+ *  Daily Practice rounded to 67% while the Weekly Report floored to 66%). */
+export function wholePercent(percent: number): number {
+  return Math.floor(percent + 1e-9);
 }
 
 /** "set" or "sets". */
@@ -467,7 +474,7 @@ export function attemptsLeft(result: Pick<AttemptResult, "maxAttempts" | "bonusA
  *  percentage of. */
 export function scorePercent(finalScore: number, maxScore: number): number | null {
   if (!(maxScore > 0)) return null;
-  return Math.round((finalScore / maxScore) * 100);
+  return wholePercent((finalScore / maxScore) * 100);
 }
 
 /**

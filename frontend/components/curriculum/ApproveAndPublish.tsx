@@ -73,7 +73,7 @@ export function ApproveAndPublish({
           <p>
             Approved <strong className="text-jade-700">{result.approvedCount}</strong> questions and published{" "}
             <strong className="text-jade-700">{countOf(result.publishedChapters.length, "chapter")}</strong>, with{" "}
-            {countOf(result.lessonsPublished, "lesson")} and {countOf(result.activitiesPublished, "practice set")} made ready for teachers.
+            {countOf(result.lessonsPublished, "skill")} and {countOf(result.activitiesPublished, "practice set")} made ready for teachers.
             {result.skippedFlaggedCount > 0 ? ` ${result.skippedFlaggedCount} flagged questions are left for you to read.` : ""}
           </p>
           {result.heldChapters.length > 0 ? (

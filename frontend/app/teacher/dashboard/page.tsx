@@ -907,12 +907,11 @@ const MODULES: Module[] = [
   {
     icon: <Users className="h-5 w-5" aria-hidden />,
     title: "My Classes",
-    description: "A page for each section you teach, with every student's progress through the chapter.",
+    description: "Each section you teach, with its students, the practice and papers set, and the chapter your school's calendar has running.",
     tone: "brand",
-    // "Soon": still `soon: true` in RoleShell's NAV with no route. Your
-    // Sections above is the foundation (real sections, real calendar), but
-    // there is no per-section or per-student view yet.
-    status: "soon",
+    // Live since 12 Nov 2026 (#224): /teacher/classes, GET /overview/my-classes.
+    status: "live",
+    href: "/teacher/classes",
   },
   {
     icon: <ClipboardCheck className="h-5 w-5" aria-hidden />,
