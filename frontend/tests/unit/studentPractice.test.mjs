@@ -142,10 +142,10 @@ describe("latestScore and averageScore", () => {
     assert.equal(averageScore(s), null);
   });
 
-  test("the average is the mean of each set's own percentage, rounded", () => {
-    // 1/4 = 25%, 3/3 = 100%, 2/3 = 66.7% -> 63.9 -> 64
+  test("the average is the mean of each set's own percentage, rounded down", () => {
+    // 1/4 = 25%, 3/3 = 100%, 2/3 = 66.7% -> 63.9 -> 63
     const s = summarisePractice([done(1, 4, "2026-09-01T10:00:00Z"), done(3, 3, "2026-09-02T10:00:00Z"), done(2, 3, "2026-09-03T10:00:00Z")]);
-    assert.deepEqual(averageScore(s), { percent: 64, sets: 3 });
+    assert.deepEqual(averageScore(s), { percent: 63, sets: 3 });
   });
 
   test("a set with no marks to earn is left out of the average, not counted as zero", () => {
@@ -305,7 +305,9 @@ describe("attemptsLeft, scorePercent, resultSentence, setWord", () => {
   });
 
   test("a percentage is whole, and there is none of nothing", () => {
-    assert.equal(scorePercent(2, 3), 67);
+    assert.equal(scorePercent(2, 3), 66); // rounded down, as My Progress and the Weekly Report
+    assert.equal(scorePercent(6, 9), 66);
+    assert.equal(scorePercent(1, 3), 33);
     assert.equal(scorePercent(0, 5), 0);
     assert.equal(scorePercent(5, 5), 100);
     assert.equal(scorePercent(0, 0), null);

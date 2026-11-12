@@ -60,8 +60,8 @@ import type {
 type View = "overview" | "lessons" | "questions";
 
 const NEXT_STEP: Record<ChapterStatus, string> = {
-  DRAFT: "Read its lessons and approve their questions, then send the chapter to review.",
-  REVIEW: "When its lessons and questions are right, publish it. Schools can then add it to their calendars.",
+  DRAFT: "Read its skills and approve their questions, then send the chapter to review.",
+  REVIEW: "When its skills and questions are right, publish it. Schools can then add it to their calendars.",
   PUBLISHED: "Schools can add it to their calendars. Archive it to take it out of use; schools keep what they already have.",
   ARCHIVED: "Out of use. Restore it to Draft to work on it again.",
 };
@@ -169,11 +169,11 @@ function StatusCard({ chapter, onChanged }: { chapter: ChapterDetail; onChanged:
         <Ladder status={chapter.status} />
         <dl className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <dt className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Lessons Published</dt>
+            <dt className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Skills Published</dt>
             <dd className="space-y-1.5">
               <ProgressBar total={lessons.length} segments={[{ value: publishedLessons, label: "published", className: "bg-jade-500" }]} />
               <p className="text-sm text-content tabular">
-                {publishedLessons} of {countOf(lessons.length, "lesson")}
+                {publishedLessons} of {countOf(lessons.length, "skill")}
               </p>
             </dd>
           </div>
@@ -325,22 +325,22 @@ function LessonsView({
       await api.patch(`/curriculum-admin/concept-lessons/${lessonId}/status`, { status });
       await onChanged();
     } catch (err) {
-      setProblem(errorMessage(err, "update this lesson's status"));
+      setProblem(errorMessage(err, "update this skill's status"));
     } finally {
       setPending(null);
     }
   }
 
   if (chapter.conceptLessons.length === 0) {
-    return <p className="text-sm text-content-subtle">This chapter has no lessons.</p>;
+    return <p className="text-sm text-content-subtle">This chapter has no skills.</p>;
   }
   return (
     <div className="space-y-4">
       {problem ? <ErrorBanner message={problem} /> : null}
-      <Table caption="Lessons" minWidth="56rem">
+      <Table caption="Skills" minWidth="56rem">
         <THead>
           <TH className="w-12">No.</TH>
-          <TH>Lesson</TH>
+          <TH>Skill</TH>
           <TH align="right">Questions</TH>
           <TH className="w-52">Approved</TH>
           <TH>Status</TH>
@@ -450,7 +450,7 @@ function QuestionsView({
       const { data } = await api.get<{ questions: QuestionDetail[] }>(`/curriculum-admin/concept-lessons/${currentId}/questions`);
       if (ticket === latest.current) setQuestions(data.questions);
     } catch (err) {
-      if (ticket === latest.current) setProblem(errorMessage(err, "load this lesson's questions"));
+      if (ticket === latest.current) setProblem(errorMessage(err, "load this skill's questions"));
     }
   }, [currentId]);
 
@@ -510,11 +510,11 @@ function QuestionsView({
     return words.every((w) => text.includes(w));
   });
 
-  if (!lesson) return <p className="text-sm text-content-subtle">This chapter has no lessons.</p>;
+  if (!lesson) return <p className="text-sm text-content-subtle">This chapter has no skills.</p>;
   return (
     <div className="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
       <SelectField
-        label="Lesson"
+        label="Skill"
         containerClassName="lg:hidden"
         value={lesson.id}
         onChange={(e) => router.push(lessonHref(e.target.value), { scroll: false })}
@@ -525,7 +525,7 @@ function QuestionsView({
           </option>
         ))}
       </SelectField>
-      <nav aria-label="Lessons" className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
+      <nav aria-label="Skills" className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
         <ol className="max-h-[70vh] space-y-1 overflow-y-auto pr-1">
           {chapter.conceptLessons.map((l, i) => {
             const current = l.id === lesson.id;
@@ -583,7 +583,7 @@ function QuestionsView({
           key={lesson.id}
           compact
           path={`/curriculum-admin/concept-lessons/${lesson.id}/questions/bulk-approve`}
-          scopeLabel="this lesson"
+          scopeLabel="this skill"
           onDone={async () => {
             await Promise.all([load(), onChanged()]);
           }}
@@ -603,7 +603,7 @@ function QuestionsView({
           <SearchInput
             value={query}
             onSearch={setQuery}
-            label="Search this lesson's questions"
+            label="Search this skill's questions"
             placeholder="Text, answer or code"
             delayMs={150}
             className="w-full sm:w-72"
@@ -614,7 +614,7 @@ function QuestionsView({
           <TableSkeleton label="Loading questions" rows={4} />
         ) : shown.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-line-strong px-4 py-6 text-center text-sm text-content-subtle">
-            {all.length === 0 ? "No questions in this lesson yet." : "No question matches that."}
+            {all.length === 0 ? "No questions in this skill yet." : "No question matches that."}
           </p>
         ) : (
           <div className="grid gap-3 2xl:grid-cols-2">
@@ -702,7 +702,7 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
 
   const tabs: SubTab<View>[] = [
     { key: "overview", label: "Overview", href: hrefFor("overview") },
-    { key: "lessons", label: "Lessons", href: hrefFor("lessons"), count: chapter.conceptLessons.length },
+    { key: "lessons", label: "Skills", href: hrefFor("lessons"), count: chapter.conceptLessons.length },
     {
       key: "questions",
       label: "Questions",
@@ -728,7 +728,7 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
         }
         stats={[
           {
-            label: "Lessons",
+            label: "Skills",
             value: chapter.conceptLessons.length,
             hint: `${chapter.conceptLessons.filter((l) => l.status === "PUBLISHED").length} published`,
           },

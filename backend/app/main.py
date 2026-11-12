@@ -30,6 +30,7 @@ from app.api.routes_curriculum_admin import router as curriculum_admin_router
 from app.api.routes_health import router as health_router
 from app.api.routes_learning import router as learning_router
 from app.api.routes_platform import router as platform_router
+from app.api.routes_overviews import router as overviews_router
 from app.api.routes_practice_tracker import router as practice_tracker_router
 from app.api.routes_question_patterns import router as question_patterns_router
 from app.api.routes_mock_papers import router as mock_papers_router
@@ -233,3 +234,4 @@ app.include_router(analytics_router)
 app.include_router(question_patterns_router)
 app.include_router(mock_papers_router)
 app.include_router(my_papers_router)
+app.include_router(overviews_router)

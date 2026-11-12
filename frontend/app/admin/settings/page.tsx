@@ -20,6 +20,7 @@ import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PlatformSettings } from "@/components/overview/PlatformSettings";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { Modal } from "@/components/ui/Modal";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -224,9 +225,7 @@ function SettingsPage() {
   return (
     <RoleShell role={role} user={user} ambience="working">
       {role === "SUPER_ADMIN" ? (
-        <Card className="p-6">
-          <EmptyState title="One School at a Time" description="Each school's admin adds the school's logo from their own Settings." />
-        </Card>
+        <PlatformSettings />
       ) : (
         <SettingsBody />
       )}
