@@ -677,73 +677,11 @@ def slip_order(slip: dict):
 # --- the template ----------------------------------------------------------------------------
 
 
-def template_bytes(school: School) -> bytes:
-    from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
+def template_bytes(school: School, db: Session | None = None) -> bytes:
+    """The School Setup workbook (built in roster_templates)."""
+    from app.services import roster_templates
 
-    wb = Workbook()
-    how = wb.active
-    how.title = "How to Fill In"
-    how.column_dimensions["A"].width = 110
-    lines = [
-        ("t", f"School Setup for {school.name}"),
-        (
-            "p",
-            "Fill in the Teachers and Students sheets, save the file, and upload it on Classes & Sections. Krama checks the whole file first and lists anything to fix; nothing is created until every row is right.",
-        ),
-        ("h", "Teachers"),
-        ("p", "Full Name: as it should appear to students and parents."),
-        (
-            "p",
-            "Email and Mobile: optional. Mobile is a 10-digit Indian number. Each must belong to this teacher alone.",
-        ),
-        ("p", f"Subject: blank means {DEFAULT_SUBJECT}. A teacher who teaches two subjects takes one row for each."),
-        (
-            "p",
-            "Sections: the sections this teacher teaches that subject in, class and section together, separated by commas: 5A, 5B.",
-        ),
-        ("h", "Students"),
-        (
-            "p",
-            "Full Name, Class (the number, like 5), Section (its letter, like A) and Roll Number. Nothing else about a child is needed.",
-        ),
-        ("h", "After the upload"),
-        (
-            "p",
-            "Each new teacher and student gets a code and a first password, shown once, with sign-in slips to print. They choose their own password the first time they sign in.",
-        ),
-        (
-            "p",
-            "People already on Krama are recognised and left as they are, so a corrected file can be uploaded again.",
-        ),
-    ]
-    for i, (kind, text) in enumerate(lines, start=1):
-        c = how.cell(row=i, column=1, value=text)
-        c.alignment = Alignment(wrap_text=True, vertical="top")
-        c.font = Font(name="Arial", size=14 if kind == "t" else 11, bold=kind in ("t", "h"))
-    head_fill = PatternFill("solid", fgColor="FF1F3A5F")
-    for title, columns, widths, example in (
-        (
-            "Teachers",
-            TEACHER_COLUMNS,
-            [30, 30, 16, 16, 24],
-            ["Example: Anita Rao (delete this row)", "anita@example.com", "9876543210", "Mathematics", "5A, 5B"],
-        ),
-        ("Students", STUDENT_COLUMNS, [34, 8, 10, 14], ["Example: Aarav Sharma (delete this row)", "5", "A", "1"]),
-    ):
-        ws = wb.create_sheet(title)
-        for i, (column, width) in enumerate(zip(columns, widths), start=1):
-            c = ws.cell(row=1, column=i, value=column)
-            c.font = Font(name="Arial", bold=True, color="FFFFFFFF")
-            c.fill = head_fill
-            ws.column_dimensions[c.column_letter].width = width
-            ex = ws.cell(row=2, column=i, value=example[i - 1])
-            ex.font = Font(name="Arial", italic=True, color="FF7F7F7F")
-            ex.number_format = "@"
-        ws.freeze_panes = "A2"
-    out = io.BytesIO()
-    wb.save(out)
-    return out.getvalue()
+    return roster_templates.setup_template_bytes(db, school, default_subject=DEFAULT_SUBJECT)
 
 
 def is_example_row(cells: dict) -> bool:
