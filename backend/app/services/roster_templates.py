@@ -55,7 +55,7 @@ BAD_TEXT = "9B1C1C"
 WARN_TEXT = "8A5A00"
 
 LAST_ROW = 2000  # the readers' own row limit; formatting and validation run this far
-CHECK_ROWS = 400  # rows that carry a Row Check formula
+CHECK_ROWS = LAST_ROW - 1  # rows that carry a Row Check formula and an outline
 SECTION_LETTERS = list("ABCDEFGH")
 
 
@@ -156,6 +156,12 @@ def _logo(ws, db: Session | None, school, anchor: str) -> bool:
         return False
 
 
+def openpyxl_column(letter: str) -> int:
+    from openpyxl.utils import column_index_from_string
+
+    return column_index_from_string(letter)
+
+
 def _heading_cell(ws, column: int, text: str, *, required: bool, note: str, width: float, computed: bool = False):
     cell = ws.cell(row=1, column=column, value=text)
     cell.font = _font(bold=True, color="FFFFFFFF", size=11)
@@ -222,7 +228,14 @@ def _stripes_and_checks(ws, last_col: str, check_col: str, bad_formulas: dict[st
 def _sheet_finish(ws, *, title: str, tab: str, last_col: str, school_name: str):
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = f"A1:{last_col}{CHECK_ROWS + 1}"
-    ws.row_dimensions[1].height = 30
+    ws.row_dimensions[1].height = 32
+    end = openpyxl_column(last_col)
+    _grid(ws, 2, 1, CHECK_ROWS + 1, end)
+    for r in range(2, CHECK_ROWS + 2):
+        ws.row_dimensions[r].height = 21
+        for c in range(1, end + 1):
+            cell = ws.cell(row=r, column=c)
+            cell.alignment = Alignment(vertical="center", indent=1, wrap_text=False)
     ws.sheet_properties.tabColor = tab
     ws.sheet_view.zoomScale = 110
     ws.page_setup.orientation = "landscape"
@@ -255,6 +268,45 @@ def _lists_sheet(wb: Workbook, classes: list[str], subjects: list[str], designat
     ws.sheet_state = "hidden"
 
 
+def _side(style="thin", colour=LINE) -> Side:
+    return Side(style=style, color="FF" + colour)
+
+
+def _grid(ws, r1: int, c1: int, r2: int, c2: int, colour: str = LINE) -> None:
+    """A hairline border round every cell of the range (a table)."""
+    box = Border(left=_side(colour=colour), right=_side(colour=colour), top=_side(colour=colour), bottom=_side(colour=colour))
+    for r in range(r1, r2 + 1):
+        for c in range(c1, c2 + 1):
+            ws.cell(row=r, column=c).border = box
+
+
+def _frame(ws, r1: int, c1: int, r2: int, c2: int, colour: str = LINE, style: str = "thin") -> None:
+    """A border round the outside of the range only (a merged block, a card)."""
+    for r in range(r1, r2 + 1):
+        for c in range(c1, c2 + 1):
+            ws.cell(row=r, column=c).border = Border(
+                left=_side(style, colour) if c == c1 else None,
+                right=_side(style, colour) if c == c2 else None,
+                top=_side(style, colour) if r == r1 else None,
+                bottom=_side(style, colour) if r == r2 else None,
+            )
+
+
+def _merged(ws, row: int, c1: int, c2: int, value, *, font=None, fill=None, align=None, height=None):
+    cell = ws.cell(row=row, column=c1, value=value)
+    ws.merge_cells(start_row=row, start_column=c1, end_row=row, end_column=c2)
+    if font:
+        cell.font = font
+    if align:
+        cell.alignment = align
+    if fill:
+        for c in range(c1, c2 + 1):
+            ws.cell(row=row, column=c).fill = fill
+    if height:
+        ws.row_dimensions[row].height = height
+    return cell
+
+
 def _start_here(
     ws,
     db: Session | None,
@@ -269,124 +321,206 @@ def _start_here(
 ) -> None:
     ws.title = "Start Here"
     ws.sheet_view.showGridLines = False
+    ws.sheet_view.zoomScale = 110
     ws.sheet_properties.tabColor = SAFFRON
-    ws.column_dimensions["A"].width = 3
-    for letter, width in (("B", 24), ("C", 14), ("D", 56), ("E", 34)):
+    ws.column_dimensions["A"].width = 2.5
+    for letter, width in (("B", 24), ("C", 15), ("D", 58), ("E", 30), ("F", 2.5)):
         ws.column_dimensions[letter].width = width
+    left = Alignment(horizontal="left", vertical="center", indent=1, wrap_text=True)
+    mid = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
-    has_logo = _logo(ws, db, school, "B2")
-    top = 5 if has_logo else 2
-    band = ws.cell(row=top, column=2, value=title)
-    band.font = _font(bold=True, size=22, color="FF" + INK)
-    ws.row_dimensions[top].height = 34
-    sub = ws.cell(row=top + 1, column=2, value=f"{school.name}  ·  prepared {datetime.now(IST).strftime('%d %B %Y')}")
-    sub.font = _font(size=11, color="FF" + GREY)
-    for col in range(2, 6):
-        ws.cell(row=top + 2, column=col).border = Border(top=Side(style="thick", color="FF" + SAFFRON))
-    ws.row_dimensions[top + 2].height = 6
+    # Banner: title block on indigo, the school's logo (or the Krama name) in a white tile.
+    for r in (2, 3, 4):
+        for c in (2, 3, 4):
+            ws.cell(row=r, column=c).fill = _fill(INK)
+    ws.merge_cells("B2:D2")
+    ws.merge_cells("B3:D3")
+    ws.merge_cells("B4:D4")
+    ws["B2"] = title
+    ws["B2"].font = _font(bold=True, size=24, color="FFFFFFFF")
+    ws["B2"].alignment = Alignment(vertical="bottom", indent=1)
+    ws["B3"] = school.name
+    ws["B3"].font = _font(bold=True, size=13, color="FFFFD27A")
+    ws["B3"].alignment = Alignment(vertical="center", indent=1)
+    ws["B4"] = f"Prepared {datetime.now(IST).strftime('%d %B %Y')}  ·  Krama"
+    ws["B4"].font = _font(size=10.5, color="FFC9CEE8")
+    ws["B4"].alignment = Alignment(vertical="top", indent=1)
+    ws.row_dimensions[2].height = 40
+    ws.row_dimensions[3].height = 22
+    ws.row_dimensions[4].height = 22
+    ws.merge_cells("E2:E4")
+    tile = ws["E2"]
+    tile.fill = _fill("FFFFFF")
+    tile.alignment = mid
+    if not _logo(ws, db, school, "E2"):
+        tile.value = "KRAMA"
+        tile.font = _font(bold=True, size=20, color="FF" + INK)
+    for r in (2, 3, 4):
+        ws.cell(row=r, column=5).fill = _fill("FFFFFF")
+    _frame(ws, 2, 2, 4, 5, INK, "medium")
+    for c in range(2, 6):
+        ws.cell(row=5, column=c).border = Border(top=_side("thick", SAFFRON))
+    ws.row_dimensions[5].height = 5
 
-    row = top + 3
-    note = ws.cell(row=row, column=2, value=intro)
-    note.alignment = Alignment(wrap_text=True, vertical="top")
-    note.font = _font(size=11)
-    ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=5)
-    ws.row_dimensions[row].height = 48
+    row = 6
 
-    def section(label: str) -> int:
+    def heading(label: str) -> None:
         nonlocal row
-        row += 2
-        c = ws.cell(row=row, column=2, value=label)
-        c.font = _font(bold=True, size=13, color="FF" + INK)
         row += 1
-        return row
+        _merged(ws, row, 2, 5, label, font=_font(bold=True, size=12.5, color="FF" + INK), fill=_fill(PALE), align=left, height=26)
+        for c in range(2, 6):
+            ws.cell(row=row, column=c).border = Border(
+                top=_side(), bottom=_side(), left=_side("thick", SAFFRON) if c == 2 else None, right=_side() if c == 5 else None
+            )
+        row += 1
 
-    section("How it works")
+    row += 1
+    _merged(ws, row, 2, 5, intro, font=_font(size=11), align=left, height=50)
+    _frame(ws, row, 2, row, 5)
+    row += 1
+
+    heading("How it works")
     for number, (head, body) in enumerate(steps, start=1):
-        badge = ws.cell(row=row, column=2, value=f"  {number}   {head}")
-        badge.font = _font(bold=True, size=11, color="FF" + INK)
-        badge.fill = _fill(PALE)
-        badge.alignment = Alignment(vertical="top")
-        text = ws.cell(row=row, column=3, value=body)
-        text.font = _font(size=11)
-        text.alignment = Alignment(wrap_text=True, vertical="top")
-        ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=5)
-        ws.row_dimensions[row].height = 32 if len(body) < 130 else 46
+        badge = ws.cell(row=row, column=2, value=f"{number}   {head}")
+        badge.font = _font(bold=True, size=11.5, color="FFFFFFFF")
+        badge.fill = _fill(MID)
+        badge.alignment = Alignment(vertical="center", indent=1)
+        _merged(ws, row, 3, 5, body, font=_font(size=10.5), align=left, height=34 if len(body) < 118 else 48)
+        _grid(ws, row, 2, row, 5)
         row += 1
 
-    section(f"The {sheet_names} sheet{'s' if ' and ' in sheet_names else ''}, column by column")
+    heading(f"The {sheet_names} sheet{'s' if ' and ' in sheet_names else ''}, column by column")
     for col, head in enumerate(("Column", "Needed?", "What to type", "Example"), start=2):
         c = ws.cell(row=row, column=col, value=head)
-        c.font = _font(bold=True, color="FFFFFFFF")
+        c.font = _font(bold=True, size=10.5, color="FFFFFFFF")
         c.fill = _fill(INK)
-        c.alignment = Alignment(indent=1, vertical="center")
+        c.alignment = Alignment(vertical="center", horizontal="center" if col == 3 else "left", indent=0 if col == 3 else 1)
+    ws.row_dimensions[row].height = 24
+    _grid(ws, row, 2, row, 5, INK)
     row += 1
-    for name, needed, what, example in columns:
-        for col, value in enumerate((name, needed, what, example), start=2):
+    first = row
+    for n, (name, needed, what, example) in enumerate(columns):
+        values = (name, needed, what, example)
+        for col, value in enumerate(values, start=2):
             c = ws.cell(row=row, column=col, value=value)
+            c.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center" if col == 3 else "left", indent=0 if col == 3 else 1)
             c.font = _font(bold=col == 2, size=10.5, color="FF" + (INK if col == 2 else "262B3A"))
-            c.alignment = Alignment(wrap_text=True, vertical="top", indent=1)
-            c.border = _BOX
-            if col == 3:
-                c.font = _font(bold=True, size=10.5, color="FF" + (BAD_TEXT if needed == "Required" else GREY))
-        ws.row_dimensions[row].height = 30 if len(what) < 70 else 44
+            if n % 2:
+                c.fill = _fill(STRIPE)
+        need = ws.cell(row=row, column=3)
+        need.font = _font(bold=True, size=10, color="FF" + (BAD_TEXT if needed == "Required" else WARN_TEXT if needed == "Recommended" else GREY))
+        if needed == "Required":
+            need.fill = _fill(BAD_FILL)
+        elif needed == "Recommended":
+            need.fill = _fill("FFF3D6")
+        ws.row_dimensions[row].height = 32 if len(what) < 62 else 46
         row += 1
+    _grid(ws, first, 2, row - 1, 5)
+    _frame(ws, first - 1, 2, row - 1, 5, INK)
 
-    section("Colour key")
-    for fill, label in ((INK, "Dark heading: a column you must fill in"), (MID, "Lighter heading: optional"), (GREY, "Grey heading: Row Check, filled in for you; leave it alone")):
-        key = ws.cell(row=row, column=2, value="")
-        key.fill = _fill(fill)
-        text = ws.cell(row=row, column=3, value=label)
-        text.font = _font(size=10.5)
-        ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=5)
+    heading("What the colours mean")
+    key = (
+        ("Full Name", INK, "FFFFFFFF", "A dark heading: you must fill this column in."),
+        ("Email", MID, "FFFFFFFF", "A lighter heading: optional."),
+        ("Row Check", GREY, "FFFFFFFF", "A grey heading: Krama fills this one in as you type. Leave it alone."),
+        ("anita@x.in", BAD_FILL, "FF" + BAD_TEXT, "A red cell: this value is repeated or wrong. Fix it before you upload."),
+    )
+    first = row
+    for sample, fill, text_colour, meaning in key:
+        swatch = ws.cell(row=row, column=2, value=sample)
+        swatch.fill = _fill(fill)
+        swatch.font = _font(bold=True, size=10.5, color=text_colour if text_colour.startswith("FF") else "FF" + text_colour)
+        swatch.alignment = Alignment(vertical="center", horizontal="left", indent=1)
+        _merged(ws, row, 3, 5, meaning, font=_font(size=10.5), align=left, height=24)
         row += 1
-    red = ws.cell(row=row, column=2, value="")
-    red.fill = _fill(BAD_FILL)
-    red.border = _BOX
-    ws.cell(row=row, column=3, value="Red cell: this value is repeated or wrong. Fix it before you upload.").font = _font(size=10.5)
-    ws.merge_cells(start_row=row, start_column=3, end_row=row, end_column=5)
-    row += 1
+    _grid(ws, first, 2, row - 1, 5)
+    _frame(ws, first, 2, row - 1, 5, INK)
 
-    section("After you upload")
+    heading("After you upload")
+    first = row
     for line in after:
-        c = ws.cell(row=row, column=2, value="•  " + line)
-        c.alignment = Alignment(wrap_text=True, vertical="top")
-        c.font = _font(size=11)
-        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=5)
-        ws.row_dimensions[row].height = 30 if len(line) > 105 else 18
+        bullet = ws.cell(row=row, column=2, value="✓")
+        bullet.font = _font(bold=True, size=12, color="FF" + GOOD)
+        bullet.alignment = mid
+        _merged(ws, row, 3, 5, line, font=_font(size=10.5), align=left, height=32 if len(line) > 92 else 22)
         row += 1
+    _grid(ws, first, 2, row - 1, 5)
+    _frame(ws, first, 2, row - 1, 5, INK)
+
     row += 1
-    foot = ws.cell(row=row, column=2, value="Krama · a product of Zetta Metrics Technologies Private Limited")
-    foot.font = _font(size=9, color="FF" + GREY)
+    for c in range(2, 6):
+        ws.cell(row=row, column=c).border = Border(top=_side("thick", SAFFRON))
+    _merged(
+        ws,
+        row + 1,
+        2,
+        5,
+        "Krama  ·  a product of Zetta Metrics Technologies Private Limited",
+        font=_font(size=9, color="FF" + GREY),
+        align=Alignment(horizontal="center", vertical="center"),
+        height=20,
+    )
     ws.page_setup.orientation = "portrait"
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 1
     ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_area = f"A1:F{row + 2}"
 
 
 def _your_school(wb: Workbook, db: Session | None, school) -> None:
     ws = wb.create_sheet("Your School")
     ws.sheet_view.showGridLines = False
     ws.sheet_properties.tabColor = "8D96B8"
-    heads = ["Class", "Section", "Students on Krama", "Teachers on Krama"]
-    for i, (text, width) in enumerate(zip(heads, (10, 12, 20, 80)), start=1):
-        c = ws.cell(row=1, column=i, value=text)
+    for i, width in enumerate((2.5, 12, 13, 22, 84, 2.5), start=1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    _merged(ws, 2, 2, 5, "Already on Krama", font=_font(bold=True, size=18, color="FFFFFFFF"), fill=_fill(INK), align=Alignment(vertical="center", indent=1), height=36)
+    _frame(ws, 2, 2, 2, 5, INK, "medium")
+    _merged(
+        ws,
+        3,
+        2,
+        5,
+        f"The sections {school.name} already has on Krama, with how many students and which teachers. For reference only: nothing you change on this sheet is uploaded.",
+        font=_font(size=10.5, color="FF262B3A"),
+        fill=_fill(PALE),
+        align=Alignment(wrap_text=True, vertical="center", indent=1),
+        height=36,
+    )
+    _frame(ws, 3, 2, 3, 5)
+    for col, head in enumerate(("Class", "Section", "Students", "Teachers and what they teach"), start=2):
+        c = ws.cell(row=5, column=col, value=head)
         c.font = _font(bold=True, color="FFFFFFFF")
         c.fill = _fill(GREY)
-        c.alignment = Alignment(indent=1, vertical="center")
-        ws.column_dimensions[get_column_letter(i)].width = width
-    ws.row_dimensions[1].height = 28
+        c.alignment = Alignment(vertical="center", horizontal="center" if col < 5 else "left", indent=0 if col < 5 else 1)
+    ws.row_dimensions[5].height = 26
     rows = _existing_sections(db, school)
     if not rows:
-        c = ws.cell(row=2, column=1, value="Nothing is on Krama for this school yet, so everyone in your file will be new.")
-        c.font = _font(italic=True, color="FF" + GREY)
-    for r, (cls, section, students, teachers) in enumerate(rows, start=2):
-        for i, value in enumerate((cls, section, students, teachers or "No teacher yet"), start=1):
-            c = ws.cell(row=r, column=i, value=value)
-            c.font = _font(size=10.5, color="FF" + (GREY if i == 4 and not teachers else "262B3A"))
-            c.alignment = Alignment(indent=1, vertical="top", wrap_text=i == 4)
-            c.border = _BOX
-    ws.cell(row=len(rows) + 3, column=1, value="For reference only. Changes here are not uploaded.").font = _font(size=9, italic=True, color="FF" + GREY)
-    ws.freeze_panes = "A2"
+        _merged(
+            ws,
+            6,
+            2,
+            5,
+            "Nothing is on Krama for this school yet, so everyone in your file will be new.",
+            font=_font(italic=True, color="FF" + GREY),
+            align=Alignment(vertical="center", indent=1),
+            height=30,
+        )
+        _grid(ws, 5, 2, 6, 5)
+    for r, (cls, section, students, teachers) in enumerate(rows, start=6):
+        for col, value in enumerate((cls, section, students, teachers or "No teacher yet"), start=2):
+            c = ws.cell(row=r, column=col, value=value)
+            c.font = _font(size=10.5, color="FF" + (GREY if col == 5 and not teachers else "262B3A"))
+            c.alignment = Alignment(vertical="center", horizontal="center" if col < 5 else "left", indent=0 if col < 5 else 1, wrap_text=col == 5)
+            if (r - 6) % 2:
+                c.fill = _fill(STRIPE)
+        ws.row_dimensions[r].height = 24
+    if rows:
+        _grid(ws, 5, 2, 5 + len(rows), 5)
+    ws.freeze_panes = "A6"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
 
 
 def _props(wb: Workbook, school, title: str) -> None:

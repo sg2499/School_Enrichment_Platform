@@ -62,7 +62,7 @@ def test_setup_template_lists_the_sections_already_on_krama(client, db_session):
     db.add(StudentRow(user_id=user.id, school_id=school.id, student_code="STU-TPL2-1", class_name="5", section="B", roll_number="1", class_level_id=level.id))
     db.commit()
     wb = load_workbook(io.BytesIO(client.get("/api/roster/setup-template", headers=headers).content))
-    rows = [[c.value for c in row] for row in wb["Your School"].iter_rows(min_row=2)]
+    rows = [[c.value for c in row] for row in wb["Your School"].iter_rows(min_row=6, min_col=2, max_col=5)]
     assert ["5", "B", 1] == rows[0][:3]
 
 
