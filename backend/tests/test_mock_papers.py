@@ -36,7 +36,7 @@ MUCH_LATER = (NOW + timedelta(days=9)).isoformat()
 
 
 def _chapter_one(db, sx):
-    """A chapter with 15 skills and Chapter 1's 59 patterns, all approved."""
+    """A chapter with 15 skills and Chapter 1's 60 patterns, all approved."""
     chapter, skills = _make_chapter_with_skills(db, sx, n_skills=15)
     raw = json.loads((CONTENT / "chapter-01.json").read_text(encoding="utf-8"))["patterns"]
     engine = {"board": "CBSE", "classLevel": "5", "course": f"MATH-{sx}"}
@@ -113,7 +113,7 @@ def test_a_teacher_builds_previews_and_approves_a_full_paper(client, db_session)
     sections = client.get("/api/mock-papers/sections", headers=teacher).json()["sections"]
     assert [s["key"] for s in sections if s["canChange"]] == [w["scope"]]
     chapters = client.get("/api/mock-papers/chapters", params={"scope": w["scope"]}, headers=teacher).json()["chapters"]
-    assert chapters[0]["approvedPatterns"] == 59
+    assert chapters[0]["approvedPatterns"] == 60
     full = paper_formats.STARTING_POINTS[0]
     supply = client.post("/api/mock-papers/supply", json={"scope": w["scope"], "format": full, "chapterIds": [w["chapter"].id]},
                          headers=teacher).json()
