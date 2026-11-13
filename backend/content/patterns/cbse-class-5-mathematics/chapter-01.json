@@ -4,7 +4,7 @@
     "classLevel": "5",
     "course": "MATHEMATICS"
   },
-  "about": "Chapter 1, We the Travellers I: 59 patterns, three or four for each of the 15 skills (1 and 2 marks), three 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them; the first five were sent to her as samples on 27 Oct 2026.",
+  "about": "Chapter 1, We the Travellers I: 60 patterns, three or four for each of the 15 skills (1 and 2 marks), four 3-mark and three 5-mark long answers in steps (#208), and three 4-mark case studies, drawn from the chapter's 500 questions. All DRAFT until Ashalatha approves them; the first five were sent to her as samples on 27 Oct 2026.",
   "patterns": [
     {
       "code": "C5-WT1-S01-P1",
@@ -4538,7 +4538,6 @@
         {
           "name": "u",
           "choice": [
-            100,
             1000
           ]
         },
@@ -4587,7 +4586,85 @@
         }
       ],
       "misconception": "Uses the thousands digit to decide instead of comparing with the midpoint.",
-      "notes": "Rounded to the nearest 1,000 (a thousand from 12,000 to 98,000) or the nearest 100 (a hundred from 1,200 to 9,800). The smallest is half the unit below, the greatest one less than half the unit above, so 1,000 or 100 numbers are possible. Step question (#208): (a) smallest, (b) greatest, (c) how many.",
+      "notes": "Rounded to the nearest 1,000 (a thousand from 12,000 to 98,000). The smallest is 500 below, the greatest 499 above, so 1,000 numbers are possible. Step question (#208): (a) smallest, (b) greatest, (c) how many. The nearest-100 version is C5-WT1-L3-4 under Rounding to the nearest 100 (13 Nov 2026).",
+      "sources": [
+        "CBSE-C5-CH01-Q100",
+        "CBSE-C5-CH01-Q371",
+        "CBSE-C5-CH01-Q372",
+        "CBSE-C5-CH01-Q380"
+      ]
+    },
+    {
+      "code": "C5-WT1-L3-4",
+      "chapter": 1,
+      "skill": "C5-WT1-S09",
+      "questionType": "Long Answer",
+      "marks": 3,
+      "difficulty": 3,
+      "competency": "Reasoning and problem solving",
+      "values": [
+        {
+          "name": "event",
+          "choice": [
+            "visited the book fair in Kolkata",
+            "watched the kabaddi final at the stadium",
+            "visited the Surajkund Mela on Sunday",
+            "took part in the city marathon",
+            "visited the flower show in Bengaluru"
+          ]
+        },
+        {
+          "name": "u",
+          "choice": [
+            100
+          ]
+        },
+        {
+          "name": "r",
+          "int": {
+            "min": "12 * 1000 if u == 1000 else 1200",
+            "max": "98 * 1000 if u == 1000 else 9800",
+            "step": "u"
+          }
+        },
+        {
+          "name": "lo",
+          "expr": "r - u // 2"
+        },
+        {
+          "name": "hi",
+          "expr": "r + u // 2 - 1"
+        }
+      ],
+      "stimulus": "A newspaper says that {r:num} people {event}. The number was rounded to the nearest {u:num}. Answer each step in its own box.",
+      "parts": [
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "text": "(a) What is the smallest number of people who could have come?",
+          "answer": "lo",
+          "responseFormat": "Integer",
+          "explanation": "{lo:num} is halfway between {r - u:num} and {r:num}, and a halfway number rounds up, so it rounds to {r:num}; {lo - 1:num} would round to {r - u:num}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "text": "(b) What is the greatest number of people who could have come?",
+          "answer": "hi",
+          "responseFormat": "Integer",
+          "explanation": "{hi + 1:num} would round up to {r + u:num}, so the greatest is {hi:num}."
+        },
+        {
+          "questionType": "Numeric Entry",
+          "marks": 1,
+          "text": "(c) How many different exact numbers of people are possible?",
+          "answer": "hi - lo + 1",
+          "responseFormat": "Integer",
+          "explanation": "From {lo:num} to {hi:num} there are {hi:num} − {lo:num} + 1 = {hi - lo + 1:num} numbers."
+        }
+      ],
+      "misconception": "Looks at the hundreds digit instead of the tens digit.",
+      "notes": "Rounded to the nearest 100 (a hundred from 1,200 to 9,800). The smallest is 50 below, the greatest 49 above, so 100 numbers are possible. Step question (#208): (a) smallest, (b) greatest, (c) how many. Split from C5-WT1-L3-2 so each carries the right skill (13 Nov 2026).",
       "sources": [
         "CBSE-C5-CH01-Q100",
         "CBSE-C5-CH01-Q371",
