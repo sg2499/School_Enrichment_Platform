@@ -88,9 +88,12 @@ def answers(
     paper_clause=None,
     chapter_id: str | None = None,
     paper_filter=None,
+    answered_only: bool = False,
 ) -> list[MockAnswer]:
     """Every counted, marked answer of these students (None: any student) in
-    papers they have handed in."""
+    papers they have handed in. `answered_only` leaves out questions the
+    student never answered (handed in blank): a skipped question is not
+    evidence of a particular mistake."""
     if student_ids is not None and not student_ids:
         return []
     query = (
@@ -114,6 +117,8 @@ def answers(
             handed_in_clause(),
         )
     )
+    if answered_only:
+        query = query.filter(MockPaperAnswer.answered_at.isnot(None))
     if student_ids is not None:
         query = query.filter(MockPaperSitting.student_id.in_(student_ids))
     if before is not None:

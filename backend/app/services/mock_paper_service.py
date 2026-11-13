@@ -322,8 +322,17 @@ class Balance:
         score += 6.0 * (self.chapter_marks.get(p.chapter_id, 0) + pick.marks) / target
         mix = self.fmt.get("difficulty")
         if mix:
+            # Pull each bucket towards its share of the marks: a bucket
+            # that is short is preferred in proportion to how short it is,
+            # one that would overshoot is steered away from strongly. (A
+            # flat nudge left Easy at 1% against the 30% aimed for, 13 Nov
+            # 2026.)
             want = mix[bucket(p)] / 100 * total
-            score += 5 if self.bucket_marks[bucket(p)] + pick.marks > want + 0.5 else -3
+            have = self.bucket_marks[bucket(p)]
+            if have + pick.marks > want + 0.5:
+                score += 25
+            elif want > 0:
+                score -= 30 * (want - have) / want
         need = self.fmt.get("applicationMin")
         if need and is_application(p) and self.application_marks < need / 100 * total:
             score -= 3
@@ -366,7 +375,10 @@ def plan(fmt: dict, patterns: list[QuestionPattern], chapter_ids: list[str], rng
     by_group: dict[int, Pick] = {}
     # The places that take one kind only are filled first, so a section of
     # "any kind" doesn't use up what they need (review).
-    for pick in sorted(picks, key=lambda x: (x.kind == "ANY", x.section_index, x.position)):
+    # Within those, the biggest questions go first: their difficulty is
+    # mostly fixed by their marks, so the small ones are left to fill
+    # whatever share of Easy and Medium is still missing.
+    for pick in sorted(picks, key=lambda x: (x.kind == "ANY", -x.marks, x.section_index, x.position)):
         section_skills = skills.setdefault(pick.section_index, set())
         partner = by_group.get(pick.choice_group).pattern if pick.alternative and pick.choice_group in by_group else None
         # An either/or choice is between two different questions; from the

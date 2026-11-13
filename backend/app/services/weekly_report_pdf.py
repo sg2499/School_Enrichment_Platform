@@ -127,6 +127,7 @@ S_CELL = _style("wr-cell", fontSize=8.5, leading=11, textColor=BODY)
 S_CELL_R = _style("wr-cellr", fontName=SANS_SEMI, fontSize=9, leading=11, textColor=INK, alignment=TA_RIGHT)
 S_NAME = _style("wr-name", fontName=SANS_SEMI, fontSize=10, leading=12.5, textColor=INK)
 S_NOTE = _style("wr-note", fontName=SERIF_ITALIC, fontSize=10.2, leading=14, textColor=INK)
+S_NEXT = _style("wr-next", fontName=SANS_SEMI, fontSize=9.4, leading=13, textColor=INK)
 S_EMPTY = _style("wr-empty", fontSize=8.5, leading=12, textColor=MUTED, alignment=TA_CENTER)
 S_SMALL = _style("wr-small", fontSize=7.2, leading=10, textColor=MUTED)
 S_SKILL_SUB = _style("wr-skillsub", fontSize=7.4, leading=10, textColor=MUTED)
@@ -883,7 +884,7 @@ def _skills(page: dict) -> list:
         table,
         Spacer(1, 2 * mm),
         _p("This report shows the latest completed result; teachers also retain first-attempt performance for analysis.", S_SMALL),
-    ] + ([Spacer(1, 2 * mm), _p(f"<b>{escape(page['nextStep'])}</b>", S_NOTE)] if page.get("nextStep") else [])
+    ] + ([Spacer(1, 2 * mm), _p(page['nextStep'], S_NEXT)] if page.get("nextStep") else [])
 
 
 def _notes(page: dict) -> list:

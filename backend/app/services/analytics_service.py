@@ -490,6 +490,8 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
             mock_results_service.readable_papers_clause(viewer),
             mock_results_service.section_clause(scope.class_level_id, scope.section, scope.board_course_id),
         ),
+        # A question left blank says nothing about which mistake a child makes.
+        answered_only=True,
     )
     missing = {a.student_id for a in mock_rows} - set(students)
     if missing:
