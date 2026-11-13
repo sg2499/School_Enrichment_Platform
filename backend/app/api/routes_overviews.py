@@ -407,6 +407,7 @@ _EVENT_WORDS = {
     "learning.attempt.marks_reviewed": "Method Marks Reviewed",
     "mock_paper.drafted": "Mock Paper Drafted",
     "mock_paper.discarded": "Mock Paper Discarded",
+    "mock_paper.deleted": "Mock Paper Deleted",
     "mock_paper.format.saved": "Mock Paper Format Saved",
     "mock_paper.format.deleted": "Mock Paper Format Deleted",
     "mock_paper.marked": "Mock Paper Answer Marked",

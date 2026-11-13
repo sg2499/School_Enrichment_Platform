@@ -195,6 +195,21 @@ def discard_paper(request: Request, paper_id: str, viewer: Viewer = Depends(_vie
     return {"ok": True}
 
 
+class DeleteBody(BaseModel):
+    reason: str = Field(..., max_length=300)
+    title: str = Field(..., max_length=200)
+
+
+@router.post("/{paper_id}/delete")
+@limiter.limit("5/minute")
+def delete_paper(request: Request, paper_id: str, body: DeleteBody, viewer: Viewer = Depends(_viewer), db: Session = Depends(get_db)):
+    """The school admin removes an approved paper and everything sat on it."""
+    summary = service.delete_paper(db, viewer, paper_id, body.reason, body.title)
+    log_audit_event(db, "mock_paper.deleted", user_id=viewer.user.id, request=request, details=summary)
+    db.commit()
+    return {"ok": True, **{k: summary[k] for k in ("versions", "sittings", "answers")}}
+
+
 # --- step 4: marking and results (teacher and admin) ------------------------------------------
 
 

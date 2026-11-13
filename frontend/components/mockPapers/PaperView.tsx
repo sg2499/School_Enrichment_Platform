@@ -192,6 +192,8 @@ export function PaperView({ paperId, role, backHref }: { paperId: string; role: 
   const [approving, setApproving] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [typedTitle, setTypedTitle] = useState("");
   const [editing, setEditing] = useState(false);
   const [why, setWhy] = useState("");
   const [busy, setBusy] = useState(false);
@@ -281,6 +283,10 @@ export function PaperView({ paperId, role, backHref }: { paperId: string; role: 
           ) : shown.status === "SCHEDULED" && shown.canChange && role === "TEACHER" ? (
             <Button type="button" variant="secondary" leadingIcon={<Undo2 className="h-4 w-4" />} onClick={() => setWithdrawing(true)}>
               Withdraw
+            </Button>
+          ) : role === "ADMIN" && !draft ? (
+            <Button type="button" variant="ghost" leadingIcon={<Trash2 className="h-4 w-4" />} onClick={() => setDeleting(true)}>
+              Delete Paper
             </Button>
           ) : null
         }
@@ -480,6 +486,60 @@ export function PaperView({ paperId, role, backHref }: { paperId: string; role: 
             value={why}
             placeholder="For example: wrong chapters chosen"
             onChange={(e) => setWhy(e.target.value)}
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleting}
+        onClose={() => (busy ? undefined : setDeleting(false))}
+        title="Delete This Paper?"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" disabled={busy} onClick={() => setDeleting(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={busy}
+              loadingLabel="Deleting"
+              disabled={why.trim() === "" || typedTitle.trim().toLowerCase() !== shown.title.trim().toLowerCase()}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await api.post(`/mock-papers/${paperId}/delete`, { reason: why.trim(), title: typedTitle.trim() });
+                  router.push(backHref);
+                } catch (err) {
+                  setProblem(describeApiError(err, "delete this paper").message);
+                  setBusy(false);
+                  setDeleting(false);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4 text-sm text-content">
+          <p>
+            This removes the paper for good, with every student&apos;s version, answers and marks. It cannot be undone, and a note of
+            who deleted it and why stays in the activity log. Use it only when it can&apos;t be avoided.
+          </p>
+          <TextField
+            label="Reason"
+            hint={`${why.length}/300`}
+            maxLength={300}
+            value={why}
+            placeholder="For example: test run on test accounts"
+            onChange={(e) => setWhy(e.target.value)}
+          />
+          <TextField
+            label="Type the paper's title to confirm"
+            value={typedTitle}
+            placeholder={shown.title}
+            onChange={(e) => setTypedTitle(e.target.value)}
           />
         </div>
       </Modal>

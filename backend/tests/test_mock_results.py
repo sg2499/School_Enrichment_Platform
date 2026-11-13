@@ -209,3 +209,39 @@ def test_the_planner_pulls_a_paper_towards_the_difficulty_mix():
                 got[svc.bucket(pick.pattern)] += pick.marks
     total = sum(got.values())
     assert got["easy"] / total >= 0.2 and got["hard"] / total <= 0.3
+
+
+def test_the_admin_deletes_an_approved_paper_with_everything_sat_on_it(client, db_session):
+    """An approved paper, even one students have sat, can be removed by the
+    school's admin with a reason and the title typed out; the answers go
+    and no longer count (13 Nov 2026)."""
+    from app.models.papers import MockPaper, MockPaperVersion
+    from tests.test_mock_papers import _as, _make_school_admin
+
+    db = db_session
+    w = _world(db, "MKR5", students=2)
+    paper, teacher = _paper(db, w, NUMBERS)
+    a, b = w["students"]
+    _sit_all_wrong_but_one(db, paper, a)
+    sit.start(db, b, paper.id, now=T1)
+    db.commit()
+    assert progress_service.skill_scores(db, a)
+
+    teach = _as(client, w["teacher"].user, "TEACHER")
+    url = f"/api/mock-papers/{paper.id}/delete"
+    # A teacher cannot; the admin needs a reason and the exact title.
+    assert client.post(url, json={"reason": "test", "title": paper.title}, headers=teach).status_code == 403
+    admin = _as(client, _make_school_admin(db, w["school"], "mkr5"), "ADMIN")
+    assert client.post(url, json={"reason": " ", "title": paper.title}, headers=admin).status_code == 422
+    assert client.post(url, json={"reason": "test run", "title": "Something else"}, headers=admin).status_code == 422
+    assert db.get(MockPaper, paper.id) is not None
+
+    done = client.post(url, json={"reason": "Test run on test accounts", "title": paper.title.upper()}, headers=admin)
+    assert done.status_code == 200, done.text
+    assert done.json()["sittings"] == 2 and done.json()["answers"] == 10
+    db.expire_all()
+    assert db.get(MockPaper, paper.id) is None
+    assert db.query(MockPaperVersion).filter_by(paper_id=paper.id).count() == 0
+    assert db.query(MockPaperSitting).filter_by(paper_id=paper.id).count() == 0
+    assert progress_service.skill_scores(db, a) == {}
+    assert client.post(url, json={"reason": "again", "title": paper.title}, headers=admin).status_code == 404
