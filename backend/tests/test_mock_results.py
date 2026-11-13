@@ -162,3 +162,50 @@ def test_one_long_answer_alone_never_flags_a_mistake(db_session):
                                              analytics_service.FIRST)
     flagged = [m for m in shown["misconceptions"] if any(s["id"] == a.id for s in m["students"])]
     assert flagged == [], flagged
+
+
+def test_a_question_left_blank_never_flags_a_mistake(db_session):
+    """A child who hands a paper in with questions blank has shown nothing
+    about which mistake they make, so Class Analytics does not flag them
+    (found on the demo school, 13 Nov 2026)."""
+    db = db_session
+    w = _world(db, "MKR4", students=1)
+    paper, teacher = _paper(db, w, NUMBERS)
+    (a,) = w["students"]
+    view = sit.start(db, a, paper.id, now=T1)
+    parts = [p[2] for p in _items(db, view)]
+    sit.submit(db, a, paper.id, now=T1 + timedelta(minutes=7))
+    db.commit()
+    questions = list(db.query(Question).filter(Question.id.in_([p["id"] for p in parts])))
+    q1, q2 = questions[0], questions[1]
+    q2.concept_lesson_id = q1.concept_lesson_id
+    q1.misconception_tag = q2.misconception_tag = "Adds the place values instead of the digits."
+    db.add(MisconceptionReview(concept_lesson_id=q1.concept_lesson_id, tag_key=tag_key(q1.misconception_tag), status="APPROVED", shown_note="Note"))
+    db.commit()
+    own = resolve_viewer(db, w["teacher"].user)
+    scope = analytics_service.parse_scope(w["scope"])
+    shown = analytics_service.misconceptions(db, own, scope, w["chapter"].id, analytics_service.FIRST)
+    assert not any(s["id"] == a.id for m in shown["misconceptions"] for s in m["students"])
+
+
+def test_the_planner_pulls_a_paper_towards_the_difficulty_mix():
+    """With plenty of every difficulty, a full paper lands near 30/50/20
+    (Easy was 2% before 13 Nov 2026)."""
+    import random
+    from types import SimpleNamespace as NS
+    from app.services import mock_paper_service as svc, paper_formats
+
+    pool, n = [], 0
+    for marks, diffs, qtype in ((1, (1, 2, 3), "Numeric Entry"), (2, (2, 3, 4), "Long Answer"), (3, (3, 4), "Long Answer"), (4, (3, 4), "Case Study"), (5, (3, 4), "Long Answer")):
+        for d in diffs:
+            for _ in range(12):
+                n += 1
+                pool.append(NS(id=f"p{n}", chapter_id="c1", concept_lesson_id=f"s{n}", question_type=qtype, marks=marks, difficulty=d, competency=""))
+    fmt = paper_formats.STARTING_POINTS[0]
+    got = {"easy": 0, "medium": 0, "hard": 0}
+    for seed in range(10):
+        for pick in svc.plan(fmt, pool, ["c1"], random.Random(seed)):
+            if pick.pattern is not None and not pick.alternative:
+                got[svc.bucket(pick.pattern)] += pick.marks
+    total = sum(got.values())
+    assert got["easy"] / total >= 0.2 and got["hard"] / total <= 0.3

@@ -94,7 +94,8 @@ def _iso(value) -> str | None:
 def _percent(earned: int | None, possible: int | None) -> int | None:
     if not possible:
         return None
-    return round(100 * (earned or 0) / possible)
+    # One rounding rule everywhere: a percentage rounds down (6 of 9 is 66%).
+    return (100 * (earned or 0)) // possible
 
 
 # --- shared aggregate helpers (bounded by one page of ids) -------------------

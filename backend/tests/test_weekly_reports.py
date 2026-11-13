@@ -275,3 +275,11 @@ def test_the_report_says_practice_score_and_how_results_are_kept():
     text = (Path(__file__).resolve().parents[1] / "app" / "services" / "weekly_report_pdf.py").read_text()
     assert "Marks Earned" not in text and "Practice Score" in text
     assert "This report shows the latest completed result; teachers also retain first-attempt performance for analysis." in text
+
+
+def test_the_pdf_next_step_line_is_plain_text_not_markup():
+    # The line was printed with its <b> tags showing (13 Nov 2026).
+    from pathlib import Path
+
+    text = (Path(__file__).resolve().parents[1] / "app" / "services" / "weekly_report_pdf.py").read_text()
+    assert "<b>{escape(page" not in text and "S_NEXT" in text

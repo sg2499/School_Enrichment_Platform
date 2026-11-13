@@ -495,7 +495,7 @@ def test_manual_grading_end_to_end(client, db_session):
     assert final["attempt"]["status"] == "EVALUATED"
     assert client.get("/api/learning/tracker/review-queue", headers=headers).json()["total"] == 0
     row = client.get("/api/learning/tracker/assignments", headers=headers).json()["items"][0]
-    assert row["progress"]["needsReview"] == 0 and row["progress"]["averagePercent"] == round(100 * 5 / 6)
+    assert row["progress"]["needsReview"] == 0 and row["progress"]["averagePercent"] == 100 * 5 // 6
 
     # A correction after finalising is allowed, recomputes, and stays FINALISED.
     corrected = post((q2.id, 3)).json()
@@ -586,3 +586,11 @@ def test_section_students_and_student_history_respect_handover(client, db_sessio
     assert [item["assignment"]["id"] for item in history["items"]] == [old.id]
     assert history["items"][0]["canGrantAttempt"] is False
     assert client.get(f"/api/learning/tracker/students/{newcomer.id}", headers=headers).status_code == 404
+
+
+def test_tracker_percentages_round_down_like_every_other_screen():
+    # 6 of 9 is 66%, as on the student's result and the weekly report (13 Nov 2026).
+    from app.api.routes_practice_tracker import _percent
+
+    assert _percent(6, 9) == 66 and _percent(5, 6) == 83 and _percent(9, 9) == 100 and _percent(0, 9) == 0
+    assert _percent(None, 5) == 0 and _percent(3, 0) is None

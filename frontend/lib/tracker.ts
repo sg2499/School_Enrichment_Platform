@@ -84,7 +84,8 @@ export function plural(n: number, one: string, many = `${one}s`): string {
 }
 
 export function percentOf(score: number, max: number): number | null {
-  return max > 0 ? Math.round((score / max) * 100) : null;
+  // Round down, as everywhere else: 6 of 9 is 66%.
+  return max > 0 ? Math.floor((score * 100) / max + 1e-9) : null;
 }
 
 /** Badge tone for a percentage: jade from 80, saffron from 50, coral below.
