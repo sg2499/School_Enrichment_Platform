@@ -37,6 +37,8 @@ from app.models import Chapter, ClassLevel, ConceptLesson, Question, Student, Us
 from app.models.papers import (
     GeneratedQuestion,
     MockPaper,
+    MockPaperAnswer,
+    MockPaperSitting,
     MockPaperSlot,
     MockPaperVersion,
     MockPaperVersionItem,
@@ -869,6 +871,54 @@ def withdraw(db: Session, viewer: Viewer, paper_id: str, reason: str, now: datet
     paper.withdrawn_at = now or datetime.now(UTC)
     paper.withdraw_reason = reason
     return paper
+
+
+def delete_paper(db: Session, viewer: Viewer, paper_id: str, reason: str, title: str) -> dict:
+    """Removes an approved paper for good, whatever happened to it: its
+    students' versions, sittings and answers go with it, and the questions
+    made for it no longer count as had. For the rare unavoidable case (a
+    test run on test accounts, a paper given to the wrong section): the
+    school's admin only, with a reason and the paper's title typed out, and
+    the caller leaves an audit entry saying what went (13 Nov 2026, his
+    call). A draft is discarded instead; a teacher can withdraw before it
+    opens."""
+    if viewer.role != "ADMIN" or viewer.school_id is None:
+        api_error(403, "FORBIDDEN", "Only the school's admin can delete a paper that has been approved.")
+    paper = db.query(MockPaper).filter(MockPaper.id == paper_id).with_for_update().first()
+    if paper is None or paper.school_id != viewer.school_id:
+        api_error(404, "NOT_FOUND", "That mock paper couldn't be found.")
+    if paper.status == "DRAFT":
+        api_error(409, "PAPER_IS_DRAFT", "A draft is discarded, not deleted.")
+    reason = " ".join((reason or "").split())
+    if not reason:
+        api_error(422, "VALIDATION_ERROR", "Say why the paper is being deleted.")
+    if len(reason) > 300:
+        api_error(422, "VALIDATION_ERROR", "Keep the reason to 300 characters.")
+    if " ".join((title or "").split()).casefold() != " ".join(paper.title.split()).casefold():
+        api_error(422, "VALIDATION_ERROR", "Type the paper's title exactly to confirm.")
+    version_ids = [v.id for v in db.query(MockPaperVersion.id).filter(MockPaperVersion.paper_id == paper.id)]
+    sitting_ids = [x.id for x in db.query(MockPaperSitting.id).filter(MockPaperSitting.paper_id == paper.id)]
+    question_ids: set[str] = set()
+    answers = 0
+    if sitting_ids:
+        question_ids |= {a.question_id for a in db.query(MockPaperAnswer.question_id).filter(MockPaperAnswer.sitting_id.in_(sitting_ids))}
+        answers = db.query(MockPaperAnswer).filter(MockPaperAnswer.sitting_id.in_(sitting_ids)).delete(synchronize_session=False)
+        db.query(MockPaperSitting).filter(MockPaperSitting.id.in_(sitting_ids)).delete(synchronize_session=False)
+    if version_ids:
+        question_ids |= {i.question_id for i in db.query(MockPaperVersionItem.question_id).filter(MockPaperVersionItem.version_id.in_(version_ids))}
+        db.query(MockPaperVersionItem).filter(MockPaperVersionItem.version_id.in_(version_ids)).delete(synchronize_session=False)
+        db.query(MockPaperVersion).filter(MockPaperVersion.id.in_(version_ids)).delete(synchronize_session=False)
+    if question_ids:
+        ids = list(question_ids)
+        db.query(GeneratedQuestion).filter(GeneratedQuestion.question_id.in_(ids)).delete(synchronize_session=False)
+        db.query(Question).filter(Question.id.in_(ids)).delete(synchronize_session=False)
+    db.query(MockPaperSlot).filter(MockPaperSlot.paper_id == paper.id).delete(synchronize_session=False)
+    summary = {
+        "paperId": paper.id, "title": paper.title, "status": paper.status, "reason": reason,
+        "versions": len(version_ids), "sittings": len(sitting_ids), "answers": answers,
+    }
+    db.delete(paper)
+    return summary
 
 
 def section_options(db: Session, viewer: Viewer) -> list[dict]:
