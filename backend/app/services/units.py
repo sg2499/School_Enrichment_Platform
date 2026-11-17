@@ -63,6 +63,15 @@ UNITS: dict[str, Unit] = {
         # Added 17 Nov 2026 for the ICSE Class 5 Negative Numbers lesson
         # (temperatures such as -9 degrees C). Never converted to anything.
         _u("celsius", "temperature", "1", "degree Celsius", "degrees Celsius"),
+        # Added 17 Nov 2026 for the Class 7 Maths content (volume, speed,
+        # simple-interest time). Each has a kind of its own, so none is ever
+        # converted into another (a year is not a fixed number of days, and
+        # km/h into m/s is a conversion a question must ask for).
+        _u("cm3", "volume", "1", "cubic centimetre", "cubic centimetres"),
+        _u("kmh", "speed-kmh", "1", "kilometre per hour", "kilometres per hour"),
+        _u("ms", "speed-ms", "1", "metre per second", "metres per second"),
+        _u("day", "days", "1", "day", "days"),
+        _u("year", "years", "1", "year", "years"),
     )
 }
 
@@ -100,6 +109,11 @@ _add("cm2", "cm²", "cm2", "cm^2", "sq cm", "sqcm", "square cm", "square centime
 _add("m2", "m²", "m2", "m^2", "sq m", "square m", "square metre", "square metres", "square meter", "square meters")
 _add("celsius", "°c", "celsius", "degree celsius", "degrees celsius", "deg c", "℃")
 _add("percent", "%", "percent", "per cent", "pc")
+_add("cm3", "cm³", "cm3", "cm^3", "cu cm", "cucm", "cubic cm", "cubic centimetre", "cubic centimetres", "cubic centimeter", "cubic centimeters")
+_add("kmh", "km/h", "kmh", "kmph", "km per hour", "kilometre per hour", "kilometres per hour", "kilometer per hour", "kilometers per hour")
+_add("ms", "m/s", "mps", "m per s", "metre per second", "metres per second", "meter per second", "meters per second")
+_add("day", "day", "days")
+_add("year", "year", "years", "yr", "yrs")
 
 
 def _alias_key(text: str) -> str:

@@ -123,3 +123,60 @@ def test_unit_is_required_and_celsius_is_known(tmp_path, db_session):
     assert learning_service.grade_answer(temp, "-9")[0] is not True
     assert learning_service.grade_answer(rupees, "1700 rupees")[0] is True
     assert learning_service.grade_answer(rupees, "1700")[0] is not True
+
+
+# ---- Class 7 (17 Nov 2026) ----
+
+def _class7_file(tmp_path, n=81):
+    wb = openpyxl.Workbook()
+    wb.active.title = "Start Here"
+    qb, ak, mg, sm = (wb.create_sheet(t) for t in ("Question Bank", "Answer Key", "Marking Guide", "Skill Map"))
+    for ws, header in ((qb, QB), (ak, AK), (mg, MG), (sm, SM)):
+        ws.append(header)
+    p = f"U{n}"
+    rows = [
+        (f"{p}-Q001", "Constructed Response", 3, "Show all working and explain your reasoning. Aarav: What is 2 + 3?", "None", "5"),
+        (f"{p}-Q002", "Constructed Response", 3, "Ira: Explain why a square is a rectangle in two lines.",
+         "None", "Because a square has four right angles and opposite sides equal, which is what a rectangle needs."),
+        (f"{p}-Q003", "Numeric Entry", 1, "Rahul: Speed of a car covering 120 km in 2 hours?", "km/h", "60"),
+    ]
+    for qid, qtype, marks, stem, unit, key in rows:
+        qb.append([qid, "Numbers", f"{p}-S01", "Add", 1, "A", "Core", qtype, marks, stem, unit,
+                   "Not applicable", "Exact; no rounding", "No", "No external visual", "School to map"])
+        ak.append([qid, key, "Because.", qtype, unit, "Exact", "Exact"])
+        mg.append([qid, marks, "Auto-grade", "No", "1 mark.", "x", "Note"])
+    sm.append([f"{p}-S01", "Add", "Theme 1: Numbers", "3", "-", "-", "School to map"])
+    src = tmp_path / f"CISCE_Class_7_Maths_Lesson_{n}_Numbers_500Q.xlsx"
+    wb.save(src)
+    return src
+
+
+def test_class7_short_written_answers_become_auto_marked_and_marks_are_kept(tmp_path):
+    dst = tmp_path / "c7.xlsx"
+    report = convert_workbook(_class7_file(tmp_path), dst, class_level="7", subject="Mathematics",
+                              source_label="ICSE Class 7 Mathematics", reclassify_short_written=True)
+    assert report.ok
+    assert report.reclassified == 1 and dict(report.reclassified_marks) == {3: 1}
+    rows = list(openpyxl.load_workbook(dst, read_only=True)["Question Bank"].iter_rows(values_only=True))
+    by_id = {r[0]: dict(zip(rows[0], r)) for r in rows[1:]}
+    assert by_id["U81-Q001"]["Question Type"] == "Numeric Entry"
+    assert "Show all working" not in by_id["U81-Q001"]["Question Stem"]
+    assert by_id["U81-Q001"]["Marks"] == 3
+    assert by_id["U81-Q002"]["Question Type"] == "Constructed Response"  # a real written answer stays written
+
+
+def test_class7_flag_off_leaves_written_answers_alone(tmp_path):
+    dst = tmp_path / "c7b.xlsx"
+    convert_workbook(_class7_file(tmp_path, 82), dst, class_level="7", subject="Mathematics",
+                     source_label="ICSE Class 7 Mathematics")
+    rows = list(openpyxl.load_workbook(dst, read_only=True)["Question Bank"].iter_rows(values_only=True))
+    assert {dict(zip(rows[0], r))["Question Type"] for r in rows[1:]} >= {"Constructed Response"}
+
+
+def test_class7_units_parse_and_never_cross_convert():
+    from app.services import units
+    assert units.unit_code("km/h") == "kmh" and units.unit_code("m/s") == "ms"
+    assert units.unit_code("cm³") == "cm3" and units.unit_code("years") == "year" and units.unit_code("Days") == "day"
+    assert units.convert(units.Decimal(1), "kmh", "ms") is None  # a question must ask for that conversion
+    assert units.convert(units.Decimal(1), "year", "day") is None
+    assert units.parse_measurement("60 km/h").unit == "kmh"

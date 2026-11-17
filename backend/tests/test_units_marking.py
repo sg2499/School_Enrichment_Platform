@@ -61,7 +61,7 @@ def test_common_spellings_are_one_unit(text, code):
     assert units.unit_code(text) == code
 
 
-@pytest.mark.parametrize("text", [None, "", "  ", "apples", "kmph", "cubits"])
+@pytest.mark.parametrize("text", [None, "", "  ", "apples", "furlongs", "cubits"])
 def test_an_unknown_unit_is_none(text):
     assert units.unit_code(text) is None
 
@@ -489,6 +489,8 @@ def test_an_equivalent_variant_within_the_questions_tolerance_or_rounding_counts
 
 def test_an_answer_the_rules_cannot_read_gets_what_marking_always_gave_it():
     q = _q("60", response_format=STATED_FORMAT, answer_unit="km")
+    # "km/h" and "kmph" became readable units on 17 Nov 2026 (Class 7 speed), so
+    # beside a km answer they are now a wrong unit, not an unreadable one.
     for given in ("60 km/h", "60 kmph"):
-        assert grade_answer(q, given) == (True, 1), given
+        assert grade_answer(q, given) == (False, 0), given
     assert grade_answer(q, "61 km/h") == (False, 0)
