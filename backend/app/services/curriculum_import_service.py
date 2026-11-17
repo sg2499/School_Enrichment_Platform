@@ -250,6 +250,7 @@ def import_chapter_workbook(
     curriculum_version_label: str = "2026-27",
     curriculum_version_status: str = "PUBLISHED",
     curriculum_version_effective_from: str | None = "2026-04-01",
+    commit: bool = True,
 ) -> ImportResult:
     """Import one chapter workbook. Master data (board/class level/subject
     group/discipline/board course/curriculum version) is shared across
@@ -436,5 +437,9 @@ def import_chapter_workbook(
         else:
             result.questions_updated += 1
 
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        # The caller commits (or rolls back) a whole batch: all or nothing.
+        db.flush()
     return result
