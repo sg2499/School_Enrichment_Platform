@@ -22,6 +22,15 @@ KRAMA-CISCE-C5M-DECISIONS-v1.0 (16 Nov 2026):
 - fields the file does not have (options, hints, difficulty, misconception
   notes, accepted variants) stay empty and are listed in the report, never
   invented.
+
+Class 7 (17 Nov 2026, KRAMA-C7M-DECISIONS-v1.0) uses the same converter for
+both boards. The ICSE Class 7 files have the same layout as Class 5; the CBSE
+Class 7 files add columns (version, status, application item and origin,
+pattern, unit code, input mode, two hints), read here when present. Her
+Class 7 rules applied: a "written" item whose answer is one word, Yes/No or a
+number is auto-marked, not teacher-marked (`reclassify_short_written`);
+a locked unit means the child types the number only (rule Stated); counted
+things carry no unit rule; nothing is released, everything is Draft.
 """
 from __future__ import annotations
 
@@ -52,10 +61,14 @@ SM_HEADERS = ["Skill ID", "Skill", "Learning Outcome", "Prerequisite / Gap Check
 # A first name then a colon at the very start of a stem. Words that are not
 # names are never stripped.
 _NAME_PREFIX = re.compile(r"^([A-Z][a-z]{2,11}):\s+")
+# The Class 7 "written" items carry an instruction before the name:
+# "Show all working and explain your reasoning. Kabir: ...".
+_SHOW_WORKING = re.compile(r"^(Show all working and explain your reasoning\.)\s+")
 _NOT_NAMES = frozenset({"Note", "Hint", "Given", "Find", "Step", "Answer", "Question", "Example", "Remember", "Check", "Tip"})
 
 # Counted things need no unit (her decision B12): the answer is just the number.
 COUNT_NOUNS = frozenset({
+    "groups", "group", "tasks", "task", "cups", "cup", "kits", "kit", "units per division",
     "learners", "learner", "students", "student", "items", "item", "units", "unit", "responses", "response",
     "children", "people", "pupils", "votes", "marks", "tickets", "books", "pencils", "apples", "boxes",
     "mugs", "cards", "coins", "balls", "points", "terms", "numbers", "digits", "sides", "rows", "columns", "pieces",
@@ -82,6 +95,12 @@ class ConvertReport:
     short_written: int = 0
     counted_nouns: int = 0
     two_part: int = 0
+    reclassified: int = 0  # short "written" items now auto-marked (Class 7 rule)
+    reclassified_marks: Counter = field(default_factory=Counter)
+    hints_loaded: int = 0
+    application_items: int = 0
+    patterned: int = 0
+    locked_units: int = 0
 
     @property
     def ok(self) -> bool:
@@ -142,7 +161,8 @@ def _recompute(stem: str):
     return a / b
 
 
-def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, source_label: str) -> ConvertReport:
+def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, source_label: str,
+                     board_name: str = BOARD_DISPLAY_NAME, reclassify_short_written: bool = False) -> ConvertReport:
     """Reads one ICSE-layout lesson file and writes the importer layout to
     `dst`. Returns the report; check `report.ok` before importing."""
     report = ConvertReport(source=src.name, lesson_no=lesson_number(src))
@@ -193,17 +213,31 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
             correct = str(key["Correct Answer"]).strip()
 
         stem = str(row.get("Question") or "").strip()
-        match = _NAME_PREFIX.match(stem)
+        instruction = _SHOW_WORKING.match(stem)
+        lead = stem[instruction.end():] if instruction else stem
+        match = _NAME_PREFIX.match(lead)
         if match and match.group(1) not in _NOT_NAMES:
             report.stripped_names[match.group(1)] += 1
-            stem = stem[match.end():].strip()
+            lead = lead[match.end():].strip()
+            stem = (instruction.group(1) + " " + lead) if instruction else lead
         if not stem:
             report.errors.append(f"{qid}: the question has no wording.")
-        stems[stem.lower()] += 1
 
         qtype = _TYPE_MAP.get(str(row["Question Type"]).strip(), str(row["Question Type"]).strip())
         if qtype not in ("Numeric Entry", "Text Entry", "Constructed Response"):
             report.errors.append(f"{qid}: question type {row['Question Type']!r} is not one the platform knows.")
+        if reclassify_short_written and qtype == "Constructed Response" and correct and len(correct.split()) <= 3:
+            # Her Class 7 rule (3.3): a one-word, Yes/No or direct numeric
+            # answer is auto-marked and must not be made teacher-marked by
+            # "show all working". The instruction goes; the marks stay as given.
+            if instruction:
+                stem = lead
+            qtype = "Numeric Entry" if _num(correct) is not None else "Text Entry"
+            report.reclassified += 1
+            reclassified = True
+        else:
+            reclassified = False
+        stems[stem.lower()] += 1
         report.types[qtype] += 1
         try:
             marks = int(row["Marks"])
@@ -211,6 +245,8 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
             report.errors.append(f"{qid}: marks {row['Marks']!r} is not a whole number.")
             marks = 1
         report.marks[marks] += 1
+        if reclassified:
+            report.reclassified_marks[marks] += 1
 
         if qtype == "Numeric Entry" and correct and _num(correct) is None:
             report.errors.append(f"{qid}: a Numeric Entry answer {correct!r} is not a number.")
@@ -233,8 +269,14 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
             elif code is None:
                 report.warnings.append(f"{qid}: the unit {unit_text!r} is not one marking knows; no unit rule was set.")
             else:
-                answer_unit, unit_rule = code, "Required"
+                # A locked unit sits beside the answer box, so the child types
+                # the number only (rule Stated); otherwise the child types the
+                # unit too (rule Required).
+                locked = str(row.get("Input Mode") or "").strip().lower() == "locked unit"
+                answer_unit, unit_rule = code, ("Stated" if locked else "Required")
                 report.units[code] += 1
+                if locked:
+                    report.locked_units += 1
         decimal_places = None
         rounding = _clean(row.get("Rounding Rule"))
         if rounding and "nearest" in rounding.lower() and "whole" in rounding.lower():
@@ -248,15 +290,27 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
                 report.short_written += 1
         day, form = row.get("Day"), str(row.get("Form") or "").strip()
         assignment = f"L{report.lesson_no:02d}-D{int(day)}{form}"
-        response_format = {"Numeric Entry": "Number and unit" if answer_unit else "Number",
+        response_format = {"Numeric Entry": "Number and unit" if (answer_unit and unit_rule == "Required") else "Number",
                            "Text Entry": "Short text", "Constructed Response": "Written explanation or working"}.get(qtype)
+        hint1, hint2 = _clean(row.get("Hint 1")), _clean(row.get("Hint 2"))
+        hint = " ".join(p for p in (f"Hint 1: {hint1}" if hint1 else None, f"Hint 2: {hint2}" if hint2 else None) if p) or None
+        if hint:
+            report.hints_loaded += 1
+        alignment = f"{source_label}; lesson {report.lesson_no} {report.lesson_title}; school textbook to map"
+        if str(row.get("Application Item") or "").strip().lower() == "yes":
+            report.application_items += 1
+            alignment += f"; application item ({_clean(row.get('Application Origin')) or 'origin not stated'})"
+        if _clean(row.get("Pattern ID")):
+            report.patterned += 1
+            alignment += f"; pattern {_clean(row.get('Pattern ID'))} variant {_clean(row.get('Pattern Variant')) or '-'}"
         ws.append([
-            qid, BOARD_DISPLAY_NAME, class_level, subject, report.lesson_no, report.lesson_title, skill_id,
+            qid, board_name, class_level, subject, report.lesson_no, report.lesson_title, skill_id,
             str(row["Skill"]).strip(), assignment, str(row.get("Stage") or "").strip(), None,
-            str(row["Skill"]).strip(), qtype, stem, None, None, None, None, correct, None, None,
-            _clean(key.get("Explanation")) if key else None, None, marks, 180 if marks >= 3 else 60,
+            str(row["Skill"]).strip(), qtype, stem, None, None, None, None, correct, None, hint,
+            _clean(key.get("Explanation")) if key else None, None, marks,
+            180 if qtype == "Constructed Response" else 60,
             "No" if qtype == "Constructed Response" else "Yes", "No", response_format, "None",
-            teacher_note, "Draft", f"{source_label}; lesson {report.lesson_no} {report.lesson_title}; school textbook to map",
+            teacher_note, "Draft", alignment,
             answer_unit, unit_rule, "No" if answer_unit else None, None, decimal_places, None,
         ])
 
@@ -269,8 +323,10 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
     sm.append(SM_HEADERS)
     for row in skill_rows:
         sm.append([
-            str(row["Skill ID"]).strip(), str(row["Skill"]).strip(), _clean(row.get("Official Theme")),
-            _clean(row.get("Prerequisite Skill")), None, per_skill[str(row["Skill ID"]).strip()],
+            str(row["Skill ID"]).strip(), str(row["Skill"]).strip(),
+            _clean(row.get("Official Theme")) or _clean(row.get("Official Chapter")),
+            _clean(row.get("Prerequisite Skill")), _clean(row.get("Primary Misconception")),
+            per_skill[str(row["Skill ID"]).strip()],
         ])
     dst.parent.mkdir(parents=True, exist_ok=True)
     out.save(dst)

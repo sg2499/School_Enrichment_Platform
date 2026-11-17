@@ -37,19 +37,24 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dir", required=True, help="The folder convert_cisce_workbooks.py wrote.")
     parser.add_argument("--class-level", required=True)
+    parser.add_argument("--board", choices=["CISCE", "CBSE"], default="CISCE",
+                        help="CISCE (shown as ICSE) or the existing board CBSE.")
     parser.add_argument("--yes", action="store_true", help="Skip the YES prompt.")
     parser.add_argument("--dry-run", action="store_true", help="Do everything, then roll back.")
     args = parser.parse_args()
 
     folder = Path(args.dir)
-    files = sorted(folder.glob(f"CISCE_Class_{args.class_level}_Lesson_*.xlsx"))
+    files = sorted(folder.glob(f"{args.board}_Class_{args.class_level}_Lesson_*.xlsx"))
     if not files:
-        print(f"No converted CISCE Class {args.class_level} files in {folder}")
+        print(f"No converted {args.board} Class {args.class_level} files in {folder}")
         return 1
 
     from app.database import SessionLocal, engine
     from app.models import Board, Question
     from app.services.cisce_converter import BOARD_CODE, BOARD_DISPLAY_NAME
+
+    board_code = args.board
+    board_display = BOARD_DISPLAY_NAME if board_code == BOARD_CODE else board_code
     from app.services.curriculum_import_service import import_chapter_workbook
 
     db_url = str(engine.url)
@@ -73,7 +78,7 @@ def main() -> int:
         for path in files:
             try:
                 result = import_chapter_workbook(
-                    db, str(path), board_code=BOARD_CODE, board_display_name=BOARD_DISPLAY_NAME,
+                    db, str(path), board_code=board_code, board_display_name=board_display,
                     class_level_code=args.class_level, curriculum_version_status="DRAFT", commit=False,
                 )
                 print(f"  OK {path.name}: {result.chapter_code} {result.chapter_title!r}: "
