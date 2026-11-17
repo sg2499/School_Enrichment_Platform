@@ -115,6 +115,10 @@ export type QuestionDetail = {
   unitRule?: UnitRule | null;
   /** What marking follows, after that default. */
   effectiveUnitRule?: UnitRule;
+  /** PDF upload (#237): the reviewer's setting (null = the platform decides), what applies, and why. */
+  uploadRule?: "REQUIRED" | "OPTIONAL" | "NONE" | null;
+  effectiveUploadRule?: "REQUIRED" | "OPTIONAL" | "NONE";
+  uploadRuleReason?: string | null;
   allowUnitConversion?: boolean;
   numericTolerance?: string | null;
   decimalPlaces?: number | null;

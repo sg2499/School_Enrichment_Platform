@@ -1,3 +1,4 @@
+import type { AnswerAttachment, UploadRule } from "@/types/attachments";
 /** Mock papers (#166 step 3): what /api/mock-papers sends and takes. */
 
 export type QuestionKind = "ANY" | "CHOICE" | "NUMBER" | "WRITTEN" | "CASE_STUDY";
@@ -181,6 +182,9 @@ export interface SitPart {
   answerBlankLabels: string[] | null;
   response: string | null;
   working: string | null;
+  // #237: does the question take a PDF of the child's work, and the one attached.
+  uploadRule?: UploadRule;
+  attachment?: AnswerAttachment | null;
 }
 
 export interface SitPlace {
@@ -320,6 +324,9 @@ export interface MarkingView {
       modelAnswer: string | null;
       markingSteps: string | null;
       markedAt: string | null;
+      // #237: the PDF the child attached, and whether the question asked for one.
+      uploadRule?: UploadRule;
+      attachment?: AnswerAttachment | null;
     }[];
   }[];
 }

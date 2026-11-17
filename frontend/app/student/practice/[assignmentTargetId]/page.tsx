@@ -21,6 +21,9 @@ import {
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { QuestionInput, WorkingBox } from "@/components/practice/AnswerInput";
+import { AttachmentLine, PdfUploadBox } from "@/components/practice/PdfUploadBox";
+import { missingRequired, missingRequiredSentence } from "@/lib/attachments";
+import type { AnswerAttachment } from "@/types/attachments";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { MastheadSkeleton, PageHeader, type PageHeaderFact, type PageHeaderStat } from "@/components/ui/PageHeader";
 import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
@@ -360,6 +363,9 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                     </p>
                   </div>
                 ) : null}
+                {answer.uploadRule && answer.uploadRule !== "NONE" ? (
+                  <AttachmentLine rule={answer.uploadRule} attachment={answer.attachment} />
+                ) : null}
                 {answer.reviewedByTeacher && typeof answer.manualScore === "number" ? (
                   // #163: a teacher reviewed the automatic mark. Said in
                   // words with both marks, so a changed score is never a
@@ -441,6 +447,8 @@ export default function StudentAttemptPage() {
   // never be half-saved against each other.
   const [workings, setWorkings] = useState<Record<string, string>>({});
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  // The PDF attached under each question (#237): question id -> file.
+  const [attachments, setAttachments] = useState<Record<string, AnswerAttachment | null>>({});
   const [result, setResult] = useState<AttemptResult | null>(null);
   const [blocked, setBlocked] = useState<Blocked | null>(null);
   // Shown above Submit when handing in could not happen this time but can be
@@ -581,6 +589,7 @@ export default function StudentAttemptPage() {
       const seededWorking = Object.fromEntries(data.questions.map((q) => [q.id, q.workingText ?? ""]));
       workingsRef.current = seededWorking;
       setWorkings(seededWorking);
+      setAttachments(Object.fromEntries(data.questions.map((q) => [q.id, q.attachment ?? null])));
       setPhase("answering");
     } catch (err) {
       const problem = describeApiError(err);
@@ -1176,6 +1185,28 @@ export default function StudentAttemptPage() {
                         onChange={(text) => handleWorkingChange(question, text)}
                       />
                     ) : null}
+                    {question.uploadRule && question.uploadRule !== "NONE" ? (
+                      <PdfUploadBox
+                        questionId={question.id}
+                        rule={question.uploadRule}
+                        attachment={attachments[question.id] ?? null}
+                        disabled={locked}
+                        onUpload={async (file) => {
+                          const form = new FormData();
+                          form.append("file", file);
+                          const { data } = await api.put<AnswerAttachment>(
+                            `/learning/attempts/${attempt!.id}/answers/${question.id}/attachment`,
+                            form,
+                          );
+                          setAttachments((prev) => ({ ...prev, [question.id]: data }));
+                          return data;
+                        }}
+                        onRemove={async () => {
+                          await api.delete(`/learning/attempts/${attempt!.id}/answers/${question.id}/attachment`);
+                          setAttachments((prev) => ({ ...prev, [question.id]: null }));
+                        }}
+                      />
+                    ) : null}
                   </CardBody>
                 </Card>
               ))}
@@ -1198,6 +1229,16 @@ export default function StudentAttemptPage() {
                   <p className="text-[0.8125rem] leading-relaxed text-content-muted">
                     Once you submit, you can&apos;t change your answers for this attempt.
                   </p>
+                  {missingRequiredSentence(
+                    missingRequired((attempt?.questions ?? []).map((q) => ({ uploadRule: q.uploadRule, attachment: attachments[q.id] }))),
+                  ) ? (
+                    <p className="text-[0.8125rem] font-medium leading-relaxed text-saffron-800">
+                      {missingRequiredSentence(
+                        missingRequired((attempt?.questions ?? []).map((q) => ({ uploadRule: q.uploadRule, attachment: attachments[q.id] }))),
+                      )}{" "}
+                      You can still hand in, but those questions can&apos;t get full marks without it.
+                    </p>
+                  ) : null}
                 </div>
                 <Button variant="primary" leadingIcon={<Send className="h-4 w-4" />} loading={phase === "submitting"} onClick={handleSubmit}>
                   Submit Practice

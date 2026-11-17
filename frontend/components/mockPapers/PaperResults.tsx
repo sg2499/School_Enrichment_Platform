@@ -16,6 +16,7 @@
  * "where a correct method is rejected solely because an earlier value
  * carried forward", and "for valid equivalent work or a system exception".
  */
+import { AttachmentLine } from "@/components/practice/PdfUploadBox";
 import { useState } from "react";
 import { PencilLine, Save } from "lucide-react";
 import { api, describeApiError } from "@/lib/api";
@@ -444,6 +445,7 @@ export function MarkingPanel({ paperId, canAct }: { paperId: string; canAct: boo
                           <p className="text-xs font-semibold uppercase tracking-wide text-content-subtle">Student&apos;s Answer</p>
                           <p className="mt-1 whitespace-pre-line text-sm text-content">{a.response || "Left blank"}</p>
                         </div>
+                        <AttachmentLine rule={a.uploadRule} attachment={a.attachment} />
                         <details className="rounded-xl bg-surface-muted px-3 py-2 text-sm text-content-muted" open>
                           <summary className="cursor-pointer font-semibold text-content">Marking Steps and Model Answer</summary>
                           {a.markingSteps ? <p className="mt-2 whitespace-pre-line">{a.markingSteps}</p> : null}

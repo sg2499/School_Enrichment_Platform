@@ -63,7 +63,7 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import figures, units
+from app.services import figures, units, upload_rule_service
 from app.services.audit_service import log_audit_event
 from app.services.learning_service import (
     clean_marking_fields,
@@ -762,6 +762,12 @@ def _marking_detail(question: Question) -> dict:
         "decimalPlaces": question.decimal_places,
         "unitMark": question.unit_mark,
         "markingNotes": marking_notes(question),
+        # #237: does the question take a PDF of working or a drawing? What a
+        # reviewer chose (null: not chosen), and what the platform follows
+        # now with the reason in words.
+        "uploadRule": question.upload_rule,
+        "effectiveUploadRule": upload_rule_service.effective(question)[0],
+        "uploadRuleReason": upload_rule_service.effective(question)[1],
     }
 
 
@@ -881,6 +887,9 @@ class MarkingUpdateRequest(BaseModel):
     # not by the framework's own message.
     decimalPlaces: int | float | str | None = None
     unitMark: int | float | str | None = None
+    # #237: "REQUIRED", "OPTIONAL", "NONE", or null to go back to the
+    # platform reading the question.
+    uploadRule: str | None = None
 
 
 _MARKING_PAYLOAD_KEYS = {
@@ -922,11 +931,19 @@ def update_question_marking(
     sent = {
         attribute: getattr(payload, name) for name, attribute in _MARKING_PAYLOAD_KEYS.items() if name in payload.model_fields_set
     }
-    if not sent:
+    upload_sent = "uploadRule" in payload.model_fields_set
+    if not sent and not upload_sent:
         api_error(422, "NOTHING_TO_CHANGE", "Choose at least one marking setting to change.")
-    values, problems = clean_marking_fields(sent)
+    values, problems = clean_marking_fields(sent) if sent else ({}, [])
+    if upload_sent:
+        chosen = (payload.uploadRule or "").strip().upper() or None
+        if chosen is not None and chosen not in upload_rule_service.RULES:
+            problems.append(("uploadRule", "Choose Required, Optional or None for the PDF upload."))
+        else:
+            values["upload_rule"] = chosen
     if problems:
         field_names = {attribute: name for name, attribute in _MARKING_PAYLOAD_KEYS.items()}
+        field_names["uploadRule"] = "uploadRule"
         api_error(
             422,
             "INVALID_MARKING",

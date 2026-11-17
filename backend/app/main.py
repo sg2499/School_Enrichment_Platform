@@ -25,16 +25,18 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.routes_analytics import router as analytics_router
 from app.api.routes_assessment import router as assessment_router
+from app.api.routes_attachments import router as attachments_router
+from app.api.routes_attachments import student_papers_router as attachments_papers_router
 from app.api.routes_auth import router as auth_router
 from app.api.routes_curriculum_admin import router as curriculum_admin_router
 from app.api.routes_health import router as health_router
 from app.api.routes_learning import router as learning_router
-from app.api.routes_platform import router as platform_router
-from app.api.routes_overviews import router as overviews_router
-from app.api.routes_practice_tracker import router as practice_tracker_router
-from app.api.routes_question_patterns import router as question_patterns_router
 from app.api.routes_mock_papers import router as mock_papers_router
 from app.api.routes_mock_papers import student_router as my_papers_router
+from app.api.routes_overviews import router as overviews_router
+from app.api.routes_platform import router as platform_router
+from app.api.routes_practice_tracker import router as practice_tracker_router
+from app.api.routes_question_patterns import router as question_patterns_router
 from app.api.routes_report_cards import router as report_cards_router
 from app.api.routes_roster import router as roster_router
 from app.api.routes_school_logo import router as school_logo_router
@@ -234,4 +236,6 @@ app.include_router(analytics_router)
 app.include_router(question_patterns_router)
 app.include_router(mock_papers_router)
 app.include_router(my_papers_router)
+app.include_router(attachments_router)
+app.include_router(attachments_papers_router)
 app.include_router(overviews_router)

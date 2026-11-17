@@ -1,3 +1,4 @@
+import type { AnswerAttachment, UploadRule } from "@/types/attachments";
 // Mirrors backend/app/api/routes_learning.py's response shapes (Phase 3,
 // the five-day learning loop) and the chapter-enrichment fields added to
 // GET /curriculum-admin/school-curriculum-maps for the teacher Assign
@@ -173,6 +174,10 @@ export type AttemptQuestion = {
   // question gives them ("Groups", "Remainder"). Optional for an older server.
   answerBlanks?: number;
   answerBlankLabels?: string[] | null;
+  // #237 (17 Nov 2026): does the question take a PDF of the child's work, and
+  // the one already attached. Optional: an older server does not send them.
+  uploadRule?: UploadRule;
+  attachment?: AnswerAttachment | null;
 };
 
 export type AttemptDetail = {
@@ -225,6 +230,9 @@ export type AttemptAnswerResult = {
   workingText?: string | null;
   reviewedByTeacher?: boolean;
   reviewReason?: string | null;
+  // #237: the PDF the child attached, and whether the question asked for one.
+  uploadRule?: UploadRule;
+  attachment?: AnswerAttachment | null;
 };
 
 export type AttemptResult = EvaluationResult & {

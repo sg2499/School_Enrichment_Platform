@@ -27,6 +27,8 @@ import {
 import { formatDateTime } from "@/lib/tracker";
 import { cn } from "@/lib/utils";
 import { QuestionInput, WorkingBox } from "@/components/practice/AnswerInput";
+import { AttachmentLine, PdfUploadBox } from "@/components/practice/PdfUploadBox";
+import type { AnswerAttachment } from "@/types/attachments";
 import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -107,16 +109,22 @@ function PartBlock({
   value,
   working,
   saveState,
+  attachment,
   onChange,
   onWorking,
+  onUpload,
+  onRemove,
 }: {
   part: SitPart;
   locked: boolean;
   value: string;
   working: string;
   saveState: SaveState | undefined;
+  attachment: AnswerAttachment | null;
   onChange: (v: string) => void;
   onWorking: (v: string) => void;
+  onUpload: (id: string, file: File) => Promise<AnswerAttachment>;
+  onRemove: (id: string) => Promise<void>;
 }) {
   return (
     <div className="space-y-3">
@@ -142,6 +150,16 @@ function PartBlock({
           </div>
         ) : null}
       </fieldset>
+      {part.uploadRule && part.uploadRule !== "NONE" ? (
+        <PdfUploadBox
+          questionId={part.id}
+          rule={part.uploadRule}
+          attachment={attachment}
+          disabled={locked}
+          onUpload={(file) => onUpload(part.id, file)}
+          onRemove={() => onRemove(part.id)}
+        />
+      ) : null}
       <SavedMark state={saveState} />
     </div>
   );
@@ -230,6 +248,9 @@ function ResultView({ result }: { result: PaperResult }) {
                               <span className="whitespace-pre-line text-content-muted">{part.working}</span>
                             </p>
                           ) : null}
+                          {part.uploadRule && part.uploadRule !== "NONE" ? (
+                            <AttachmentLine rule={part.uploadRule} attachment={part.attachment} />
+                          ) : null}
                           {part.changedByTeacher ? (
                             <p className="rounded-xl bg-brand-50 px-3 py-2 text-sm text-brand-800">
                               <span className="font-semibold">Your teacher changed this mark</span>
@@ -278,8 +299,11 @@ function Place({
   answers,
   working,
   saves,
+  attachments,
   onAnswer,
   onWorking,
+  onUpload,
+  onRemove,
   onChoose,
 }: {
   place: SitPlace;
@@ -287,8 +311,11 @@ function Place({
   answers: Record<string, string>;
   working: Record<string, string>;
   saves: Record<string, SaveState>;
+  attachments: Record<string, AnswerAttachment | null>;
   onAnswer: (id: string, v: string) => void;
   onWorking: (id: string, v: string) => void;
+  onUpload: (id: string, file: File) => Promise<AnswerAttachment>;
+  onRemove: (id: string) => Promise<void>;
   onChoose: (slotId: string) => void;
 }) {
   const active = activeHalf(place);
@@ -340,8 +367,11 @@ function Place({
                     value={answers[part.id] ?? ""}
                     working={working[part.id] ?? ""}
                     saveState={saves[part.id]}
+                    attachment={attachments[part.id] ?? null}
                     onChange={(v) => onAnswer(part.id, v)}
                     onWorking={(v) => onWorking(part.id, v)}
+                    onUpload={onUpload}
+                    onRemove={onRemove}
                   />
                 ))}
               </div>
@@ -359,6 +389,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [working, setWorking] = useState<Record<string, string>>({});
   const [saves, setSaves] = useState<Record<string, SaveState>>({});
+  const [attachments, setAttachments] = useState<Record<string, AnswerAttachment | null>>({});
   const [offset, setOffset] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [tab, setTab] = useState(0);
@@ -375,15 +406,18 @@ export function SitPaper({ paperId }: { paperId: string }) {
     if (next.sitting) setOffset(Date.parse(next.sitting.serverNow) - Date.now());
     const a: Record<string, string> = {};
     const wk: Record<string, string> = {};
+    const at: Record<string, AnswerAttachment | null> = {};
     for (const s of next.sections)
       for (const pl of s.places)
         for (const h of pl.halves)
           for (const p of h.parts) {
             a[p.id] = p.response ?? "";
             wk[p.id] = p.working ?? "";
+            at[p.id] = p.attachment ?? null;
           }
     setAnswers(a);
     setWorking(wk);
+    setAttachments(at);
     if (next.sitting && next.paper.navigation === "FORWARD") setTab(next.sitting.sectionIndex);
   }, []);
 
@@ -731,6 +765,18 @@ export function SitPaper({ paperId }: { paperId: string }) {
               answers={answers}
               working={working}
               saves={saves}
+              attachments={attachments}
+              onUpload={async (id, file) => {
+                const form = new FormData();
+                form.append("file", file);
+                const { data } = await api.put<AnswerAttachment>(`/my-papers/${paperId}/answers/${id}/attachment`, form);
+                setAttachments((a) => ({ ...a, [id]: data }));
+                return data;
+              }}
+              onRemove={async (id) => {
+                await api.delete(`/my-papers/${paperId}/answers/${id}/attachment`);
+                setAttachments((a) => ({ ...a, [id]: null }));
+              }}
               onAnswer={(id, v) => {
                 setAnswers((a) => ({ ...a, [id]: v }));
                 schedule(id);

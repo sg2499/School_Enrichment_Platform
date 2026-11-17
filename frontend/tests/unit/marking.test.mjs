@@ -81,8 +81,8 @@ describe("markingSummary", () => {
 
 describe("the form", () => {
   test("round trip, with empty fields sent as null", () => {
-    const form = markingFormFrom({ answerUnit: "g", unitRule: null, allowUnitConversion: true, numericTolerance: null, decimalPlaces: 0, unitMark: null });
-    assert.deepEqual(form, { answerUnit: "g", unitRule: "", allowUnitConversion: true, numericTolerance: "", decimalPlaces: "0", unitMark: "" });
+    const form = markingFormFrom({ answerUnit: "g", unitRule: null, allowUnitConversion: true, numericTolerance: null, decimalPlaces: 0, unitMark: null, uploadRule: null });
+    assert.deepEqual(form, { answerUnit: "g", unitRule: "", allowUnitConversion: true, numericTolerance: "", decimalPlaces: "0", unitMark: "", uploadRule: "" });
     assert.deepEqual(markingRequest({ ...form, numericTolerance: " 0.5 " }), {
       answerUnit: "g",
       unitRule: null,
@@ -90,6 +90,7 @@ describe("the form", () => {
       numericTolerance: "0.5",
       decimalPlaces: "0",
       unitMark: null,
+      uploadRule: null,
     });
   });
 

@@ -64,8 +64,15 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
-from app.services import figures
-from app.services import learning_service, mock_results_service, practice_access_service, progress_service
+from app.services import (
+    attachment_service,
+    figures,
+    learning_service,
+    mock_results_service,
+    practice_access_service,
+    progress_service,
+    upload_rule_service,
+)
 from app.services.audit_service import log_audit_event
 from app.services.practice_access_service import Viewer
 
@@ -905,6 +912,7 @@ def _attempt_review_payload(db: Session, viewer: Viewer, attempt: Attempt, assig
         .all()
     )
     answer_rows.sort(key=lambda row: (sequence.get(row[1].id, 10_000), row[1].code))
+    attached = attachment_service.for_attempt_answers(db, [answer.id for answer, _q in answer_rows])
     answers = [
         {
             "questionId": question.id,
@@ -945,6 +953,9 @@ def _attempt_review_payload(db: Session, viewer: Viewer, attempt: Attempt, assig
             "canReviewMarks": learning_service.can_review_marks(answer),
             "awaitsMethodMarks": learning_service.awaits_method_marks(answer),
             "reviewReason": answer.review_reason,
+            # #237: a PDF of working or a drawing, and whether the question asked for one.
+            "uploadRule": upload_rule_service.rule_of(question),
+            "attachment": attachment_service.info(attached.get(answer.id)),
         }
         for answer, question in answer_rows
     ]
