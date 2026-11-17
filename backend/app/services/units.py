@@ -60,6 +60,9 @@ UNITS: dict[str, Unit] = {
         _u("cm2", "area", "1", "square centimetre", "square centimetres"),
         _u("m2", "area", "10000", "square metre", "square metres"),
         _u("percent", "percent", "1", "percent", "percent"),
+        # Added 17 Nov 2026 for the ICSE Class 5 Negative Numbers lesson
+        # (temperatures such as -9 degrees C). Never converted to anything.
+        _u("celsius", "temperature", "1", "degree Celsius", "degrees Celsius"),
     )
 }
 
@@ -95,6 +98,7 @@ _add("degree", "degree", "degrees", "°", "deg")
 _add("mm2", "mm²", "mm2", "mm^2", "sq mm", "square mm", "square millimetre", "square millimetres", "square millimeter", "square millimeters")
 _add("cm2", "cm²", "cm2", "cm^2", "sq cm", "sqcm", "square cm", "square centimetre", "square centimetres", "square centimeter", "square centimeters")
 _add("m2", "m²", "m2", "m^2", "sq m", "square m", "square metre", "square metres", "square meter", "square meters")
+_add("celsius", "°c", "celsius", "degree celsius", "degrees celsius", "deg c", "℃")
 _add("percent", "%", "percent", "per cent", "pc")
 
 
