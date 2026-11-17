@@ -6,6 +6,7 @@ from app.models.assessment import (  # noqa: F401
     ComponentMark,
     GradeBand,
 )
+from app.models.attachments import AnswerAttachment, StoredFile  # noqa: F401
 from app.models.curriculum import (  # noqa: F401
     Board,
     BoardCourse,
@@ -22,17 +23,6 @@ from app.models.curriculum import (  # noqa: F401
     SubjectGroup,
     Term,
 )
-from app.models.papers import (  # noqa: F401
-    GeneratedQuestion,
-    MockPaper,
-    MockPaperAnswer,
-    MockPaperSitting,
-    MockPaperSlot,
-    MockPaperVersion,
-    MockPaperVersionItem,
-    PaperFormat,
-    QuestionPattern,
-)
 from app.models.learning import (  # noqa: F401
     ACTIVITY_TYPES,
     ASSIGNMENT_REASONS,
@@ -46,6 +36,17 @@ from app.models.learning import (  # noqa: F401
     LearningActivityQuestion,
 )
 from app.models.models import AuditLog, School, SchoolAdmin, Student, Teacher, User, UserSession  # noqa: F401
+from app.models.papers import (  # noqa: F401
+    GeneratedQuestion,
+    MockPaper,
+    MockPaperAnswer,
+    MockPaperSitting,
+    MockPaperSlot,
+    MockPaperVersion,
+    MockPaperVersionItem,
+    PaperFormat,
+    QuestionPattern,
+)
 from app.models.report_card import ReportCard, ReportCardIssue, ReportSettings, StudentTermRecord  # noqa: F401
-from app.models.weekly_report import WeeklyReport, WeeklyReportIssue, WeeklyReportNote  # noqa: F401
 from app.models.teacher_assignment import TeacherSectionAssignment  # noqa: F401
+from app.models.weekly_report import WeeklyReport, WeeklyReportIssue, WeeklyReportNote  # noqa: F401

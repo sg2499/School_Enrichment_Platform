@@ -40,7 +40,7 @@ from app.models.papers import (
     MockPaperVersion,
     MockPaperVersionItem,
 )
-from app.services import figures, learning_service
+from app.services import attachment_service, figures, learning_service, upload_rule_service
 from app.services import mock_paper_service as papers
 from app.services.mock_paper_service import _aware
 from app.services.practice_access_service import Viewer
@@ -117,6 +117,7 @@ def public_question(question: Question) -> dict:
         "acceptsWorking": learning_service.accepts_working(question),
         "answerBlanks": learning_service.answer_blanks(question),
         "answerBlankLabels": learning_service.answer_blank_labels(question),
+        "uploadRule": upload_rule_service.rule_of(question),  # #237
     }
 
 
@@ -197,6 +198,7 @@ def sitting_view(db: Session, paper: MockPaper, student: Student, sitting: MockP
     version = _version(db, paper, student)
     fmt = json.loads(paper.format_json)
     answers = _answers(db, sitting)
+    attached = attachment_service.for_mock_answers(db, [a.id for a in answers.values()])
     choices = _choices(sitting)
     phase = _phase(sitting, now)
     number = 0
@@ -218,6 +220,8 @@ def sitting_view(db: Session, paper: MockPaper, student: Student, sitting: MockP
                         **public_question(p["question"]),
                         "response": answers[p["question"].id].response_text if p["question"].id in answers else None,
                         "working": answers[p["question"].id].working_text if p["question"].id in answers else None,
+                        "attachment": attachment_service.info(attached.get(answers[p["question"].id].id))
+                        if p["question"].id in answers else None,
                     } for p in half["parts"]],
                 })
             places.append({
@@ -408,6 +412,29 @@ def save_answer(db: Session, student: Student, paper_id: str, question_id: str, 
             sitting.choices_json = json.dumps(choices)
     db.commit()
     return {"saved": True, "savedAt": now.isoformat(), "chosenSlotId": _choices(sitting).get(str(slot.choice_group)) if slot.choice_group else None}
+
+
+def answer_for_upload(db: Session, student: Student, paper_id: str, question_id: str,
+                      now: datetime | None = None) -> tuple[MockPaperAnswer, Question]:
+    """The answer row a PDF attaches to (made if the child hasn't typed
+    anything yet), under the same rules as saving an answer: not in reading
+    time, not once handed in, and only the section a one-way paper is on
+    (#237)."""
+    now = _now(now)
+    paper, sitting = _locked_sitting(db, student, paper_id, now)
+    if now < _aware(sitting.writing_starts_at):
+        api_error(409, "READING_TIME", "It's reading time: you can start answering when it ends.")
+    _item, slot = _place_of(db, paper, sitting, question_id)
+    fmt = json.loads(paper.format_json)
+    if fmt.get("navigation") == "FORWARD" and slot.section_index != sitting.section_index:
+        api_error(409, "SECTION_CLOSED", "You can only answer the section you're on.")
+    question = db.get(Question, question_id)
+    answer = db.query(MockPaperAnswer).filter_by(sitting_id=sitting.id, question_id=question_id).first()
+    if answer is None:
+        answer = MockPaperAnswer(sitting_id=sitting.id, question_id=question_id, slot_id=slot.id, max_score=question.marks or 0)
+        db.add(answer)
+        db.flush()
+    return answer, question
 
 
 def choose(db: Session, student: Student, paper_id: str, slot_id: str, now: datetime | None = None) -> dict:
@@ -601,6 +628,7 @@ def marking(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
     # pattern not yet in steps) waits here: #208 dropped method marks on
     # mocks, so a number answer's mark is final.
     written = [a for a in answers if a.auto_score is None]
+    marking_files = attachment_service.for_mock_answers(db, [a.id for a in written])
     names = _student_names(db, {sittings[a.sitting_id].student_id for a in written})
     number = _numbers(db, paper)
     groups: dict[str, dict] = {}
@@ -616,6 +644,7 @@ def marking(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
             "answerId": a.id, "student": name, "studentCode": code, "question": q.stem,
             "response": a.response_text, "working": a.working_text, "maxScore": a.max_score, "score": a.manual_score,
             "autoScore": a.auto_score,
+            "uploadRule": upload_rule_service.rule_of(q), "attachment": attachment_service.info(marking_files.get(a.id)),
             "modelAnswer": q.correct_answer, "markingSteps": q.teacher_note,
             "markedAt": _aware(a.graded_at).isoformat() if a.graded_at else None,
         })
@@ -709,6 +738,7 @@ def review_place(db: Session, viewer: Viewer, paper_id: str, student_id: str, ke
         api_error(404, "NOT_FOUND", "That question isn't on this paper.")
     number, _sec, chosen = found
     answers = _answers(db, sitting)
+    review_files = attachment_service.for_mock_answers(db, [a.id for a in answers.values()])
     name, code = _student_names(db, {student.id}).get(student.id, ("", ""))
     parts = []
     for p in chosen["parts"]:
@@ -725,6 +755,7 @@ def review_place(db: Session, viewer: Viewer, paper_id: str, student_id: str, ke
             "autoScore": a.auto_score if a else None,
             "score": a.manual_score if a else None,
             "reviewNote": a.review_note if a else None,
+            "attachment": attachment_service.info(review_files.get(a.id)) if a else None,
             "note": learning_service.grading_note_words(
                 a.grading_note, marks_lost=(a.max_score - a.auto_score) if a and a.auto_score is not None else None) if a else None,
         })
@@ -856,6 +887,7 @@ def student_result(db: Session, paper: MockPaper, student: Student, sitting: Moc
     the paper has closed (`solutions`)."""
     version = _version(db, paper, student)
     answers = _answers(db, sitting)
+    result_files = attachment_service.for_mock_answers(db, [a.id for a in answers.values()])
     choices = _choices(sitting)
     sections = []
     number = 0
@@ -876,6 +908,7 @@ def student_result(db: Session, paper: MockPaper, student: Student, sitting: Moc
                     "label": _part_label(p, len(chosen["parts"])),
                     "text": p["text"], **public_question(q),
                     "response": a.response_text if a else None, "working": a.working_text if a else None,
+                    "attachment": attachment_service.info(result_files.get(a.id)) if a else None,
                     "score": score, "maxScore": q.marks,
                     "correctAnswer": q.correct_answer if solutions else None,
                     "acceptedVariants": q.accepted_variants if solutions else None,

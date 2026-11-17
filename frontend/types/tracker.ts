@@ -1,3 +1,4 @@
+import type { AnswerAttachment, UploadRule } from "@/types/attachments";
 // Mirrors backend/app/api/routes_practice_tracker.py (1 Oct 2026) -- the
 // teacher's Practice Tracker read models and the manual-grading payload.
 // Every list endpoint there returns the same Paginated<T> envelope
@@ -209,6 +210,9 @@ export type ReviewAnswer = {
   canReviewMarks?: boolean;
   awaitsMethodMarks?: boolean;
   reviewReason?: string | null;
+  // #237: the PDF the child attached, and whether the question asked for one.
+  uploadRule?: UploadRule;
+  attachment?: AnswerAttachment | null;
 };
 
 export type MethodMarksRow = StudentBasics & {

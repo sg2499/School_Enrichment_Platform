@@ -411,6 +411,13 @@ class Question(Base):
     #     places before it is compared.
     #   unit_mark: marks taken off when a REQUIRED unit is missing on a
     #     question worth more than 1 mark (empty means 1).
+    # #237 (17 Nov 2026): does this question take a PDF of the child's
+    # working or drawing? "REQUIRED" (full marks need it), "OPTIONAL" (a typed
+    # answer is enough; the child may attach working) or "NONE". Empty means
+    # "not decided": app/services/upload_rule_service.py reads the question
+    # and says. A reviewer's choice in Curriculum Studio is stored here and
+    # always wins.
+    upload_rule = Column(String(10), nullable=True)
     answer_unit = Column(String(20), nullable=True)
     unit_rule = Column(String(10), nullable=True)
     allow_unit_conversion = Column(Boolean, nullable=False, default=False, server_default=false())

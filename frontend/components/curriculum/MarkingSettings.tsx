@@ -208,6 +208,26 @@ export function MarkingSettings({
               ))}
             </SelectField>
             <SelectField
+              label="PDF Upload"
+              value={form.uploadRule}
+              onChange={(event) => set("uploadRule", event.target.value as MarkingForm["uploadRule"])}
+              hint={
+                form.uploadRule === ""
+                  ? `The platform decides by reading the question: ${question.uploadRuleReason ?? "no PDF box."}`
+                  : form.uploadRule === "REQUIRED"
+                    ? "The child is asked to attach a PDF; a note shows if none is attached."
+                    : form.uploadRule === "OPTIONAL"
+                      ? "The child may attach a PDF of their working."
+                      : "No PDF box on this question."
+              }
+              error={fieldProblems.uploadRule}
+            >
+              <option value="">Platform Decides</option>
+              <option value="REQUIRED">Required</option>
+              <option value="OPTIONAL">Optional</option>
+              <option value="NONE">None</option>
+            </SelectField>
+            <SelectField
               label="Allow Conversion"
               value={form.allowUnitConversion ? "yes" : "no"}
               onChange={(event) => set("allowUnitConversion", event.target.value === "yes")}

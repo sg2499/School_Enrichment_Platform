@@ -69,12 +69,14 @@ from app.models import (
     User,
 )
 from app.services import (
+    attachment_service,
     figures,
     foundation_repair_service,
     learning_service,
     practice_access_service,
     progress_service,
     teacher_assignment_service,
+    upload_rule_service,
 )
 from app.services.audit_service import log_audit_event
 
@@ -130,6 +132,9 @@ def _question_public_dict(question: Question) -> dict:
         # names when the question gives them. Never the answer itself.
         "answerBlanks": learning_service.answer_blanks(question),
         "answerBlankLabels": learning_service.answer_blank_labels(question),
+        # #237: does this question take a PDF of working or a drawing?
+        # "REQUIRED", "OPTIONAL" or "NONE".
+        "uploadRule": upload_rule_service.rule_of(question),
     }
 
 
@@ -707,6 +712,8 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
     saved_rows = db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()
     saved = {answer.question_id: answer.response_text for answer in saved_rows}
     saved_working = {answer.question_id: answer.working_text for answer in saved_rows}
+    attachments = attachment_service.for_attempt_answers(db, [answer.id for answer in saved_rows])
+    saved_attachment = {answer.question_id: attachments.get(answer.id) for answer in saved_rows}
     return {
         "id": attempt.id,
         "assignmentTargetId": attempt.assignment_target_id,
@@ -716,7 +723,12 @@ def _attempt_dict(attempt: Attempt, db: Session) -> dict:
         "activity": _activity_dict(activity),
         "selfPractice": attempt.assignment_target.assignment.reason == "SELF_PRACTICE",
         "questions": [
-            {**_question_public_dict(q), "responseText": saved.get(q.id), "workingText": saved_working.get(q.id)}
+            {
+                **_question_public_dict(q),
+                "responseText": saved.get(q.id),
+                "workingText": saved_working.get(q.id),
+                "attachment": attachment_service.info(saved_attachment.get(q.id)),
+            }
             for q in questions
         ],
     }
@@ -837,6 +849,7 @@ def get_attempt_result(
         .all()
     }
     answer_rows.sort(key=lambda row: (sequence.get(row.question_id, 10_000), row.question.code))
+    result_attachments = attachment_service.for_attempt_answers(db, [row.id for row in answer_rows])
     breakdown = []
     for answer in answer_rows:
         question = answer.question
@@ -894,6 +907,8 @@ def get_attempt_result(
                 "workingText": answer.working_text,
                 "reviewedByTeacher": answer.auto_score is not None and answer.manual_score is not None,
                 "reviewReason": answer.review_reason,
+                "uploadRule": upload_rule_service.rule_of(question),
+                "attachment": attachment_service.info(result_attachments.get(answer.id)),
             }
         )
 

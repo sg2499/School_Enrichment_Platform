@@ -32,6 +32,7 @@
  * achievement spark (recordAttemptFinalised, in saveMarks below).
  */
 
+import { AttachmentLine } from "@/components/practice/PdfUploadBox";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -504,6 +505,9 @@ function AnswerCard({
             <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">Student&rsquo;s Working</p>
             <p className="mt-1 whitespace-pre-wrap break-words font-mono text-[0.8125rem] leading-relaxed text-content">{answer.workingText}</p>
           </div>
+        ) : null}
+        {answer.uploadRule && answer.uploadRule !== "NONE" ? (
+          <AttachmentLine rule={answer.uploadRule} attachment={answer.attachment} />
         ) : null}
         {answer.gradingNoteText ? (
           // content-muted on surface-muted: 7.4:1.

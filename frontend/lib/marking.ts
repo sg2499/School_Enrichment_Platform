@@ -41,7 +41,7 @@ export function hasMarkingSettings(question: Pick<QuestionDetail, "questionType"
 
 type MarkingFields = Pick<
   QuestionDetail,
-  "answerUnitLabel" | "effectiveAnswerUnitLabel" | "answerUnitSource" | "effectiveUnitRule" | "unitRule" | "allowUnitConversion" | "numericTolerance" | "decimalPlaces" | "unitMark" | "marks"
+  "answerUnitLabel" | "effectiveAnswerUnitLabel" | "answerUnitSource" | "effectiveUnitRule" | "unitRule" | "allowUnitConversion" | "numericTolerance" | "decimalPlaces" | "unitMark" | "marks" | "effectiveUploadRule" | "uploadRule"
 >;
 
 /** The settings in a line each, for the card. Empty when nothing about
@@ -74,6 +74,8 @@ export function markingSummary(question: MarkingFields): string[] {
       places === 0 ? "Rounded to a whole number first" : `Rounded to ${places} decimal place${places === 1 ? "" : "s"} first`,
     );
   }
+  if (question.effectiveUploadRule === "REQUIRED") lines.push("A PDF of the child's work is required for full marks");
+  else if (question.effectiveUploadRule === "OPTIONAL") lines.push("A PDF of the child's work can be attached");
   return lines;
 }
 
@@ -86,6 +88,8 @@ export interface MarkingForm {
   numericTolerance: string;
   decimalPlaces: string;
   unitMark: string;
+  /** "" means the platform decides by reading the question. */
+  uploadRule: "" | "REQUIRED" | "OPTIONAL" | "NONE";
 }
 
 export function markingFormFrom(question: Partial<MarkingFields> & Pick<QuestionDetail, "answerUnit">): MarkingForm {
@@ -96,6 +100,7 @@ export function markingFormFrom(question: Partial<MarkingFields> & Pick<Question
     numericTolerance: question.numericTolerance ?? "",
     decimalPlaces: typeof question.decimalPlaces === "number" ? String(question.decimalPlaces) : "",
     unitMark: typeof question.unitMark === "number" ? String(question.unitMark) : "",
+    uploadRule: (question as { uploadRule?: MarkingForm["uploadRule"] | null }).uploadRule ?? "",
   };
 }
 
@@ -111,6 +116,7 @@ export function markingRequest(form: MarkingForm): Record<string, string | boole
     numericTolerance: text(form.numericTolerance),
     decimalPlaces: text(form.decimalPlaces),
     unitMark: text(form.unitMark),
+    uploadRule: form.uploadRule === "" ? null : form.uploadRule,
   };
 }
 
