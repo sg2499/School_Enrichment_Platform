@@ -29,6 +29,12 @@ _REQUIRED_DO = re.compile(
     r"(?:^|[.?!:]\s+)(?:then\s+|now\s+|first\s+)?(draw|construct|sketch|plot|trace|tessellate)\b",
     re.IGNORECASE,
 )
+# "Draw or describe ...": a typed answer is a way to earn full marks, so the
+# drawing is optional, not required.
+_DRAW_OR_WRITE = re.compile(
+    r"\b(?:draw|sketch|construct|plot|trace)\s+(?:or|/)\s+(?:describe|explain|write|state|say|tell|list)\b",
+    re.IGNORECASE,
+)
 _REQUIRED_ATTACH = re.compile(r"\b(upload|attach)\b", re.IGNORECASE)
 _OPTIONAL = re.compile(
     r"\b(show (?:all |your |the )?(?:working|steps|work)|explain|justify|prove|give a reason|"
@@ -46,6 +52,8 @@ def detect(question: Question) -> tuple[str, str]:
     if not teacher_marked(question):
         return "NONE", "The platform marks this answer by itself."
     text = f"{question.stem or ''} {question.response_format or ''}"
+    if _DRAW_OR_WRITE.search(text) and not _REQUIRED_ATTACH.search(text):
+        return "OPTIONAL", "The question lets the child draw or describe, so a typed answer can earn full marks."
     found = _REQUIRED_DO.search(text) or _REQUIRED_ATTACH.search(text)
     if found:
         word = (found.group(1) if found.groups() else found.group(0)).lower()

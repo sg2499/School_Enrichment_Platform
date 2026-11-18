@@ -1194,12 +1194,12 @@ export default function StudentAttemptPage() {
                         onUpload={async (file) => {
                           const form = new FormData();
                           form.append("file", file);
-                          const { data } = await api.put<AnswerAttachment>(
+                          const { data } = await api.put<{ attachment: AnswerAttachment }>(
                             `/learning/attempts/${attempt!.id}/answers/${question.id}/attachment`,
                             form,
                           );
-                          setAttachments((prev) => ({ ...prev, [question.id]: data }));
-                          return data;
+                          setAttachments((prev) => ({ ...prev, [question.id]: data.attachment }));
+                          return data.attachment;
                         }}
                         onRemove={async () => {
                           await api.delete(`/learning/attempts/${attempt!.id}/answers/${question.id}/attachment`);

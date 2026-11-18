@@ -138,7 +138,11 @@ export function PdfUploadBox({
     <div className="space-y-2 border-t border-line pt-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-semibold text-content">{ruleHeading(rule)}</p>
-        {rule === "REQUIRED" ? (
+        {rule === "REQUIRED" && attachment ? (
+          <Badge tone="success" size="sm">
+            Attached
+          </Badge>
+        ) : rule === "REQUIRED" ? (
           <Badge tone="warning" size="sm">
             Needed for full marks
           </Badge>
