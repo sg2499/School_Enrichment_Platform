@@ -8,6 +8,7 @@
  */
 import { Check, HelpCircle, ShieldAlert, ShieldCheck } from "lucide-react";
 import { MarkingSettings } from "@/components/curriculum/MarkingSettings";
+import { PdfUploadSetting } from "@/components/curriculum/PdfUploadSetting";
 import { QUALITY_STATUS_LABEL, QUALITY_STATUS_TONE, QUESTION_STATUS_TONE, STATUS_LABEL } from "@/components/curriculum/shared";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -154,6 +155,9 @@ export function QuestionCard({
       </p>
 
       {hasMarkingSettings(question) ? <MarkingSettings question={question} onSaved={onMarkingSaved} /> : null}
+      {!hasMarkingSettings(question) && (!question.autoGradable || question.questionType === "Constructed Response") ? (
+        <PdfUploadSetting question={question} onSaved={onMarkingSaved} />
+      ) : null}
 
       {question.explanation ? (
         <p className="text-sm text-content-muted">
