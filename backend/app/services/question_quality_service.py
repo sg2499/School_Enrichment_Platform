@@ -62,14 +62,17 @@ _BLOCKED_TERMS = (
 )
 
 
+# Whole words only (18 Nov 2026): the old substring test flagged every
+# "trapezium" (it contains "rape"), and would flag "sextant" or "grape". A term
+# matches as a word, with a plural or -ed/-ing ending allowed.
+_BLOCKED_RE = re.compile(r"\b(" + "|".join(re.escape(t) for t in _BLOCKED_TERMS) + r")(?:s|es|ed|ing)?\b")
+
+
 def _contains_blocked_term(text: str | None) -> str | None:
     if not text:
         return None
-    lowered = text.lower()
-    for term in _BLOCKED_TERMS:
-        if term in lowered:
-            return term
-    return None
+    match = _BLOCKED_RE.search(text.lower())
+    return match.group(1) if match else None
 
 
 def _structural_flags(question: Question) -> list[str]:
@@ -225,6 +228,10 @@ def _verify_arithmetic_sequence(stem: str, question: Question) -> bool | None:
             return None
         return option_number == next_terms[0]
 
+    # An answer that is not just numbers ("Size 5, red", two things that change
+    # together) is not a next-term answer; do not mark it wrong (#240, 18 Nov 2026).
+    if not re.fullmatch(r"[\d,;\s.\-]+", question.correct_answer or ""):
+        return None
     return _answer_matches(next_terms, question)
 
 

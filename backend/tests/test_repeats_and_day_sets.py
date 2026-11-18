@@ -92,6 +92,43 @@ def test_day_sets_are_chapter_wide_by_day_and_leave_repeats_out(db_session):
     assert db_session.query(LearningActivity).filter(LearningActivity.chapter_id == chapter.id).count() == 5
 
 
+def test_fresh_questions_are_added_to_an_existing_set_unless_it_is_live_and_assigned(db_session):
+    from app.models import Assignment
+    from tests.test_learning import _make_school
+
+    chapter, (s1, s2) = _make_chapter_with_skills(db_session, "top1")
+    _q(db_session, s1, "T1-001", "What is 2 + 2?", assignment="L01-D1A")
+    _q(db_session, s2, "T1-002", "What is 5 + 5?", answer="10", assignment="L01-D1A")
+    _q(db_session, s1, "T1-003", "What is 6 + 6?", answer="12", assignment="L01-D2A")
+    db_session.commit()
+    created = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    sets = {a.source_assignment_code: a for a in created}
+    assert len(learning_service._activity_question_ids(db_session, sets["L01-D2A"].id)) == 1
+
+    # Fresh replacements arrive later, for the second skill (new codes).
+    fresh_a = _q(db_session, s2, "T1-501", "What is 7 + 7?", answer="14", assignment="L01-D2A")
+    fresh_b = _q(db_session, s2, "T1-502", "What is 9 + 9?", answer="18", assignment="L01-D1A")
+    db_session.commit()
+    sets["L01-D1A"].status = "PUBLISHED"  # live, but nobody has been given it
+    sets["L01-D2A"].status = "PUBLISHED"
+    db_session.add(Assignment(school_id=_make_school(db_session, "top1").id, learning_activity_id=sets["L01-D2A"].id, class_name="5"))
+    db_session.commit()
+
+    again = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    assert again == []  # nothing new is made
+    d1 = learning_service._activity_question_ids(db_session, sets["L01-D1A"].id)
+    assert fresh_b.id in d1 and len(d1) == 3
+    d2 = learning_service._activity_question_ids(db_session, sets["L01-D2A"].id)
+    assert fresh_a.id not in d2 and len(d2) == 1  # published and assigned: left as it is
+    # In skill order: skill 1's question, then skill 2's two.
+    codes = [q.code for q in db_session.query(Question).filter(Question.id.in_(d1)).all()]
+    ordered = [r.question_id for r in db_session.query(LearningActivityQuestion).filter(
+        LearningActivityQuestion.learning_activity_id == sets["L01-D1A"].id).order_by(LearningActivityQuestion.sequence).all()]
+    by_id = {q.id: q.code for q in db_session.query(Question).filter(Question.id.in_(ordered)).all()}
+    assert [by_id[i] for i in ordered] == ["T1-001", "T1-002", "T1-502"] and sorted(codes) == sorted(by_id.values())
+    assert sets["L01-D1A"].estimated_minutes == 6
+
+
 def test_the_old_cbse_codes_still_classify_as_before():
     assert learning_service.classify_assignment_code("CH01-P01") == ("CORE_PRACTICE", False)
     assert learning_service.classify_assignment_code("CH01-MASTERY") == ("CHAPTER_MASTERY", True)

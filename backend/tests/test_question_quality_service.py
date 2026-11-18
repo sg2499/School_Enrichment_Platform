@@ -84,6 +84,23 @@ def test_blocked_term_in_stem_is_flagged():
     assert any("blocked term" in f for f in result.flags)
 
 
+def test_blocked_terms_match_whole_words_only():
+    # "trapezium" contains "rape", "sextant" contains "sex": neither is a blocked word.
+    for stem in ("Name the parallel sides of an isosceles trapezium.", "A sextant measures angles.", "Which grapes weigh more?"):
+        assert evaluate_question(_q(stem=stem, correct_answer="4")).status != "FLAGGED", stem
+    assert evaluate_question(_q(stem="This is a shit question.", correct_answer="4")).status == "FLAGGED"
+    assert evaluate_question(_q(stem="A story about terrorists and numbers.", correct_answer="4")).status == "FLAGGED"
+
+
+def test_pattern_question_with_a_two_part_text_answer_is_not_flagged():
+    # ICSE Class 5 "Patterns": a size and a colour change together, the answer is "Size 5, red".
+    stem = "A pattern changes size 1, 2, 3, 4 while colours alternate red, blue, red, blue. What size and colour come next?"
+    q = _q(question_type="Text Entry", stem=stem, correct_answer="Size 5, red")
+    assert evaluate_question(q).status != "FLAGGED"
+    # a plain numeric sequence that is answered wrongly is still caught
+    assert evaluate_question(_q(stem="Continue the pattern 2, 4, 6, 8, __.", correct_answer="11")).status == "FLAGGED"
+
+
 def test_clean_unverifiable_question_is_unverified_not_clean():
     """No math verifier applies to a free-form word problem like this --
     it must NOT be silently treated as verified-correct."""

@@ -137,6 +137,7 @@ def main() -> int:
                     elif chapter.status == "PUBLISHED":
                         n_lessons, n_sets = admin._release_chapter_content(db, chapter, actor)
                     small = 0
+                    db.flush()  # the session has autoflush off: without this the sets published a moment ago are still DRAFT in the database
                     if args.min_set_size > 0:
                         counts = dict(
                             db.query(LearningActivityQuestion.learning_activity_id, func.count(LearningActivityQuestion.id))
