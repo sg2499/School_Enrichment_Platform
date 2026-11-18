@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import api_error
 from app.core.rate_limit import limiter
 from app.database import get_db
-from app.dependencies import get_current_student, require_roles
+from app.dependencies import get_current_student, get_current_user, require_roles
 from app.models import AnswerAttachment, Student, User
 from app.models.learning import Attempt, AttemptAnswer
 from app.models.papers import MockPaperAnswer, MockPaperSitting
@@ -138,9 +138,11 @@ def _may_read(db: Session, user: User, attachment: AnswerAttachment) -> None:
 def download(
     request: Request,
     attachment_id: str,
-    user: User = Depends(require_roles("STUDENT", "TEACHER", "ADMIN")),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Any signed-in role reaches _may_read, which answers 404 to everyone not
+    # entitled (including the Super Admin), so a file's existence is not revealed.
     attachment = db.get(AnswerAttachment, attachment_id)
     if attachment is None:
         api_error(404, "NOT_FOUND", _NOT_FOUND)

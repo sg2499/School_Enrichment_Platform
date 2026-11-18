@@ -100,6 +100,9 @@ export type QuestionDetail = {
   mediaRequired: string | null;
   teacherNote: string | null;
   status: QuestionStatus;
+  /** #234: the question this one repeats (kept in the bank, left out of
+   *  practice sets and bulk approval). Absent or null: not a repeat. */
+  repeatOfId?: string | null;
   qualityStatus: QualityStatus;
   qualityFlags: string[];
   // How a measured answer is marked (Phase 4, #164). Optional: an older
@@ -204,3 +207,15 @@ export type SchoolCurriculumMapEntry = {
   textbookReference: string | null;
   sequence: number;
 };
+
+/** GET /curriculum-admin/chapters/{id}/repeats (#234). */
+export type ChapterRepeat = {
+  id: string;
+  code: string;
+  stem: string;
+  correctAnswer: string;
+  status: QuestionStatus;
+  keptId: string;
+  keptCode: string | null;
+};
+export type ChapterRepeats = { chapterId: string; chapterTitle: string; count: number; repeats: ChapterRepeat[] };

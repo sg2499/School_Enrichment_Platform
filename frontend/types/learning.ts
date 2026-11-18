@@ -12,7 +12,9 @@ export type ActivityType =
   | "REMEDIATION"
   | "CHALLENGE"
   | "CASE_STUDY"
-  | "CHAPTER_MASTERY";
+  | "CHAPTER_MASTERY"
+  | "FLUENCY"
+  | "APPLICATION";
 
 export type ActivityStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
@@ -267,4 +269,6 @@ export const ACTIVITY_TYPE_LABEL: Record<ActivityType, string> = {
   CHALLENGE: "Challenge",
   CASE_STUDY: "Case Study",
   CHAPTER_MASTERY: "Chapter Mastery",
+  FLUENCY: "Fluency",
+  APPLICATION: "Application",
 };

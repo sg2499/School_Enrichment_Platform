@@ -247,7 +247,7 @@ def test_who_can_open_a_file(client, db_session):
     db.commit()
     for email, role in ((stranger.user.email, None), (stranger_admin.email, "ADMIN"), (super_admin.email, "SUPER_ADMIN")):
         browser, headers = _signed_in(email, role)
-        assert browser.get(url, headers=headers).status_code in (403, 404), email
+        assert browser.get(url, headers=headers).status_code == 404, email
     assert student_c.get("/api/attachments/not-a-file", headers=student_h).status_code == 404
     # And the teacher's opening is on the audit trail.
     from app.models import AuditLog
@@ -325,3 +325,63 @@ def test_a_pdf_on_a_mock_paper_follows_the_sitting_rules(db_session):
     with pytest.raises(HTTPException) as late:
         sit.answer_for_upload(db, student, paper.id, part["id"], now=writing + timedelta(minutes=3))
     assert late.value.detail["code"] == "HANDED_IN"
+
+
+def test_who_can_open_a_mock_paper_file(client, db_session):
+    """The same opening rules hold for a PDF on a mock paper: the child, the
+    teacher of that section and the school's admin; not another child, another
+    section's teacher, another school, or the Super Admin."""
+    import json
+    from datetime import timedelta
+
+    from app.models import Question
+    from app.models.papers import QuestionPattern
+    from app.services import mock_sitting_service as sit
+    from tests.test_mock_papers import _world
+    from tests.test_mock_sittings import SMALL, T1, WRITTEN, _paper
+
+    db = db_session
+    w = _world(db, "ATM8", students=2)
+    for p in db.query(QuestionPattern).filter(QuestionPattern.board_course_id == w["chapter"].board_course_id,
+                                              QuestionPattern.marks == 3):
+        spec = json.loads(p.spec_json)
+        keep = {k: spec[k] for k in ("code", "chapter", "skill", "difficulty", "competency") if k in spec}
+        p.spec_json, p.question_type = json.dumps({**keep, **WRITTEN}), "Constructed Response"
+    db.commit()
+    paper, teacher = _paper(db, w, SMALL)
+    student, classmate = w["students"]
+    view = sit.start(db, student, paper.id, now=T1)
+    writing = T1 + timedelta(minutes=6)
+    (part,) = view["sections"][1]["places"][0]["halves"][0]["parts"]
+    db.get(Question, part["id"]).stem = "Draw a rectangle 4 cm by 3 cm and mark its diagonals."
+    db.commit()
+    answer, question = sit.answer_for_upload(db, student, paper.id, part["id"], now=writing)
+    pdf = _pdf(1)
+    record = attachment_service._store(db, student, student.user, question, pdf, "rect.pdf", 1, mock_answer_id=answer.id)
+    db.commit()
+    url = f"/api/attachments/{record.id}"
+
+    admin = _make_school_admin(db, w["school"], "atm8")
+    other_school = _make_school(db, "atm8-other")
+    stranger = _make_teacher(db, other_school, "atm8-other")
+    stranger_admin = _make_school_admin(db, other_school, "atm8-other")
+    super_admin = _make_super_admin(db, "atm8")
+    db.commit()
+
+    for browser, headers in (
+        _signed_in(student.user.email),
+        _signed_in(teacher.user.email),
+        _signed_in(admin.email, "ADMIN"),
+    ):
+        opened = browser.get(url, headers=headers)
+        assert opened.status_code == 200 and opened.content == pdf
+
+    for email, role in (
+        (classmate.user.email, None),
+        (w["other"].user.email, None),
+        (stranger.user.email, None),
+        (stranger_admin.email, "ADMIN"),
+        (super_admin.email, "SUPER_ADMIN"),
+    ):
+        browser, headers = _signed_in(email, role)
+        assert browser.get(url, headers=headers).status_code == 404, email

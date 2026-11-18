@@ -428,6 +428,13 @@ class Question(Base):
     # drawn as SVG by app/services/figures.py (a mirror line on a grid, block
     # letters, map symbols). Empty for most questions.
     figure = Column(Text, nullable=True)
+    # A repeat (#234, 18 Nov 2026): the id of the question this one repeats
+    # (same chapter, same wording, options and answer), the first by code
+    # being the one kept. A repeat stays in the bank but is left out of
+    # practice sets and bulk approval; app/services/repeat_service.py sets
+    # and clears it. Empty for every other question. A plain text column,
+    # not a foreign key, so removing the kept question can never block.
+    repeat_of_id = Column(String, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
