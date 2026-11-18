@@ -96,6 +96,25 @@ _CODE_PATTERNS: tuple[tuple[re.Pattern, str, bool], ...] = (
     (re.compile(r"^CH\d+-CASE$"), "CASE_STUDY", True),
 )
 
+# The five-day sets of the ICSE-style content (ICSE Class 5, and both boards'
+# Class 7): L01-D1A .. L01-D5E, five days of five forms, 20 questions each,
+# across every skill of the lesson, so each set belongs to the chapter, not to
+# one skill (#234). The day names the stage and so the set's type.
+_DAY_CODE = re.compile(r"^L\d+-D([1-5])([A-E])$")
+_DAY_SETS = {
+    1: ("PREREQUISITE_CHECK", "Diagnostic"),
+    2: ("CORE_PRACTICE", "Guided Practice"),
+    3: ("FLUENCY", "Fluency"),
+    4: ("APPLICATION", "Application"),
+    5: ("CHALLENGE", "Mastery"),
+}
+
+
+def day_set_parts(code: str | None) -> tuple[int, str] | None:
+    """(day, form letter) for an L..-D..-style code, else None."""
+    match = _DAY_CODE.match((code or "").strip())
+    return (int(match.group(1)), match.group(2)) if match else None
+
 # See learning.py's module docstring paragraph on pacing_day for the full
 # rationale, including the honest gap (no per-skill "Day 5 short final
 # check" content exists in the real data yet -- CHALLENGE is the closest
@@ -119,6 +138,8 @@ _TITLE_SUFFIX = {
     "CHALLENGE": "Challenge",
     "CASE_STUDY": "Case Study",
     "CHAPTER_MASTERY": "Chapter Mastery",
+    "FLUENCY": "Fluency",
+    "APPLICATION": "Application",
 }
 
 
@@ -147,6 +168,9 @@ def classify_assignment_code(code: str) -> tuple[str | None, bool]:
     any recognised real pattern -- callers must skip those, not guess."""
     if not code:
         return None, False
+    day_set = day_set_parts(code)
+    if day_set:
+        return _DAY_SETS[day_set[0]][0], True
     for pattern, activity_type, chapter_scoped in _CODE_PATTERNS:
         if pattern.match(code.strip()):
             return activity_type, chapter_scoped
@@ -173,7 +197,12 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
     questions = (
         db.query(Question)
         .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
-        .filter(ConceptLesson.chapter_id == chapter.id, Question.origin == "BANK")
+        .filter(
+            ConceptLesson.chapter_id == chapter.id,
+            Question.origin == "BANK",
+            # A repeat stays in the bank but never goes into a set (#234).
+            Question.repeat_of_id.is_(None),
+        )
         .all()
     )
 
@@ -207,8 +236,14 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
             title = activity_title(concept_lesson.title, activity_type, assignment_code)
             sequence = concept_lesson.sequence
         else:
-            title = activity_title(chapter.title, activity_type, assignment_code)
-            sequence = 9999  # chapter-scoped capstones sort after every skill's own activities
+            day_set = day_set_parts(assignment_code)
+            if day_set:
+                day, form = day_set
+                title = f"{chapter.title} — {_DAY_SETS[day][1]} {form}"
+                sequence = 9000 + day * 10 + ord(form) - ord("A")  # day by day, form by form
+            else:
+                title = activity_title(chapter.title, activity_type, assignment_code)
+                sequence = 9999  # chapter-scoped capstones sort after every skill's own activities
 
         activity = LearningActivity(
             chapter_id=chapter.id,
@@ -216,7 +251,7 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
             activity_type=activity_type,
             title=title,
             sequence=sequence,
-            pacing_day=DEFAULT_PACING_DAY.get(activity_type),
+            pacing_day=(day_set_parts(assignment_code) or (None,))[0] or DEFAULT_PACING_DAY.get(activity_type),
             evaluation_mode="AUTO",
             estimated_minutes=max(len(group_questions) * 2, 5),
             status="DRAFT",
@@ -1091,6 +1126,52 @@ def grade_answer(question: Question, response_text: str | None) -> tuple[bool | 
     return result.is_correct, result.score
 
 
+# A measure in two units ("14 km 911 m", "8 kg 697 g") is typed in many
+# harmless ways: no space, "and" between the parts, the unit spelt out. The
+# answer is right when the same amounts are given in the same units (#234).
+_COMPOUND_UNIT = {
+    "km": "km", "kilometre": "km", "kilometres": "km", "kilometer": "km", "kilometers": "km",
+    "m": "m", "metre": "m", "metres": "m", "meter": "m", "meters": "m",
+    "cm": "cm", "centimetre": "cm", "centimetres": "cm", "centimeter": "cm", "centimeters": "cm",
+    "mm": "mm", "millimetre": "mm", "millimetres": "mm",
+    "kg": "kg", "kilogram": "kg", "kilograms": "kg",
+    "g": "g", "gram": "g", "grams": "g", "gm": "g",
+    "l": "l", "litre": "l", "litres": "l", "liter": "l", "liters": "l",
+    "ml": "ml", "millilitre": "ml", "millilitres": "ml", "milliliter": "ml", "milliliters": "ml",
+    "rs": "rs", "rupee": "rs", "rupees": "rs", "paise": "paise", "p": "paise",
+    "h": "h", "hr": "h", "hrs": "h", "hour": "h", "hours": "h",
+    "min": "min", "mins": "min", "minute": "min", "minutes": "min",
+    "s": "s", "sec": "s", "secs": "s", "second": "s", "seconds": "s",
+}
+_COMPOUND_PART = re.compile(r"(\d+(?:\.\d+)?)\s*([a-z]+)")
+
+
+def _compound_measure(text: str | None) -> list[tuple[Decimal, str]] | None:
+    """[(amount, unit), ...] when the text is two or more amounts in known
+    units and nothing else, else None."""
+    lowered = re.sub(r"\b(and)\b|[,&]", " ", (text or "").lower())
+    parts = _COMPOUND_PART.findall(lowered)
+    if len(parts) < 2 or _COMPOUND_PART.sub("", lowered).strip():
+        return None
+    out = []
+    for amount, unit in parts:
+        canonical = _COMPOUND_UNIT.get(unit)
+        if canonical is None:
+            return None
+        out.append((Decimal(amount).normalize(), canonical))
+    return out
+
+
+def _compound_measure_matches(response: str, question: Question) -> bool:
+    given = _compound_measure(response)
+    if given is None:
+        return False
+    return any(
+        (expected := _compound_measure(candidate)) is not None and expected == given
+        for candidate in _candidate_answers(question)
+    )
+
+
 def _grade_answer_text(question: Question, response_text: str | None) -> tuple[bool | None, int | None]:
     """Returns (is_correct, auto_score). (None, None) means "not auto-graded
     here" -- either the question isn't auto_gradable, or its question_type
@@ -1132,7 +1213,7 @@ def _grade_answer_text(question: Question, response_text: str | None) -> tuple[b
             is_correct = any(
                 _blanks_match(response_blanks, [p for p in candidate.split(";") if p.strip()], question_unit)
                 for candidate in _candidate_answers(question)
-            )
+            ) or _compound_measure_matches(response, question)
     else:
         # Constructed Response and any other subjective/unrecognised type --
         # not auto-graded, don't guess.

@@ -105,6 +105,10 @@ ACTIVITY_TYPES = (
     "CHALLENGE",
     "CASE_STUDY",
     "CHAPTER_MASTERY",
+    # #234: the Day 3 and Day 4 sets of the ICSE-style content
+    # (L01-D3A .. D4E), chapter-scoped like CASE_STUDY.
+    "FLUENCY",
+    "APPLICATION",
 )
 
 ASSIGNMENT_REASONS = (

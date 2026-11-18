@@ -104,6 +104,11 @@ export function QuestionCard({
           <Badge tone={QUALITY_STATUS_TONE[question.qualityStatus]} size="sm" icon={<QualityIcon className="h-3 w-3" />}>
             {QUALITY_STATUS_LABEL[question.qualityStatus]}
           </Badge>
+          {question.repeatOfId ? (
+            <Badge tone="warning" size="sm">
+              Repeat: left out of sets
+            </Badge>
+          ) : null}
         </div>
       </div>
 

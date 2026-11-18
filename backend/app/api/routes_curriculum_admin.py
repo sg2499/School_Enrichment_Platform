@@ -63,7 +63,7 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import figures, units, upload_rule_service
+from app.services import figures, repeat_service, units, upload_rule_service
 from app.services.audit_service import log_audit_event
 from app.services.learning_service import (
     clean_marking_fields,
@@ -735,6 +735,7 @@ def _question_detail(question: Question) -> dict:
         "figure": question.figure,
         "figureSvg": figures.svg_for(question),
         "status": question.status,
+        "repeatOfId": question.repeat_of_id,
         "qualityStatus": question.quality_status,
         "qualityFlags": json.loads(question.quality_flags) if question.quality_flags else [],
         **_marking_detail(question),
@@ -1004,7 +1005,12 @@ def _bulk_approve_questions(
     skipped_flagged = 0
     skipped_unverified = 0
     skipped_already_done = 0
+    skipped_repeats = 0
     for question in questions:
+        if question.repeat_of_id:
+            # A repeat stays in the bank as a draft (#234).
+            skipped_repeats += 1
+            continue
         if question.status in ("APPROVED", "PUBLISHED"):
             skipped_already_done += 1
             continue
@@ -1030,10 +1036,12 @@ def _bulk_approve_questions(
             "skippedFlaggedCount": skipped_flagged,
             "skippedUnverifiedCount": skipped_unverified,
             "skippedAlreadyDoneCount": skipped_already_done,
+            "skippedRepeatsCount": skipped_repeats,
         },
     )
     db.commit()
     return {
+        "skippedRepeatsCount": skipped_repeats,
         "approvedCount": approved,
         "skippedFlaggedCount": skipped_flagged,
         "skippedUnverifiedCount": skipped_unverified,
@@ -1539,3 +1547,71 @@ def delete_school_curriculum_map(
     db.delete(mapping)
     db.commit()
     return {"deleted": True}
+
+
+# --- repeated questions (#234) -----------------------------------------------------------------
+
+
+def _repeats_payload(db: Session, chapter: Chapter) -> dict:
+    kept_by_id: dict[str, Question] = {}
+    repeats = (
+        db.query(Question)
+        .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
+        .filter(ConceptLesson.chapter_id == chapter.id, Question.origin == "BANK", Question.repeat_of_id.isnot(None))
+        .order_by(Question.code)
+        .all()
+    )
+    ids = {q.repeat_of_id for q in repeats}
+    if ids:
+        kept_by_id = {q.id: q for q in db.query(Question).filter(Question.id.in_(ids)).all()}
+    return {
+        "chapterId": chapter.id,
+        "chapterTitle": chapter.title,
+        "count": len(repeats),
+        "repeats": [
+            {
+                "id": q.id,
+                "code": q.code,
+                "stem": q.stem,
+                "correctAnswer": q.correct_answer,
+                "status": q.status,
+                "keptId": q.repeat_of_id,
+                "keptCode": kept_by_id[q.repeat_of_id].code if q.repeat_of_id in kept_by_id else None,
+            }
+            for q in repeats
+        ],
+    }
+
+
+@router.get("/chapters/{chapter_id}/repeats", dependencies=[Depends(require_roles("SUPER_ADMIN"))])
+def list_chapter_repeats(chapter_id: str, db: Session = Depends(get_db)):
+    """The questions in this chapter flagged as repeats of an earlier one:
+    still in the bank, left out of practice sets and of bulk approval."""
+    chapter = db.get(Chapter, chapter_id)
+    if not chapter:
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
+    return _repeats_payload(db, chapter)
+
+
+@router.post("/chapters/{chapter_id}/repeats/scan")
+def scan_chapter_repeats(
+    chapter_id: str,
+    request: Request,
+    user: User = Depends(require_roles("SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
+    """Finds the repeats in this chapter again and updates the flags, after
+    content was changed. Safe to run again."""
+    chapter = db.get(Chapter, chapter_id)
+    if not chapter:
+        api_error(404, "NOT_FOUND", "That chapter couldn't be found. It may have been removed.")
+    report = repeat_service.process_chapter(db, chapter, apply=True)
+    log_audit_event(
+        db,
+        "curriculum.repeats.scanned",
+        user_id=user.id,
+        request=request,
+        details={"chapterId": chapter.id, "repeats": report.repeats, "newlyFlagged": report.newly_flagged, "cleared": report.cleared},
+    )
+    db.commit()
+    return _repeats_payload(db, chapter)

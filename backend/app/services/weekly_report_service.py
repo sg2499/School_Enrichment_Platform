@@ -83,6 +83,8 @@ ACTIVITY_LABEL = {
     "CHALLENGE": "Challenge",
     "CASE_STUDY": "Case Study",
     "CHAPTER_MASTERY": "Chapter Mastery",
+    "FLUENCY": "Fluency",
+    "APPLICATION": "Application",
 }
 
 

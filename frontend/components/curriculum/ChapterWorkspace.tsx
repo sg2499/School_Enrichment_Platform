@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { ApproveAndPublish } from "@/components/curriculum/ApproveAndPublish";
 import { QuestionCard } from "@/components/curriculum/QuestionCard";
+import { RepeatsCard } from "@/components/curriculum/RepeatsCard";
 import { CHAPTER_STATUS_TONE, ErrorBanner, LESSON_STATUS_TONE, LIST_KEY, STATUS_LABEL, countOf } from "@/components/curriculum/shared";
 import { LoadError } from "@/components/ui/AlertBanner";
 import { Badge } from "@/components/ui/Badge";
@@ -767,6 +768,7 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
               scopeLabel="this chapter"
               onDone={refresh}
             />
+            <RepeatsCard chapterId={chapter.id} onChanged={refresh} />
             <Card>
               <CardHeader className="flex-col items-start gap-1.5">
                 <CardTitle className="flex items-center gap-2">

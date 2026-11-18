@@ -141,6 +141,11 @@ def find_duplicate_question_ids(questions: list[Question]) -> dict[str, str]:
     """
     by_key: dict[tuple, list[Question]] = {}
     for q in questions:
+        # A question already flagged as a repeat (#234) is dealt with by
+        # repeat_service: it is left out of sets and approval, and the copy
+        # it repeats is kept, so neither is held back here as a duplicate.
+        if getattr(q, "repeat_of_id", None):
+            continue
         stem_key = re.sub(r"\s+", " ", (q.stem or "").strip().lower())
         if not stem_key:
             continue
