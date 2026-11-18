@@ -58,6 +58,9 @@ def test_the_rule_reads_the_question():
     assert upload_rule_service.detect(_q("Plot the points on a graph, then attach a photo."))[0] == "REQUIRED"
     assert upload_rule_service.detect(_q("Explain why a square is a rectangle."))[0] == "OPTIONAL"
     assert upload_rule_service.detect(_q("Show your working for 14 x 12."))[0] == "OPTIONAL"
+    # "Draw or describe": a typed answer can earn full marks, so it is optional.
+    assert upload_rule_service.detect(_q("Draw or describe two right angles. Explain why both are right angles."))[0] == "OPTIONAL"
+    assert upload_rule_service.detect(_q("Sketch or write the steps to bisect an angle."))[0] == "OPTIONAL"
     # Only mentions drawing: a question to answer in words.
     assert upload_rule_service.detect(_q("In an SSS construction, after drawing the base, what locates the apex?"))[0] == "NONE"
     assert upload_rule_service.detect(_q("Name the longest side."))[0] == "NONE"

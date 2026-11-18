@@ -769,9 +769,9 @@ export function SitPaper({ paperId }: { paperId: string }) {
               onUpload={async (id, file) => {
                 const form = new FormData();
                 form.append("file", file);
-                const { data } = await api.put<AnswerAttachment>(`/my-papers/${paperId}/answers/${id}/attachment`, form);
-                setAttachments((a) => ({ ...a, [id]: data }));
-                return data;
+                const { data } = await api.put<{ attachment: AnswerAttachment }>(`/my-papers/${paperId}/answers/${id}/attachment`, form);
+                setAttachments((a) => ({ ...a, [id]: data.attachment }));
+                return data.attachment;
               }}
               onRemove={async (id) => {
                 await api.delete(`/my-papers/${paperId}/answers/${id}/attachment`);
