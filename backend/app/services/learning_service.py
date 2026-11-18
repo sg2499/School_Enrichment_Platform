@@ -177,6 +177,42 @@ def classify_assignment_code(code: str) -> tuple[str | None, bool]:
     return None, False
 
 
+def top_up_activity(db: Session, activity: LearningActivity, group_questions: list[Question]) -> int:
+    """Adds questions that belong to an existing set but are not in it yet
+    (fresh replacements loaded later for repeated questions, #240).
+
+    A set that is published and already assigned to a class is left alone:
+    a child may be part-way through it. A draft set, or a published one nobody
+    has been given yet, is topped up and its questions put in skill order.
+    Returns how many were added."""
+    if activity.status == "PUBLISHED" and (
+        db.query(Assignment.id).filter(Assignment.learning_activity_id == activity.id).first()
+    ):
+        return 0
+    linked = {
+        qid for (qid,) in db.query(LearningActivityQuestion.question_id)
+        .filter(LearningActivityQuestion.learning_activity_id == activity.id).all()
+    }
+    fresh = [q for q in group_questions if q.id not in linked]
+    if not fresh:
+        return 0
+    for question in fresh:
+        db.add(LearningActivityQuestion(learning_activity_id=activity.id, question_id=question.id, sequence=0))
+    db.flush()
+    rows = (
+        db.query(LearningActivityQuestion, Question, ConceptLesson)
+        .join(Question, LearningActivityQuestion.question_id == Question.id)
+        .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
+        .filter(LearningActivityQuestion.learning_activity_id == activity.id)
+        .all()
+    )
+    rows.sort(key=lambda r: (r[2].sequence or 0, r[1].code))
+    for i, (link, _q, _l) in enumerate(rows, start=1):
+        link.sequence = i
+    activity.estimated_minutes = max(len(rows) * 2, 5)
+    return len(fresh)
+
+
 def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_user_id: str | None) -> list[LearningActivity]:
     """Idempotent: re-running this after new questions are added to a
     chapter only creates activities for (assignment_code, concept_lesson)
@@ -229,6 +265,7 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
             .first()
         )
         if existing:
+            top_up_activity(db, existing, group_questions)
             continue
 
         concept_lesson = group_questions[0].concept_lesson

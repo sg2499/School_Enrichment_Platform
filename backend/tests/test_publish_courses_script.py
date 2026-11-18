@@ -112,3 +112,22 @@ def test_flag_repeats_script(script_db, monkeypatch, capsys):
     assert _run("flag_repeats", ["--board", "CISCE", "--class-level", "5", "--apply", "--yes"], monkeypatch) == 0
     db.expire_all()
     assert mine() == 1
+
+
+def test_small_set_is_demoted_on_the_first_run_too(script_db, monkeypatch):
+    # Production sessions have autoflush off. A set published a moment earlier in the
+    # same run was invisible to the size check, so 161 small sets went live (18 Nov 2026).
+    db = script_db
+    db.autoflush = False
+    try:
+        chapter, (s1, s2) = _course(db, "CISCE", "7", "pub4")
+        _q(db, s1, "P4-001", "What is 3 + 3?", answer="6", assignment="L01-D1A")
+        _q(db, s2, "P4-003", "What is 5 + 5?", answer="10", assignment="L01-D1A")
+        _q(db, s1, "P4-002", "What is 4 + 4?", answer="8", assignment="L01-D1A")
+        db.commit()
+        assert _run("publish_courses", ["--board", "CISCE", "--class-level", "7", "--apply", "--yes"], monkeypatch) == 0
+        db.expire_all()
+        sets = db.query(LearningActivity).filter(LearningActivity.chapter_id == chapter.id).all()
+        assert [(a.source_assignment_code, a.status) for a in sets] == [("L01-D1A", "DRAFT")]
+    finally:
+        db.autoflush = True
