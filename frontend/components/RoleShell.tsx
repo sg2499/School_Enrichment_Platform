@@ -179,9 +179,9 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "School",
       items: [
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
-        { label: "People", icon: Users, href: "/admin/people" },
-        // #210: the school setup workbook, sign-in slips, each section.
-        { label: "Classes & Sections", icon: GraduationCap, href: "/admin/sections" },
+        // #242: one tab for the whole school's setup: the workbook, sign-in
+        // slips, each section, and every teacher's and student's account.
+        { label: "School Setup", icon: GraduationCap, href: "/admin/setup" },
       ],
     },
     {
@@ -220,8 +220,7 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
         { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
         // #211: every school, its details, admins and status.
         { label: "Schools", icon: Building2, href: "/admin/schools" },
-        { label: "People", icon: Users, href: "/admin/people" },
-        { label: "Classes & Sections", icon: GraduationCap, href: "/admin/sections" },
+        { label: "School Setup", icon: GraduationCap, href: "/admin/setup" },
       ],
     },
     {

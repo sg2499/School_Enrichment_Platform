@@ -1,20 +1,22 @@
 "use client";
 
 /**
- * Classes & Sections (#210, 29 Oct 2026; PHASE8_SCHOOL_SETUP_DESIGN.md), for
+ * School Setup, once Classes & Sections (#210, 29 Oct 2026; PHASE8_SCHOOL_SETUP_DESIGN.md), for
  * a school's admin: set the school up from one workbook (teachers with the
  * sections they teach, students with class, section and roll number),
  * checked whole and imported all or nothing; print the new accounts'
  * sign-in slips; see each section's students and teachers; and give a
  * section new slips for students who have not signed in yet.
  */
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Download, FileCheck2, Upload } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { errorDetail } from "@/lib/errors";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { checkSummary } from "@/lib/schoolSetup";
 import { SignInSlips } from "@/components/school/SignInSlips";
+import { NO_REPORT, RosterWorkspace, type RosterReport } from "@/components/school/PeopleRoster";
+import { cn } from "@/lib/utils";
 import { AlertBanner, LoadError } from "@/components/ui/AlertBanner";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -309,7 +311,7 @@ function SectionsCard({
         {sections.length === 0 ? (
           <EmptyState
             title="No Sections Yet"
-            description="Sections appear here once students are added, from the School Setup workbook above or on People."
+            description="Sections appear here once students are added, from the workbook above or on the Teachers & Students tab."
           />
         ) : (
           <Table caption="Sections" minWidth="40rem">
@@ -391,21 +393,36 @@ function SectionsCard({
   );
 }
 
-/** A school's admin sees their own school; the Super Admin passes the school they chose (#211), with its picker. */
-export function ClassesAndSections({ schoolId, picker }: { schoolId?: string; picker?: React.ReactNode } = {}) {
+type SetupTab = "setup" | "people";
+
+/**
+ * School Setup (#242): the one place a school is set up and kept up to date.
+ * Set Up: the workbook (teachers with their sections, students with class,
+ * section and roll number) and each section's slips. Teachers & Students:
+ * everyone's accounts, adding one late joiner, new passwords, deactivating.
+ * A school's admin sees their own school; the Super Admin passes the school
+ * they chose (#211), with its picker.
+ */
+export function SchoolSetup({ schoolId, picker }: { schoolId?: string; picker?: React.ReactNode } = {}) {
   const view = useApiQuery<SectionsView>("/roster/sections", { schoolId }, { action: "load the school's sections" });
   const [reissued, setReissued] = useState<string[]>([]);
+  const [tab, setTab] = useState<SetupTab>("setup");
+  const [report, setReport] = useState<RosterReport>(NO_REPORT);
+  const handleReport = useCallback((next: RosterReport) => setReport(next), []);
   const sections = view.data?.sections ?? [];
   const students = sections.reduce((n, s) => n + s.students, 0);
   const waiting = sections.reduce((n, s) => n + s.awaitingFirstSignIn, 0);
+  const isPlatformAdmin = schoolId !== undefined;
+  const teachers = report.people ? report.people.filter((p) => p.role === "TEACHER" && p.isActive).length : report.failed ? "—" : null;
   return (
     <div className="space-y-6">
       <PageHeader
         surface="masthead"
         eyebrow="School"
-        title="Classes & Sections"
-        description="Set up the school's teachers and students from one workbook, print their sign-in slips, and see who is in each section."
+        title="School Setup"
+        description="Set up the whole school here: teachers with the sections they teach, students with their class and section, sign-in slips, and every account afterwards."
         stats={[
+          { label: "Teachers", value: teachers },
           { label: "Sections", value: view.problem ? "—" : view.data ? sections.length : null },
           { label: "Students", value: view.problem ? "—" : view.data ? students : null },
           {
@@ -418,15 +435,48 @@ export function ClassesAndSections({ schoolId, picker }: { schoolId?: string; pi
       >
         {picker}
       </PageHeader>
-      <SetupCard
-        schoolId={schoolId}
-        onImported={() => {
-          setReissued([]);
-          view.reload();
-        }}
-        reissued={reissued}
-      />
-      <SectionsCard schoolId={schoolId} view={view} onReload={view.reload} onReissued={(key) => setReissued((keys) => [...keys, key])} />
+      <div role="group" aria-label="School setup sections" className="flex flex-wrap items-center gap-2">
+        {([
+          ["setup", "Set Up & Sections"],
+          ["people", "Teachers & Students"],
+        ] as const).map(([key, label]) => {
+          const pressed = tab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={pressed}
+              onClick={() => {
+                setTab(key);
+                if (key === "setup") view.reload();
+              }}
+              className={cn(
+                "flex h-11 items-center rounded-2xl px-4 text-[0.875rem] font-semibold transition duration-200 ease-spring",
+                pressed
+                  ? "bg-brand-gradient text-content-inverse shadow-brand"
+                  : "border border-line-strong bg-surface text-content-muted hover:border-brand-300 hover:text-content",
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {/* Both stay mounted, so the roster is loaded once and keeps its place when the tab changes. */}
+      <div className={cn("space-y-6", tab !== "setup" && "hidden")}>
+        <SetupCard
+          schoolId={schoolId}
+          onImported={() => {
+            setReissued([]);
+            view.reload();
+          }}
+          reissued={reissued}
+        />
+        <SectionsCard schoolId={schoolId} view={view} onReload={view.reload} onReissued={(key) => setReissued((keys) => [...keys, key])} />
+      </div>
+      <div className={cn(tab !== "people" && "hidden")}>
+        <RosterWorkspace isPlatformAdmin={isPlatformAdmin} schoolId={schoolId ?? ""} onReport={handleReport} />
+      </div>
     </div>
   );
 }

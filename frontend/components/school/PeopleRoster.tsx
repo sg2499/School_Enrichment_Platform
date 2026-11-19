@@ -1,6 +1,6 @@
 "use client";
 
-/** Account creation and roster management -- the "People" nav item that was
+/** Account roster (#242): part of School Setup (components/school/SchoolSetup.tsx), which replaced the People nav item that was
  * a soon:true stub until 19 Aug 2026 (Shailesh: "the super admin would need
  * to create the admin accounts and then the admin would have to create the
  * teacher and student accounts respectively ... that is an integral part of
@@ -41,40 +41,25 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  CircleX,
   Copy,
-  Download,
-  FileSpreadsheet,
   KeyRound,
   RefreshCw,
   Search,
-  Upload,
   UserPlus,
   Users,
   UserX,
   X,
 } from "lucide-react";
-import { RoleShell } from "@/components/RoleShell";
-import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
-import { MastheadSelect } from "@/components/ui/MastheadSelect";
-import { PageHeader, type PageHeaderStat } from "@/components/ui/PageHeader";
-import { Card, CardBody } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LoadError } from "@/components/ui/AlertBanner";
 import { Modal } from "@/components/ui/Modal";
 import { Table } from "@/components/ui/Table";
-import { SessionGate } from "@/components/SessionGate";
 import { TextField } from "@/components/ui/Field";
 import { RosterIllustration } from "@/components/brand/Graphics";
 import { api, errorMessage } from "@/lib/api";
-import { csvCell, csvTimestamp } from "@/lib/csv";
-import { PRODUCT_NAME } from "@/lib/brand";
-import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { cn, initialsFromName } from "@/lib/utils";
-import type { CurrentUser } from "@/types/auth";
-import type { SchoolOption } from "@/types/curriculum";
 
 type PersonRole = "ADMIN" | "TEACHER" | "STUDENT";
 type Mode = "roster" | "add";
@@ -184,246 +169,11 @@ function segmentClass(pressed: boolean) {
 /** What the roster under the masthead has loaded, reported upward so the
  *  masthead's figures are the same rows the table shows -- one read, not
  *  two that can disagree. `people` is null until the first load lands. */
-type RosterReport = { people: Person[] | null; failed: boolean };
+export type RosterReport = { people: Person[] | null; failed: boolean };
 
-const NO_REPORT: RosterReport = { people: null, failed: false };
+export const NO_REPORT: RosterReport = { people: null, failed: false };
 
-export default function PeoplePage() {
-  const session = useProtectedPage("ADMIN");
-  const { user, status } = session;
-
-  if (status !== "ready" || !user) {
-    return <SessionGate session={session} />;
-  }
-
-  return <PeopleScreen user={user} />;
-}
-
-function PeopleScreen({ user }: { user: CurrentUser }) {
-  const isPlatformAdmin = user.role === "SUPER_ADMIN";
-  const roleForShell = isPlatformAdmin ? "SUPER_ADMIN" : "ADMIN";
-
-  // --- which school (Super Admin only) ---
-  const [schools, setSchools] = useState<SchoolOption[] | null>(null);
-  const [schoolsError, setSchoolsError] = useState<string | null>(null);
-  const [selectedSchoolId, setSelectedSchoolId] = useState("");
-  const loadingSchools = isPlatformAdmin && schools === null && !schoolsError;
-
-  useEffect(() => {
-    if (!isPlatformAdmin) return;
-    let cancelled = false;
-    api
-      .get<{ schools: SchoolOption[] }>("/curriculum-admin/schools", { params: { includeSuspended: true } })
-      .then(({ data }) => {
-        if (!cancelled) setSchools(data.schools);
-      })
-      // Surfaced: a failed lookup used to be swallowed, leaving an empty
-      // picker with no explanation of why there was nothing to choose.
-      .catch((err) => {
-        if (!cancelled) setSchoolsError(errorMessage(err, "load the list of schools"));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isPlatformAdmin]);
-
-  // Opened from a school's own page (#211): /admin/people?school=<id>.
-  useEffect(() => {
-    if (!isPlatformAdmin || !schools || selectedSchoolId) return;
-    const wanted = new URLSearchParams(window.location.search).get("school");
-    if (wanted && schools.some((school) => school.id === wanted)) setSelectedSchoolId(wanted);
-  }, [isPlatformAdmin, schools, selectedSchoolId]);
-
-  const selectedSchool = schools?.find((school) => school.id === selectedSchoolId) ?? null;
-  const schoolContextReady = !isPlatformAdmin || Boolean(selectedSchoolId);
-
-  // Every school's admins, for a Super Admin who has not chosen a school
-  // yet: with no school named, GET /roster/people answers with exactly that
-  // (routes_roster.py, list_people). Not read once a school is chosen --
-  // the roster below is that school's, and so are the figures.
-  const adminsQuery = useApiQuery<{ people: Person[] }>(
-    isPlatformAdmin && !selectedSchoolId ? "/roster/people" : null,
-    { includeInactive: "true" },
-    { action: "load the school admins" },
-  );
-
-  // --- what the roster has loaded ---
-  const [report, setReport] = useState<RosterReport>(NO_REPORT);
-  const handleReport = useCallback((next: RosterReport) => setReport(next), []);
-  // A different school is a different roster: the old one's figures must
-  // not sit in the masthead while the new one loads.
-  useEffect(() => {
-    setReport(NO_REPORT);
-  }, [selectedSchoolId]);
-
-  // The masthead's figures: `null` while the roster loads (a placeholder
-  // bar), "—" if it could not be loaded (the card below says why), and only
-  // then a number. A Super Admin who has not chosen a school has no roster
-  // to count, so their strip is the platform's one figure instead.
-  const people = report.people;
-  const figure = (value: number) => (people ? value : report.failed ? "—" : null);
-  const count = (role: PersonRole, active: boolean) =>
-    (people ?? []).filter((person) => person.role === role && person.isActive === active).length;
-  // Only accounts this page shows. A school admin's own list includes
-  // their fellow admins (the server returns them), but they have no Admins
-  // tab: counting one here gave "Inactive 1" with no such row to be found.
-  const inactive = (people ?? []).filter((person) => !person.isActive && (isPlatformAdmin || person.role !== "ADMIN")).length;
-  const classes = new Set(
-    (people ?? [])
-      .filter((person) => person.role === "STUDENT" && person.isActive && person.className)
-      .map((person) => person.className),
-  ).size;
-
-  const rosterStats: PageHeaderStat[] = [
-    ...(isPlatformAdmin
-      ? [
-          {
-            label: "School Admins",
-            value: figure(count("ADMIN", true)),
-            hint: people ? (count("ADMIN", true) === 0 ? "None can sign in: create or reactivate one" : count("ADMIN", true) === 1 ? "Runs this school" : "Run this school") : undefined,
-            tone: people && count("ADMIN", true) === 0 ? ("attention" as const) : ("default" as const),
-          },
-        ]
-      : []),
-    {
-      label: "Teachers",
-      value: figure(count("TEACHER", true)),
-      hint: people ? (count("TEACHER", true) + count("TEACHER", false) === 0 ? "None yet" : "Active accounts") : undefined,
-    },
-    {
-      label: "Students",
-      value: figure(count("STUDENT", true)),
-      hint: people
-        ? count("STUDENT", true) + count("STUDENT", false) === 0
-          ? "None yet"
-          : classes > 0
-            ? `Across ${classes} ${classes === 1 ? "class" : "classes"}`
-            : "Active accounts"
-        : undefined,
-    },
-    {
-      label: "Inactive",
-      value: figure(inactive),
-      hint: people ? (inactive > 0 ? "Can't sign in until reactivated" : "Everyone can sign in") : undefined,
-    },
-  ];
-  // Before a school is chosen: the platform's own figures, and the one that
-  // says where to start -- a school with no admin who can sign in cannot
-  // create a single teacher or student.
-  const admins = adminsQuery.problem ? null : (adminsQuery.data?.people ?? null);
-  const activeAdmins = (admins ?? []).filter((admin) => admin.isActive);
-  const staffedSchools = new Set(activeAdmins.map((admin) => admin.schoolId).filter(Boolean));
-  const unstaffed = schools && admins ? schools.filter((school) => !staffedSchools.has(school.id)) : null;
-  const platformStats: PageHeaderStat[] = [
-    {
-      label: "Schools",
-      value: schools ? schools.length : schoolsError ? "—" : null,
-      hint: schools ? (schools.length === 0 ? "None set up yet" : `Active on ${PRODUCT_NAME}`) : undefined,
-    },
-    {
-      label: "School Admins",
-      value: admins ? activeAdmins.length : adminsQuery.problem ? "—" : null,
-      hint: admins
-        ? admins.length === 0
-          ? "None created yet"
-          : admins.length > activeAdmins.length
-            ? `${admins.length - activeAdmins.length} inactive`
-            : "All active"
-        : undefined,
-    },
-    {
-      label: "No Active Admin",
-      value: unstaffed ? unstaffed.length : schoolsError || adminsQuery.problem ? "—" : null,
-      hint: unstaffed
-        ? unstaffed.length === 0
-          ? "Every school has one"
-          : unstaffed.length === 1
-            ? `${unstaffed[0].name}: choose it below`
-            : "Schools nobody can run: choose one below"
-        : undefined,
-      tone: unstaffed && unstaffed.length > 0 ? "attention" : "default",
-    },
-  ];
-
-  return (
-    // The working level of the workspace wash: a step down from the
-    // dashboard's and completely still, for a page where a table is read.
-    <RoleShell role={roleForShell} user={user} ambience="working">
-      <div className="space-y-8">
-        <PageHeader
-          surface="masthead"
-          // The breadcrumb one line above already says "School Control
-          // Centre" / "Platform Control Centre"; this says what kind of
-          // work the page is.
-          eyebrow={isPlatformAdmin ? "Accounts, School by School" : "Your School's Accounts"}
-          title={isPlatformAdmin && selectedSchool ? <>People at {selectedSchool.name}</> : "People"}
-          description={
-            isPlatformAdmin
-              ? "Create a school's admins, teachers and students, give anyone a new temporary password, and deactivate accounts that should no longer sign in."
-              : "Create your teachers' and students' accounts, give anyone a new temporary password, and deactivate accounts that should no longer sign in."
-          }
-          stats={schoolContextReady ? rosterStats : platformStats}
-        >
-          {isPlatformAdmin ? (
-            <MastheadSelect
-              label="School"
-              helper={
-                selectedSchool
-                  ? "Everything on this page is this school's. Choose another to switch."
-                  : "Choose a school to open its roster."
-              }
-              value={selectedSchoolId}
-              onChange={(event) => setSelectedSchoolId(event.target.value)}
-              disabled={loadingSchools}
-              error={schoolsError}
-            >
-              <option value="" disabled>
-                {loadingSchools ? "Loading schools…" : schools && schools.length === 0 ? "No schools yet" : "Choose a school"}
-              </option>
-              {(schools ?? []).map((school) => (
-                <option key={school.id} value={school.id}>
-                  {school.name}
-                  {school.board ? ` · ${school.board}` : ""}
-                  {school.city ? ` · ${school.city}` : ""}
-                  {school.isActive === false ? " (Suspended)" : ""}
-                </option>
-              ))}
-            </MastheadSelect>
-          ) : null}
-        </PageHeader>
-
-        {/* Two of the figures above come from this read. If it fails they
-            show a dash; this says why, and offers the way to try again. */}
-        {!schoolContextReady && adminsQuery.problem ? (
-          <LoadError title="School Admins couldn’t be loaded" problem={adminsQuery.problem} onRetry={adminsQuery.reload} />
-        ) : null}
-
-        {!schoolContextReady ? (
-          <Card className="animate-fade-up animation-delay-70">
-            <CardBody className="sm:p-8">
-              <EmptyState
-                illustration={<RosterIllustration />}
-                status={{ label: "No School Selected", tone: "neutral" }}
-                title="Choose a school to open its roster"
-                description="Choose a school above to create its admins and see its teachers and students."
-              />
-            </CardBody>
-          </Card>
-        ) : (
-          <RosterWorkspace
-            key={selectedSchoolId}
-            isPlatformAdmin={isPlatformAdmin}
-            schoolId={selectedSchoolId}
-            schoolLabel={selectedSchool?.name}
-            onReport={handleReport}
-          />
-        )}
-      </div>
-    </RoleShell>
-  );
-}
-
-function RosterWorkspace({
+export function RosterWorkspace({
   isPlatformAdmin,
   schoolId,
   schoolLabel,
@@ -675,7 +425,7 @@ function RosterWorkspace({
             </button>
             <button type="button" aria-pressed={mode === "add"} onClick={() => setMode("add")} className={segmentClass(mode === "add")}>
               <UserPlus className="h-3.5 w-3.5" aria-hidden />
-              Add People
+              Add One Person
             </button>
           </div>
           <button
@@ -720,7 +470,6 @@ function RosterWorkspace({
                 setHandover({ kind: "created", person });
                 loadPeople();
               }}
-              onImported={loadPeople}
             />
           )}
         </div>
@@ -1195,59 +944,25 @@ function AddPeoplePanel({
   isPlatformAdmin,
   schoolId,
   onCreated,
-  onImported,
 }: {
   role: PersonRole;
   isPlatformAdmin: boolean;
   schoolId: string;
   onCreated: (person: CreatedPerson) => void;
-  onImported: () => void;
 }) {
-  const [entryMode, setEntryMode] = useState<"single" | "bulk">("single");
-  const bulkEligible = role !== "ADMIN"; // bulk ADMIN creation isn't a real onboarding pattern -- one at a time is fine, see routes_roster.py's BULK_ROLES.
-
-  useEffect(() => {
-    if (!bulkEligible) setEntryMode("single");
-  }, [bulkEligible]);
-
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h3 className="font-display text-lg font-semibold text-content">
-            Add {role === "STUDENT" ? "a Student" : role === "TEACHER" ? "a Teacher" : "a School Admin"}
-          </h3>
-          <p className="mt-1 text-[0.8125rem] text-content-muted">
-            {role === "ADMIN"
-              ? "They manage this school’s teachers, students and calendar, and set up two-factor at their first sign-in."
-              : `Each account gets a ${role === "STUDENT" ? "student" : "teacher"} code, and can sign in as soon as you share its details.`}
-          </p>
-        </div>
-
-        {bulkEligible ? (
-          <div role="group" aria-label="How to add" className="flex gap-1 rounded-full border border-line bg-surface-muted p-1">
-            <button type="button" aria-pressed={entryMode === "single"} onClick={() => setEntryMode("single")} className={segmentClass(entryMode === "single")}>
-              <UserPlus className="h-3.5 w-3.5" aria-hidden />
-              Single Entry
-            </button>
-            <button type="button" aria-pressed={entryMode === "bulk"} onClick={() => setEntryMode("bulk")} className={segmentClass(entryMode === "bulk")}>
-              <Upload className="h-3.5 w-3.5" aria-hidden />
-              Bulk Import
-            </button>
-          </div>
-        ) : null}
+      <div>
+        <h3 className="font-display text-lg font-semibold text-content">
+          Add {role === "STUDENT" ? "One Student" : role === "TEACHER" ? "One Teacher" : "a School Admin"}
+        </h3>
+        <p className="mt-1 text-[0.8125rem] text-content-muted">
+          {role === "ADMIN"
+            ? "They manage this school’s teachers, students and calendar, and set up two-factor at their first sign-in."
+            : `For one late joiner. To add many ${role === "STUDENT" ? "students" : "teachers"} at once, use the workbook on the Set Up tab.`}
+        </p>
       </div>
-
-      {entryMode === "single" ? (
-        <SinglePersonForm role={role} isPlatformAdmin={isPlatformAdmin} schoolId={schoolId} onCreated={onCreated} />
-      ) : (
-        <BulkImportForm
-          role={role === "ADMIN" ? "TEACHER" : role}
-          isPlatformAdmin={isPlatformAdmin}
-          schoolId={schoolId}
-          onImported={onImported}
-        />
-      )}
+      <SinglePersonForm role={role} isPlatformAdmin={isPlatformAdmin} schoolId={schoolId} onCreated={onCreated} />
     </div>
   );
 }
@@ -1355,352 +1070,5 @@ function SinglePersonForm({
         <span className="text-[0.75rem] text-content-subtle">Sign-in details appear at the top once it&rsquo;s created.</span>
       </div>
     </form>
-  );
-}
-
-interface BulkRowResult {
-  row: number;
-  fullName: string;
-  status: "created" | "skipped";
-  code?: string;
-  // Present on "created" rows only. The code is the login handed over
-  // (loginIdFor); email is null when the row had none.
-  email?: string | null;
-  initialPassword?: string;
-  // "sheet" when the row's own `password` column supplied it.
-  passwordSource?: "sheet" | "generated";
-  error?: string;
-}
-
-interface BulkImportResult {
-  created: number;
-  attempted: number;
-  results: BulkRowResult[];
-  // Headings in the file that are not columns the import reads.
-  unrecognisedColumns?: string[];
-}
-
-// Same grid on the header and on every row, so the Login/Password columns
-// line up down a list that can run to hundreds of rows.
-const BULK_RESULT_GRID = "sm:grid sm:grid-cols-[0.875rem_3rem_minmax(0,1fr)_14rem_7.5rem] sm:gap-x-2.5";
-
-/** How many of the passwords just shown came from the admin's own sheet,
- *  said only when some did, and without claiming "the rest" when there is
- *  no rest. */
-function sheetNote(fromSheet: number, created: number): string {
-  if (fromSheet === 0) return "";
-  if (fromSheet === created) {
-    return created === 1 ? " This one is the password from your sheet." : " All of these are the passwords from your sheet.";
-  }
-  return ` ${fromSheet} of these ${fromSheet === 1 ? "is" : "are"} from your sheet; the rest were generated.`;
-}
-
-function BulkImportForm({
-  role,
-  isPlatformAdmin,
-  schoolId,
-  onImported,
-}: {
-  role: "TEACHER" | "STUDENT";
-  isPlatformAdmin: boolean;
-  schoolId: string;
-  onImported: () => void;
-}) {
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [templateBusy, setTemplateBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // The role is kept with the result: this form stays mounted when the
-  // Teachers/Students tab changes, and the credentials file must be named
-  // for the role that was actually imported.
-  const [result, setResult] = useState<(BulkImportResult & { role: "TEACHER" | "STUDENT" }) | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  /** The workbook is built by the server for this school: its board's classes
-   *  and subjects as dropdowns, a Row Check column, a Start Here sheet. */
-  async function handleDownloadTemplate() {
-    setTemplateBusy(true);
-    setError(null);
-    try {
-      const { data } = await api.get<Blob>("/roster/people-template", {
-        responseType: "blob",
-        params: { role, ...(isPlatformAdmin ? { schoolId } : {}) },
-      });
-      const url = URL.createObjectURL(data);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = role === "STUDENT" ? "Krama_Add_Students.xlsx" : "Krama_Add_Teachers.xlsx";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (err) {
-      setError(errorMessage(err, "download the template"));
-    } finally {
-      setTemplateBusy(false);
-    }
-  }
-
-  const createdRows = result ? result.results.filter((r) => r.status === "created") : [];
-  const fromSheet = createdRows.filter((r) => r.passwordSource === "sheet").length;
-
-  /** The only copy of these passwords outside this screen -- built in the
-   * browser from the import response, never sent anywhere. The leading BOM
-   * makes Excel read non-ASCII names as UTF-8. */
-  function handleDownloadCredentials() {
-    if (!result || createdRows.length === 0) return;
-    const lines = [
-      `Full Name,${LOGIN_LABEL[result.role]},Temporary Password`,
-      ...createdRows.map((r) =>
-        [csvCell(r.fullName), csvCell(loginIdFor(result.role, r.code, r.email)), csvCell(r.initialPassword ?? "", { exact: true })].join(","),
-      ),
-    ];
-    const blob = new Blob([`﻿${lines.join("\r\n")}\r\n`], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `credentials-${result.role.toLowerCase()}-${csvTimestamp(new Date())}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
-  async function handleUpload(event: React.FormEvent) {
-    event.preventDefault();
-    if (!file) {
-      setError("Choose a .csv or .xlsx file first.");
-      return;
-    }
-    setError(null);
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("role", role);
-      if (isPlatformAdmin) formData.append("schoolId", schoolId);
-      const { data } = await api.post<BulkImportResult>("/roster/people/bulk", formData);
-      setResult({ ...data, role });
-      setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      // The roster tab behind this form (and its counts) was left stale
-      // after an import until someone pressed refresh.
-      if (data.created > 0) onImported();
-    } catch (err) {
-      setError(errorMessage(err, "import this file"));
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const skipped = result ? result.attempted - result.created : 0;
-
-  return (
-    <div className="space-y-5 rounded-3xl border border-line bg-surface-muted/40 p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        {/* No max-w-prose (1 Oct 2026): the form's max-w-3xl already bounds
-            this, and the cap broke a note that fits on one line in two. */}
-        <p className="text-[0.8125rem] leading-relaxed text-content-muted text-pretty">
-          Upload a .csv or .xlsx file with a header row. Only <strong className="text-content">Full Name</strong> is
-          required. The template is an Excel workbook with dropdowns, a check on every row and a Start Here sheet.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="ghost" size="sm" leadingIcon={<Download className="h-3.5 w-3.5" />} onClick={handleDownloadTemplate} loading={templateBusy}>
-            Download Template
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            leadingIcon={<KeyRound className="h-3.5 w-3.5" />}
-            onClick={handleDownloadCredentials}
-            disabled={createdRows.length === 0}
-          >
-            Download Sign-In Details (.csv)
-          </Button>
-        </div>
-      </div>
-
-      {/* The optional first password (3 Oct 2026). Says what a blank cell
-          does, what a filled one must satisfy, and the one thing a shared
-          password costs -- so the choice is made knowingly. Full width and
-          under the buttons: beside them it was squeezed into a column a
-          few words wide. content-muted on surface: 8.6:1. */}
-      <div className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-4">
-        <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden />
-        <div className="min-w-0 space-y-1.5 text-[0.8125rem] leading-relaxed text-content-muted text-pretty">
-          <p>
-            The <strong className="text-content">Password</strong> column is optional. Leave it blank and each person
-            gets their own random password. Fill it in to set the temporary password yourself: it needs at least 8
-            characters with a letter and a number. Common words (Welcome123, School2026), simple patterns and the
-            person&rsquo;s own name, code or email are refused. Either way it is temporary, and they choose their
-            own when they first sign in.
-          </p>
-          <p>
-            If you give many people the same password, anyone who knows it can open an account before its owner does.
-            Have everyone sign in soon after you hand it out.
-          </p>
-        </div>
-      </div>
-
-      <form onSubmit={handleUpload} className="space-y-4">
-        {/* The native input stays in the DOM, keyboard-reachable and
-            labelled; the dashed well around it is the visible target. */}
-        <label
-          className={cn(
-            "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed px-6 py-7 text-center transition-colors",
-            // The well is the file control's edge: 3:1 or better in both
-            // states (line-field 3.2:1 on white; brand-400 3.3:1 on its
-            // own surface-brand fill).
-            file ? "border-brand-400 bg-surface-brand" : "border-line-field bg-surface hover:border-brand-400 hover:bg-surface-brand/60",
-            "focus-within:border-brand-400 focus-within:shadow-focus",
-          )}
-        >
-          <FileSpreadsheet className={cn("h-6 w-6", file ? "text-brand-600" : "text-content-faint")} aria-hidden />
-          <span className="text-[0.875rem] font-semibold text-content">{file ? file.name : "Choose a .csv or .xlsx file"}</span>
-          <span className="text-[0.75rem] text-content-subtle">
-            {file ? `${Math.max(1, Math.round(file.size / 1024))} KB · click to choose a different file` : "Up to 2,000 rows per file"}
-          </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.xlsx"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              setError(null);
-            }}
-            className="sr-only"
-          />
-        </label>
-        {error ? (
-          <p role="alert" className="flex items-start gap-2 text-[0.8125rem] font-medium text-coral-700">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            {error}
-          </p>
-        ) : null}
-        <Button type="submit" loading={uploading} loadingLabel="Importing" disabled={!file} leadingIcon={<Upload className="h-4 w-4" />}>
-          Import {ROLE_LABEL[role]}
-        </Button>
-      </form>
-
-      {result ? (
-        // Not role="status": that would make a screen reader announce this
-        // whole panel on every change, passwords included, the moment they
-        // appear. The sr-only span just below announces only the summary
-        // count -- same pattern as the roster's own "N results" live region.
-        <div className="space-y-3 rounded-2xl border border-line bg-surface p-4 animate-fade-in">
-          <p role="status" className="sr-only">
-            {result.created} of {result.attempted} {result.attempted === 1 ? "row" : "rows"} imported.
-            {createdRows.length > 0 ? " Passwords for created accounts are shown below." : ""}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <p aria-hidden className="mr-auto text-[0.875rem] font-semibold text-content">
-              {result.created} of {result.attempted} {result.attempted === 1 ? "row" : "rows"} imported
-            </p>
-            <Badge tone="success" dot>
-              {result.created} Created
-            </Badge>
-            {skipped > 0 ? (
-              <Badge tone="warning" dot>
-                {skipped} Skipped
-              </Badge>
-            ) : null}
-          </div>
-          {/* Same posture as HandoverCallout: these passwords are stored
-              only as hashes (routes_roster.py) and no endpoint can reveal
-              one again; this list lives only in this component's state. A
-              lost one is replaced from the roster (Reset Password).
-              jade-900 on jade-50: 11.1:1. */}
-          {createdRows.length > 0 ? (
-            <div className="flex items-start gap-2.5 rounded-xl border border-jade-200 bg-jade-50 p-3">
-              <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-jade-700" aria-hidden />
-              <p className="text-[0.75rem] leading-relaxed text-jade-900">
-                Each password is shown only this once. It is cleared when you switch to Roster or Single Entry,
-                leave this page or import another file. Use <strong>Download Sign-In Details (.csv)</strong> or
-                copy them now. That file holds live passwords: share it securely and delete it once every account has been handed off.
-                {sheetNote(fromSheet, createdRows.length)} Everyone chooses their own password the first time they
-                sign in.
-              </p>
-            </div>
-          ) : null}
-          {/* Created vs skipped is carried by an icon and the words, not by
-              colour alone (WCAG 1.4.1). jade-700 7.3:1, coral-700 7.3:1.
-              From sm up each row is one line on a shared grid with a sticky
-              column header, so Login/Password labels aren't repeated on
-              every row (they stay in each row's <dt> for screen readers);
-              below sm the pair wraps under the name with visible labels. */}
-          <div className="max-h-64 overflow-y-auto rounded-xl border border-line text-[0.75rem]">
-            {createdRows.length > 0 ? (
-              <div
-                aria-hidden
-                className={cn(
-                  "sticky top-0 z-1 hidden border-b border-line bg-surface-muted px-3 py-1.5 text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle",
-                  BULK_RESULT_GRID,
-                )}
-              >
-                <span />
-                <span>Row</span>
-                <span>Name</span>
-                <span>{LOGIN_LABEL[result.role]}</span>
-                <span>Password</span>
-              </div>
-            ) : null}
-            <ul className="divide-y divide-line">
-              {result.results.map((r) => (
-                <li key={r.row} className={cn("flex flex-wrap items-start gap-x-2.5 gap-y-1 px-3 py-2", BULK_RESULT_GRID)}>
-                  {r.status === "created" ? (
-                    <Check className="mt-px h-3.5 w-3.5 shrink-0 text-jade-600" aria-hidden />
-                  ) : (
-                    <CircleX className="mt-px h-3.5 w-3.5 shrink-0 text-coral-600" aria-hidden />
-                  )}
-                  <span className="w-12 shrink-0 font-semibold text-content-subtle tabular sm:w-auto">Row {r.row}</span>
-                  <span className="min-w-0 flex-1 truncate text-content">{r.fullName || "(no name)"}</span>
-                  {r.status === "created" ? (
-                    <dl className="flex basis-full flex-wrap gap-x-4 gap-y-0.5 pl-20.5 font-mono sm:col-span-2 sm:grid sm:grid-cols-[14rem_7.5rem] sm:gap-x-2.5 sm:pl-0">
-                      <div className="flex min-w-0 items-baseline gap-2">
-                        <dt className="shrink-0 font-sans text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle sm:sr-only">
-                          {LOGIN_LABEL[result.role]}
-                        </dt>
-                        <dd className="min-w-0 select-all break-all text-jade-700">{loginIdFor(result.role, r.code, r.email)}</dd>
-                      </div>
-                      <div className="flex min-w-0 items-baseline gap-2">
-                        <dt className="shrink-0 font-sans text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle sm:sr-only">
-                          Password
-                        </dt>
-                        <dd className="min-w-0 select-all break-all font-semibold text-content">{r.initialPassword}</dd>
-                      </div>
-                    </dl>
-                  ) : (
-                    <span className="min-w-0 text-right text-coral-700 sm:col-span-2">{r.error}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* A heading the import did not recognise is a column it did not
-              read. Said plainly, because the costly case is a misspelt
-              password column: every account would have a generated password
-              while the school hands out the ones in its sheet. saffron-900
-              on saffron-50: 9.3:1. */}
-          {result.unrecognisedColumns && result.unrecognisedColumns.length > 0 ? (
-            <p className="flex items-start gap-2.5 rounded-xl border border-saffron-200 bg-saffron-50 p-3 text-[0.75rem] leading-relaxed text-saffron-900">
-              <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span>
-                {result.unrecognisedColumns.length === 1 ? "This column was not used" : "These columns were not used"}:{" "}
-                <strong className="wrap-break-word">{result.unrecognisedColumns.join(", ")}</strong>. The import reads
-                Full Name, Email, Class Name, Section, Designation, Subject Specialization, Qualification and Password.
-              </span>
-            </p>
-          ) : null}
-          {skipped > 0 ? (
-            <p className="flex items-start gap-2 text-[0.75rem] leading-relaxed text-content-subtle">
-              <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
-              Fix the skipped rows and import only those again &mdash; re-importing a row that was already created
-              can create that account a second time.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
   );
 }

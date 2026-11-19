@@ -542,12 +542,12 @@ def setup_template_bytes(db: Session | None, school, *, default_subject: str = "
         title="Krama School Setup",
         intro=(
             "One file for your teachers and your students. Fill in the Teachers and Students sheets, save it, and upload it on "
-            "Classes & Sections. Krama checks the whole file first and lists anything to fix; nothing is created until every row is right."
+            "School Setup. Krama checks the whole file first and lists anything to fix; nothing is created until every row is right."
         ),
         steps=[
             ("Fill in", "Type over the grey example rows on the Teachers and Students sheets (delete the examples, or leave them: they are skipped). Use the dropdowns; the Row Check column tells you if a row needs attention."),
             ("Save", "Save this file as it is (.xlsx). Do not rename the sheets or the headings in the first row."),
-            ("Check", "On Classes & Sections choose this file. Krama reads every row and lists problems by sheet and row, or tells you what it would create. It writes nothing yet."),
+            ("Check", "On School Setup choose this file. Krama reads every row and lists problems by sheet and row, or tells you what it would create. It writes nothing yet."),
             ("Import", "When the check is clean, press Import. Everyone gets a sign-in code and a first password, shown once, with sign-in slips to print."),
         ],
         columns=[
