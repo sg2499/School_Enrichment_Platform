@@ -678,7 +678,7 @@ export function PublishedChapters({ onChanged }: { onChanged: () => void }) {
                     <TD>
                       <span className="font-semibold text-content">{c.title}</span>
                       <span className="block text-xs text-content-subtle">
-                        {[c.code, boardCourses.find((bc) => bc.id === c.boardCourseId)?.displayName].filter(Boolean).join(" · ")}
+                        {[c.classLevelCode ? `Class ${c.classLevelCode}` : null, c.code, boardCourses.find((bc) => bc.id === c.boardCourseId)?.displayName].filter(Boolean).join(" · ")}
                       </span>
                     </TD>
                     <TD align="right" className="tabular">
