@@ -228,29 +228,13 @@ const MODULES: Module[] = [
     href: "/admin/curriculum",
   },
   {
-    icon: <Users className="h-5 w-5" aria-hidden />,
-    title: "People",
-    // Description narrowed 30 Sep 2026: it used to promise "who can see
-    // which section". Teacher-to-section assignment exists only as an API
-    // (routes_teacher_assignments.py) that no frontend file calls yet, so
-    // that part belongs to Classes & Sections below, not here.
-    description: "Create teacher and student accounts, import rosters in bulk, reset a forgotten password, and deactivate anyone who leaves.",
-    platformDescription: "Create admin, teacher and student accounts for any school, reset a forgotten password, and deactivate anyone who leaves.",
-    tone: "jade",
-    // Was "Soon". Live since 19 Aug 2026: /admin/people is a real route in
-    // RoleShell's NAV, backed by routes_roster.py (create, list, bulk
-    // import, activate/deactivate).
-    status: "live",
-    href: "/admin/people",
-  },
-  {
     icon: <GraduationCap className="h-5 w-5" aria-hidden />,
-    title: "Classes & Sections",
-    description: "Set up teachers and students from one workbook, print sign-in slips, and see who is in each section.",
-    platformDescription: "Set up any school's teachers and students from one workbook, print sign-in slips, and see who is in each section.",
+    title: "School Setup",
+    description: "Set up teachers and students from one workbook, print sign-in slips, see who is in each section, and manage every account.",
+    platformDescription: "Set up any school's teachers and students from one workbook, print sign-in slips, see who is in each section, and manage every account.",
     tone: "brand",
     status: "live",
-    href: "/admin/sections",
+    href: "/admin/setup",
   },
   {
     icon: <ListChecks className="h-5 w-5" aria-hidden />,
@@ -670,14 +654,14 @@ function schoolNextStep(input: {
     return {
       title: "Add your teachers",
       body: "Each teacher gets a teacher code and a temporary password from you, and chooses their own password the first time they sign in.",
-      action: { href: "/admin/people", label: "Open People" },
+      action: { href: "/admin/setup", label: "Open School Setup" },
     };
   }
   if (people && !has("STUDENT")) {
     return {
       title: "Add your students",
-      body: "Add them one at a time, or upload a whole class list in one file. Each student gets a student code and a temporary password.",
-      action: { href: "/admin/people", label: "Open People" },
+      body: "Upload the whole school in one workbook, or add a late joiner one at a time. Each student gets a student code and a temporary password.",
+      action: { href: "/admin/setup", label: "Open School Setup" },
     };
   }
   // Both lists are needed to say which of the two it is: "nothing is
@@ -739,8 +723,8 @@ function platformNextStep(input: {
         // "No active admin", not "no admin yet": the school may have had
         // one who was deactivated, and then the answer is to reactivate.
         title: waiting.length === 1 ? `${waiting[0].name} has no active admin` : `${waiting.length} schools have no active admin`,
-        body: "A school's admin creates its teachers and students and maps its calendar, so nothing can happen there without one. Create one, or reactivate the one it had, in People. Only a Super Admin can.",
-        action: { href: "/admin/people", label: "Open People" },
+        body: "A school's admin creates its teachers and students and maps its calendar, so nothing can happen there without one. Create one, or reactivate the one it had, in School Setup. Only a Super Admin can.",
+        action: { href: "/admin/setup", label: "Open School Setup" },
       };
     }
   }

@@ -63,13 +63,13 @@ const COPY: Record<UserRole, Copy> = {
     eyebrow: "School Control Centre",
     message: "There's nothing at this address in your school's control centre. The link may be out of date, or mistyped. Nothing in your school's setup has changed.",
     home: { href: defaultRouteForRole("ADMIN"), label: "Back to Dashboard" },
-    second: { href: "/admin/people", label: "Open People" },
+    second: { href: "/admin/setup", label: "Open School Setup" },
   },
   SUPER_ADMIN: {
     eyebrow: "Platform Control Centre",
     message: "There's nothing at this address in the platform control centre. The link may be out of date, or mistyped. No school's setup has changed.",
     home: { href: defaultRouteForRole("SUPER_ADMIN"), label: "Back to Dashboard" },
-    second: { href: "/admin/people", label: "Open People" },
+    second: { href: "/admin/setup", label: "Open School Setup" },
   },
 };
 

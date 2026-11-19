@@ -3,7 +3,7 @@
 /**
  * One school, for the Super Admin (#211, 29 Oct 2026): its details (name,
  * board, city, state) to change, its admins (add one, see who has signed
- * in), its logo, the way into its People and Classes & Sections, and
+ * in), its logo, the way into its School Setup, and
  * suspending or restoring it.
  */
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -138,7 +138,7 @@ function AdminsCard({ detail, onChanged }: { detail: SchoolDetail; onChanged: ()
         <CardTitle>School Admins</CardTitle>
         <CardDescription>
           The people who run {school.name} on Krama. To give one a new password or deactivate them, use{" "}
-          <InlineLink href={`/admin/people?school=${school.id}`}>People</InlineLink>.
+          <InlineLink href={`/admin/setup?school=${school.id}`}>School Setup</InlineLink>.
         </CardDescription>
       </CardHeader>
       <CardBody className="space-y-4">
@@ -438,8 +438,7 @@ function SchoolBody({ id }: { id: string }) {
         ]}
       />
       <div className="flex flex-wrap gap-3 text-sm">
-        <InlineLink href={`/admin/people?school=${s.id}`}>People at {s.name}</InlineLink>
-        <InlineLink href={`/admin/sections?school=${s.id}`}>Classes &amp; Sections</InlineLink>
+        <InlineLink href={`/admin/setup?school=${s.id}`}>School Setup for {s.name}</InlineLink>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <DetailsCard detail={detail} onSaved={setDetail} />

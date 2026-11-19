@@ -128,6 +128,10 @@ const nextConfig = {
       // location (that's where the real file lives, in public/), but some
       // older scanners still only check the bare root path -- redirect
       // rather than duplicating the file in two places.
+      // #242: People and Classes & Sections became one tab, School Setup.
+      // The school a Super Admin was looking at (?school=) is carried over.
+      { source: "/admin/people", destination: "/admin/setup", permanent: false },
+      { source: "/admin/sections", destination: "/admin/setup", permanent: false },
       {
         source: "/security.txt",
         destination: "/.well-known/security.txt",

@@ -60,7 +60,7 @@ export function MyClasses() {
         <Card className="p-6">
           <EmptyState
             title="No Sections Yet"
-            description="Your school's admin gives you a section under Classes & Sections. It will appear here as soon as they do."
+            description="Your school's admin gives you a section in School Setup. It will appear here as soon as they do."
           />
         </Card>
       ) : null}

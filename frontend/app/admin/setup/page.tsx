@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * Classes & Sections (#210) for a school's admin: components/school/ClassesAndSections.
+ * School Setup (#242, once Classes & Sections and People) for a school's admin: components/school/SchoolSetup.
  * The Super Admin (#211) chooses the school first, here or from a school's own
- * page (/admin/sections?school=<id>), and then has the same page for it.
+ * page (/admin/setup?school=<id>), and then has the same page for it.
  */
 import { Suspense, useEffect, useState } from "react";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { RoleShell } from "@/components/RoleShell";
 import { SessionGate } from "@/components/SessionGate";
-import { ClassesAndSections } from "@/components/school/ClassesAndSections";
+import { SchoolSetup } from "@/components/school/SchoolSetup";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
@@ -35,7 +35,7 @@ function PlatformSections() {
   const picker = (
     <MastheadSelect
       label="School"
-      helper={schoolId ? "Everything on this page is this school's. Choose another to switch." : "Choose a school to open its classes."}
+      helper={schoolId ? "Everything on this page is this school's. Choose another to switch." : "Choose a school to open its setup."}
       value={schoolId}
       onChange={(event) => setSchoolId(event.target.value)}
       disabled={!schools}
@@ -55,19 +55,19 @@ function PlatformSections() {
     </MastheadSelect>
   );
 
-  if (schoolId) return <ClassesAndSections key={schoolId} schoolId={schoolId} picker={picker} />;
+  if (schoolId) return <SchoolSetup key={schoolId} schoolId={schoolId} picker={picker} />;
   return (
     <div className="space-y-6">
       <PageHeader
         surface="masthead"
         eyebrow="Platform"
-        title="Classes & Sections"
-        description="Set up a school's teachers and students from one workbook, print their sign-in slips, and see who is in each section."
+        title="School Setup"
+        description="Set up a school's teachers and students from one workbook, print their sign-in slips, and manage every account."
       >
         {picker}
       </PageHeader>
       <Card className="p-6">
-        <EmptyState title="Choose a School" description="Choose a school above to open its classes and sections." />
+        <EmptyState title="Choose a School" description="Choose a school above to open its setup." />
       </Card>
     </div>
   );
@@ -80,7 +80,7 @@ function SectionsPage() {
   const role = user.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
   return (
     <RoleShell role={role} user={user} ambience="working">
-      {role === "SUPER_ADMIN" ? <PlatformSections /> : <ClassesAndSections />}
+      {role === "SUPER_ADMIN" ? <PlatformSections /> : <SchoolSetup />}
     </RoleShell>
   );
 }
