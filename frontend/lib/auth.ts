@@ -106,8 +106,23 @@ export function getActiveRoleHeaderValue(): string | null {
  */
 export function getCsrfToken(): string | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${CSRF_COOKIE_NAME}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  const read = () =>
+    document.cookie
+      .split("; ")
+      .filter((part) => part.startsWith(`${CSRF_COOKIE_NAME}=`))
+      .map((part) => decodeURIComponent(part.slice(CSRF_COOKIE_NAME.length + 1)));
+  let values = read();
+  if (values.length > 1) {
+    // #241: two cookies of this name for one site (one for the site alone,
+    // one for the site and everything under it). The server accepts either,
+    // but the stray site-only copy is never refreshed and only causes
+    // confusion, so remove it. Expiring without a Domain removes only that
+    // copy; the one the API sets with a Domain is left alone. Read again
+    // afterwards, so the value sent is one that is still there.
+    document.cookie = `${CSRF_COOKIE_NAME}=; Max-Age=0; path=/`;
+    values = read();
+  }
+  return values.length ? values[values.length - 1] : null;
 }
 
 function userKey(role: UserRole) {

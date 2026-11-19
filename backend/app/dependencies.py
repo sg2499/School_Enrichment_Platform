@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.cookies import (
     CSRF_COOKIE_NAME,
+    csrf_cookie_values,
     CSRF_HEADER_NAME,
     read_session_token,
     set_session_cookie,
@@ -208,9 +209,13 @@ def get_current_user(
     # the separate, non-httpOnly CSRF cookie (blocked by same-origin
     # policy) to also produce a matching header -- so the two won't match.
     if used_cookie_auth and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-        csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
         csrf_header = request.headers.get(CSRF_HEADER_NAME)
-        if not csrf_cookie or not csrf_header or not secrets.compare_digest(csrf_cookie, csrf_header):
+        csrf_cookies = csrf_cookie_values(request) or [c for c in [request.cookies.get(CSRF_COOKIE_NAME)] if c]
+        # Any cookie the browser holds under this name may match (#241).
+        header_matches = bool(csrf_header) and any(
+            secrets.compare_digest(c.encode(), csrf_header.encode()) for c in csrf_cookies
+        )
+        if not header_matches:
             api_error(403, "CSRF_VALIDATION_FAILED", "We couldn't verify that request. Please refresh the page and try again.")
 
     user = db.get(User, payload.get("sub"))

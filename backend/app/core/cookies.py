@@ -170,6 +170,28 @@ def clear_all_session_cookies(response: Response, *, request: Request) -> None:
     clear_csrf_cookie(response, request=request)
 
 
+def csrf_cookie_values(request: Request) -> list[str]:
+    """Every se_csrf value the browser sent, not just one (#241).
+
+    A browser can hold two cookies of the same name for one site: one set for
+    krama.zetta-metrics.com and everything under it (the API's own direct
+    answers) and one for krama.zetta-metrics.com alone (any answer that came
+    back through the app's own address). Starlette keeps only one of them,
+    and not necessarily the one the page read, so a student could be refused
+    with "We couldn't verify that request" while signed in and doing nothing
+    wrong. The double-submit check only needs the header to equal a cookie
+    the browser really holds, so it accepts any of them. A forged cross-site
+    request still cannot read any of these values.
+    """
+    values: list[str] = []
+    for raw in request.headers.getlist("cookie"):
+        for part in raw.split(";"):
+            name, sep, value = part.strip().partition("=")
+            if sep and name == CSRF_COOKIE_NAME and value:
+                values.append(value.strip('"'))
+    return values
+
+
 def read_session_token(request: Request) -> str | None:
     role_hint = (request.headers.get(ROLE_HEADER_NAME) or "").upper()
     hinted_cookie = SESSION_COOKIE_NAMES.get(role_hint)

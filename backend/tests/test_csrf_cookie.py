@@ -141,3 +141,40 @@ def test_a_session_that_has_been_ended_is_not_handed_a_csrf_cookie(client, db_se
     assert refused.status_code == 401
     assert "se_csrf" not in refused.cookies
     assert client.cookies.get("se_csrf") is None
+
+
+def test_two_csrf_cookies_for_one_site_do_not_refuse_a_signed_in_change(client, db_session):
+    """#241: a browser can hold a second se_csrf (one for the site alone, one
+    for the site and everything under it). The page reads one, the server used
+    to read the other, and a signed-in student was told "We couldn't verify
+    that request". Any cookie the browser sends may match the header."""
+    _user(db_session, "csrf-dup@example.com", "STUDENT")
+    _login(client, "csrf-dup@example.com")
+    real = client.cookies.get("se_csrf")
+    session = client.cookies.get("se_student_sess")
+    cookie_header = f"se_csrf=stale-host-only-copy; se_csrf={real}; se_student_sess={session}"
+    client.cookies.clear()
+
+    # The page read the second one; the header is that value.
+    ok = client.post("/api/auth/logout", headers={"Cookie": cookie_header, "X-CSRF-Token": real, **AS_STUDENT})
+    assert ok.status_code == 200, ok.text
+
+    # Also the other way round: the page read the first.
+    client.cookies.clear()
+    _login(client, "csrf-dup@example.com")
+    real = client.cookies.get("se_csrf")
+    session = client.cookies.get("se_student_sess")
+    cookie_header = f"se_csrf={real}; se_csrf=another-copy; se_student_sess={session}"
+    client.cookies.clear()
+    ok = client.post("/api/auth/logout", headers={"Cookie": cookie_header, "X-CSRF-Token": real, **AS_STUDENT})
+    assert ok.status_code == 200, ok.text
+
+    # A header that matches none of them is still refused.
+    client.cookies.clear()
+    _login(client, "csrf-dup@example.com")
+    session = client.cookies.get("se_student_sess")
+    cookie_header = f"se_csrf=one; se_csrf=two; se_student_sess={session}"
+    client.cookies.clear()
+    refused = client.post("/api/auth/logout", headers={"Cookie": cookie_header, "X-CSRF-Token": "three", **AS_STUDENT})
+    assert refused.status_code == 403
+    assert refused.json()["detail"]["code"] == "CSRF_VALIDATION_FAILED"
