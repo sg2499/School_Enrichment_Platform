@@ -363,6 +363,7 @@ export default function AssignPracticePage() {
 
   async function handleAssign(event: React.FormEvent) {
     event.preventDefault();
+    if (assigning) return; // a second click while the first is in flight (#244)
     setAssignError(null);
     setAssigned(null);
     if (!selectedActivityId) {

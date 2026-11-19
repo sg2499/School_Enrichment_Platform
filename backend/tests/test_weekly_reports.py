@@ -58,7 +58,7 @@ def test_weekly_report_end_to_end(client, db_session):
     # three weeks ago so it isn't this week's or last week's.
     w["assignment"].created_at = _at(last - timedelta(weeks=2), 9)
     # Last week's set: set Tuesday, due Wednesday.
-    core = learning_service.create_assignment(
+    core = test_learning.create_assignment_again(
         db, school=w["school"], learning_activity=w["core"], assigned_by_user_id=w["teacher"].user_id,
         class_name="5", section="A", due_date=(last + timedelta(days=2)).isoformat(),
     )

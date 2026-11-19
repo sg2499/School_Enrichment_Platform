@@ -69,18 +69,21 @@ export function CurriculumMap() {
           />
         </Card>
       ) : null}
-      {groups.map(([code, entries]) => (
+      {groups.map(([code, entries]) => {
+        // No empty column: shown only when some chapter names its textbook.
+        const showTextbook = entries.some((e) => Boolean(e.textbookReference));
+        return (
         <Card key={code}>
           <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
             <CardTitle>Class {code}</CardTitle>
-            <CardDescription>{entries.length} chapters on the calendar</CardDescription>
+            <CardDescription>{entries.length} {entries.length === 1 ? "chapter" : "chapters"} on the calendar</CardDescription>
           </CardHeader>
           <CardBody>
-            <Table caption={`Chapter calendar for Class ${code}`} minWidth="36rem">
+            <Table caption={`Chapter calendar for Class ${code}`} minWidth={showTextbook ? "36rem" : "28rem"}>
               <THead>
                   <TH>Chapter</TH>
                   <TH>Planned</TH>
-                  <TH>Textbook</TH>
+                  {showTextbook ? <TH>Textbook</TH> : null}
                   <TH>Status</TH>
                 </THead>
               <TBody>
@@ -90,7 +93,7 @@ export function CurriculumMap() {
                     <TR key={entry.id}>
                       <TD className="font-semibold">{entry.chapterTitle ?? entry.chapterCode ?? "Chapter"}</TD>
                       <TD className="tabular">{dateRange(entry.plannedStartDate, entry.plannedEndDate)}</TD>
-                      <TD className="text-content-muted">{entry.textbookReference || "—"}</TD>
+                      {showTextbook ? <TD className="text-content-muted">{entry.textbookReference || "—"}</TD> : null}
                       <TD>
                         <Badge tone={state.tone}>{state.label}</Badge>
                       </TD>
@@ -101,7 +104,8 @@ export function CurriculumMap() {
             </Table>
           </CardBody>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }

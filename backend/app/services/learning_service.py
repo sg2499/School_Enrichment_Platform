@@ -368,6 +368,29 @@ def create_assignment(
             where = f"Class {class_name}, Section {section}" if section is not None else f"Class {class_name}"
             api_error(422, "VALIDATION_ERROR", f"There are no active students in {where}.")
 
+    # The same set is not set twice for the same section while the first is
+    # still open (#244: a double-click on Assign gave Class 7A two copies).
+    # A Re-Attempt or Missed Practice is meant to repeat a set, and a
+    # chosen-students assignment is a different audience, so neither is held.
+    if not student_ids and reason in ("SCHEDULED", "TEACHER_SELECTED"):
+        already = (
+            db.query(Assignment.id)
+            .filter(
+                Assignment.school_id == school.id,
+                Assignment.learning_activity_id == learning_activity.id,
+                Assignment.class_name == class_name,
+                Assignment.section == section,
+                Assignment.status == "ACTIVE",
+            )
+            .first()
+        )
+        if already:
+            api_error(
+                409,
+                "ALREADY_ASSIGNED",
+                "This practice is already set for that section and is still open. Find it in the Practice Tracker.",
+            )
+
     # Section scope (1 Oct 2026, Practice Tracker): record which
     # (class_level, section, board_course) this assignment was set for, so
     # read access and the tracker's section filters can be answered from
@@ -593,8 +616,59 @@ def save_answer(
 # --- Auto-marking ---------------------------------------------------------
 
 
+# What a typed answer is reduced to before two answers are compared (#244, 19
+# Nov 2026). Only spelling of the SAME answer is made equal: case, spaces
+# around an operator, which sign means "times", how a power or a minus is
+# written, a full stop at the end. A different answer is never made equal.
+_SUPERSCRIPT_DIGITS = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻", "0123456789-")
+_SUPERSCRIPT_RUN = re.compile(r"[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+")
+_DASHES = str.maketrans({"−": "-", "–": "-", "—": "-", "‒": "-", "﹣": "-", "－": "-"})
+_THOUSANDS = re.compile(r"(?<![\d.,])(\d{1,3}(?:,\d{2,3})+)(?![\d,])")
+_BRACED_EXPONENT = re.compile(r"\^\s*[({]\s*([^)}]+?)\s*[)}]")
+_TIMES_SIGN = re.compile(r"\s*[×*·∙⋅]\s*")
+_TIMES_LETTER_X = re.compile(r"(?<=[\d)])\s*x\s*(?=[\d(])")
+_OPERATOR_SPACES = re.compile(r"\s*([+\-×÷/^=<>()])\s*")
+_LEADING_VARIABLE = re.compile(r"^[a-z]\s*=\s*")
+
+
 def _normalize_value(text: str) -> str:
-    return re.sub(r"\s+", " ", text.replace(",", "")).strip().lower()
+    value = text.lower().translate(_DASHES)
+    value = _SUPERSCRIPT_RUN.sub(lambda m: "^" + m.group(0).translate(_SUPERSCRIPT_DIGITS), value)
+    value = value.replace("**", "^")
+    value = _BRACED_EXPONENT.sub(r"^\1", value)
+    # "19,250" and "1,00,000" are one number; "1, 2, 3" and "1,2,3" are the
+    # same list. Commas inside a number go, any other comma is a separator.
+    value = _THOUSANDS.sub(lambda m: m.group(1).replace(",", ""), value)
+    value = value.replace(",", " ")
+    value = _TIMES_SIGN.sub("×", value)
+    value = _TIMES_LETTER_X.sub("×", value)
+    value = _OPERATOR_SPACES.sub(r"\1", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value.rstrip(". ").strip()
+
+
+def _drop_variable(value: str) -> str:
+    """"x=3" -> "3": the child may leave out the name of the unknown."""
+    return _LEADING_VARIABLE.sub("", value)
+
+
+def _value_without_labels(normalized: str) -> str | None:
+    """The key part "base 2" or "2 reflection lines" as just its value ("2"),
+    for a child who types only the value into a box. None unless the part
+    has a number in it and words around it: "eight thousand forty-five"
+    has no digit, so it is never cut down to one of its words."""
+    tokens = normalized.split(" ")
+    if len(tokens) < 2:
+        return None
+    kept = [t for t in tokens if re.search(r"[\d^×/=()+]", t)]
+    if not kept or len(kept) == len(tokens) or not any(re.search(r"\d", t) for t in kept):
+        return None
+    # Only plain words are label words; "p.m.", "a.m." or "1:15pm" style
+    # tails belong to the answer and must stay (a bare 1:15 is not 1:15 p.m.).
+    dropped = [t for t in tokens if t not in kept]
+    if not all(re.fullmatch(r"[a-z]{3,}", t) for t in dropped):
+        return None
+    return " ".join(kept)
 
 
 # Currency/unit noise _numeric_value strips before parsing a blank as a
@@ -627,7 +701,8 @@ def _numeric_value(text: str) -> float | None:
     grading MORE lenient toward equivalent values, never lenient toward
     wrong ones.
     """
-    cleaned = re.sub(r"\s+", " ", text.replace(",", "")).strip()
+    cleaned = re.sub(r"\s+", " ", text.translate(_DASHES).replace(",", "")).strip()
+    cleaned = re.sub(r"^([-+])\s+(?=\d)", r"\1", cleaned)
     cleaned = _LEADING_CURRENCY_RE.sub("", cleaned)
     cleaned = _TRAILING_UNIT_RE.sub("", cleaned).strip()
     cleaned = cleaned.lstrip("+")
@@ -680,8 +755,24 @@ def units_named_in(stem: str | None) -> frozenset:
     return frozenset(found)
 
 
+def _same_text(response_blank: str, candidate_blank: str) -> bool:
+    """The same written answer, whatever its case, spacing or sign spelling;
+    also "x=3" for "3" (and the other way) and just the value for a labelled
+    part ("2" for "Base 2"). The label is only ever dropped from the KEY: a
+    response with a label of its own ("decrease 11" for "Increase 11") must
+    still match whole."""
+    given = _normalize_value(response_blank)
+    expected = _normalize_value(candidate_blank)
+    if given == expected:
+        return True
+    if _drop_variable(given) == _drop_variable(expected):
+        return True
+    bare = _value_without_labels(expected)
+    return bare is not None and (given == bare or _drop_variable(given) == _drop_variable(bare))
+
+
 def _blank_matches(response_blank: str, candidate_blank: str, question_unit=None) -> bool:
-    if _normalize_value(response_blank) == _normalize_value(candidate_blank):
+    if _same_text(response_blank, candidate_blank):
         return True
     response_value = _numeric_value(response_blank)
     candidate_value = _numeric_value(candidate_blank)
@@ -963,10 +1054,28 @@ def answer_blank_labels(question: Question) -> list[str] | None:
     if count < 2:
         return None
     match = _BLANK_LABELS.search(question.stem or "")
-    if not match:
+    if match:
+        labels = [part.strip().rstrip(".").strip() for part in match.group(1).split(";")]
+        if len(labels) == count and all(labels):
+            return [label[:1].upper() + label[1:] for label in labels]
+    return _labels_from_key(question, count)
+
+
+def _labels_from_key(question: Question, count: int) -> list[str] | None:
+    """Box names from a key written with its labels ("Base 9; exponent 2" ->
+    Base, Exponent), when every part has words before its value (#244). The
+    stem already asks for those parts, so a label gives nothing away. A key
+    whose parts are not all "words then a value" gets plain Part 1, Part 2."""
+    parts = [p.strip() for p in (question.correct_answer or "").split(";") if p.strip()]
+    if len(parts) != count:
         return None
-    labels = [part.strip().rstrip(".").strip() for part in match.group(1).split(";")]
-    if len(labels) != count or not all(labels):
+    labels = []
+    for part in parts:
+        found = re.match(r"^([A-Za-z][A-Za-z ]{0,24}?)\s+[-+]?[\d(]", part)
+        if not found:
+            return None
+        labels.append(found.group(1).strip())
+    if len({label.lower() for label in labels}) != count:
         return None
     return [label[:1].upper() + label[1:] for label in labels]
 
@@ -1106,7 +1215,7 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
         # that are not a unit ("2 kg 50 g", "6550 markers") still counts.
         # The key always counts.
         variants = [v for v in variants if _variant_fits_unit(v, question.correct_answer, rule)]
-    if any(_normalize_value(response) == _normalize_value(v) for v in variants):
+    if any(_same_text(response, v) for v in variants):
         return GradeResult(True, marks)
     candidates = [c for c in [question.correct_answer or ""] + variants if c and c.strip()]
     given = units.parse_measurement(response)

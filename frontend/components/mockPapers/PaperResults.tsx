@@ -33,6 +33,7 @@ import { Modal } from "@/components/ui/Modal";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { MarkingView, ResultsGrid, ReviewPlace } from "@/types/mockPapers";
 import { QuestionFigure } from "@/components/ui/QuestionFigure";
+import { MathText } from "@/components/ui/MathText";
 
 const STATE_TONE = { NOT_STARTED: "neutral", IN_PROGRESS: "brand", TO_MARK: "warning", MARKED: "success" } as const;
 
@@ -295,7 +296,7 @@ function ReviewDialog({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <p className="whitespace-pre-line text-sm text-content">
                       {p.label ? <span className="font-semibold">({p.label}) </span> : null}
-                      {p.text}
+                      <MathText>{p.text}</MathText>
                     </p>
                       <QuestionFigure svg={p.figureSvg} />
                     <label className="flex items-center gap-2 text-sm font-semibold text-content">

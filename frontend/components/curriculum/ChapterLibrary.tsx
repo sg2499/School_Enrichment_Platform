@@ -306,7 +306,9 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
                         >
                           {ch.title}
                         </Link>
-                        <span className="block text-xs text-content-subtle">{ch.code}</span>
+                        <span className="block text-xs text-content-subtle">
+                          {[ch.boardCode, ch.classLevelCode ? `Class ${ch.classLevelCode}` : null, ch.code].filter(Boolean).join(" · ")}
+                        </span>
                       </TD>
                       <TD align="right" className="tabular">
                         {ch.publishedLessonCount ?? 0} of {ch.conceptLessonCount}

@@ -708,7 +708,8 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
       key: "questions",
       label: "Questions",
       href: hrefFor("questions", lessonId),
-      count: r.questions - r.approved,
+      // The total, so the tab agrees with the page; the dot still marks work waiting.
+      count: r.questions,
       attention: r.questions - r.approved > 0,
     },
   ];

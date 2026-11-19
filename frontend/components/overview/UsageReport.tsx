@@ -68,7 +68,7 @@ export function UsageReport() {
                 {data.schools.map((school) => (
                   <TR key={school.id}>
                     <TD>
-                      <span className="font-semibold">{school.name}</span>
+                      <span className="font-semibold whitespace-nowrap">{school.name}</span>
                       {!school.isActive ? (
                         <Badge tone="warning" className="ml-2">
                           Suspended

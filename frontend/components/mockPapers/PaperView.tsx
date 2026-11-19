@@ -37,6 +37,7 @@ import { MarkingPanel, ResultsPanel } from "@/components/mockPapers/PaperResults
 import { TableSkeleton } from "@/components/ui/Table";
 import type { PaperDetail, PaperSlot, SampleQuestion } from "@/types/mockPapers";
 import { QuestionFigure } from "@/components/ui/QuestionFigure";
+import { MathText } from "@/components/ui/MathText";
 
 function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
   const labelled = letter && !/^\([a-z]\)\s/.test(q.text);
@@ -45,7 +46,7 @@ function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 flex-1 whitespace-pre-line text-[0.9375rem] leading-relaxed text-content">
           {labelled ? <span className="font-semibold">({letter}) </span> : null}
-          {q.text}
+          <MathText>{q.text}</MathText>
         </p>
         <span className="mt-0.5 shrink-0 whitespace-nowrap rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-content-muted">
           {q.marks} {q.marks === 1 ? "mark" : "marks"}
@@ -67,7 +68,7 @@ function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
               </span>
               <span className="min-w-0 flex-1 wrap-break-word pt-0.5 font-medium">
                 <span className="sr-only">Option {o.letter}: </span>
-                {o.text}
+                <MathText>{o.text}</MathText>
               </span>
             </li>
           ))}
@@ -88,7 +89,7 @@ function Question({ q, letter }: { q: SampleQuestion; letter: string | null }) {
           ) : null}
           {q.explanation ? (
             <p className="whitespace-pre-line">
-              <span className="font-semibold text-content">Explanation:</span> {q.explanation}
+              <span className="font-semibold text-content">Explanation:</span> <MathText>{q.explanation}</MathText>
             </p>
           ) : null}
         </div>

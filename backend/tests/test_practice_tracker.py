@@ -31,6 +31,7 @@ from app.models import (
     Question,
 )
 from app.services import learning_service, practice_access_service, teacher_assignment_service
+from tests import test_learning
 from tests.conftest import engine
 from tests.test_learning import (
     _add_question,
@@ -83,7 +84,7 @@ def _question(db, code: str) -> Question:
 
 
 def _assign(db, school, activity, by_user_id, *, section="A", created_at: datetime | None = None, max_attempts=3):
-    assignment = learning_service.create_assignment(
+    assignment = test_learning.create_assignment_again(
         db, school=school, learning_activity=activity, assigned_by_user_id=by_user_id,
         class_name="5", section=section, max_attempts=max_attempts,
     )

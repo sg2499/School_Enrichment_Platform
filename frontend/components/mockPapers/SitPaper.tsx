@@ -39,6 +39,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { TableSkeleton } from "@/components/ui/Table";
 import type { PaperResult, SitPart, SitPlace, SitSection, SittingView } from "@/types/mockPapers";
 import { QuestionFigure } from "@/components/ui/QuestionFigure";
+import { MathText } from "@/components/ui/MathText";
 
 type SaveState = "saving" | "saved" | "error";
 
@@ -130,7 +131,7 @@ function PartBlock({
     <div className="space-y-3">
       <p className="whitespace-pre-line text-[0.9375rem] leading-relaxed text-content">
         {part.label ? <span className="font-semibold">({part.label}) </span> : null}
-        {part.text}
+        <MathText>{part.text}</MathText>
         <span className="ml-2 whitespace-nowrap text-xs text-content-subtle">
           [{part.marks} {part.marks === 1 ? "mark" : "marks"}]
         </span>
@@ -228,7 +229,7 @@ function ResultView({ result }: { result: PaperResult }) {
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <p className="whitespace-pre-line text-sm text-content">
                               {part.label ? <span className="font-semibold">({part.label}) </span> : null}
-                              {part.text}
+                              <MathText>{part.text}</MathText>
                             </p>
                               <QuestionFigure svg={part.figureSvg} />
                             <Badge
@@ -274,7 +275,7 @@ function ResultView({ result }: { result: PaperResult }) {
                               ) : null}
                               {part.explanation ? (
                                 <p className="whitespace-pre-line">
-                                  <span className="font-semibold text-content">Explanation:</span> {part.explanation}
+                                  <span className="font-semibold text-content">Explanation:</span> <MathText>{part.explanation}</MathText>
                                 </p>
                               ) : null}
                             </div>

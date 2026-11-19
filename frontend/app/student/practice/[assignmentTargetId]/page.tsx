@@ -59,6 +59,7 @@ import { cn } from "@/lib/utils";
 import { ACTIVITY_TYPE_LABEL } from "@/types/learning";
 import type { ActivityType, AttemptAnswerResult, AttemptDetail, AttemptQuestion, AttemptResult, StudentAssignmentSummary } from "@/types/learning";
 import { QuestionFigure } from "@/components/ui/QuestionFigure";
+import { MathText } from "@/components/ui/MathText";
 
 /*
  * Taking a practice set, and reading its result -- Phase 2b/c visual pass
@@ -212,7 +213,7 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
                 </span>
                 <span className="min-w-0 flex-1 wrap-break-word pt-0.5 font-medium">
                   <span className="sr-only">Option {option.letter}: </span>
-                  {option.text}
+                  <MathText>{option.text}</MathText>
                 </span>
                 {tag ? (
                   // jade-800 on jade-50 8.9:1; coral-800 on the coral tint
@@ -265,7 +266,7 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
         ))}
       </ol>
     ) : (
-      <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-jade-800">{correctAnswerText(answer)}</p>
+      <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-jade-800"><MathText>{correctAnswerText(answer)}</MathText></p>
     );
 
   return (
@@ -343,7 +344,7 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                     {chrome.label}
                   </Badge>
                 </div>
-                <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty">{answer.stem}</p>
+                <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty"><MathText>{answer.stem}</MathText></p>
                 <QuestionFigure svg={answer.figureSvg} />
                 <AnswerBody answer={answer} state={state} />
                 {/* Phase 4 (#164): why a right number lost marks -- a
@@ -387,7 +388,7 @@ function ResultView({ result, children }: { result: AttemptResult; children: Rea
                   // content-muted on surface-brand: 7.8:1.
                   <p className="rounded-2xl bg-surface-brand p-3.5 text-sm leading-relaxed text-content-muted">
                     <span className="font-semibold text-content-brand">Why: </span>
-                    {answer.explanation}
+                    <MathText>{answer.explanation}</MathText>
                   </p>
                 ) : null}
               </CardBody>
@@ -1170,7 +1171,7 @@ export default function StudentAttemptPage() {
                         ) : null}
                       </span>
                     </div>
-                    <p className="text-[1rem] font-medium leading-relaxed text-content text-pretty">{question.stem}</p>
+                    <p className="text-[1rem] font-medium leading-relaxed text-content text-pretty"><MathText>{question.stem}</MathText></p>
                     <QuestionFigure svg={question.figureSvg} />
                     <QuestionInput
                       question={question}

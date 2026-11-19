@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { joinParts, splitParts } from "@/lib/studentPractice";
 import { cn } from "@/lib/utils";
 import type { AttemptQuestion } from "@/types/learning";
+import { MathText } from "@/components/ui/MathText";
 
 /** What the controls need to know about a question: never its answer. */
 export type AnswerQuestion = Pick<
@@ -122,7 +123,7 @@ export function QuestionInput({
               onChange={() => onChange(option.letter)}
             />
             <OptionLetter letter={option.letter} selected={value === option.letter} />
-            <span className="min-w-0 pt-0.5">{option.text}</span>
+            <span className="min-w-0 pt-0.5"><MathText>{option.text}</MathText></span>
           </label>
         ))}
       </div>
@@ -154,7 +155,7 @@ export function QuestionInput({
               }}
             />
             <OptionLetter letter={option.letter} selected={selected.has(option.letter)} />
-            <span className="min-w-0 pt-0.5">{option.text}</span>
+            <span className="min-w-0 pt-0.5"><MathText>{option.text}</MathText></span>
           </label>
         ))}
       </div>
@@ -194,7 +195,7 @@ export function QuestionInput({
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-surface-brand text-xs font-bold tabular text-content-brand ring-1 ring-inset ring-brand-100">
               {index + 1}
             </span>
-            <span className="min-w-0 flex-1">{option.text}</span>
+            <span className="min-w-0 flex-1"><MathText>{option.text}</MathText></span>
             <div className="flex shrink-0 gap-1">
               <button
                 type="button"
@@ -238,7 +239,7 @@ export function QuestionInput({
               <input
                 type="text"
                 maxLength={maxLength}
-                inputMode={question.questionType === "Numeric Entry" ? "decimal" : "text"}
+                inputMode="text"
                 value={part}
                 onChange={(event) => {
                   const next = [...parts];
@@ -265,8 +266,11 @@ export function QuestionInput({
         <input
           type="text"
           maxLength={maxLength}
-          // A unit to be written needs letters: a decimal keypad has none.
-          inputMode={question.answerNeedsUnit ? "text" : "decimal"}
+          // A normal keyboard always (#244): the decimal keypad on a phone
+          // has no minus sign, and a unit needs letters. Asking for a
+          // negative here would give the answer's sign away, so it is the
+          // same for every number answer.
+          inputMode="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Type your answer"
@@ -280,6 +284,20 @@ export function QuestionInput({
           </p>
         ) : null}
       </div>
+    );
+  }
+
+  if (question.questionType === "Text Entry") {
+    // A short written answer is one line, like a number box (#244).
+    return (
+      <input
+        type="text"
+        maxLength={maxLength}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Type your answer"
+        className="h-12 w-full max-w-xl rounded-2xl border border-line-field bg-surface px-4 text-base text-content shadow-xs outline-hidden transition placeholder:text-content-faint hover:border-ink-500 focus:border-brand-500 focus:shadow-focus-field"
+      />
     );
   }
 

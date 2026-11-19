@@ -57,7 +57,7 @@ function PlatformTab({ data }: { data: Settings }) {
   const { product, platform } = data;
   const suspended = platform.schools - platform.activeSchools;
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid items-start gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader className="flex-col items-start gap-1 [&>h3]:max-w-none">
           <CardTitle>Product</CardTitle>
