@@ -753,7 +753,24 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
       {refreshProblem ? <ErrorBanner message={refreshProblem} /> : null}
       {view === "overview" ? (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <StatusCard chapter={chapter} onChanged={refresh} />
+          <div className="space-y-6">
+            <StatusCard chapter={chapter} onChanged={refresh} />
+            <Card>
+              <CardHeader className="flex-col items-start gap-1.5">
+                <CardTitle className="flex items-center gap-2">
+                  <ListChecks className="h-4 w-4 text-brand-600" aria-hidden />
+                  Read Before You Approve
+                </CardTitle>
+                <CardDescription>
+                  A status alone doesn&apos;t say what is about to reach students. Under Questions, each lesson&apos;s questions are shown
+                  in full, with the keyed answer marked, and can be narrowed to the flagged ones or those still waiting for a decision.
+                </CardDescription>
+              </CardHeader>
+              <CardBody>
+                <InlineLink href={hrefFor("questions", lessonId)}>Read the Questions</InlineLink>
+              </CardBody>
+            </Card>
+          </div>
           <div className="space-y-6">
             {chapter.status !== "ARCHIVED" && (chapter.status !== "PUBLISHED" || chapter.conceptLessons.some((l) => l.status !== "PUBLISHED") || (chapter.draftActivityCount ?? 0) > 0) ? (
               <ApproveAndPublish
@@ -770,21 +787,6 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
               onDone={refresh}
             />
             <RepeatsCard chapterId={chapter.id} onChanged={refresh} />
-            <Card>
-              <CardHeader className="flex-col items-start gap-1.5">
-                <CardTitle className="flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-brand-600" aria-hidden />
-                  Read Before You Approve
-                </CardTitle>
-                <CardDescription>
-                  A status alone doesn&apos;t say what is about to reach students. Under Questions, each lesson&apos;s questions are shown
-                  in full, with the keyed answer marked, and can be narrowed to the flagged ones or those still waiting for a decision.
-                </CardDescription>
-              </CardHeader>
-              <CardBody>
-                <InlineLink href={hrefFor("questions", lessonId)}>Read the Questions</InlineLink>
-              </CardBody>
-            </Card>
           </div>
         </div>
       ) : view === "lessons" ? (

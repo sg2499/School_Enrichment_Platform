@@ -116,6 +116,9 @@ function Grid({ grid }: { grid: SetGrid }) {
           </li>
         ))}
       </ul>
+      <p className="text-xs text-content-subtle">
+        The percentage under each question number is the share of students who got it fully right; part marks are not counted in it.
+      </p>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0 text-sm">
@@ -133,7 +136,7 @@ function Grid({ grid }: { grid: SetGrid }) {
                       type="button"
                       onClick={() => setShownQuestion(shownQuestion === i ? null : i)}
                       aria-pressed={shownQuestion === i}
-                      title={q.stem}
+                      title={`${q.stem} (${percentCorrectText(q.percentCorrect)} fully right; part marks are not counted)`}
                       className={cn(
                         "flex w-11 flex-col items-center rounded-lg px-1 py-1 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
                         shownQuestion === i && "bg-surface-brand",
