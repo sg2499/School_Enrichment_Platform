@@ -129,7 +129,7 @@ function SettingsBody() {
           <CardBody className="space-y-5 sm:p-7">
             <div>
               <h2 className="font-display text-display-sm text-content">School Logo</h2>
-              <p className="mt-1 max-w-prose text-sm text-content-muted">
+              <p className="mt-1 max-w-3xl text-sm text-content-muted">
                 Shown in the side rail for everyone at {school.name}, and on the weekly reports and report cards, on screen and
                 in the PDFs. A PNG with a transparent background looks best; square or wide, at least 200 pixels across.
               </p>

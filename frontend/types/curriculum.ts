@@ -24,6 +24,9 @@ export type ChapterSummary = {
   // human-facing code can safely coexist across different classes and
   // syllabus editions (18 Aug 2026, see backend Chapter model docstring).
   boardCourseId: string;
+  /** Which board and class the chapter is in (#244). */
+  boardCode?: string | null;
+  classLevelCode?: string | null;
   curriculumVersionId: string;
   termId: string | null;
   sequence: number;

@@ -45,7 +45,7 @@ export function Card({
 
 export function CardHeader({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex items-start justify-between gap-4 p-6 pb-0 sm:p-7 sm:pb-0 [&>h3]:max-w-[55%] [&>h3]:shrink-0", className)} {...props}>
+    <div className={cn("flex items-start justify-between gap-4 p-6 pb-0 sm:p-7 sm:pb-0 [&>h3]:shrink-0 has-[>h3+p]:flex-col has-[>h3+p]:gap-0 [&>h3+p]:mt-1.5", className)} {...props}>
       {children}
     </div>
   );

@@ -59,6 +59,7 @@ import { ReadOnlyBadge, ScoreBadge } from "@/components/tracker/TrackerBits";
 import { formatDateTime, plural, scopeShort, studentClassLabel } from "@/lib/tracker";
 import type { AttemptReview, MethodMarksRow, Paginated, ReviewAnswer, ReviewQueueRow } from "@/types/tracker";
 import { QuestionFigure } from "@/components/ui/QuestionFigure";
+import { MathText } from "@/components/ui/MathText";
 
 type Drafts = Record<string, number | null>;
 
@@ -448,7 +449,7 @@ function AnswerCard({
           <AnswerState answer={answer} draft={draft} />
         </div>
 
-        <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty">{answer.stem}</p>
+        <p className="text-[0.9375rem] font-medium leading-relaxed text-content text-pretty"><MathText>{answer.stem}</MathText></p>
         <QuestionFigure svg={answer.figureSvg} />
 
         {optionEntries.length > 0 ? (
@@ -527,7 +528,7 @@ function AnswerCard({
         {answer.explanation ? (
           <p className="rounded-2xl bg-surface-brand px-3.5 py-3 text-sm leading-relaxed text-content-muted">
             <span className="font-semibold text-content-brand">Why: </span>
-            {answer.explanation}
+            <MathText>{answer.explanation}</MathText>
           </p>
         ) : null}
 

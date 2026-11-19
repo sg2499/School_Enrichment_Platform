@@ -236,6 +236,8 @@ const NAV: Record<UserRole, { section: string; items: NavItem[] }[]> = {
       section: "Operations",
       items: [
         { label: "Report Cards", icon: ScrollText, href: "/admin/report-cards" },
+        { label: "Weekly Reports", icon: CalendarCheck, href: "/admin/weekly-reports" },
+        { label: "Class Analytics", icon: BarChart3, href: "/admin/analytics" },
         { label: "Reports", icon: BarChart3, href: "/admin/reports" },
         { label: "Security", icon: ShieldCheck, href: "/admin/security" },
         { label: "Settings", icon: Settings, href: "/admin/settings" },

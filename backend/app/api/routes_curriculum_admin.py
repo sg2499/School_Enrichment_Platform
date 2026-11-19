@@ -187,6 +187,32 @@ def _resolve_school_id_for_read(db: Session, user: User, requested_school_id: st
     return _resolve_school_id(db, user, requested_school_id)
 
 
+# A school sees only its own board's content (#244, 19 Nov 2026). The school
+# row holds the board as free text ("CISCE", "ICSE", "CBSE") and the board
+# table holds its own spelling, so both are brought to one family name first.
+_BOARD_FAMILY = {"ICSE": "CISCE", "CISCE": "CISCE", "ISC": "CISCE", "CBSE": "CBSE", "CBSE / NCERT": "CBSE", "NCERT": "CBSE"}
+
+
+def _board_family(text: str | None) -> str:
+    word = (text or "").strip().upper()
+    return _BOARD_FAMILY.get(word, word)
+
+
+def _own_board_ids(db: Session, user: User) -> set[str] | None:
+    """The board ids a school ADMIN may see, or None for no limit: a
+    SUPER_ADMIN, a school with no board set, or a board this table does not
+    know (never lock a school out of everything over a spelling)."""
+    if user.role != "ADMIN":
+        return None
+    school_admin = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
+    school = db.get(School, school_admin.school_id) if school_admin else None
+    family = _board_family(school.board) if school and school.board else ""
+    if not family:
+        return None
+    ids = {b.id for b in db.query(Board).all() if family in (_board_family(b.code), _board_family(b.display_name))}
+    return ids or None
+
+
 def _validate_teacher_in_school(db: Session, teacher_id: str | None, school_id: str) -> None:
     """A12 fix (30 Sep 2026 security/DPDP review): teacherId was stored on a
     SchoolCurriculumMap with no check it belongs to the mapping's own
@@ -251,7 +277,12 @@ def _review_progress(db: Session, chapter_ids: list[str]) -> dict[str, dict[str,
 
 
 def _chapter_summary(chapter: Chapter, lesson_count: int, question_count: int) -> dict:
+    # Which board and class the chapter belongs to, so a list of chapters from
+    # several classes can say which is which (#244: CH01 appeared three times).
+    course = chapter.board_course
     return {
+        "boardCode": course.board.code if course and course.board else None,
+        "classLevelCode": course.class_level.code if course and course.class_level else None,
         "id": chapter.id,
         "code": chapter.code,
         "chapterNo": chapter.chapter_no,
@@ -331,8 +362,11 @@ def list_chapters(
         query = query.filter(Chapter.status == status.strip().upper())
     if discipline_id:
         query = query.filter(Chapter.discipline_id == discipline_id)
-    if board_id or class_level_id:
+    own_boards = _own_board_ids(db, user)
+    if board_id or class_level_id or own_boards:
         query = query.join(BoardCourse, Chapter.board_course_id == BoardCourse.id)
+        if own_boards:
+            query = query.filter(BoardCourse.board_id.in_(own_boards))
         if board_id:
             query = query.filter(BoardCourse.board_id == board_id)
         if class_level_id:
@@ -1152,7 +1186,11 @@ def _curriculum_version_summary(version: CurriculumVersion) -> dict:
 
 
 @router.get("/curriculum-versions", dependencies=[Depends(require_roles("ADMIN", "SUPER_ADMIN"))])
-def list_curriculum_versions(board_id: str | None = None, db: Session = Depends(get_db)):
+def list_curriculum_versions(
+    board_id: str | None = None,
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     """Open to both roles (read-only, mirrors board-courses) -- an ADMIN
     picking a chapter to map benefits from seeing which edition it belongs
     to, same as the BoardCourse lookup above. Status filtering by role is
@@ -1161,6 +1199,9 @@ def list_curriculum_versions(board_id: str | None = None, db: Session = Depends(
     a chapter from a non-PUBLISHED edition) is already enforced where
     chapters are actually listed/mapped, not here."""
     query = db.query(CurriculumVersion)
+    own_boards = _own_board_ids(db, user)
+    if own_boards:
+        query = query.filter(CurriculumVersion.board_id.in_(own_boards))
     if board_id:
         query = query.filter(CurriculumVersion.board_id == board_id)
     versions = query.order_by(CurriculumVersion.code.desc()).all()
@@ -1262,6 +1303,9 @@ def list_board_courses(
         .join(Board, BoardCourse.board_id == Board.id)
         .join(ClassLevel, BoardCourse.class_level_id == ClassLevel.id)
     )
+    own_boards = _own_board_ids(db, _user)
+    if own_boards:
+        query = query.filter(BoardCourse.board_id.in_(own_boards))
     if board_id:
         query = query.filter(BoardCourse.board_id == board_id)
     if class_level_id:
@@ -1292,12 +1336,20 @@ def list_board_courses(
 
 
 @router.get("/boards", dependencies=[Depends(require_roles("ADMIN", "SUPER_ADMIN"))])
-def list_boards(db: Session = Depends(get_db)):
+def list_boards(
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    db: Session = Depends(get_db),
+):
     """Powers the "Board" filter step of Board -> Class -> Subject -> Chapter
     (19 Aug 2026). Open to both roles, same as board-courses -- a board name
     (CBSE/ICSE) isn't sensitive."""
     boards = db.query(Board).order_by(Board.display_name).all()
-    return {"boards": [{"id": b.id, "code": b.code, "name": b.display_name} for b in boards]}
+    own_boards = _own_board_ids(db, user)
+    if own_boards:
+        boards = [b for b in boards if b.id in own_boards]
+    # One name for the board everywhere (#244): schools are recorded as CISCE
+    # while the board table said ICSE, so the same board read two ways.
+    return {"boards": [{"id": b.id, "code": b.code, "name": "CISCE" if _board_family(b.code) == "CISCE" else b.display_name} for b in boards]}
 
 
 @router.get("/disciplines", dependencies=[Depends(require_roles("ADMIN", "SUPER_ADMIN"))])
@@ -1406,6 +1458,10 @@ def create_school_curriculum_map(
     board_course = db.get(BoardCourse, payload.boardCourseId)
     if not board_course:
         api_error(404, "NOT_FOUND", "That subject couldn't be found for this board and class.")
+    own_boards = _own_board_ids(db, user)
+    chapter_course = db.get(BoardCourse, chapter.board_course_id) if chapter.board_course_id else None
+    if own_boards and (board_course.board_id not in own_boards or (chapter_course and chapter_course.board_id not in own_boards)):
+        api_error(422, "VALIDATION_ERROR", "That chapter belongs to a different board from your school's.")
 
     _validate_teacher_in_school(db, payload.teacherId, school_id)
 

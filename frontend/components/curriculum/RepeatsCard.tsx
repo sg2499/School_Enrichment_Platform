@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { api, errorMessage } from "@/lib/api";
 import type { ChapterRepeats } from "@/types/curriculum";
+import { MathText } from "@/components/ui/MathText";
 
 const SHOWN = 40;
 
@@ -71,7 +72,7 @@ export function RepeatsCard({ chapterId, onChanged }: { chapterId: string; onCha
           <ul className="divide-y divide-line rounded-xl border border-line text-sm">
             {shown.map((r) => (
               <li key={r.id} className="px-3 py-2">
-                <p className="font-medium text-content">{r.stem}</p>
+                <p className="font-medium text-content"><MathText>{r.stem}</MathText></p>
                 <p className="mt-0.5 text-xs text-content-muted">
                   {r.code} repeats {r.keptCode ?? "an earlier question"} · answer {r.correctAnswer}
                 </p>
@@ -84,8 +85,14 @@ export function RepeatsCard({ chapterId, onChanged }: { chapterId: string; onCha
             {all ? "Show fewer" : `Show all ${data.count}`}
           </Button>
         ) : null}
-        <Button type="button" variant="secondary" size="sm" onClick={() => void scan()} disabled={busy}>
-          <RefreshCw className="h-4 w-4" aria-hidden />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => void scan()}
+          disabled={busy}
+          leadingIcon={<RefreshCw className="h-4 w-4" aria-hidden />}
+        >
           {busy ? "Checking…" : "Check Again"}
         </Button>
       </CardBody>

@@ -417,12 +417,25 @@ export function RosterWorkspace({
               {schoolLabel}
             </span>
           ) : null}
+          <button
+            type="button"
+            onClick={loadPeople}
+            disabled={loading}
+            aria-label="Refresh roster"
+            title="Refresh"
+            className={cn(
+              "inline-flex h-9 w-9 items-center justify-center rounded-full text-content-subtle transition hover:bg-surface-muted hover:text-content disabled:cursor-progress",
+              schoolLabel ? "sm:ml-0 ml-auto" : "ml-auto",
+            )}
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} aria-hidden />
+          </button>
         </div>
 
         {/* Secondary dimension: Roster (view/manage) vs. Add People (create). */}
+        {activeRole === "ADMIN" ? (
         <div className="flex items-center gap-2 border-b border-line px-5 py-3 sm:px-6">
           {/* Teachers and students are added from the workbook on Onboarding: one way, not two. Only a School Admin is added one at a time. */}
-          {activeRole === "ADMIN" ? (
           <div role="group" aria-label="View" className="flex items-center gap-1.5">
             <button type="button" aria-pressed={mode === "roster"} onClick={() => setMode("roster")} className={segmentClass(mode === "roster")}>
               <Users className="h-3.5 w-3.5" aria-hidden />
@@ -433,18 +446,8 @@ export function RosterWorkspace({
               Add a School Admin
             </button>
           </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={loadPeople}
-            disabled={loading}
-            aria-label="Refresh roster"
-            title="Refresh"
-            className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-content-subtle transition hover:bg-surface-muted hover:text-content disabled:cursor-progress"
-          >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} aria-hidden />
-          </button>
         </div>
+        ) : null}
 
         {loadError ? (
           <p role="alert" className="flex items-start gap-2 px-5 pt-4 text-[0.8125rem] font-medium text-coral-700 sm:px-6">

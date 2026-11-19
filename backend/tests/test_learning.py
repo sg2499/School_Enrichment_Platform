@@ -513,6 +513,28 @@ def test_create_assignment_materializes_one_target_per_student(db_session):
     assert {t.student_id for t in targets} == {s1.id, s2.id}
 
 
+def create_assignment_again(db, **kwargs):
+    """create_assignment for a test that needs several open copies of one set
+    for one section (the #244 guard refuses that in real use): the earlier
+    open copies are set aside while the new one is made, then restored."""
+    from app.models import Assignment
+
+    school, activity = kwargs["school"], kwargs["learning_activity"]
+    held = db.query(Assignment).filter(
+        Assignment.school_id == school.id, Assignment.learning_activity_id == activity.id,
+        Assignment.status == "ACTIVE",
+    ).all()
+    for a in held:
+        a.status = "HELD"
+    db.flush()
+    try:
+        return learning_service.create_assignment(db, **kwargs)
+    finally:
+        for a in held:
+            a.status = "ACTIVE"
+        db.flush()
+
+
 def _published_single_activity(db, suffix: str) -> LearningActivity:
     chapter, (skill1,) = _make_chapter_with_skills(db, suffix, n_skills=1)
     _add_question(db, skill1, f"{suffix.upper()}-P01-01", assignment_code=_ac(suffix, "P01"))
@@ -561,7 +583,7 @@ def test_create_assignment_without_section_still_targets_every_section_of_the_cl
     activity = _published_single_activity(db_session, "asg4")
 
     for section_arg in ({}, {"section": None}, {"section": "  "}):
-        assignment = learning_service.create_assignment(
+        assignment = create_assignment_again(
             db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
             class_name="5", **section_arg,
         )
@@ -1414,6 +1436,11 @@ def test_admin_and_super_admin_create_assignment_skip_section_ownership(client, 
     assert admin_one_section.status_code == 200, admin_one_section.text
     assert admin_one_section.json()["targetCount"] == 1
 
+    # The same set is not set twice for one open section (#244): close the
+    # admin's copies so the super admin's call below is a fresh one.
+    for earlier in db_session.query(Assignment).filter(Assignment.school_id == school.id).all():
+        earlier.status = "CANCELLED"
+    db_session.commit()
     client.cookies.clear()
     sa_headers = _login(client, super_admin.email)
     sa_whole_class = client.post(

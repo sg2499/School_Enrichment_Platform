@@ -107,13 +107,16 @@ _add("degree", "degree", "degrees", "°", "deg")
 _add("mm2", "mm²", "mm2", "mm^2", "sq mm", "square mm", "square millimetre", "square millimetres", "square millimeter", "square millimeters")
 _add("cm2", "cm²", "cm2", "cm^2", "sq cm", "sqcm", "square cm", "square centimetre", "square centimetres", "square centimeter", "square centimeters")
 _add("m2", "m²", "m2", "m^2", "sq m", "square m", "square metre", "square metres", "square meter", "square meters")
-_add("celsius", "°c", "celsius", "degree celsius", "degrees celsius", "deg c", "℃")
+_add("celsius", "°c", "celsius", "degree celsius", "degrees celsius", "deg c", "℃", "degree c", "degrees c", "deg celsius", "° c")
 _add("percent", "%", "percent", "per cent", "pc")
 _add("cm3", "cm³", "cm3", "cm^3", "cu cm", "cucm", "cubic cm", "cubic centimetre", "cubic centimetres", "cubic centimeter", "cubic centimeters")
 _add("kmh", "km/h", "kmh", "kmph", "km per hour", "kilometre per hour", "kilometres per hour", "kilometer per hour", "kilometers per hour")
 _add("ms", "m/s", "mps", "m per s", "metre per second", "metres per second", "meter per second", "meters per second")
 _add("day", "day", "days")
 _add("year", "year", "years", "yr", "yrs")
+
+
+_DASHES = str.maketrans({"−": "-", "–": "-", "—": "-", "‒": "-", "﹣": "-", "－": "-"})
 
 
 def _alias_key(text: str) -> str:
@@ -166,7 +169,8 @@ def parse_measurement(text: str | None) -> Measurement | None:
     itself, as it always has."""
     if text is None:
         return None
-    raw = text.strip()
+    # A proper minus or en dash, and "- 9", are the same as "-9" (#244).
+    raw = re.sub(r"^([-+])\s+(?=\d)", r"\1", text.translate(_DASHES).strip())
     if not raw:
         return None
     leading_unit = None
