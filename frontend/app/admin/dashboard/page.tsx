@@ -15,7 +15,6 @@ import {
   Library,
   ListChecks,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 import { RoleShell } from "@/components/RoleShell";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";

@@ -191,6 +191,9 @@ export function RosterWorkspace({
   );
   const [activeRole, setActiveRole] = useState<PersonRole>(availableRoles[0]);
   const [mode, setMode] = useState<Mode>("roster");
+  useEffect(() => {
+    if (activeRole !== "ADMIN") setMode("roster");
+  }, [activeRole]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -418,6 +421,8 @@ export function RosterWorkspace({
 
         {/* Secondary dimension: Roster (view/manage) vs. Add People (create). */}
         <div className="flex items-center gap-2 border-b border-line px-5 py-3 sm:px-6">
+          {/* Teachers and students are added from the workbook on Onboarding: one way, not two. Only a School Admin is added one at a time. */}
+          {activeRole === "ADMIN" ? (
           <div role="group" aria-label="View" className="flex items-center gap-1.5">
             <button type="button" aria-pressed={mode === "roster"} onClick={() => setMode("roster")} className={segmentClass(mode === "roster")}>
               <Users className="h-3.5 w-3.5" aria-hidden />
@@ -425,9 +430,10 @@ export function RosterWorkspace({
             </button>
             <button type="button" aria-pressed={mode === "add"} onClick={() => setMode("add")} className={segmentClass(mode === "add")}>
               <UserPlus className="h-3.5 w-3.5" aria-hidden />
-              Add One Person
+              Add a School Admin
             </button>
           </div>
+          ) : null}
           <button
             type="button"
             onClick={loadPeople}
@@ -448,7 +454,7 @@ export function RosterWorkspace({
         ) : null}
 
         <div className="p-5 sm:p-6">
-          {mode === "roster" ? (
+          {mode === "roster" || activeRole !== "ADMIN" ? (
             <RosterTable
               role={activeRole}
               people={people.filter((p) => p.role === activeRole)}
@@ -459,7 +465,7 @@ export function RosterWorkspace({
                 setResetError(null);
                 setResetTarget(person);
               }}
-              onAddFirst={() => setMode("add")}
+              onAddFirst={activeRole === "ADMIN" ? () => setMode("add") : undefined}
             />
           ) : (
             <AddPeoplePanel
@@ -519,7 +525,7 @@ function RosterTable({
   togglingId: string | null;
   onToggleStatus: (person: Person) => void;
   onResetPassword: (person: Person) => void;
-  onAddFirst: () => void;
+  onAddFirst?: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -564,15 +570,17 @@ function RosterTable({
         title={`No ${ROLE_LABEL[role].toLowerCase()} yet`}
         description={
           role === "STUDENT"
-            ? "Add students one at a time, or import a whole class from a spreadsheet. Each one gets a student code to sign in with."
+            ? "Upload the school workbook on the Onboarding tab. Each student gets a student code to sign in with."
             : role === "TEACHER"
-              ? "Add teachers one at a time, or import a staff list from a spreadsheet. Each one gets a teacher code to sign in with."
+              ? "Upload the school workbook on the Onboarding tab. Each teacher gets a teacher code to sign in with."
               : "A school admin manages this school’s teachers, students and calendar. Create the first one here."
         }
         actions={
-          <Button type="button" size="sm" leadingIcon={<UserPlus className="h-4 w-4" />} onClick={onAddFirst}>
-            Add {ROLE_LABEL_SINGULAR[role]}
-          </Button>
+          onAddFirst ? (
+            <Button type="button" size="sm" leadingIcon={<UserPlus className="h-4 w-4" />} onClick={onAddFirst}>
+              Add {ROLE_LABEL_SINGULAR[role]}
+            </Button>
+          ) : undefined
         }
       />
     );

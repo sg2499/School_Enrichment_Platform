@@ -23,8 +23,12 @@ def _setup(client, db_session, sx):
     return school, admin
 
 
-def _run(school_name, monkeypatch, apply=False, answer="YES"):
-    monkeypatch.setattr(sys, "argv", ["remove_unused_people", "--school", school_name] + (["--apply"] if apply else []))
+def _run(school_name, monkeypatch, apply=False, answer="YES", even_if_used=False):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["remove_unused_people", "--school", school_name] + (["--even-if-used"] if even_if_used else []) + (["--apply"] if apply else []),
+    )
     monkeypatch.setattr("builtins.input", lambda _prompt="": answer)
     return importlib.import_module("scripts.remove_unused_people").main()
 
@@ -83,3 +87,7 @@ def test_nobody_is_removed_once_someone_has_used_krama(client, db_session, monke
     assert _run(school.name, monkeypatch, apply=True) == 1
     assert "have used Krama" in capsys.readouterr().out
     assert db.query(Student).filter(Student.school_id == school.id).count() == 2
+
+    # A test school can be emptied anyway, only on request.
+    assert _run(school.name, monkeypatch, apply=True, even_if_used=True) == 0
+    assert db.query(Student).filter(Student.school_id == school.id).count() == 0
