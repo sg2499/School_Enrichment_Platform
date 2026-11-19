@@ -311,7 +311,7 @@ function SectionsCard({
         {sections.length === 0 ? (
           <EmptyState
             title="No Sections Yet"
-            description="Sections appear here once students are added, from the workbook above or on the Teachers & Students tab."
+            description="Sections appear here once the workbook above is imported."
           />
         ) : (
           <Table caption="Sections" minWidth="40rem">
@@ -437,7 +437,7 @@ export function SchoolSetup({ schoolId, picker }: { schoolId?: string; picker?: 
       </PageHeader>
       <div role="group" aria-label="School setup sections" className="flex flex-wrap items-center gap-2">
         {([
-          ["setup", "Set Up & Sections"],
+          ["setup", "Onboarding"],
           ["people", "Teachers & Students"],
         ] as const).map(([key, label]) => {
           const pressed = tab === key;

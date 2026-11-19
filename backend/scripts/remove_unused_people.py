@@ -5,6 +5,7 @@ Read-only unless --apply (then it asks YES).
 
     python scripts/remove_unused_people.py --school "ABC Public School"
     python scripts/remove_unused_people.py --school "ABC Public School" --apply
+    python scripts/remove_unused_people.py --school "ABC Public School" --even-if-used --apply   (test school only)
 
 Only teachers and students are ever touched, never an admin. A person is removed
 only if they have never signed in (no session, no password of their own, no last
@@ -83,6 +84,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--school", required=True, help="the school's exact name")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--even-if-used",
+        action="store_true",
+        help="also remove people who have signed in (a test school only): their practice, sessions and marks go too",
+    )
     args = parser.parse_args()
 
     from app.database import SessionLocal, engine
@@ -102,11 +108,16 @@ def main() -> int:
         teachers, students = find_people(db, school)
         print(f"{school.name} ({school.board}): {len(teachers)} teachers, {len(students)} students.")
         reasons = used_reasons(db, teachers, students)
-        if reasons:
+        if reasons and not args.even_if_used:
             print("These people have used Krama, so nobody is removed:")
             for r in reasons:
                 print("  -", r)
+            print("For a test school you want emptied anyway, add --even-if-used.")
             return 1
+        if reasons:
+            print("These people have used Krama; their practice, sessions and marks will be removed with them:")
+            for r in reasons:
+                print("  -", r)
         if not (teachers or students):
             print("Nobody to remove.")
             return 0
