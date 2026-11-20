@@ -12,7 +12,7 @@ import io
 
 from openpyxl import load_workbook
 
-from app.models import Student, Teacher, User
+from app.models import Student, User
 from app.models.curriculum import ClassLevel
 from tests.test_learning import _login
 from tests.test_school_setup import _post, _world
@@ -64,41 +64,3 @@ def test_setup_template_lists_the_sections_already_on_krama(client, db_session):
     wb = load_workbook(io.BytesIO(client.get("/api/roster/setup-template", headers=headers).content))
     rows = [[c.value for c in row] for row in wb["Your School"].iter_rows(min_row=6, min_col=2, max_col=5)]
     assert ["5", "B", 1] == rows[0][:3]
-
-
-def test_people_templates_upload_for_both_roles(client, db_session):
-    db = db_session
-    school, admin, _course = _world(db, "TPL3")
-    headers = {**_login(client, admin.email), "x-auth-role": "ADMIN"}
-
-    for role, sheet, filename in (("STUDENT", "Students", "Krama_Add_Students.xlsx"), ("TEACHER", "Teachers", "Krama_Add_Teachers.xlsx")):
-        response = client.get("/api/roster/people-template", params={"role": role}, headers=headers)
-        assert response.status_code == 200
-        assert filename in response.headers["content-disposition"]
-        wb = load_workbook(io.BytesIO(response.content))
-        assert wb.sheetnames[0] == sheet and "Start Here" in wb.sheetnames
-        headings = [c.value for c in wb[sheet][1]]
-        assert headings[0] == "Full Name" and headings[-1] == "Row Check"
-        rows = (
-            [("Nila Rao", "", "5", "A", "")] if role == "STUDENT" else [("Ravi Pal", "ravi.tpl@example.com", "TGT", "Mathematics", "B.Ed", "")]
-        )
-        data = _fill(response.content, sheet, rows)
-        upload = client.post(
-            "/api/roster/people/bulk",
-            headers=headers,
-            data={"role": role},
-            files={"file": ("t.xlsx", data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
-        )
-        assert upload.status_code == 200, upload.text
-        body = upload.json()
-        assert (body["created"], body["attempted"]) == (1, 1), body  # the example row is skipped, not refused
-        # Row Check is a heading the importer does not read, and says so.
-        assert "Row Check" in body["unrecognisedColumns"]
-    assert db.query(Student).filter(Student.school_id == school.id).count() == 1
-    assert db.query(Teacher).filter(Teacher.school_id == school.id).count() >= 1
-
-
-def test_people_template_refuses_a_role_it_does_not_have(client, db_session):
-    _school, admin, _course = _world(db_session, "TPL4")
-    headers = {**_login(client, admin.email), "x-auth-role": "ADMIN"}
-    assert client.get("/api/roster/people-template", params={"role": "ADMIN"}, headers=headers).status_code == 422

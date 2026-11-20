@@ -26,20 +26,11 @@ A generated password is deliberately NOT checked against
 strong_password_issue() -- that check is about a *person* picking a
 memorable-but-weak password, which doesn't apply to a random value.
 
-A password chosen by the school -- 3 Oct 2026 (Shailesh's decision: "admin
-issues first password, optionally a default in the bulk-upload sheet"). A
-bulk sheet may carry an optional `password` column. A row that fills it in
-gets that password instead of a generated one; a row that leaves it blank
-gets a generated one as before. Because a person DID choose it, it IS
-checked against strong_password_issue(), and the account is flagged
-must_change_password like any other, so it lasts only until first sign-in.
-What that does not undo, and the upload screen says so: one password typed
-down a whole column is known to everyone it was handed to, so until each
-person signs in, anyone holding it and a classmate's code can get in first.
-Leaving the column blank is the safer choice and stays the default.
+A password chosen by the school (a `password` column in a bulk sheet, 3 Oct 2026) was
+removed on 19 Nov 2026 with the People bulk upload: teachers and students now
+come in only through the School Setup workbook, whose first passwords are
+always generated.
 """
-import csv
-import io
 import re
 import secrets
 from datetime import datetime, timezone
@@ -51,7 +42,7 @@ from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.core.errors import api_error
 from app.core.rate_limit import limiter
-from app.core.security import hash_password, strong_password_issue
+from app.core.security import hash_password
 from app.database import get_db
 from app.dependencies import require_roles
 from app.models import School, SchoolAdmin, Student, Teacher, User
@@ -62,14 +53,6 @@ from app.services.session_service import revoke_all_sessions_for_user
 router = APIRouter(prefix="/api/roster", tags=["roster"])
 
 CREATABLE_ROLES = {"ADMIN", "TEACHER", "STUDENT"}
-BULK_ROLES = {"TEACHER", "STUDENT"}  # bulk ADMIN creation isn't a real onboarding pattern -- one at a time is fine
-
-# A14 fix (30 Sep 2026 review): bulk import had no row cap at all -- an
-# arbitrarily large file would hash a password (bcrypt, deliberately slow)
-# per row on a single worker (render.yaml: -w 1), able to stall the whole
-# service for every school, not just the one importing. 2000 rows is well
-# above any real school's roster size in one file.
-MAX_BULK_IMPORT_ROWS = 2000
 
 # A14 remainder (1 Oct 2026, email enumeration): User.email is unique across
 # the WHOLE platform, and this used to answer "A user with email
@@ -174,11 +157,8 @@ def _create_person(
     designation: str | None = None,
     subject_specialization: str | None = None,
     qualification: str | None = None,
-    chosen_password: str | None = None,
 ) -> dict:
-    """`chosen_password` is a first password the school picked itself (the
-    bulk sheet's optional `password` column). None -- the single-entry form,
-    and any sheet row that leaves the column blank -- means generate one."""
+    """One new account with a generated first password (returned once)."""
     full_name = (full_name or "").strip()
     if not full_name:
         raise ValueError("Full name is required.")
@@ -199,24 +179,7 @@ def _create_person(
     elif role == "STUDENT":
         code = _next_code(db, Student, Student.student_code, "STU", school.name)
 
-    if chosen_password is not None:
-        # Somebody picked this one, so it is held to the same rules as a
-        # password a person picks for themselves...
-        password_issue = strong_password_issue(chosen_password)
-        if password_issue:
-            raise ValueError(f"The password in this row can't be used. {password_issue}")
-        # ...and to one more that only applies when someone else picks it:
-        # it must not be the thing printed next to it. A sheet that fills
-        # the password column with each person's own code or name has given
-        # every account a password anyone can read off the roster.
-        guessable = {value.casefold() for value in (code, cleaned_email, full_name, full_name.replace(" ", "")) if value}
-        if chosen_password.casefold() in guessable:
-            raise ValueError(
-                "The password in this row can't be used. It is the same as this person's code, name or email."
-            )
-        initial_password = chosen_password
-    else:
-        initial_password = _generate_initial_password(full_name)
+    initial_password = _generate_initial_password(full_name)
     new_user = User(
         full_name=full_name,
         email=cleaned_email,
@@ -657,282 +620,6 @@ def reset_person_password(
         "temporaryPassword": temporary_password,
         "mustChangePassword": True,
     }
-
-
-_BULK_COLUMNS = [
-    "fullName",
-    "email",
-    "className",
-    "section",
-    "designation",
-    "subjectSpecialization",
-    "qualification",
-    # Optional. A first password the school has chosen for this person;
-    # blank means "generate one". See the module docstring.
-    "password",
-]
-
-
-def _cell_text(value) -> str | None:
-    """A sheet cell as trimmed text, or None when it is empty. A spreadsheet
-    hands back numbers for cells that look like numbers (a password of
-    20261234 arrives as an int, and as 20261234.0 from some exports), so the
-    value is put back the way it was typed rather than str()'d blindly."""
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return str(value)
-    if isinstance(value, float) and value.is_integer():
-        value = int(value)
-    text = str(value).strip()
-    return text or None
-
-
-def _header_key(header) -> str:
-    """A column heading reduced to its letters and digits, lower-cased:
-    "Full Name", "fullName", " FULLNAME " and "full_name" are all
-    "fullname". Digits are kept, so "Email 2" is "email2" -- a different
-    column, not a second spelling of "email"."""
-    return re.sub(r"[^a-z0-9]", "", str(header or "").lower())
-
-
-_BULK_COLUMN_FOR_HEADER = {_header_key(column): column for column in _BULK_COLUMNS}
-
-
-def _parse_bulk_rows(filename: str, raw: bytes, role: str | None = None) -> tuple[list[dict], list[str], list[str]]:
-    """The sheet's rows, keyed by the column names in _BULK_COLUMNS; the
-    headings that were not used (in sheet order, as typed); and the columns
-    that were found.
-
-    Headings are matched by their letters alone (3 Oct 2026). They used to
-    be matched exactly, so a heading typed "Password", or "password" after a
-    comma and a space, was a column the import silently never read -- and
-    with the password column that meant a school handing out the passwords
-    in its sheet to a roster that had been given random ones instead. The
-    headings that were not used are returned so the screen can say which,
-    rather than leaving that to be discovered at first sign-in.
-    """
-    lower = filename.lower()
-    if lower.endswith(".xlsx"):
-        from openpyxl import load_workbook
-
-        wb = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
-        # The sheet named for the role ("Teachers", "Students") if there is
-        # one -- the People template has a Start Here sheet beside it --
-        # else the active sheet, as before.
-        wanted = {"TEACHER": "teachers", "STUDENT": "students"}.get(role or "")
-        ws = next((wb[name] for name in wb.sheetnames if _header_key(name) == wanted), None) or wb.active
-        rows_iter = ws.iter_rows(values_only=True)
-        header = [str(h).strip() if h is not None else "" for h in next(rows_iter, [])]
-        raw_rows = []
-        for raw_row in rows_iter:
-            if raw_row is None or all(v is None for v in raw_row):
-                continue
-            raw_rows.append({header[i]: raw_row[i] for i in range(min(len(header), len(raw_row)))})
-    else:
-        text = raw.decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(text))
-        header = [str(h).strip() if h is not None else "" for h in (reader.fieldnames or [])]
-        raw_rows = [{str(key).strip(): value for key, value in row.items() if key is not None} for row in reader]
-
-    # Each column this import reads is taken from the FIRST heading that
-    # names it. A later heading that names the same column ("Password" and
-    # then "Pass Word") is not used and is reported as such -- it must never
-    # quietly replace the first, least of all with a blank.
-    heading_for_column: dict[str, str] = {}
-    unused: list[str] = []
-    for heading in header:
-        if not heading:
-            continue
-        column = _BULK_COLUMN_FOR_HEADER.get(_header_key(heading))
-        if column is None or column in heading_for_column:
-            unused.append(heading)
-        else:
-            heading_for_column[column] = heading
-    rows = [
-        {column: raw_row.get(heading) for column, heading in heading_for_column.items()}
-        for raw_row in raw_rows
-    ]
-    # The template's grey example row, if it was left in, is not a person.
-    rows = [r for r in rows if not str(r.get("fullName") or "").strip().lower().startswith("example:")]
-    return rows, unused, sorted(heading_for_column)
-
-
-@router.post("/people/bulk")
-@limiter.limit("10/minute")
-def bulk_create_people(
-    request: Request,
-    role: str = Form(...),
-    schoolId: str | None = Form(default=None),
-    file: UploadFile = File(...),
-    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
-    db: Session = Depends(get_db),
-):
-    """CSV or .xlsx with a header row from _BULK_COLUMNS (only fullName is
-    required; the rest are role-dependent and optional, including a first
-    `password` the school has chosen for that row).
-    One admin action, many accounts -- both this and the single-entry
-    endpoint above exist from day one (Shailesh, 19 Aug 2026: "both options
-    should be there, you never know which one would be required when")."""
-    role = role.strip().upper()
-    if role not in BULK_ROLES:
-        api_error(422, "VALIDATION_ERROR", "Bulk upload is for teachers or students. Please choose one.")
-    if not file.filename or not (file.filename.lower().endswith(".csv") or file.filename.lower().endswith(".xlsx")):
-        api_error(422, "VALIDATION_ERROR", "Upload a .csv or .xlsx file.")
-
-    school = _resolve_school(db, user, schoolId)
-    raw = file.file.read()
-    try:
-        rows, unrecognised_columns, columns_found = _parse_bulk_rows(file.filename, raw, role)
-    except Exception:
-        api_error(422, "VALIDATION_ERROR", "We couldn't read that file. Check that it's a .csv or .xlsx file with a header row.")
-
-    if not rows:
-        api_error(422, "VALIDATION_ERROR", "That file has no rows to import.")
-    if "fullName" not in columns_found:
-        # Said once, about the file, instead of "Full name is required" on
-        # every one of its rows: the names are there, under a heading this
-        # import does not read ("Name"), or the file is separated by
-        # semicolons, or it has no heading row at all.
-        api_error(
-            422,
-            "VALIDATION_ERROR",
-            "We couldn't find a Full Name column in that file. Its first row must be the column headings, "
-            "and one of them must be Full Name. Download the template to see them all.",
-        )
-    if len(rows) > MAX_BULK_IMPORT_ROWS:
-        api_error(
-            422,
-            "VALIDATION_ERROR",
-            f"This file has {len(rows)} rows, over the {MAX_BULK_IMPORT_ROWS}-row limit per import. "
-            "Split it into smaller files.",
-        )
-
-    results = []
-    created_count = 0
-    email_rejected_count = 0
-    chosen_password_count = 0
-    # Email (normalised the way _create_person normalises it) -> the first
-    # row of THIS file that used it. A repeat within the upload is reported
-    # as exactly that: it tells the admin nothing about the rest of the
-    # platform -- they typed both rows -- and is far more useful than the
-    # generic message would be.
-    first_row_for_email: dict[str, int] = {}
-    for idx, row in enumerate(rows, start=2):  # row 1 is the header
-        full_name = str(row.get("fullName") or "").strip()
-        email = str(row.get("email")).strip() if row.get("email") else None
-        email_key = email.lower() if email else None
-        if email_key and email_key in first_row_for_email:
-            results.append(
-                {
-                    "row": idx,
-                    "fullName": full_name,
-                    "status": "skipped",
-                    "error": f"This email address is already used on row {first_row_for_email[email_key]} of this file.",
-                }
-            )
-            continue
-        chosen_password = _cell_text(row.get("password"))
-        try:
-            person = _create_person(
-                db,
-                creator=user,
-                school=school,
-                role=role,
-                full_name=full_name,
-                email=email,
-                class_name=(str(row.get("className")).strip() if row.get("className") else None),
-                section=(str(row.get("section")).strip() if row.get("section") else None),
-                designation=(str(row.get("designation")).strip() if row.get("designation") else None),
-                subject_specialization=(
-                    str(row.get("subjectSpecialization")).strip() if row.get("subjectSpecialization") else None
-                ),
-                qualification=(str(row.get("qualification")).strip() if row.get("qualification") else None),
-                chosen_password=chosen_password,
-            )
-            db.flush()
-            created_count += 1
-            # Only a row that made an account holds its email against the
-            # rows after it. A row refused for another reason (its password,
-            # say) used nothing, and the next row with that address is not a
-            # duplicate of anything.
-            if email_key:
-                first_row_for_email[email_key] = idx
-            if chosen_password is not None:
-                chosen_password_count += 1
-            # initialPassword/email are returned here the same way the
-            # single-entry endpoint returns them -- without them a
-            # bulk-created account has no deliverable password (the A1 fix
-            # made passwords random, and nothing else can reveal or reset
-            # one afterwards), so the student/teacher could never sign in.
-            results.append(
-                {
-                    "row": idx,
-                    "fullName": full_name,
-                    "status": "created",
-                    "code": person["code"],
-                    "email": person["email"],
-                    "initialPassword": person["initialPassword"],
-                    # Where the password came from, so the screen can say
-                    # "from your sheet" rather than present a password the
-                    # admin typed as though the system had made it up.
-                    "passwordSource": "sheet" if chosen_password is not None else "generated",
-                }
-            )
-        except ValueError as exc:
-            # _EmailNotAccepted's message is the fixed generic one -- the
-            # address is never echoed back per row either.
-            if isinstance(exc, _EmailNotAccepted):
-                email_rejected_count += 1
-            results.append({"row": idx, "fullName": full_name, "status": "skipped", "error": str(exc)})
-
-    log_audit_event(
-        db,
-        "roster.bulk_import",
-        user_id=user.id,
-        request=request,
-        details={
-            "role": role,
-            "schoolId": school.id,
-            "created": created_count,
-            "attempted": len(rows),
-            # Count only, never the addresses -- see EMAIL_NOT_ACCEPTED_MESSAGE.
-            "emailRejected": email_rejected_count,
-            # How many accounts started on a password the school chose.
-            # A count, never the passwords.
-            "chosenPasswords": chosen_password_count,
-        },
-    )
-    db.commit()
-    return {
-        "created": created_count,
-        "attempted": len(rows),
-        "results": results,
-        # Headings in the file that are not one of the columns this import
-        # reads, so the screen can say they were not used.
-        "unrecognisedColumns": unrecognised_columns,
-    }
-
-
-@router.get("/people-template")
-def people_template(
-    role: str,
-    schoolId: str | None = None,
-    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
-    db: Session = Depends(get_db),
-):
-    """The bulk-import workbook for teachers or students (People > Bulk Import)."""
-    from app.services import roster_templates
-
-    role = role.strip().upper()
-    if role not in BULK_ROLES:
-        api_error(422, "VALIDATION_ERROR", "Choose teachers or students.")
-    school = _resolve_school(db, user, schoolId)
-    return Response(
-        content=roster_templates.people_template_bytes(db, school, role),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="Krama_Add_{"Students" if role == "STUDENT" else "Teachers"}.xlsx"'},
-    )
 
 
 # --- School setup in one workbook, and sign-in slips (#210, 29 Oct 2026) -----------------------

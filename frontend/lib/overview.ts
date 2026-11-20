@@ -43,11 +43,19 @@ export function activityTime(iso: string | null): string {
 
 export const DIFFICULTY_LABEL: Record<string, string> = { "1": "Easy", "2": "Medium", "3": "Hard", "4": "Challenge" };
 
-/** "Easy 4 · Medium 10", in difficulty order; "No questions yet" when empty. */
+/**
+ * "Easy 4 · Medium 10", in difficulty order. Questions whose content carries no
+ * difficulty are counted as "Not rated" (alone: "Not rated yet"); "No questions
+ * yet" only when there are none at all.
+ */
 export function difficultyLine(byDifficulty: Record<string, number>): string {
   const parts = ["1", "2", "3", "4"]
     .filter((k) => (byDifficulty[k] ?? 0) > 0)
     .map((k) => `${DIFFICULTY_LABEL[k]} ${byDifficulty[k]}`);
+  const unrated = Object.entries(byDifficulty)
+    .filter(([k]) => !["1", "2", "3", "4"].includes(k))
+    .reduce((sum, [, n]) => sum + (n ?? 0), 0);
+  if (unrated > 0) parts.push(parts.length ? `Not rated ${unrated}` : "Not rated yet");
   return parts.length ? parts.join(" · ") : "No questions yet";
 }
 

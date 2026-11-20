@@ -20,13 +20,10 @@ What is proved here:
 Same fixture and sign-in pattern as test_roster.py, kept local to this file
 the way the other test files keep theirs.
 """
-import io
 
 import pyotp
 from fastapi.testclient import TestClient
-from openpyxl import Workbook
 
-from app.api.routes_roster import _cell_text
 from app.core.security import (
     create_access_token,
     decode_token,
@@ -37,7 +34,7 @@ from app.core.security import (
 )
 from app.core.totp import ISSUER_NAME, totp_provisioning_uri
 from app.main import _SENTRY_DENYLIST_FIELDS, app
-from app.models import AuditLog, School, SchoolAdmin, Student, User, UserSession
+from app.models import AuditLog, School, SchoolAdmin, User, UserSession
 from app.services.session_service import start_session
 
 PASSWORD = "Passw0rd1"
@@ -650,229 +647,6 @@ def test_crash_reports_carry_no_passwords():
 
 
 # --- A first password chosen by the school (bulk sheet) -----------------------
-
-
-def _bulk(client, headers, role: str, filename: str, raw: bytes):
-    return client.post(
-        "/api/roster/people/bulk",
-        data={"role": role},
-        files={"file": (filename, io.BytesIO(raw), "application/octet-stream")},
-        headers=headers,
-    )
-
-
-def test_a_sheet_can_carry_each_persons_first_password(client, db_session):
-    admin, school = _make_school_admin(db_session, "first-bulk-admin@example.com", "First Bulk School")
-    headers = _admin_headers(client, admin.email)
-    csv_text = (
-        "fullName,email,className,section,password\n"
-        "Asha Rao,,7,A,Welcome2Class7\n"      # the school's choice
-        "Bela Shah,,7,A,\n"                    # blank: generated, as before
-        "Chirag Jain,,7,A,short1\n"            # too short
-        "Diya Nair,,7,A,Password123\n"         # too common
-        "Eshan Roy,,7,A,Welcome2Class7\n"      # the same one again: allowed
-    )
-    response = _bulk(client, headers, "STUDENT", "students.csv", csv_text.encode("utf-8"))
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["created"] == 3 and body["attempted"] == 5
-    rows = {row["fullName"]: row for row in body["results"]}
-
-    assert rows["Asha Rao"]["status"] == "created"
-    assert rows["Asha Rao"]["initialPassword"] == "Welcome2Class7"
-    assert rows["Asha Rao"]["passwordSource"] == "sheet"
-    assert rows["Eshan Roy"]["initialPassword"] == "Welcome2Class7"
-
-    assert rows["Bela Shah"]["status"] == "created"
-    assert rows["Bela Shah"]["passwordSource"] == "generated"
-    assert len(rows["Bela Shah"]["initialPassword"]) == 12
-
-    assert rows["Chirag Jain"] == {
-        "row": 4,
-        "fullName": "Chirag Jain",
-        "status": "skipped",
-        "error": "The password in this row can't be used. Password must be at least 8 characters.",
-    }
-    assert rows["Diya Nair"]["status"] == "skipped"
-    assert rows["Diya Nair"]["error"] == (
-        "The password in this row can't be used. That password is too common and easy to guess. "
-        "Please choose a less predictable one."
-    )
-
-    # A refused row made nothing.
-    names = {
-        user.full_name
-        for user in db_session.query(User).join(Student, Student.user_id == User.id).filter(Student.school_id == school.id)
-    }
-    assert names == {"Asha Rao", "Bela Shah", "Eshan Roy"}
-
-    # The school's password really is the password -- and really is
-    # temporary: it opens the account only as far as replacing it.
-    assert _sign_in(client, rows["Asha Rao"]["code"], "Welcome2Class7").json()["user"]["mustChangePassword"] is True
-    assert client.get("/api/learning/assignments", headers=_AS["STUDENT"]).status_code == 403
-    assert _change(client, "STUDENT", "Welcome2Class7", OWN_PASSWORD, keepSignedIn=True).status_code == 200
-    assert client.get("/api/auth/sessions", headers=_AS["STUDENT"]).status_code == 200
-
-    # The audit trail counts them and never holds one.
-    [audit] = db_session.query(AuditLog).filter(AuditLog.event_type == "roster.bulk_import", AuditLog.user_id == admin.id).all()
-    assert '"chosenPasswords": 2' in audit.event_data_json
-    everything = " ".join(row.event_data_json or "" for row in db_session.query(AuditLog).all())
-    assert "Welcome2Class7" not in everything
-
-
-def test_a_sheet_with_no_password_column_behaves_exactly_as_before(client, db_session):
-    admin, _school = _make_school_admin(db_session, "first-bulk-admin2@example.com", "First Bulk School Two")
-    headers = _admin_headers(client, admin.email)
-    response = _bulk(client, headers, "TEACHER", "teachers.csv", b"fullName,email,designation\nFarah Ali,,Maths Teacher\n")
-    assert response.status_code == 200
-    [row] = response.json()["results"]
-    assert row["status"] == "created" and row["passwordSource"] == "generated"
-    assert len(row["initialPassword"]) == 12
-
-
-def test_an_excel_sheet_hands_passwords_back_the_way_they_were_typed(client, db_session):
-    """A spreadsheet turns a cell that looks like a number into a number.
-    A password must come back as the characters that were typed -- and one
-    that is all digits is then refused for the honest reason (no letter),
-    not created as "20261234.0"."""
-    admin, _school = _make_school_admin(db_session, "first-bulk-admin3@example.com", "First Bulk School Three")
-    headers = _admin_headers(client, admin.email)
-
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.append(["fullName", "email", "className", "section", "password"])
-    sheet.append(["Gauri Menon", None, "8", "B", "Monsoon2026Term"])
-    sheet.append(["Hari Das", None, "8", "B", 20261234])
-    sheet.append(["Isha Paul", None, "8", "B", None])
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-
-    response = _bulk(client, headers, "STUDENT", "students.xlsx", buffer.getvalue())
-    assert response.status_code == 200, response.text
-    rows = {row["fullName"]: row for row in response.json()["results"]}
-    assert rows["Gauri Menon"]["initialPassword"] == "Monsoon2026Term"
-    assert rows["Hari Das"]["status"] == "skipped"
-    assert rows["Hari Das"]["error"] == "The password in this row can't be used. Password must include at least one letter."
-    assert rows["Isha Paul"]["passwordSource"] == "generated"
-
-
-def test_a_heading_is_read_whatever_its_capitals_or_spacing(client, db_session):
-    """A heading typed "Password", or after a comma and a space, used to be
-    a column the import never read -- every account got a random password
-    and nothing said so. Headings are matched by their letters, and the ones
-    that match nothing are reported."""
-    admin, _school = _make_school_admin(db_session, "first-bulk-admin4@example.com", "First Bulk School Four")
-    headers = _admin_headers(client, admin.email)
-    csv_text = "Full Name, Email , Class Name ,SECTION, Password ,Roll No,House\nJaya Sen,,6,B,Riverbank2026x,14,Blue\n"
-    response = _bulk(client, headers, "STUDENT", "students.csv", csv_text.encode("utf-8"))
-    assert response.status_code == 200, response.text
-    body = response.json()
-    [row] = body["results"]
-    assert row["status"] == "created" and row["fullName"] == "Jaya Sen"
-    assert row["initialPassword"] == "Riverbank2026x" and row["passwordSource"] == "sheet"
-    assert body["unrecognisedColumns"] == ["Roll No", "House"]
-    student = db_session.query(Student).filter(Student.student_code == row["code"]).first()
-    assert (student.class_name, student.section) == ("6", "B")
-
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.append([" FULLNAME ", "email", "PassWord", "Notes"])
-    sheet.append(["Kiran Bedi", None, "Hillside2026y", "new joiner"])
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-    body = _bulk(client, headers, "TEACHER", "teachers.xlsx", buffer.getvalue()).json()
-    assert body["results"][0]["initialPassword"] == "Hillside2026y"
-    assert body["unrecognisedColumns"] == ["Notes"]
-
-    # A sheet with only the columns the import reads reports none.
-    body = _bulk(client, headers, "TEACHER", "t.csv", b"fullName,email\nLata Rao,\n").json()
-    assert body["unrecognisedColumns"] == []
-
-
-def test_a_second_heading_for_the_same_column_never_replaces_the_first(client, db_session):
-    """ "Email 2" is not "Email", and a blank "Pass Word" column must not
-    wipe out the "Password" column beside it. Each column is read from the
-    first heading that names it; the rest are reported as not used."""
-    admin, _school = _make_school_admin(db_session, "first-bulk-admin7@example.com", "First Bulk School Seven")
-    headers = _admin_headers(client, admin.email)
-    csv_text = (
-        "Full Name,Email,Email 2,Password,Pass Word\n"
-        "Sana Mir,sana.mir7@example.com,parent.of.sana@example.com,Lakeside2026v,\n"
-    )
-    body = _bulk(client, headers, "TEACHER", "teachers.csv", csv_text.encode("utf-8")).json()
-    [row] = body["results"]
-    assert row["status"] == "created"
-    assert row["email"] == "sana.mir7@example.com"
-    assert row["initialPassword"] == "Lakeside2026v" and row["passwordSource"] == "sheet"
-    assert body["unrecognisedColumns"] == ["Email 2", "Pass Word"]
-
-
-def test_a_file_with_no_name_column_is_refused_once_not_row_by_row(client, db_session):
-    admin, _school = _make_school_admin(db_session, "first-bulk-admin8@example.com", "First Bulk School Eight")
-    headers = _admin_headers(client, admin.email)
-    message = (
-        "We couldn't find a Full Name column in that file. Its first row must be the column headings, "
-        "and one of them must be Full Name. Download the template to see them all."
-    )
-    for raw in (b"Name,Email\nTara Sen,\n", b"fullName;email\nTara Sen;\n", b"Tara Sen,tara@example.com\nUma Roy,\n"):
-        response = _bulk(client, headers, "TEACHER", "teachers.csv", raw)
-        assert response.status_code == 422, raw
-        assert response.json()["detail"]["code"] == "VALIDATION_ERROR"
-        assert response.json()["detail"]["message"] == message
-    assert db_session.query(User).filter(User.full_name.in_(["Tara Sen", "Uma Roy"])).count() == 0
-
-
-def test_a_password_that_is_printed_next_to_the_person_is_refused(client, db_session):
-    """A sheet that fills the password column with each person's own code
-    or name has given every account a password anyone can read off the
-    roster. Refused, and the refused row creates nothing."""
-    admin, school = _make_school_admin(db_session, "first-bulk-admin5@example.com", "Printed Next To Them")
-    headers = _admin_headers(client, admin.email)
-    # The first student of this school is issued STU-PRIN-0001.
-    csv_text = (
-        "fullName,email,password\n"
-        "Mohan Lal2026,,stu-prin-0001\n"       # their own sign-in code, in any case
-        "Nisha Roy2026,,NishaRoy2026\n"        # their own name, spaces removed
-        "Omar Ali,omar.ali2026@example.com,omar.ali2026@example.com\n"  # their own email
-        "Priya Das,,Courtyard2026z\n"
-    )
-    body = _bulk(client, headers, "STUDENT", "students.csv", csv_text.encode("utf-8")).json()
-    rows = {row["fullName"]: row for row in body["results"]}
-    same = "The password in this row can't be used. It is the same as this person's code, name or email."
-    assert rows["Mohan Lal2026"]["error"] == same
-    assert rows["Nisha Roy2026"]["error"] == same
-    assert rows["Omar Ali"]["error"] == same
-    # Nothing was written for the refused rows, so the one good row gets the
-    # code the first of them would have had.
-    assert rows["Priya Das"]["status"] == "created" and rows["Priya Das"]["code"] == "STU-PRIN-0001"
-    assert db_session.query(Student).filter(Student.school_id == school.id).count() == 1
-    assert db_session.query(User).filter(User.email == "omar.ali2026@example.com").count() == 0
-
-
-def test_a_refused_row_does_not_hold_its_email_against_the_next(client, db_session):
-    admin, _school = _make_school_admin(db_session, "first-bulk-admin6@example.com", "First Bulk School Six")
-    headers = _admin_headers(client, admin.email)
-    csv_text = (
-        "fullName,email,password\n"
-        "Qadir Khan,qadir.first@example.com,short1\n"          # refused for its password
-        "Qadir Khan,qadir.first@example.com,Orchard2026w\n"    # same person, corrected
-        "Rhea Sen,qadir.first@example.com,Orchard2026w\n"      # now a real repeat
-    )
-    body = _bulk(client, headers, "TEACHER", "teachers.csv", csv_text.encode("utf-8")).json()
-    statuses = [(row["row"], row["status"]) for row in body["results"]]
-    assert statuses == [(2, "skipped"), (3, "created"), (4, "skipped")]
-    assert body["results"][2]["error"] == "This email address is already used on row 3 of this file."
-
-
-def test_cell_text_reads_a_cell_the_way_it_was_typed():
-    assert _cell_text(None) is None
-    assert _cell_text("") is None
-    assert _cell_text("   ") is None
-    assert _cell_text("  Monsoon2026  ") == "Monsoon2026"
-    assert _cell_text(20261234) == "20261234"
-    assert _cell_text(20261234.0) == "20261234"
-    assert _cell_text(12.5) == "12.5"
-    assert _cell_text(0) == "0"
 
 
 # --- The name an authenticator app shows --------------------------------------

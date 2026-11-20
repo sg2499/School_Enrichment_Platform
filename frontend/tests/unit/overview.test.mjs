@@ -48,4 +48,8 @@ describe("difficulty", () => {
     assert.equal(difficultyLine({ "2": 10, "1": 4 }), "Easy 4 · Medium 10");
     assert.equal(difficultyLine({}), "No questions yet");
   });
+  test("questions with no difficulty are not called missing", () => {
+    assert.equal(difficultyLine({ none: 500 }), "Not rated yet");
+    assert.equal(difficultyLine({ "1": 4, none: 6 }), "Easy 4 · Not rated 6");
+  });
 });
