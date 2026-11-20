@@ -11,6 +11,11 @@
  *
  * It replaced a full-screen pop-up that held the lessons and, expanded in
  * place, up to 500 question cards.
+ *
+ * Re-laid out on 20 Nov 2026: the Overview is two equal cards (where the
+ * chapter stands, and the actions that move it) over one full-width card
+ * for repeats; the Questions view is one question to a row, under a single
+ * toolbar. Each block says what it is for and holds one job.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -19,7 +24,7 @@ import {
   Archive,
   CheckCircle2,
   ChevronRight,
-  ListChecks,
+  Eye,
   RefreshCw,
   RotateCcw,
   Send,
@@ -33,7 +38,7 @@ import { RepeatsCard } from "@/components/curriculum/RepeatsCard";
 import { CHAPTER_STATUS_TONE, ErrorBanner, LESSON_STATUS_TONE, LIST_KEY, STATUS_LABEL, countOf } from "@/components/curriculum/shared";
 import { LoadError } from "@/components/ui/AlertBanner";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SelectField } from "@/components/ui/Field";
 import { FilterChips } from "@/components/ui/FilterChips";
@@ -161,14 +166,14 @@ function StatusCard({ chapter, onChanged }: { chapter: ChapterDetail; onChanged:
   );
 
   return (
-    <Card>
+    <Card className="flex h-full flex-col">
       <CardHeader className="flex-col items-start gap-1.5">
         <CardTitle>Where It Stands</CardTitle>
         <CardDescription>{NEXT_STEP[chapter.status]}</CardDescription>
       </CardHeader>
-      <CardBody className="space-y-5">
+      <CardBody className="flex flex-1 flex-col gap-6">
         <Ladder status={chapter.status} />
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid gap-5 sm:grid-cols-2">
           <div className="space-y-2">
             <dt className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">Skills Published</dt>
             <dd className="space-y-1.5">
@@ -194,7 +199,7 @@ function StatusCard({ chapter, onChanged }: { chapter: ChapterDetail; onChanged:
           </div>
         </dl>
         {problem ? <ErrorBanner message={problem} /> : null}
-        <div className="flex flex-wrap gap-2.5 border-t border-line pt-4">
+        <div className="mt-auto flex flex-wrap gap-2.5 border-t border-line pt-5">
           {chapter.status === "DRAFT" ? step("REVIEW", "Send to Review", <Send className="h-4 w-4" />, "secondary") : null}
           {chapter.status === "REVIEW" ? (
             <>
@@ -210,18 +215,9 @@ function StatusCard({ chapter, onChanged }: { chapter: ChapterDetail; onChanged:
   );
 }
 
-/** Bulk approval for the chapter or one lesson: verified only, or verified and unverified (asked once). */
-function BulkApprove({
-  path,
-  scopeLabel,
-  onDone,
-  compact,
-}: {
-  path: string;
-  scopeLabel: string;
-  onDone: () => Promise<void>;
-  compact?: boolean;
-}) {
+/** Bulk approval for the chapter or one lesson: verified only, or verified and unverified (asked once).
+ *  Draws only its buttons and what happened; the card or strip around it says what it is for. */
+function BulkApprove({ path, scopeLabel, onDone }: { path: string; scopeLabel: string; onDone: () => Promise<void> }) {
   const [mode, setMode] = useState<"verified" | "unverified" | null>(null);
   const [result, setResult] = useState<BulkApproveResult | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -241,67 +237,110 @@ function BulkApprove({
     }
   }
 
-  const buttons = (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        type="button"
-        size="sm"
-        leadingIcon={<ShieldCheck className="h-4 w-4" />}
-        loading={mode === "unverified"}
-        loadingLabel="Checking and approving"
-        disabled={mode === "verified"}
-        onClick={() => void run(true)}
-      >
-        Approve All Questions
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        leadingIcon={<ShieldAlert className="h-4 w-4" />}
-        loading={mode === "verified"}
-        loadingLabel="Checking and approving"
-        disabled={mode === "unverified"}
-        onClick={() => void run(false)}
-      >
-        Verified Only
-      </Button>
+  return (
+    <div className="space-y-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          leadingIcon={<ShieldCheck className="h-4 w-4" />}
+          loading={mode === "unverified"}
+          loadingLabel="Checking and approving"
+          disabled={mode === "verified"}
+          onClick={() => void run(true)}
+        >
+          Approve All Questions
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          leadingIcon={<ShieldAlert className="h-4 w-4" />}
+          loading={mode === "verified"}
+          loadingLabel="Checking and approving"
+          disabled={mode === "unverified"}
+          onClick={() => void run(false)}
+        >
+          Verified Only
+        </Button>
+      </div>
+      {result ? (
+        <p role="status" className="text-sm leading-relaxed text-content-muted">
+          Approved <strong className="text-jade-700">{result.approvedCount}</strong>.
+          {result.skippedFlaggedCount > 0 ? ` ${result.skippedFlaggedCount} flagged, left for you to read.` : ""}
+          {result.skippedUnverifiedCount > 0 ? ` ${result.skippedUnverifiedCount} couldn't be checked automatically.` : ""}
+          {result.skippedAlreadyDoneCount > 0 ? ` ${result.skippedAlreadyDoneCount} already approved or published.` : ""}
+        </p>
+      ) : null}
+      {problem ? <ErrorBanner message={problem} /> : null}
     </div>
   );
+}
 
-  const outcome = result ? (
-    <p role="status" className="text-xs leading-relaxed text-content-muted">
-      Approved <strong className="text-jade-700">{result.approvedCount}</strong>.
-      {result.skippedFlaggedCount > 0 ? ` ${result.skippedFlaggedCount} flagged, left for you to read.` : ""}
-      {result.skippedUnverifiedCount > 0 ? ` ${result.skippedUnverifiedCount} couldn't be checked automatically.` : ""}
-      {result.skippedAlreadyDoneCount > 0 ? ` ${result.skippedAlreadyDoneCount} already approved or published.` : ""}
-    </p>
-  ) : null;
-
-  if (compact) {
-    return (
-      <div className="space-y-2">
-        {buttons}
-        {outcome}
-        {problem ? <ErrorBanner message={problem} /> : null}
-      </div>
-    );
-  }
+/** One titled action in the Overview's action card: what it does, then its buttons. */
+function ActionBlock({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <Card>
+    <section className="space-y-3">
+      <div>
+        <h4 className="text-[0.9375rem] font-semibold text-content">{title}</h4>
+        <p className="mt-1 text-sm leading-relaxed text-content-muted">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** The Overview's right-hand card: the three things a reviewer does to a whole chapter, one block each. */
+function ActionsCard({
+  chapter,
+  readHref,
+  onChanged,
+}: {
+  chapter: ChapterDetail;
+  readHref: string;
+  onChanged: () => Promise<void>;
+}) {
+  const canPublish =
+    chapter.status !== "ARCHIVED" &&
+    (chapter.status !== "PUBLISHED" || chapter.conceptLessons.some((l) => l.status !== "PUBLISHED") || (chapter.draftActivityCount ?? 0) > 0);
+  return (
+    <Card className="flex h-full flex-col">
       <CardHeader className="flex-col items-start gap-1.5">
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-600" aria-hidden />
-          Approve in Bulk
+          Review and Approve
         </CardTitle>
-        <CardDescription>
-          One click approves every question in the chapter. Questions the automated checks flagged are left for you to read under Questions, and any approved question can be sent back later.
-        </CardDescription>
+        <CardDescription>Read the questions first, then approve them. Any approved question can be sent back later.</CardDescription>
       </CardHeader>
-      <CardBody className="space-y-3">
-        {buttons}
-        {outcome}
-        {problem ? <ErrorBanner message={problem} /> : null}
+      <CardBody className="flex flex-1 flex-col divide-y divide-line [&>section]:py-5 [&>section:first-child]:pt-0 [&>section:last-child]:pb-0">
+        <ActionBlock
+          title="Read the Questions"
+          description="Every question is shown in full with its keyed answer marked. Narrow them to the flagged ones or those still waiting for a decision."
+        >
+          <ButtonLink href={readHref} size="sm" variant="secondary" leadingIcon={<Eye className="h-4 w-4" />}>
+            Open Questions
+          </ButtonLink>
+        </ActionBlock>
+        <ActionBlock
+          title="Approve Questions"
+          description="Approves every question in the chapter. Questions the automated checks flagged are left for you to read."
+        >
+          <BulkApprove path={`/curriculum-admin/chapters/${chapter.id}/questions/bulk-approve`} scopeLabel="this chapter" onDone={onChanged} />
+        </ActionBlock>
+        {canPublish ? (
+          <ActionBlock
+            title="Approve and Publish"
+            description="Approves the questions, then publishes the chapter with its skills and practice sets, so schools can add it to their calendars."
+          >
+            <ApproveAndPublish
+              chapterIds={[chapter.id]}
+              label="Approve and Publish This Chapter"
+              scopeLabel="this chapter"
+              variant="primary"
+              onDone={onChanged}
+            />
+          </ActionBlock>
+        ) : null}
       </CardBody>
     </Card>
   );
@@ -557,12 +596,14 @@ function QuestionsView({
         </ol>
       </nav>
 
-      <div className="min-w-0 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-display text-xl font-semibold text-content">{lesson.title}</h3>
-            <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-content-subtle">
-              {lesson.code} · {countOf(lesson.questionCount, "question")}
+      <div className="min-w-0 space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-2xl font-semibold tracking-tight text-content">{lesson.title}</h3>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-content-subtle">
+              <span className="tabular">{lesson.code}</span>
+              <span aria-hidden>&middot;</span>
+              <span>{countOf(lesson.questionCount, "question")}</span>
               <Badge tone={LESSON_STATUS_TONE[lesson.status]} size="sm">
                 {STATUS_LABEL[lesson.status]}
               </Badge>
@@ -571,7 +612,7 @@ function QuestionsView({
           <Button
             type="button"
             size="sm"
-            variant="ghost"
+            variant="secondary"
             leadingIcon={<RefreshCw className="h-4 w-4" />}
             loading={rechecking}
             loadingLabel="Checking"
@@ -580,16 +621,23 @@ function QuestionsView({
             Re-run Checks
           </Button>
         </div>
-        <BulkApprove
-          key={lesson.id}
-          compact
-          path={`/curriculum-admin/concept-lessons/${lesson.id}/questions/bulk-approve`}
-          scopeLabel="this skill"
-          onDone={async () => {
-            await Promise.all([load(), onChanged()]);
-          }}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 rounded-2xl border border-line bg-surface-muted px-5 py-4">
+          <div className="min-w-0 max-w-md">
+            <p className="text-sm font-semibold text-content">Approve this skill</p>
+            <p className="mt-0.5 text-[0.8125rem] leading-snug text-content-muted">
+              Approves every question below except the flagged ones, which wait for you.
+            </p>
+          </div>
+          <BulkApprove
+            key={lesson.id}
+            path={`/curriculum-admin/concept-lessons/${lesson.id}/questions/bulk-approve`}
+            scopeLabel="this skill"
+            onDone={async () => {
+              await Promise.all([load(), onChanged()]);
+            }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <FilterChips
             label="Which questions"
             value={filter}
@@ -618,7 +666,7 @@ function QuestionsView({
             {all.length === 0 ? "No questions in this skill yet." : "No question matches that."}
           </p>
         ) : (
-          <div className="grid gap-3 2xl:grid-cols-2">
+          <div className="space-y-5">
             {shown.map((q) => (
               <QuestionCard
                 key={q.id}
@@ -752,42 +800,12 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
       <SubTabs label="Chapter views" tabs={tabs} active={view} />
       {refreshProblem ? <ErrorBanner message={refreshProblem} /> : null}
       {view === "overview" ? (
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <div className="space-y-6">
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
             <StatusCard chapter={chapter} onChanged={refresh} />
-            <Card>
-              <CardHeader className="flex-col items-start gap-1.5">
-                <CardTitle className="flex items-center gap-2">
-                  <ListChecks className="h-4 w-4 text-brand-600" aria-hidden />
-                  Read Before You Approve
-                </CardTitle>
-                <CardDescription>
-                  A status alone doesn&apos;t say what is about to reach students. Under Questions, each lesson&apos;s questions are shown
-                  in full, with the keyed answer marked, and can be narrowed to the flagged ones or those still waiting for a decision.
-                </CardDescription>
-              </CardHeader>
-              <CardBody>
-                <InlineLink href={hrefFor("questions", lessonId)}>Read the Questions</InlineLink>
-              </CardBody>
-            </Card>
+            <ActionsCard chapter={chapter} readHref={hrefFor("questions", lessonId)} onChanged={refresh} />
           </div>
-          <div className="space-y-6">
-            {chapter.status !== "ARCHIVED" && (chapter.status !== "PUBLISHED" || chapter.conceptLessons.some((l) => l.status !== "PUBLISHED") || (chapter.draftActivityCount ?? 0) > 0) ? (
-              <ApproveAndPublish
-                chapterIds={[chapter.id]}
-                label="Approve and Publish This Chapter"
-                scopeLabel="this chapter"
-                variant="primary"
-                onDone={refresh}
-              />
-            ) : null}
-            <BulkApprove
-              path={`/curriculum-admin/chapters/${chapter.id}/questions/bulk-approve`}
-              scopeLabel="this chapter"
-              onDone={refresh}
-            />
-            <RepeatsCard chapterId={chapter.id} onChanged={refresh} />
-          </div>
+          <RepeatsCard chapterId={chapter.id} onChanged={refresh} />
         </div>
       ) : view === "lessons" ? (
         <LessonsView chapter={chapter} onChanged={refresh} questionsHref={(id) => hrefFor("questions", id)} />

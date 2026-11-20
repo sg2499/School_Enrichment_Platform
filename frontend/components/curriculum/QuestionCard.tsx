@@ -5,6 +5,11 @@
  * page, #212): its text, options with the keyed answer marked in place, the
  * quality checks' verdict and flags, marking settings, explanation and hint,
  * and the one status step a reviewer takes after reading it.
+ *
+ * Laid out in bands, top to bottom (20 Nov 2026): a header with what the
+ * question is and where it stands, the question itself, its answer key, its
+ * marking, its explanation, and the review step. One card to a row, so the
+ * marking form has room to be a form.
  */
 import { Check, HelpCircle, ShieldAlert, ShieldCheck } from "lucide-react";
 import { MarkingSettings } from "@/components/curriculum/MarkingSettings";
@@ -55,6 +60,14 @@ function correctLetters(question: QuestionDetail): Set<string> {
   );
 }
 
+function Dot() {
+  return (
+    <span aria-hidden className="text-content-faint">
+      &middot;
+    </span>
+  );
+}
+
 export function QuestionCard({
   question,
   pendingStatus,
@@ -79,26 +92,35 @@ export function QuestionCard({
   const QualityIcon = QUALITY_STATUS_ICON[question.qualityStatus];
   const correct = correctLetters(question);
   const busy = pendingStatus !== null;
+  const flagged = question.qualityStatus === "FLAGGED";
 
   return (
     <article
       aria-label={`Question ${question.code}`}
-      className={cn(
-        "flex flex-col gap-3 rounded-2xl border p-4",
-        question.qualityStatus === "FLAGGED" ? "border-coral-300 bg-coral-50/40" : "border-line bg-surface",
-      )}
+      className={cn("overflow-hidden rounded-2xl border bg-surface shadow-xs", flagged ? "border-coral-300" : "border-line")}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
-            {question.code} &middot; {question.questionType}
-            {question.difficulty ? ` · Difficulty ${question.difficulty}` : ""} &middot; {question.marks} mark
-            {question.marks === 1 ? "" : "s"}
-          </p>
-          <p className="mt-1 text-sm font-medium leading-normal text-content"><MathText>{question.stem}</MathText></p>
-          <QuestionFigure svg={question.figureSvg} />
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
+      <header
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-5 py-3",
+          flagged ? "border-coral-200 bg-coral-50" : "border-line bg-surface-muted",
+        )}
+      >
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-content-muted">
+          <span className="font-bold tracking-wide text-content">{question.code}</span>
+          <Dot />
+          <span>{question.questionType}</span>
+          {question.difficulty ? (
+            <>
+              <Dot />
+              <span>Difficulty {question.difficulty}</span>
+            </>
+          ) : null}
+          <Dot />
+          <span>
+            {question.marks} mark{question.marks === 1 ? "" : "s"}
+          </span>
+        </p>
+        <div className="flex flex-wrap items-center gap-1.5">
           <Badge tone={QUESTION_STATUS_TONE[question.status]} size="sm">
             {STATUS_LABEL[question.status]}
           </Badge>
@@ -111,87 +133,98 @@ export function QuestionCard({
             </Badge>
           ) : null}
         </div>
+      </header>
+
+      <div className="space-y-5 px-5 py-5">
+        <div className="space-y-3">
+          <p className="text-base font-medium leading-relaxed text-content">
+            <MathText>{question.stem}</MathText>
+          </p>
+          <QuestionFigure svg={question.figureSvg} />
+        </div>
+
+        {question.qualityFlags.length > 0 ? (
+          // coral-800 on coral-50: 8.7:1.
+          <ul className="space-y-1 rounded-xl border border-coral-200 bg-coral-50 px-3.5 py-2.5">
+            {question.qualityFlags.map((flag, i) => (
+              <li key={i} className="flex gap-2 text-sm leading-normal text-coral-800">
+                <span aria-hidden>&bull;</span>
+                <span>{flag}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {options.length > 0 ? (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {options.map(([letter, text]) => {
+              const isCorrect = correct.has(letter);
+              return (
+                <li
+                  key={letter}
+                  className={cn(
+                    "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-sm",
+                    // The keyed option is marked where it sits, so a reviewer
+                    // checks it against the stem in one glance. Tick + words
+                    // for screen readers, not colour alone.
+                    isCorrect ? "border-jade-300 bg-jade-50 text-content" : "border-line text-content-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                      isCorrect ? "bg-jade-600 text-white" : "bg-surface-muted text-content-subtle",
+                    )}
+                  >
+                    {letter}
+                  </span>
+                  <span className="min-w-0 flex-1 pt-0.5">{text}</span>
+                  {isCorrect ? (
+                    <>
+                      <Check className="mt-1 h-4 w-4 shrink-0 text-jade-700" aria-hidden />
+                      <span className="sr-only">(correct answer)</span>
+                    </>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+
+        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl bg-jade-50 px-3.5 py-2.5 text-sm ring-1 ring-inset ring-jade-200">
+          <span className="text-xs font-bold uppercase tracking-eyebrow text-jade-800">Correct answer</span>
+          <span className="font-semibold text-content">{question.correctAnswer}</span>
+        </p>
+
+        {hasMarkingSettings(question) ? <MarkingSettings question={question} onSaved={onMarkingSaved} /> : null}
+        {!hasMarkingSettings(question) && (!question.autoGradable || question.questionType === "Constructed Response") ? (
+          <PdfUploadSetting question={question} onSaved={onMarkingSaved} />
+        ) : null}
+
+        {question.explanation || question.hint ? (
+          <dl className="grid gap-x-4 gap-y-2 border-t border-line pt-4 text-sm sm:grid-cols-[6rem_minmax(0,1fr)]">
+            {question.explanation ? (
+              <>
+                <dt className="text-xs font-bold uppercase tracking-eyebrow text-content-subtle sm:pt-0.5">Explanation</dt>
+                <dd className="text-content-muted">
+                  <MathText>{question.explanation}</MathText>
+                </dd>
+              </>
+            ) : null}
+            {question.hint ? (
+              <>
+                <dt className="text-xs font-bold uppercase tracking-eyebrow text-content-subtle sm:pt-0.5">Hint</dt>
+                <dd className="text-content-muted">
+                  <MathText>{question.hint}</MathText>
+                </dd>
+              </>
+            ) : null}
+          </dl>
+        ) : null}
       </div>
 
-      {question.qualityFlags.length > 0 ? (
-        // coral-800 on coral-50: 8.7:1.
-        <ul className="space-y-1 rounded-xl border border-coral-200 bg-coral-50 px-3 py-2">
-          {question.qualityFlags.map((flag, i) => (
-            <li key={i} className="flex gap-1.5 text-xs leading-normal text-coral-800">
-              <span aria-hidden>&bull;</span>
-              <span>{flag}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {options.length > 0 ? (
-        <ul className="space-y-1">
-          {options.map(([letter, text]) => {
-            const isCorrect = correct.has(letter);
-            return (
-              <li
-                key={letter}
-                className={cn(
-                  "flex items-start gap-2 rounded-lg px-2 py-1 text-sm",
-                  // The keyed option is marked where it sits, so a reviewer
-                  // checks it against the stem in one glance instead of
-                  // cross-reading a letter from the line below. Tick + words
-                  // for screen readers, not colour alone.
-                  isCorrect ? "bg-jade-50 text-content ring-1 ring-inset ring-jade-200" : "text-content-muted",
-                )}
-              >
-                <span className={cn("w-4 shrink-0 font-semibold", isCorrect ? "text-jade-700" : "text-content-subtle")}>{letter}.</span>
-                <span className="min-w-0 flex-1">{text}</span>
-                {isCorrect ? (
-                  <>
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-jade-600" aria-hidden />
-                    <span className="sr-only">(correct answer)</span>
-                  </>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-
-      <p className="text-sm">
-        <span className="font-semibold text-content-subtle">Correct answer: </span>
-        <span className="text-content">{question.correctAnswer}</span>
-      </p>
-
-      {hasMarkingSettings(question) ? <MarkingSettings question={question} onSaved={onMarkingSaved} /> : null}
-      {!hasMarkingSettings(question) && (!question.autoGradable || question.questionType === "Constructed Response") ? (
-        <PdfUploadSetting question={question} onSaved={onMarkingSaved} />
-      ) : null}
-
-      {question.explanation ? (
-        <p className="text-sm text-content-muted">
-          <span className="font-semibold text-content-subtle">Explanation: </span>
-          <MathText>{question.explanation}</MathText>
-        </p>
-      ) : null}
-
-      {question.hint ? (
-        <p className="text-sm text-content-muted">
-          <span className="font-semibold text-content-subtle">Hint: </span>
-          <MathText>{question.hint}</MathText>
-        </p>
-      ) : null}
-
       {forward || back ? (
-        <div className="mt-auto flex flex-wrap gap-2 border-t border-line/70 pt-3">
-          {forward ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              loading={pendingStatus === forward.next}
-              disabled={busy && pendingStatus !== forward.next}
-              onClick={() => onAdvance(forward.next)}
-            >
-              {forward.label}
-            </Button>
-          ) : null}
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line bg-surface-muted px-5 py-3">
           {back ? (
             <Button
               size="sm"
@@ -203,7 +236,18 @@ export function QuestionCard({
               {back.label}
             </Button>
           ) : null}
-        </div>
+          {forward ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={pendingStatus === forward.next}
+              disabled={busy && pendingStatus !== forward.next}
+              onClick={() => onAdvance(forward.next)}
+            >
+              {forward.label}
+            </Button>
+          ) : null}
+        </footer>
       ) : null}
     </article>
   );
