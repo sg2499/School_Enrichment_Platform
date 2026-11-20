@@ -6,6 +6,9 @@
  * questions have no other marking settings, so this is the whole panel for
  * them. "Platform Decides" reads the wording; a reviewer can say Required,
  * Optional or None. Saved on its own, right away.
+ *
+ * What it does today sits on the left and the one control on the right, so
+ * the panel reads as a sentence and its answer (20 Nov 2026).
  */
 import { useId, useState } from "react";
 import { FileText } from "lucide-react";
@@ -46,26 +49,32 @@ export function PdfUploadSetting({ question, onSaved }: { question: QuestionDeta
 
   const effective = question.effectiveUploadRule ?? "NONE";
   return (
-    <section aria-labelledby={headingId} className="space-y-2 rounded-xl border border-line bg-surface-muted px-3 py-2.5">
-      <h4 id={headingId} className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
-        <FileText aria-hidden className="h-3.5 w-3.5" />
-        PDF Upload
-      </h4>
-      <p className="text-sm text-content-muted">
-        {NOW[effective]}
-        {choice === "" && question.uploadRuleReason ? ` (Platform decided: ${question.uploadRuleReason})` : ""}
-      </p>
-      {problem ? (
-        <p role="alert" className="text-sm font-semibold text-coral-700">
-          {problem}
-        </p>
-      ) : null}
-      <SelectField label="PDF Upload" value={choice} disabled={saving} onChange={(event) => void change(event.target.value as Choice)}>
-        <option value="">Platform Decides</option>
-        <option value="REQUIRED">Required</option>
-        <option value="OPTIONAL">Optional</option>
-        <option value="NONE">None</option>
-      </SelectField>
+    <section aria-labelledby={headingId} className="rounded-2xl border border-line bg-surface-muted">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <h4 id={headingId} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-eyebrow text-content-subtle">
+          <FileText aria-hidden className="h-4 w-4" />
+          PDF Upload
+        </h4>
+      </div>
+      <div className="grid items-end gap-4 border-t border-line px-4 py-4 md:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="space-y-1">
+          <p className="text-sm text-content">{NOW[effective]}</p>
+          {choice === "" && question.uploadRuleReason ? (
+            <p className="text-[0.8125rem] leading-snug text-content-subtle">Platform decided: {question.uploadRuleReason}</p>
+          ) : null}
+          {problem ? (
+            <p role="alert" className="text-sm font-semibold text-coral-700">
+              {problem}
+            </p>
+          ) : null}
+        </div>
+        <SelectField label="Setting" value={choice} disabled={saving} onChange={(event) => void change(event.target.value as Choice)}>
+          <option value="">Platform Decides</option>
+          <option value="REQUIRED">Required</option>
+          <option value="OPTIONAL">Optional</option>
+          <option value="NONE">None</option>
+        </SelectField>
+      </div>
     </section>
   );
 }
