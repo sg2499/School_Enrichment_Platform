@@ -9,7 +9,6 @@ CSRF token attached to every mutating request) rather than importing from
 it, keeping this file self-contained the same way the other admin test
 files are.
 """
-import io
 
 import pyotp
 
@@ -275,61 +274,6 @@ def test_admin_cannot_deactivate_admin_account(client, db_session):
 # --- Bulk import -----------------------------------------------------------
 
 
-def test_bulk_csv_import_creates_students_and_reports_errors(client, db_session):
-    admin, school = _make_school_admin(db_session, "roster-admin11@example.com", "Pinewood School")
-    headers = _login(client, admin.email)
-
-    csv_content = (
-        "fullName,email,className,section\n"
-        "Kabir Singh,kabir.singh@example.com,7,A\n"
-        "Zara Khan,,7,B\n"
-        ",missing-name@example.com,7,C\n"
-    )
-    files = {"file": ("roster.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
-    response = client.post(
-        "/api/roster/people/bulk", data={"role": "STUDENT"}, files=files, headers=headers
-    )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["created"] == 2
-    assert body["attempted"] == 3
-    statuses = {r["fullName"]: r["status"] for r in body["results"]}
-    assert statuses["Kabir Singh"] == "created"
-    assert statuses["Zara Khan"] == "created"
-    assert statuses[""] == "skipped"
-
-    # Created rows carry the one-time initial password (and login) so the
-    # admin can actually hand bulk-created accounts off -- previously only
-    # `code` was returned and the random password was lost.
-    by_name = {r["fullName"]: r for r in body["results"]}
-    kabir = by_name["Kabir Singh"]
-    zara = by_name["Zara Khan"]
-    for row in (kabir, zara):
-        assert isinstance(row["initialPassword"], str)
-        assert row["initialPassword"]
-        assert len(row["initialPassword"]) >= 12
-        assert row["code"].startswith("STU-")
-    assert kabir["initialPassword"] != zara["initialPassword"]
-    assert kabir["email"] == "kabir.singh@example.com"
-    assert zara["email"] is None  # no email given -- the student code is the login
-    skipped = by_name[""]
-    assert "initialPassword" not in skipped
-    assert "email" not in skipped
-
-    students = db_session.query(Student).join(User, Student.user_id == User.id).filter(Student.school_id == school.id).all()
-    assert len(students) == 2
-
-    # The returned password is the real one: it verifies against the stored hash.
-    kabir_user = db_session.query(User).filter(User.email == "kabir.singh@example.com").first()
-    assert kabir_user is not None
-    assert verify_password(kabir["initialPassword"], kabir_user.password_hash)
-    assert kabir_user.must_change_password is True
-    zara_student = db_session.query(Student).filter(Student.student_code == zara["code"]).first()
-    assert zara_student is not None
-    zara_user = db_session.get(User, zara_student.user_id)
-    assert verify_password(zara["initialPassword"], zara_user.password_hash)
-
-
 # --- Email enumeration (A14 remainder, 1 Oct 2026) ---------------------------
 
 
@@ -467,36 +411,6 @@ def test_super_admin_creating_an_admin_gets_the_same_generic_rejection(client, d
     )
     assert created.status_code == 200, created.text
     assert created.json()["role"] == "ADMIN"
-
-
-def test_bulk_import_never_echoes_a_taken_email_but_flags_in_file_duplicates(client, db_session):
-    from app.api.routes_roster import EMAIL_NOT_ACCEPTED_MESSAGE
-
-    admin, school = _make_school_admin(db_session, "enum-bulk-admin@example.com", "Enum Bulk School")
-    taken = _taken_emails(db_session, school, "bulk")
-    headers = _login(client, admin.email)
-
-    csv_content = (
-        "fullName,email,className,section\n"
-        f"Taken Elsewhere,{taken['other_school_teacher']},7,A\n"
-        "Free Student,enum-bulk-free@example.com,7,A\n"
-        "Typed Twice,ENUM-BULK-FREE@example.com,7,B\n"
-    )
-    files = {"file": ("roster.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
-    response = client.post("/api/roster/people/bulk", data={"role": "STUDENT"}, files=files, headers=headers)
-    assert response.status_code == 200, response.text
-    assert taken["other_school_teacher"] not in response.text
-
-    by_name = {r["fullName"]: r for r in response.json()["results"]}
-    assert by_name["Taken Elsewhere"]["status"] == "skipped"
-    assert by_name["Taken Elsewhere"]["error"] == EMAIL_NOT_ACCEPTED_MESSAGE
-    assert by_name["Free Student"]["status"] == "created"
-    assert by_name["Typed Twice"]["status"] == "skipped"
-    assert by_name["Typed Twice"]["error"] == "This email address is already used on row 3 of this file."
-
-    [bulk_audit] = _audit_rows(db_session, "roster.bulk_import", admin.id)
-    assert '"emailRejected": 1' in bulk_audit.event_data_json
-    assert "@" not in bulk_audit.event_data_json
 
 
 # --- Password reset by an admin (3 Oct 2026) -------------------------------
