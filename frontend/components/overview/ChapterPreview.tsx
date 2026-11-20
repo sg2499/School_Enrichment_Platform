@@ -14,6 +14,7 @@
  * turn on the answer, accepted answers, hint and explanation.
  */
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { QuestionInput, WorkingBox } from "@/components/practice/AnswerInput";
@@ -57,6 +58,14 @@ function AnswerKey({ question }: { question: PreviewQuestion }) {
 }
 
 export function ChapterPreview({ chapterId, backHref }: { chapterId: string; backHref: string }) {
+  // The Question Bank's board, class and subject filters, so Back keeps them.
+  const search = useSearchParams();
+  const kept = new URLSearchParams();
+  for (const key of ["board", "class", "subject"]) {
+    const value = search.get(key);
+    if (value) kept.set(key, value);
+  }
+  const backTo = kept.toString() ? `${backHref}?${kept.toString()}` : backHref;
   const [page, setPage] = useState(1);
   const [skillId, setSkillId] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -79,7 +88,7 @@ export function ChapterPreview({ chapterId, backHref }: { chapterId: string; bac
         eyebrow="Chapter Preview"
         title={chapter ? `${chapter.chapterNo}. ${chapter.title}` : "Chapter Preview"}
         back={
-          <InlineLink href={backHref} direction="back" tone="inverse" size="sm">
+          <InlineLink href={backTo} direction="back" tone="inverse" size="sm">
             Question Bank
           </InlineLink>
         }
