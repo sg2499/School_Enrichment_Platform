@@ -2,8 +2,8 @@
 
 /**
  * Question Bank (#224, 12 Nov 2026): how much content there is, by chapter
- * and skill, and how far it is reviewed. Counts only -- never the question
- * wording, the answers or the explanations. A Super Admin sees every
+ * and skill, and how far it is reviewed. Counts here; each chapter's
+ * Preview Questions opens ChapterPreview, the questions as a student sees them. A Super Admin sees every
  * chapter and the review counts; a school's admin sees the published
  * chapters of the school's own board.
  */
@@ -12,6 +12,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { difficultyLine, plural, sharePercent, waitingApproval } from "@/lib/overview";
 import { Badge } from "@/components/ui/Badge";
+import { ButtonLink } from "@/components/ui/Button";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadError } from "@/components/ui/AlertBanner";
@@ -43,8 +44,8 @@ export function QuestionBank() {
         title="Question Bank"
         description={
           platform
-            ? "How many questions each chapter and skill has, and how far they are reviewed. Counts only: the questions themselves are opened in Curriculum Studio."
-            : "How many questions your school's published chapters have, by skill. Counts only: the questions themselves are not shown here."
+            ? "How many questions each chapter and skill has, and how far they are reviewed. Open Preview Questions on any chapter, at any status, to see its questions as a student does, with the answer key."
+            : "How many questions your school's published chapters have, by skill. Open Preview Questions on any chapter to see its questions exactly as a student does."
         }
         stats={[
           { label: "Chapters", value: value(data?.totals.chapters) },
@@ -106,6 +107,9 @@ export function QuestionBank() {
                               {chapter.chapterNo}. {chapter.title}
                             </span>
                           </button>
+                          <ButtonLink href={`/admin/question-bank/${chapter.id}`} variant="secondary" size="sm" className="ml-6 mt-2">
+                            Preview Questions
+                          </ButtonLink>
                           {chapter.status !== "PUBLISHED" ? (
                             <Badge tone="neutral" className="ml-6 mt-1">
                               {chapter.status === "DRAFT" ? "Draft" : "In Review"}
