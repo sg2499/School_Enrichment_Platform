@@ -147,3 +147,56 @@ export interface MyClass {
   nextChapter: ChapterWindow | null;
   since: string | null;
 }
+
+/** One question in a chapter preview: what a student is shown, and for a
+ *  Super Admin only, the answer key and review status. */
+export interface PreviewQuestion {
+  id: string;
+  code: string;
+  questionType: string;
+  stem: string;
+  optionA: string | null;
+  optionB: string | null;
+  optionC: string | null;
+  optionD: string | null;
+  marks: number;
+  timeSeconds: number | null;
+  responseFormat: string | null;
+  answerInstruction?: string | null;
+  figureSvg?: string | null;
+  answerNeedsUnit?: boolean;
+  acceptsWorking?: boolean;
+  answerBlanks?: number;
+  answerBlankLabels?: string[] | null;
+  uploadRule?: "REQUIRED" | "OPTIONAL" | "NONE";
+  skillId: string;
+  skillCode: string;
+  skillTitle: string;
+  difficulty: number | null;
+  status?: string;
+  qualityStatus?: string;
+  correctAnswer?: string | null;
+  acceptedVariants?: string | null;
+  hint?: string | null;
+  explanation?: string | null;
+}
+
+export interface ChapterPreviewPage {
+  items: PreviewQuestion[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  showsAnswers: boolean;
+  chapter: {
+    id: string;
+    code: string;
+    chapterNo: number;
+    title: string;
+    board: string;
+    classCode: string;
+    subject: string;
+    status: string;
+  };
+  skills: { id: string; code: string; title: string }[];
+}

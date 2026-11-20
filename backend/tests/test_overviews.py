@@ -226,3 +226,78 @@ def test_activity_labels_for_team_scripts_and_two_factor_events_are_words(client
     assert seen["Two-Factor Turned On"] == "Sign-In and Accounts"
     content = client.get("/api/overview/activity", params={"category": "Content", "pageSize": 100}, headers=headers).json()
     assert any(i["event"] == "Mock Paper Patterns Loaded" for i in content["items"])
+
+
+def test_preview_for_a_school_admin_is_what_a_student_gets_and_has_no_answer_key(client, db_session):
+    chapter = _bank_world(db_session, "PV1")
+    school = _make_school(db_session, "pv1")
+    admin = _make_school_admin(db_session, school, "pv1")
+    headers = _login(client, admin.email)
+    response = client.get(f"/api/overview/question-bank/chapters/{chapter.id}/preview", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    # Only the one approved question: the SME_REVIEW and DRAFT ones never reach a student.
+    assert [q["code"] for q in body["items"]] == ["PV1-Q1"]
+    assert body["showsAnswers"] is False
+    assert body["chapter"]["id"] == chapter.id and len(body["skills"]) == 2
+    text = json.dumps(body)
+    for word in ("correctAnswer", "explanation", "hint", "acceptedVariants", "qualityStatus"):
+        assert word not in text
+    assert "stem" in body["items"][0]
+
+
+def test_preview_for_a_school_admin_refuses_a_chapter_outside_its_scope(client, db_session):
+    hidden = _bank_world(db_session, "PV2")
+    hidden.status = "DRAFT"
+    db_session.commit()
+    school = _make_school(db_session, "pv2")
+    admin = _make_school_admin(db_session, school, "pv2")
+    headers = _login(client, admin.email)
+    assert client.get(f"/api/overview/question-bank/chapters/{hidden.id}/preview", headers=headers).status_code == 404
+    assert client.get("/api/overview/question-bank/chapters/nope/preview", headers=headers).status_code == 404
+
+
+def test_preview_for_super_admin_shows_every_status_with_the_answer_key(client, db_session):
+    chapter = _bank_world(db_session, "PV3")
+    chapter.status = "DRAFT"
+    db_session.commit()
+    sa = _make_super_admin(db_session, "pv3")
+    headers = _login(client, sa.email)
+    body = client.get(f"/api/overview/question-bank/chapters/{chapter.id}/preview", headers=headers).json()
+    assert body["showsAnswers"] is True
+    assert {q["code"] for q in body["items"]} == {"PV3-Q1", "PV3-Q2", "PV3-Q3"}
+    first = body["items"][0]
+    assert {"status", "correctAnswer", "explanation", "hint"} <= set(first)
+    skill_id = body["skills"][1]["id"]
+    only = client.get(
+        f"/api/overview/question-bank/chapters/{chapter.id}/preview", params={"skillId": skill_id}, headers=headers
+    ).json()
+    assert [q["code"] for q in only["items"]] == ["PV3-Q3"]
+    assert client.get(
+        f"/api/overview/question-bank/chapters/{chapter.id}/preview", params={"skillId": "other"}, headers=headers
+    ).status_code == 404
+
+
+def test_preview_refuses_teachers(client, db_session):
+    chapter = _bank_world(db_session, "PV4")
+    school = _make_school(db_session, "pv4")
+    teacher = _make_teacher(db_session, school, "pv4")
+    headers = _login(client, teacher.user.email)
+    assert client.get(f"/api/overview/question-bank/chapters/{chapter.id}/preview", headers=headers).status_code == 403
+
+
+def test_preview_is_only_for_the_schools_own_board(client, db_session):
+    chapter = _bank_world(db_session, "PV5")
+    school = _make_school(db_session, "pv5")
+    admin = _make_school_admin(db_session, school, "pv5")
+    headers = _login(client, admin.email)
+    url = f"/api/overview/question-bank/chapters/{chapter.id}/preview"
+    assert client.get(url, headers=headers).status_code == 200
+
+    school.board = "ICSE"
+    db_session.commit()
+    assert client.get(url, headers=headers).status_code == 404  # another board's chapter
+
+    school.board = None
+    db_session.commit()
+    assert client.get(url, headers=headers).status_code == 403  # no board saved: nothing, not everything

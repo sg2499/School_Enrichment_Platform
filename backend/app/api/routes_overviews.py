@@ -2,9 +2,11 @@
 and Mocks, Reports and Settings screens that used to be "Soon" in the rail,
 and the teacher's My Classes.
 
-Everything here is a count or a setting. Nothing returns a question's
-wording or answer (the bank is the content owner's work, and a school needs
-to know how much there is and how far it is reviewed, not to copy it), a
+Everything here is a count or a setting, with one exception: the chapter
+preview (20 Nov 2026) shows an admin a chapter's questions exactly as a
+student is given them, so content can be checked before a school's teachers
+and students use it. A school's admin gets no answer key; only the Super
+Admin does. Nothing here returns a
 pattern's specification, a student's marks, an address or a browser. The
 activity log names staff and says only "a student" for a child.
 """
@@ -193,6 +195,103 @@ def question_bank(user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")), d
             for k, v in c[group].items():
                 totals[group][k] = totals[group].get(k, 0) + v
     return {"scope": "platform" if is_super else "school", "totals": totals, "chapters": chapters}
+
+
+@router.get("/question-bank/chapters/{chapter_id}/preview")
+def question_bank_preview(
+    chapter_id: str,
+    skillId: str | None = Query(default=None, max_length=64),
+    user: User = Depends(require_roles("ADMIN", "SUPER_ADMIN")),
+    params: PageParams = Depends(page_params),
+    db: Session = Depends(get_db),
+):
+    """A chapter's questions as a student would be shown them, so an admin can
+    check them before the school's teachers and students use the chapter.
+
+    A school's admin sees the chapters _bank_scope allows them and only the
+    questions a student can actually be given (approved or published), with
+    no answer key. A Super Admin sees every question at any status, with the
+    answer, accepted variants, hint and explanation. Nothing is stored."""
+    # Imported here: routes_learning is the one place that decides which
+    # fields of a question a student may be sent, so the preview reuses it
+    # rather than keeping a second copy that could drift.
+    from app.api.routes_learning import _question_public_dict
+
+    if user.role != "SUPER_ADMIN":
+        # A school's admin previews only its own board (CBSE or ICSE), never
+        # the other's. _bank_scope applies the board when the school has one;
+        # a school with no board saved must see no previews rather than all.
+        admin_row = db.query(SchoolAdmin).filter(SchoolAdmin.user_id == user.id).first()
+        admin_school = db.get(School, admin_row.school_id) if admin_row else None
+        if not admin_school or not (admin_school.board or "").strip():
+            api_error(403, "FORBIDDEN", "Your school's board isn't set yet, so there is nothing to preview. Please contact your platform administrator.")
+    row = _bank_scope(db, user).filter(Chapter.id == chapter_id).first()
+    if not row:
+        api_error(404, "NOT_FOUND", "That chapter isn't available to preview.")
+    chapter, _course, board, level, discipline = row
+    is_super = user.role == "SUPER_ADMIN"
+
+    skills = (
+        db.query(ConceptLesson)
+        .filter(ConceptLesson.chapter_id == chapter.id)
+        .order_by(ConceptLesson.sequence, ConceptLesson.code)
+        .all()
+    )
+    skill_ids = [skill.id for skill in skills]
+    if skillId and skillId not in skill_ids:
+        api_error(404, "NOT_FOUND", "That skill isn't in this chapter.")
+
+    query = (
+        db.query(Question, ConceptLesson)
+        .join(ConceptLesson, Question.concept_lesson_id == ConceptLesson.id)
+        .filter(ConceptLesson.chapter_id == chapter.id, Question.origin == "BANK")
+    )
+    if skillId:
+        query = query.filter(Question.concept_lesson_id == skillId)
+    if not is_super:
+        query = query.filter(Question.status.in_(_READY))
+    query = query.order_by(ConceptLesson.sequence, ConceptLesson.code, Question.difficulty, Question.code)
+    rows, total = paginate(query, params)
+
+    items = []
+    for question, skill in rows:
+        item = {
+            **_question_public_dict(question),
+            "skillId": skill.id,
+            "skillCode": skill.code,
+            "skillTitle": skill.title,
+            "difficulty": question.difficulty,
+        }
+        if is_super:
+            item.update(
+                {
+                    "status": question.status,
+                    "qualityStatus": question.quality_status,
+                    "correctAnswer": question.correct_answer,
+                    "acceptedVariants": question.accepted_variants,
+                    "hint": question.hint,
+                    "explanation": question.explanation,
+                }
+            )
+        items.append(item)
+
+    return page_envelope(
+        items,
+        total,
+        params,
+        chapter={
+            "id": chapter.id,
+            "code": chapter.code,
+            "chapterNo": chapter.chapter_no,
+            "title": chapter.title,
+            "board": board.code,
+            "classCode": level.code,
+            "subject": discipline.display_name,
+            "status": chapter.status,
+        },
+        skills=[{"id": skill.id, "code": skill.code, "title": skill.title} for skill in skills],
+        showsAnswers=is_super,
+    )
 
 
 # --- Papers and Mocks: the pattern bank, counts only ----------------------
