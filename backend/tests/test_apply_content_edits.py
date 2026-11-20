@@ -134,3 +134,16 @@ def test_a_change_that_would_mark_an_accepted_answer_wrong_is_rolled_back(db, tm
     with pytest.raises(StopBeforeWriting, match="Nothing was saved"):
         apply_content_edits.apply_plan(db, plan, workbook_name="x", workbook_sha256="x")
     assert db.query(Question).filter_by(code="Q3").one().accepted_variants == "6|6 units"
+
+
+def test_a_required_unit_answer_is_checked_with_its_unit(db, tmp_path):
+    # Key "840" with the unit rupees Required: the child types "840 rupees", so the stem
+    # edit must not be refused because the bare number loses the unit mark.
+    q3 = db.query(Question).filter_by(code="Q3").one()
+    q3.stem, q3.correct_answer, q3.accepted_variants = "The principal is Rs 3500. What is the simple interest?", "840", None
+    q3.answer_unit, q3.unit_rule, q3.marks, q3.unit_mark = "rupees", "REQUIRED", 1, 1
+    db.commit()
+    edit = [("Q3", "Question Stem", q3.stem, "The principal is Rs 3500. A learner adds it to the interest. What is the correct simple interest?", "", "")]
+    done = apply_content_edits.apply_plan(
+        db, apply_content_edits.read_and_plan(db, _workbook(tmp_path, edits=edit)), workbook_name="x", workbook_sha256="x")
+    assert done["questions"] == 1

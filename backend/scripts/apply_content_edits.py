@@ -348,9 +348,16 @@ def apply_plan(db, plan: Plan, *, workbook_name: str, workbook_sha256: str) -> d
     for code, question in touched.items():
         if not question.auto_gradable or question.question_type in ("Single Select", "Multi Select", "Constructed Response"):
             continue
+        # A measured answer whose unit is Required is only right with its unit
+        # ("840" alone loses the unit mark), so the key is also tried the way a
+        # child types it: the number, then the recorded unit.
+        required_unit = (question.unit_rule or "").strip().upper() == "REQUIRED" and (question.answer_unit or "").strip()
         for given in [question.correct_answer] + [v for v in (question.accepted_variants or "").split("|") if v.strip()]:
-            if grade_answer(question, given)[0] is not True:
-                failures.append(f'{code}: "{given}" would be marked wrong.')
+            if grade_answer(question, given)[0] is True:
+                continue
+            if required_unit and grade_answer(question, f"{given} {question.answer_unit.strip()}")[0] is True:
+                continue
+            failures.append(f'{code}: "{given}" would be marked wrong.')
     if failures:
         db.rollback()
         raise StopBeforeWriting("Nothing was saved. After the change:\n" + "\n".join(failures[:50]))
