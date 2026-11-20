@@ -8,6 +8,7 @@
  * chapters of the school's own board.
  */
 import { Fragment, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { difficultyLine, plural, sharePercent, waitingApproval } from "@/lib/overview";
@@ -24,17 +25,57 @@ export function QuestionBank() {
   const bank = useApiQuery<QuestionBankOverview>("/overview/question-bank", {}, { action: "load the question bank" });
   const [open, setOpen] = useState<string | null>(null);
   const data = bank.data;
+
+  // Board, class and subject filters (20 Nov 2026, Shailesh: the Super Admin
+  // sees 60 chapters across four courses and it read as clutter). Kept in the
+  // address so Back from a chapter preview returns to the same view. Each list
+  // only offers what the earlier choices leave, so no choice can be empty.
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const all = useMemo(() => data?.chapters ?? [], [data]);
+  const boardOptions = useMemo(() => [...new Set(all.map((c) => c.board))].sort(), [all]);
+  const picked = {
+    board: boardOptions.includes(search.get("board") ?? "") ? (search.get("board") as string) : "",
+    classCode: "",
+    subject: "",
+  };
+  const inBoard = all.filter((c) => !picked.board || c.board === picked.board);
+  const classOptions = [...new Set(inBoard.map((c) => c.classCode))].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+  picked.classCode = classOptions.includes(search.get("class") ?? "") ? (search.get("class") as string) : "";
+  const inClass = inBoard.filter((c) => !picked.classCode || c.classCode === picked.classCode);
+  const subjectOptions = [...new Set(inClass.map((c) => c.subject))].sort();
+  picked.subject = subjectOptions.includes(search.get("subject") ?? "") ? (search.get("subject") as string) : "";
+  const shown = inClass.filter((c) => !picked.subject || c.subject === picked.subject);
+  const filtered = Boolean(picked.board || picked.classCode || picked.subject);
+  // The filters ride along to a chapter's preview so its back link returns here.
+  const filterQuery = new URLSearchParams(
+    [["board", picked.board], ["class", picked.classCode], ["subject", picked.subject]].filter(([, v]) => v),
+  ).toString();
+  const setFilter = (key: "board" | "class" | "subject", value: string) => {
+    const next = new URLSearchParams(search.toString());
+    if (value) next.set(key, value);
+    else next.delete(key);
+    // A narrower choice can make a later one impossible: drop it.
+    if (key === "board") {
+      next.delete("class");
+      next.delete("subject");
+    }
+    if (key === "class") next.delete("subject");
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
   const platform = data?.scope === "platform";
   const value = (n: number | undefined) => (bank.problem ? "—" : data && n !== undefined ? n : null);
 
   const groups = useMemo(() => {
     const map = new Map<string, NonNullable<typeof data>["chapters"]>();
-    for (const chapter of data?.chapters ?? []) {
+    for (const chapter of shown) {
       const key = `${chapter.board} · Class ${chapter.classCode} · ${chapter.subject}`;
       map.set(key, [...(map.get(key) ?? []), chapter]);
     }
     return [...map.entries()];
-  }, [data]);
+  }, [shown]);
 
   return (
     <div className="space-y-6">
@@ -58,6 +99,50 @@ export function QuestionBank() {
           },
         ]}
       />
+
+      {data && all.length > 0 ? (
+        <div className="flex flex-wrap items-end gap-3" role="group" aria-label="Filter the question bank">
+          {(
+            [
+              ["board", "Board", boardOptions, picked.board, "All boards"],
+              ["class", "Class", classOptions, picked.classCode, "All classes"],
+              ["subject", "Subject", subjectOptions, picked.subject, "All subjects"],
+            ] as const
+          ).map(([key, label, options, value, anyLabel]) => (
+            <label key={key} className="flex min-w-40 flex-col gap-1 text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
+              {label}
+              <select
+                className="rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm font-normal normal-case tracking-normal text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                value={value}
+                onChange={(event) => setFilter(key, event.target.value)}
+              >
+                <option value="">{anyLabel}</option>
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {key === "class" ? `Class ${option}` : option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          <p className="pb-2 text-sm text-content-muted" aria-live="polite">
+            {plural(shown.length, "chapter")} of {all.length}
+            {filtered ? (
+              <>
+                {" "}
+                &middot;{" "}
+                <button
+                  type="button"
+                  className="font-semibold text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                  onClick={() => router.replace(pathname, { scroll: false })}
+                >
+                  Clear Filters
+                </button>
+              </>
+            ) : null}
+          </p>
+        </div>
+      ) : null}
 
       {bank.problem ? <LoadError problem={bank.problem} onRetry={bank.reload} /> : null}
       {!data && !bank.problem ? <TableSkeleton label="Loading the question bank" rows={6} /> : null}
@@ -107,7 +192,7 @@ export function QuestionBank() {
                               {chapter.chapterNo}. {chapter.title}
                             </span>
                           </button>
-                          <ButtonLink href={`/admin/question-bank/${chapter.id}`} variant="secondary" size="sm" className="ml-6 mt-2">
+                          <ButtonLink href={`/admin/question-bank/${chapter.id}${filterQuery ? `?${filterQuery}` : ""}`} variant="secondary" size="sm" className="ml-6 mt-2">
                             Preview Questions
                           </ButtonLink>
                           {chapter.status !== "PUBLISHED" ? (
