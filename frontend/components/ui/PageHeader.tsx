@@ -363,7 +363,10 @@ export const MASTHEAD_WELL = {
 // 2 x 3, then 3 x 2 from `sm`, then one line from `xl` -- the same steps the
 // tile row they replace took.
 function statColumns(count: number): string {
-  if (count <= 3) return "sm:grid-cols-3";
+  if (count <= 1) return "";
+  // Two figures share the row between them; three-column grid left a hole.
+  if (count === 2) return "sm:grid-cols-2";
+  if (count === 3) return "sm:grid-cols-3";
   if (count === 4) return "lg:grid-cols-4";
   return "sm:grid-cols-3 xl:grid-cols-6";
 }

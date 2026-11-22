@@ -670,7 +670,9 @@ export function PublishedChapters({ onChanged }: { onChanged: () => void }) {
               </TH>
             </THead>
             <TBody>
-              {chapters.map((c) => {
+              {[...chapters]
+                .sort((a, b) => Number(a.classLevelCode ?? 0) - Number(b.classLevelCode ?? 0) || a.chapterNo - b.chapterNo)
+                .map((c) => {
                 const where = inCalendar(c.id);
                 return (
                   <TR key={c.id}>

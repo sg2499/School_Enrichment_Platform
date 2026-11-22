@@ -26,7 +26,7 @@ function marksLine(byMarks: Record<string, number>): string {
 export function PatternOverview() {
   const overview = useApiQuery<Overview>("/overview/patterns", {}, { action: "load the mock paper patterns" });
   const data = overview.data;
-  const value = (n: number | undefined) => (overview.problem ? "—" : data && n !== undefined ? n : null);
+  const value = (n: number | undefined) => (overview.problem ? "—" : data && n !== undefined ? n.toLocaleString("en-IN") : null);
   const groups = useMemo(() => {
     const map = new Map<string, Overview["chapters"]>();
     for (const chapter of data?.chapters ?? []) {
