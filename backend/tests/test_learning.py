@@ -122,7 +122,7 @@ _CHAPTER_NUM = {
     "asg3": 17, "asg4": 18, "asg5": 19, "API7": 20,
     "API8": 21, "API8X": 22, "API9": 23, "API10": 24, "API11": 25, "API12": 26,
     "API8B": 27, "FR4": 28, "RES1": 29, "RES2": 30, "FR5": 31, "FR6": 32,
-    "UNIT1": 33, "RN1": 34,
+    "UNIT1": 33, "RN1": 34, "TD1": 35,
 }
 
 
@@ -458,6 +458,31 @@ def test_generate_activities_groups_real_codes_correctly(db_session):
     mastery_activity = by_type["CHAPTER_MASTERY"][0]
     linked_question_ids = learning_service._activity_question_ids(db_session, mastery_activity.id)
     assert len(linked_question_ids) == 2
+
+
+def test_a_draft_set_is_topped_up_with_unapproved_questions(db_session):
+    """The guard on A-001's filter: only a PUBLISHED set screens what it
+    takes in. A draft set must still take an unapproved question, or a
+    chapter's sets would publish short of the questions they were built
+    with. `_release_chapter_content` is what holds a draft set back until
+    everything in it is approved, and that is the only gate it needs."""
+    chapter, (skill1,) = _make_chapter_with_skills(db_session, "TD1", n_skills=1)
+    _add_question(db_session, skill1, "TD-P01-01", assignment_code=_ac("TD1", "P01"))
+    db_session.commit()
+    [activity] = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
+    assert activity.status == "DRAFT"
+
+    later = Question(
+        concept_lesson_id=skill1.id, code="TD-P01-02", assignment_code=_ac("TD1", "P01"),
+        question_type="Single Select", stem="Question TD-P01-02?", option_a="A opt", option_b="B opt",
+        correct_answer="A", marks=1, auto_gradable=True, status="DRAFT",
+    )
+    db_session.add(later)
+    db_session.commit()
+
+    assert learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None) == []
+    assert later.id in learning_service._activity_question_ids(db_session, activity.id)
+    assert activity.status == "DRAFT"
 
 
 def test_generate_activities_is_idempotent(db_session):

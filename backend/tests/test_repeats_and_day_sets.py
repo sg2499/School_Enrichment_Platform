@@ -10,9 +10,9 @@ from app.services.question_quality_service import run_quality_checks
 from tests.test_learning import _make_chapter_with_skills
 
 
-def _q(db, lesson, code, stem, answer="4", assignment=None, **kw):
+def _q(db, lesson, code, stem, answer="4", assignment=None, status="DRAFT", **kw):
     q = Question(concept_lesson_id=lesson.id, code=code, assignment_code=assignment, question_type="Numeric Entry",
-                 stem=stem, correct_answer=answer, marks=1, auto_gradable=True, status="DRAFT", **kw)
+                 stem=stem, correct_answer=answer, marks=1, auto_gradable=True, status=status, **kw)
     db.add(q)
     db.flush()
     return q
@@ -106,8 +106,13 @@ def test_fresh_questions_are_added_to_an_existing_set_unless_it_is_live_and_assi
     assert len(learning_service._activity_question_ids(db_session, sets["L01-D2A"].id)) == 1
 
     # Fresh replacements arrive later, for the second skill (new codes).
+    # A published set takes in approved questions only (A-001, 22 Nov 2026):
+    # fresh_b is approved and goes in; fresh_c is not and waits for a human.
+    # Before that fix this test asserted that a Draft question went into a
+    # published set, which is the defect the audit reproduced.
     fresh_a = _q(db_session, s2, "T1-501", "What is 7 + 7?", answer="14", assignment="L01-D2A")
-    fresh_b = _q(db_session, s2, "T1-502", "What is 9 + 9?", answer="18", assignment="L01-D1A")
+    fresh_b = _q(db_session, s2, "T1-502", "What is 9 + 9?", answer="18", assignment="L01-D1A", status="APPROVED")
+    fresh_c = _q(db_session, s2, "T1-503", "What is 8 + 8?", answer="16", assignment="L01-D1A")
     db_session.commit()
     sets["L01-D1A"].status = "PUBLISHED"  # live, but nobody has been given it
     sets["L01-D2A"].status = "PUBLISHED"
@@ -117,7 +122,8 @@ def test_fresh_questions_are_added_to_an_existing_set_unless_it_is_live_and_assi
     again = learning_service.generate_activities_for_chapter(db_session, chapter, created_by_user_id=None)
     assert again == []  # nothing new is made
     d1 = learning_service._activity_question_ids(db_session, sets["L01-D1A"].id)
-    assert fresh_b.id in d1 and len(d1) == 3
+    assert fresh_b.id in d1 and len(d1) == 3  # published, unassigned: the approved one goes in
+    assert fresh_c.id not in d1  # unreviewed: held back until someone approves it
     d2 = learning_service._activity_question_ids(db_session, sets["L01-D2A"].id)
     assert fresh_a.id not in d2 and len(d2) == 1  # published and assigned: left as it is
     # In skill order: skill 1's question, then skill 2's two.

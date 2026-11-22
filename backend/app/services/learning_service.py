@@ -177,6 +177,15 @@ def classify_assignment_code(code: str) -> tuple[str | None, bool]:
     return None, False
 
 
+# The question statuses that count as cleared for release: a human has
+# approved the question. `routes_curriculum_admin.py` imports this rather
+# than keeping its own copy. It is not a guarantee that everything a child
+# sees is approved -- a question sent back for rework after its set went
+# live is still served (A-011), and `scripts/publish_courses.py` still has
+# its own inline copy of these two names.
+READY_QUESTION_STATUSES = {"APPROVED", "PUBLISHED"}
+
+
 def top_up_activity(db: Session, activity: LearningActivity, group_questions: list[Question]) -> int:
     """Adds questions that belong to an existing set but are not in it yet
     (fresh replacements loaded later for repeated questions, #240).
@@ -184,6 +193,20 @@ def top_up_activity(db: Session, activity: LearningActivity, group_questions: li
     A set that is published and already assigned to a class is left alone:
     a child may be part-way through it. A draft set, or a published one nobody
     has been given yet, is topped up and its questions put in skill order.
+
+    A published set takes in ready questions only (A-001, 22 Nov 2026). A
+    teacher can assign a published set at any moment, so a question added
+    here that nobody has approved would reach a child without ever passing
+    the approval gate -- and nothing demotes a published set afterwards. A
+    draft set still takes everything, because `_release_chapter_content`
+    will not publish it while any of its questions is unready. A question
+    held back here is added by the next top-up once it is approved, so a
+    fresh replacement is deferred, never lost.
+
+    The status is read from the loaded objects, not re-queried: the session
+    runs with autoflush off (see publish_courses.py), so an approval made a
+    moment earlier in the same transaction is visible here but not yet in
+    the database.
     Returns how many were added."""
     if activity.status == "PUBLISHED" and (
         db.query(Assignment.id).filter(Assignment.learning_activity_id == activity.id).first()
@@ -194,6 +217,8 @@ def top_up_activity(db: Session, activity: LearningActivity, group_questions: li
         .filter(LearningActivityQuestion.learning_activity_id == activity.id).all()
     }
     fresh = [q for q in group_questions if q.id not in linked]
+    if activity.status == "PUBLISHED":
+        fresh = [q for q in fresh if q.status in READY_QUESTION_STATUSES]
     if not fresh:
         return 0
     for question in fresh:

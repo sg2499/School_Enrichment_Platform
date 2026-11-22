@@ -66,6 +66,7 @@ from app.models import (
 from app.services import figures, repeat_service, units, upload_rule_service
 from app.services.audit_service import log_audit_event
 from app.services.learning_service import (
+    READY_QUESTION_STATUSES,
     clean_marking_fields,
     generate_activities_for_chapter,
     marking_notes,
@@ -101,8 +102,6 @@ _QUESTION_TRANSITIONS: dict[str, set[str]] = {
     "APPROVED": {"PUBLISHED", "SME_REVIEW"},
     "PUBLISHED": {"SME_REVIEW"},
 }
-
-_READY_QUESTION_STATUSES = {"APPROVED", "PUBLISHED"}
 
 _CURRICULUM_VERSION_TRANSITIONS: dict[str, set[str]] = {
     "DRAFT": {"REVIEW"},
@@ -475,7 +474,7 @@ def _chapter_publish_blocker(db: Session, chapter: Chapter) -> dict | None:
         if not db.query(Question)
         .filter(
             Question.concept_lesson_id == lesson.id,
-            Question.status.in_(_READY_QUESTION_STATUSES),
+            Question.status.in_(READY_QUESTION_STATUSES),
             Question.origin == "BANK",
         )
         .first()
@@ -537,7 +536,7 @@ def _release_chapter_content(db: Session, chapter: Chapter, user: User) -> tuple
             db.query(Question.id)
             .filter(
                 Question.concept_lesson_id == lesson.id,
-                Question.status.in_(_READY_QUESTION_STATUSES),
+                Question.status.in_(READY_QUESTION_STATUSES),
                 Question.origin == "BANK",
             )
             .first()
@@ -554,7 +553,7 @@ def _release_chapter_content(db: Session, chapter: Chapter, user: User) -> tuple
     not_ready = (
         db.query(LearningActivityQuestion.learning_activity_id)
         .join(Question, LearningActivityQuestion.question_id == Question.id)
-        .filter(Question.status.notin_(_READY_QUESTION_STATUSES))
+        .filter(Question.status.notin_(READY_QUESTION_STATUSES))
         .distinct()
     )
     has_questions = db.query(LearningActivityQuestion.learning_activity_id).distinct()

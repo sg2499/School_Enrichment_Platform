@@ -1381,3 +1381,146 @@ def test_review_progress_for_the_super_admin_only(client, db_session):
         assert "approvedQuestionCount" not in row
         detail = other.get(f"/api/curriculum-admin/chapters/{chapter.id}").json()
         assert all("review" not in l for l in detail["conceptLessons"])
+
+
+# --- A-001: a published set never takes in an unreviewed question ---------
+# The audit of 22 Nov 2026 reproduced this: a published set that nobody had
+# been assigned yet took in a Draft, quality-FLAGGED question when its chapter
+# was approved and published again, and stayed published, so a teacher could
+# assign unreviewed content to a class. These three tests are that
+# reproduction, inverted, plus the two behaviours the fix must not break.
+
+
+def _published_set_with_one_approved_question(db, suffix: str, code: str = "CH77-P01"):
+    """A published chapter holding one published, unassigned practice set
+    with a single approved question -- the state the audit started from."""
+    from app.models import LearningActivity, LearningActivityQuestion
+
+    chapter, _ = _make_chapter(db, suffix, status="PUBLISHED")
+    lesson = ConceptLesson(chapter_id=chapter.id, code=f"SKL-{suffix}", title=f"Skill {suffix}", status="PUBLISHED")
+    db.add(lesson)
+    db.commit()
+    db.refresh(lesson)
+    approved = _add_question(
+        db, lesson, f"Q-{suffix}-A", stem="Round 6,849 to the nearest 10.",
+        correct_answer="6850", status="APPROVED", assignment_code=code,
+    )
+    activity = LearningActivity(
+        chapter_id=chapter.id, concept_lesson_id=lesson.id, activity_type="CORE_PRACTICE",
+        title=f"Skill {suffix} - Core Practice", sequence=1, status="PUBLISHED", source_assignment_code=code,
+    )
+    db.add(activity)
+    db.flush()
+    db.add(LearningActivityQuestion(learning_activity_id=activity.id, question_id=approved.id, sequence=1))
+    db.commit()
+    db.refresh(activity)
+    return chapter, lesson, activity, approved
+
+
+def _question_codes_in(db, activity_id: str) -> dict[str, str]:
+    from app.models import LearningActivityQuestion
+
+    rows = (
+        db.query(Question)
+        .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
+        .filter(LearningActivityQuestion.learning_activity_id == activity_id)
+        .all()
+    )
+    return {q.code: q.status for q in rows}
+
+
+def test_published_set_refuses_a_flagged_draft_question_then_takes_it_once_approved(client, db_session):
+    from app.models import LearningActivity
+
+    chapter, lesson, activity, _ = _published_set_with_one_approved_question(db_session, "topup01")
+    # A new question arrives later under the same set code, and the quality
+    # checks flag it -- so no human has cleared it.
+    held = _add_question(
+        db_session, lesson, "Q-topup01-B", stem="Round 6,851 to the nearest 10.",
+        correct_answer="9999", status="DRAFT", quality_status="FLAGGED", assignment_code="CH77-P01",
+    )
+    _make_super_admin(db_session, "sa-topup01@example.com")
+    csrf = _login(client, "sa-topup01@example.com")
+
+    r = client.post("/api/curriculum-admin/chapters/approve-and-publish", json={"chapterIds": [chapter.id]}, headers=csrf)
+    assert r.status_code == 200, r.text
+    db_session.expire_all()
+    assert _question_codes_in(db_session, activity.id) == {"Q-topup01-A": "APPROVED"}
+    assert db_session.get(LearningActivity, activity.id).status == "PUBLISHED"
+    assert db_session.get(Question, held.id).status == "DRAFT"
+
+    # Held back, not lost (#240): once the flag is cleared the same route
+    # approves it and the next top-up puts it in the set. The approval
+    # happens earlier in this very request, with autoflush off, so this also
+    # proves the filter reads the live object rather than the stored row.
+    held_again = db_session.get(Question, held.id)
+    held_again.quality_status = "VERIFIED"
+    db_session.commit()
+    r2 = client.post("/api/curriculum-admin/chapters/approve-and-publish", json={"chapterIds": [chapter.id]}, headers=csrf)
+    assert r2.status_code == 200, r2.text
+    db_session.expire_all()
+    assert _question_codes_in(db_session, activity.id) == {"Q-topup01-A": "APPROVED", "Q-topup01-B": "APPROVED"}
+    assert db_session.get(LearningActivity, activity.id).status == "PUBLISHED"
+
+
+def test_approve_and_publish_leaves_no_published_set_holding_an_unready_question(client, db_session):
+    from app.models import LearningActivity, LearningActivityQuestion
+
+    chapter, lesson, _, _ = _published_set_with_one_approved_question(db_session, "topup02", code="CH78-P01")
+    _add_question(
+        db_session, lesson, "Q-topup02-B", stem="Round 6,852 to the nearest 10.",
+        correct_answer="6850", status="DRAFT", quality_status="FLAGGED", assignment_code="CH78-P01",
+    )
+    _make_super_admin(db_session, "sa-topup02@example.com")
+    csrf = _login(client, "sa-topup02@example.com")
+
+    assert client.post(
+        "/api/curriculum-admin/chapters/approve-and-publish", json={"chapterIds": [chapter.id]}, headers=csrf
+    ).status_code == 200
+    db_session.expire_all()
+    unready = (
+        db_session.query(Question.code)
+        .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
+        .join(LearningActivity, LearningActivity.id == LearningActivityQuestion.learning_activity_id)
+        .filter(
+            LearningActivity.chapter_id == chapter.id,
+            LearningActivity.status == "PUBLISHED",
+            Question.status.notin_(("APPROVED", "PUBLISHED")),
+        )
+        .all()
+    )
+    assert unready == []
+
+
+def test_approve_and_publish_builds_a_new_set_from_every_question_and_publishes_it(client, db_session):
+    """The create branch, unchanged by A-001's fix: a set made from scratch
+    takes every question of its group, and only its publish step checks
+    readiness. (The top-up branch's draft behaviour is pinned by
+    test_learning.py::test_a_draft_set_is_topped_up_with_unapproved_questions.)"""
+    from app.models import LearningActivity
+
+    chapter, _ = _make_chapter(db_session, "topup03", status="PUBLISHED")
+    lesson = ConceptLesson(chapter_id=chapter.id, code="SKL-topup03", title="Skill topup03", status="PUBLISHED")
+    db_session.add(lesson)
+    db_session.commit()
+    db_session.refresh(lesson)
+    for code in ("Q-topup03-A", "Q-topup03-B"):
+        _add_question(
+            db_session, lesson, code, stem=f"Round 6,84{code[-1]} to the nearest 10.",
+            correct_answer="6850", status="DRAFT", assignment_code="CH79-P01",
+        )
+    _make_super_admin(db_session, "sa-topup03@example.com")
+    csrf = _login(client, "sa-topup03@example.com")
+
+    assert client.post(
+        "/api/curriculum-admin/chapters/approve-and-publish", json={"chapterIds": [chapter.id]}, headers=csrf
+    ).status_code == 200
+    db_session.expire_all()
+    activity = (
+        db_session.query(LearningActivity)
+        .filter(LearningActivity.chapter_id == chapter.id, LearningActivity.source_assignment_code == "CH79-P01")
+        .one()
+    )
+    # Both were approved by this request, so the set holds both and is live.
+    assert sorted(_question_codes_in(db_session, activity.id)) == ["Q-topup03-A", "Q-topup03-B"]
+    assert activity.status == "PUBLISHED"
