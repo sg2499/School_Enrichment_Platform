@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, CardBody, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SelectField } from "@/components/ui/Field";
 import { LoadError } from "@/components/ui/AlertBanner";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/Table";
@@ -66,7 +67,7 @@ export function QuestionBank() {
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
   const platform = data?.scope === "platform";
-  const value = (n: number | undefined) => (bank.problem ? "—" : data && n !== undefined ? n : null);
+  const value = (n: number | undefined) => (bank.problem ? "—" : data && n !== undefined ? n.toLocaleString("en-IN") : null);
 
   const groups = useMemo(() => {
     const map = new Map<string, NonNullable<typeof data>["chapters"]>();
@@ -101,47 +102,52 @@ export function QuestionBank() {
       />
 
       {data && all.length > 0 ? (
-        <div className="flex flex-wrap items-end gap-3" role="group" aria-label="Filter the question bank">
-          {(
-            [
-              ["board", "Board", boardOptions, picked.board, "All boards"],
-              ["class", "Class", classOptions, picked.classCode, "All classes"],
-              ["subject", "Subject", subjectOptions, picked.subject, "All subjects"],
-            ] as const
-          ).map(([key, label, options, value, anyLabel]) => (
-            <label key={key} className="flex min-w-40 flex-col gap-1 text-xs font-semibold uppercase tracking-eyebrow text-content-subtle">
-              {label}
-              <select
-                className="rounded-xl border border-line-strong bg-surface px-3 py-2 text-sm font-normal normal-case tracking-normal text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                value={value}
-                onChange={(event) => setFilter(key, event.target.value)}
-              >
-                <option value="">{anyLabel}</option>
-                {options.map((option) => (
+        <Card>
+          <CardBody className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-3" role="group" aria-label="Filter the question bank">
+              <SelectField label="Board" value={picked.board} onChange={(event) => setFilter("board", event.target.value)}>
+                <option value="">All Boards</option>
+                {boardOptions.map((option) => (
                   <option key={option} value={option}>
-                    {key === "class" ? `Class ${option}` : option}
+                    {option}
                   </option>
                 ))}
-              </select>
-            </label>
-          ))}
-          <p className="pb-2 text-sm text-content-muted" aria-live="polite">
-            {plural(shown.length, "chapter")} of {all.length}
-            {filtered ? (
-              <>
-                {" "}
-                &middot;{" "}
-                <button
-                  type="button"
-                  className="font-semibold text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                  onClick={() => router.replace(pathname, { scroll: false })}
-                >
-                  Clear Filters
-                </button>
-              </>
-            ) : null}
-          </p>
-        </div>
+              </SelectField>
+              <SelectField label="Class" value={picked.classCode} onChange={(event) => setFilter("class", event.target.value)}>
+                <option value="">All Classes</option>
+                {classOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {`Class ${option}`}
+                  </option>
+                ))}
+              </SelectField>
+              <SelectField label="Subject" value={picked.subject} onChange={(event) => setFilter("subject", event.target.value)}>
+                <option value="">All Subjects</option>
+                {subjectOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <p className="text-sm text-content-muted" aria-live="polite">
+              {plural(shown.length, "chapter")} of {all.length}
+              {filtered ? (
+                <>
+                  {" "}
+                  &middot;{" "}
+                  <button
+                    type="button"
+                    className="font-semibold text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    onClick={() => router.replace(pathname, { scroll: false })}
+                  >
+                    Clear Filters
+                  </button>
+                </>
+              ) : null}
+            </p>
+          </CardBody>
+        </Card>
       ) : null}
 
       {bank.problem ? <LoadError problem={bank.problem} onRetry={bank.reload} /> : null}
@@ -163,7 +169,7 @@ export function QuestionBank() {
             <CardDescription>{plural(chapters.length, "chapter")}</CardDescription>
           </CardHeader>
           <CardBody>
-            <Table caption={`Questions in ${label}, by chapter`} minWidth="46rem">
+            <Table caption={`Questions in ${label}, by chapter`} minWidth="52rem">
               <THead>
                   <TH>Chapter</TH>
                   <TH align="right">Skills</TH>
@@ -172,6 +178,9 @@ export function QuestionBank() {
                   {platform ? <TH align="right">In Review</TH> : null}
                   {platform ? <TH align="right">Flagged</TH> : null}
                   <TH>Difficulty</TH>
+                  <TH align="right">
+                    <span className="sr-only">Preview</span>
+                  </TH>
                 </THead>
               <TBody>
                 {chapters.map((chapter) => {
@@ -192,9 +201,6 @@ export function QuestionBank() {
                               {chapter.chapterNo}. {chapter.title}
                             </span>
                           </button>
-                          <ButtonLink href={`/admin/question-bank/${chapter.id}${filterQuery ? `?${filterQuery}` : ""}`} variant="secondary" size="sm" className="ml-6 mt-2">
-                            Preview Questions
-                          </ButtonLink>
                           {chapter.status !== "PUBLISHED" ? (
                             <Badge tone="neutral" className="ml-6 mt-1">
                               {chapter.status === "DRAFT" ? "Draft" : "In Review"}
@@ -214,6 +220,16 @@ export function QuestionBank() {
                         {platform ? <TD align="right" className="tabular">{chapter.inReview ?? 0}</TD> : null}
                         {platform ? <TD align="right" className="tabular">{chapter.flagged ?? 0}</TD> : null}
                         <TD className="text-content-muted">{difficultyLine(chapter.byDifficulty)}</TD>
+                        <TD align="right">
+                          <ButtonLink
+                            href={`/admin/question-bank/${chapter.id}${filterQuery ? `?${filterQuery}` : ""}`}
+                            variant="secondary"
+                            size="sm"
+                            aria-label={`Preview questions in ${chapter.title}`}
+                          >
+                            Preview
+                          </ButtonLink>
+                        </TD>
                       </TR>
                       {expanded
                         ? chapter.skills.map((skill) => (
@@ -228,6 +244,7 @@ export function QuestionBank() {
                               {platform ? <TD align="right" className="tabular">{skill.inReview ?? 0}</TD> : null}
                               {platform ? <TD align="right" className="tabular">{skill.flagged ?? 0}</TD> : null}
                               <TD className="text-content-muted">{difficultyLine(skill.byDifficulty)}</TD>
+                              <TD align="right">&nbsp;</TD>
                             </TR>
                           ))
                         : null}

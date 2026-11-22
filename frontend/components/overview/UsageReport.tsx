@@ -19,7 +19,7 @@ import type { UsageOverview } from "@/types/overview";
 export function UsageReport() {
   const usage = useApiQuery<UsageOverview>("/overview/usage", {}, { action: "load the usage report" });
   const data = usage.data;
-  const value = (key: string) => (usage.problem ? "—" : data ? (data.totals[key] ?? 0) : null);
+  const value = (key: string) => (usage.problem ? "—" : data ? (data.totals[key] ?? 0).toLocaleString("en-IN") : null);
 
   return (
     <div className="space-y-6">
@@ -52,17 +52,17 @@ export function UsageReport() {
             <CardDescription>Counted {activityTime(data.asOf)}. Handed in is the number of times students handed work in.</CardDescription>
           </CardHeader>
           <CardBody>
-            <Table caption="Usage of Krama by school" minWidth="62rem">
+            <Table caption="Usage of Krama by school" minWidth="50rem">
               <THead>
                   <TH>School</TH>
                   <TH align="right">Students</TH>
                   <TH align="right">Teachers</TH>
-                  <TH align="right">Not Signed In</TH>
+                  <TH align="right" className="whitespace-normal leading-snug">Not Signed In</TH>
                   <TH>Last Active</TH>
-                  <TH align="right">Practice Sets</TH>
-                  <TH align="right">Mock Papers</TH>
-                  <TH align="right">Report Cards</TH>
-                  <TH align="right">Weekly Reports</TH>
+                  <TH align="right" className="whitespace-normal leading-snug">Practice Sets</TH>
+                  <TH align="right" className="whitespace-normal leading-snug">Mock Papers</TH>
+                  <TH align="right" className="whitespace-normal leading-snug">Report Cards</TH>
+                  <TH align="right" className="whitespace-normal leading-snug">Weekly Reports</TH>
                 </THead>
               <TBody>
                 {data.schools.map((school) => (

@@ -39,7 +39,7 @@ function Chapter({ label, chapter }: { label: string; chapter: ChapterWindow | n
 export function MyClasses() {
   const mine = useApiQuery<{ classes: MyClass[] }>("/overview/my-classes", {}, { action: "load your classes" });
   const classes = mine.data?.classes ?? [];
-  const value = (n: number) => (mine.problem ? "—" : mine.data ? n : null);
+  const value = (n: number) => (mine.problem ? "—" : mine.data ? n.toLocaleString("en-IN") : null);
   return (
     <div className="space-y-6">
       <PageHeader

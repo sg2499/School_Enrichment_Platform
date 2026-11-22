@@ -103,11 +103,20 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
     return c;
   }, [chapters]);
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  const shown = (chapters ?? []).filter(
-    (ch) =>
-      (status === "ALL" || ch.status === status) &&
-      words.every((w) => `${ch.title} ${ch.code} chapter ${ch.chapterNo}`.toLowerCase().includes(w)),
-  );
+  // One course after another (board, then class, then chapter number), so
+  // 60 chapters across four courses do not read as one shuffled list.
+  const shown = (chapters ?? [])
+    .filter(
+      (ch) =>
+        (status === "ALL" || ch.status === status) &&
+        words.every((w) => `${ch.title} ${ch.code} chapter ${ch.chapterNo}`.toLowerCase().includes(w)),
+    )
+    .sort(
+      (a, b) =>
+        (a.boardCode ?? "").localeCompare(b.boardCode ?? "") ||
+        Number(a.classLevelCode ?? 0) - Number(b.classLevelCode ?? 0) ||
+        a.chapterNo - b.chapterNo,
+    );
   const drafts = (chapters ?? []).filter((ch) => ch.status === "DRAFT");
 
   async function sendDrafts() {
@@ -207,6 +216,13 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
             delayMs={150}
             className="w-full sm:ml-auto sm:w-64"
           />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl border border-line bg-surface-muted px-4 py-3">
+          <p className="text-sm font-semibold text-content">
+            {scoped || status !== "ALL" || words.length > 0 ? `On the ${countOf(shown.length, "chapter")} listed` : "On every chapter"}
+          </p>
+          <div className="flex flex-wrap items-center gap-2.5 sm:ml-auto">
           <ApproveAndPublish
             chapterIds={shown
               .filter((c) => c.status === "DRAFT" || c.status === "REVIEW" || (c.status === "PUBLISHED" && ((c.publishedLessonCount ?? c.conceptLessonCount) < c.conceptLessonCount || (c.draftActivityCount ?? 0) > 0)))
@@ -244,6 +260,7 @@ export function ChapterLibrary({ onChanged }: { onChanged: () => void }) {
           >
             {drafts.length === 0 ? "No Drafts to Send" : `Send ${scoped ? "Listed" : "All"} Drafts to Review (${drafts.length})`}
           </Button>
+          </div>
         </div>
 
         {lookupError ? <ErrorBanner message={lookupError} /> : null}
