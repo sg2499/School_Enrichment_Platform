@@ -180,6 +180,10 @@ export type AttemptQuestion = {
   // the one already attached. Optional: an older server does not send them.
   uploadRule?: UploadRule;
   attachment?: AnswerAttachment | null;
+  // A-041 (23 Nov 2026): whether a teacher marks this answer, so the
+  // confirmation on Submit Practice knows where an attached PDF counts as an
+  // answer on its own. Optional: an older server does not send it.
+  teacherMarked?: boolean;
 };
 
 export type AttemptDetail = {

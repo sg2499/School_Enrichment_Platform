@@ -3,6 +3,7 @@
  * the paper page share. The rules are on the server (mock_paper_service,
  * paper_formats); these only describe them.
  */
+import { answerGiven } from "@/lib/attachments";
 import type { FormatSection, PaperFormat, PaperStatus, QuestionKind, SitPlace, SitSection } from "@/types/mockPapers";
 
 export const STATUS_LABEL: Record<PaperStatus, string> = {
@@ -147,20 +148,40 @@ export function activeHalf(place: SitPlace) {
 }
 
 /** A place counts as answered when every part of the half being answered
- *  has something in it. `answers` holds what is typed now, by question. */
-export function placeAnswered(place: SitPlace, answers: Record<string, string>): boolean {
+ *  has something in it. `answers` holds what is typed now, by question, and
+ *  `attached` the PDF on each, which is an answer in its own right on a
+ *  question a teacher marks (A-041; `attachments.answerGiven` has the rule).
+ *  `attached` is optional so a caller that has no files reads as before. */
+export function placeAnswered(
+  place: SitPlace,
+  answers: Record<string, string>,
+  attached: Record<string, unknown | null> = {},
+): boolean {
   const half = activeHalf(place);
   if (!half) return false;
-  return half.parts.every((p) => (answers[p.id] ?? "").replace(/;/g, "").trim() !== "");
+  return half.parts.every((p) =>
+    answerGiven({
+      value: answers[p.id],
+      // `attached` is what the screen holds now, so a removed file is a key
+      // with null in it and must win over the one the paper loaded with. Only
+      // a key that is absent falls back (`??` would have read the old file).
+      attachment: p.id in attached ? attached[p.id] : p.attachment,
+      teacherMarked: p.teacherMarked,
+    }),
+  );
 }
 
-export function answeredCount(sections: SitSection[], answers: Record<string, string>): { answered: number; total: number } {
+export function answeredCount(
+  sections: SitSection[],
+  answers: Record<string, string>,
+  attached: Record<string, unknown | null> = {},
+): { answered: number; total: number } {
   let answered = 0;
   let total = 0;
   for (const s of sections) {
     for (const place of s.places) {
       total += 1;
-      if (placeAnswered(place, answers)) answered += 1;
+      if (placeAnswered(place, answers, attached)) answered += 1;
     }
   }
   return { answered, total };

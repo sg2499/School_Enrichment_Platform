@@ -144,6 +144,29 @@ describe("sitting the paper", () => {
     assert.deepEqual(answeredCount(sections, { q1: "4", q2: "x" }), { answered: 2, total: 3 });
   });
 
+  test("a PDF is an answer too, on a question a teacher marks (A-013)", () => {
+    const pdf = { id: "f1" };
+    const drawn = { number: 4, marks: 3, choiceGroup: null, chosenSlotId: null,
+                    halves: [{ slotId: "s5", stimulus: null, parts: [{ id: "d1", teacherMarked: true }] }] };
+    // Nothing typed, a PDF attached: answered.
+    assert.equal(placeAnswered(drawn, {}, { d1: pdf }), true);
+    // The file already on the part counts the same, so a freshly loaded
+    // paper reads the same as one just uploaded to.
+    const loaded = { ...drawn, halves: [{ slotId: "s5", stimulus: null, parts: [{ id: "d1", teacherMarked: true, attachment: pdf }] }] };
+    assert.equal(placeAnswered(loaded, {}), true);
+    // Removing the file counts it as gone, rather than reading back the one
+    // the paper loaded with: the screen's record wins where it has one.
+    assert.equal(placeAnswered(loaded, {}, { d1: null }), false);
+    // Not where the platform marks it: a PDF there earns nothing on its own.
+    const auto = { ...drawn, halves: [{ slotId: "s5", stimulus: null, parts: [{ id: "d1" }] }] };
+    assert.equal(placeAnswered(auto, {}, { d1: pdf }), false);
+    // And with no files given, every count reads exactly as before.
+    assert.equal(placeAnswered(drawn, {}), false);
+    const sections = [{ places: [single, drawn] }];
+    assert.deepEqual(answeredCount(sections, { q1: "4" }), { answered: 1, total: 2 });
+    assert.deepEqual(answeredCount(sections, { q1: "4" }, { d1: pdf }), { answered: 2, total: 2 });
+  });
+
   test("how it was handed in", () => {
     assert.match(handedInText("TIME"), /time ran out/);
     assert.match(handedInText("CLOSED"), /paper closed/);

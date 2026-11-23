@@ -327,7 +327,7 @@ function Place({
   onChoose: (slotId: string) => void;
 }) {
   const active = activeHalf(place);
-  const done = placeAnswered(place, answers);
+  const done = placeAnswered(place, answers, attachments);
   return (
     <li id={`q-${place.number}`} className="scroll-mt-28">
       <Card>
@@ -478,6 +478,24 @@ export function SitPaper({ paperId }: { paperId: string }) {
     [paperId],
   );
 
+  // A half of an either/or pair the server says is now chosen: saving an
+  // answer chooses it, and so does attaching a PDF (A-013), so both apply it
+  // the same way.
+  const applyChosen = (slotId: string | null | undefined) => {
+    if (!slotId) return;
+    setView((v) =>
+      v
+        ? {
+            ...v,
+            sections: v.sections.map((sec) => ({
+              ...sec,
+              places: sec.places.map((pl) => (pl.halves.some((h) => h.slotId === slotId) ? { ...pl, chosenSlotId: slotId } : pl)),
+            })),
+          }
+        : v,
+    );
+  };
+
   const saveNow = async (questionId: string) => {
     const attempt = startSave(tracker.current, questionId);
     setSaves((s) => ({ ...s, [questionId]: "saving" }));
@@ -491,21 +509,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
       const latest = tracker.current.seq[questionId] === attempt;
       finishSave(tracker.current, questionId, attempt, "saved");
       if (latest) setSaves((s) => ({ ...s, [questionId]: "saved" }));
-      if (data.chosenSlotId) {
-        setView((v) =>
-          v
-            ? {
-                ...v,
-                sections: v.sections.map((sec) => ({
-                  ...sec,
-                  places: sec.places.map((pl) =>
-                    pl.halves.some((h) => h.slotId === data.chosenSlotId) ? { ...pl, chosenSlotId: data.chosenSlotId } : pl,
-                  ),
-                })),
-              }
-            : v,
-        );
-      }
+      applyChosen(data.chosenSlotId);
     } catch (err) {
       const described = describeApiError(err, "save your answer");
       // A save that was overtaken by a newer one for the same question says
@@ -755,7 +759,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
   const sections: SitSection[] = view.sections;
   const forward = p.navigation === "FORWARD";
   const shown = sections[tab] ?? sections[0];
-  const { answered, total } = answeredCount(sections, answers);
+  const { answered, total } = answeredCount(sections, answers, attachments);
   const left = reading ? writingAt - serverNow : deadline - serverNow;
   const lastMinutes = !reading && left < 5 * 60 * 1000;
 
@@ -793,7 +797,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
 
       <nav aria-label="Sections" className="flex flex-wrap gap-2">
         {sections.map((s, i) => {
-          const done = s.places.filter((pl) => placeAnswered(pl, answers)).length;
+          const done = s.places.filter((pl) => placeAnswered(pl, answers, attachments)).length;
           const reachable = !forward || i === tab;
           return (
             <button
@@ -839,8 +843,13 @@ export function SitPaper({ paperId }: { paperId: string }) {
               onUpload={async (id, file) => {
                 const form = new FormData();
                 form.append("file", file);
-                const { data } = await api.put<{ attachment: AnswerAttachment }>(`/my-papers/${paperId}/answers/${id}/attachment`, form);
+                const { data } = await api.put<{ attachment: AnswerAttachment; chosenSlotId?: string | null }>(
+                  `/my-papers/${paperId}/answers/${id}/attachment`,
+                  form,
+                );
                 setAttachments((a) => ({ ...a, [id]: data.attachment }));
+                // The PDF is the answer, so it chooses this half (A-013).
+                applyChosen(data.chosenSlotId);
                 return data.attachment;
               }}
               onRemove={async (id) => {
@@ -929,7 +938,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
             <ul className="flex flex-wrap gap-1.5" aria-label="Questions not answered">
               {sections.flatMap((s) =>
                 s.places
-                  .filter((pl) => !placeAnswered(pl, answers))
+                  .filter((pl) => !placeAnswered(pl, answers, attachments))
                   .map((pl) => (
                     <li
                       key={pl.number}

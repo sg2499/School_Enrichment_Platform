@@ -194,7 +194,8 @@ def for_mock_answers(db: Session, answer_ids: list[str]) -> dict[str, AnswerAtta
 
 
 def attach_to_mock(db: Session, student: Student, user: User, paper_id: str, question_id: str,
-                   filename: str | None, data: bytes) -> AnswerAttachment:
+                   filename: str | None, data: bytes) -> tuple[AnswerAttachment, str | None]:
+    """(the file, the half of an either/or pair now chosen or None)."""
     from app.services import mock_sitting_service
 
     answer, question = mock_sitting_service.answer_for_upload(db, student, paper_id, question_id)
@@ -202,8 +203,12 @@ def attach_to_mock(db: Session, student: Student, user: User, paper_id: str, que
     pages = check_pdf(data)
     record = _store(db, student, user, question, data, filename or "", pages, mock_answer_id=answer.id)
     answer.answered_at = datetime.now(UTC)
+    # Attaching a PDF answers the question, so it chooses this half of an
+    # either/or pair exactly as typing would (A-013). After _store, so a
+    # rejected file never chooses a half.
+    chosen = mock_sitting_service.chose_by_answering(db, answer)
     db.commit()
-    return record
+    return record, chosen
 
 
 def remove_from_mock(db: Session, student: Student, paper_id: str, question_id: str) -> None:
