@@ -141,6 +141,45 @@ def unit_label(code: str | None, *, plural: bool = True) -> str | None:
     return unit.plural if plural else unit.singular
 
 
+# A rate is two units: a question that names both of them is naming the
+# rate too, even where it never writes "km/h" ("A car covers 120 km in 2
+# hours. Find its speed."). Until 23 Nov 2026 learning_service folded a
+# child's "km/h" to "km" to cover that case, which also made "60 km/h"
+# right for an answer of 60 kilometres (A-028).
+COMPONENTS: dict[str, tuple[str, str]] = {
+    "kmh": ("km", "h"),
+    "ms": ("m", "s"),
+}
+
+
+def rates_from(codes) -> frozenset:
+    """The rates whose two units are both in `codes`."""
+    held = set(codes)
+    return frozenset(rate for rate, parts in COMPONENTS.items() if held.issuperset(parts))
+
+
+def spellings() -> tuple[str, ...]:
+    """Every unit spelling this module knows, longest first, so a caller
+    building one pattern out of them matches "kilometres" before "km" and
+    "km/h" before "km". The one place the vocabulary lives: before 23 Nov
+    2026 learning_service kept a second, shorter hand-written list of its
+    own, which knew "kg" but not "kgs" and "litres" but not "ltr" (A-006).
+    """
+    return tuple(sorted(set(_ALIASES) | set(UNITS), key=lambda s: (-len(s), s)))
+
+
+# A number as it may be written with grouping commas: "19,250", "1,00,000".
+# Anything else with a comma in it is a list, not a number -- the rule
+# parse_measurement has followed since 13 Oct 2026, named here because
+# learning_service needs the same question answered (A-003).
+GROUPED_NUMBER = re.compile(r"[-+]?\d{1,3}(?:,\d{2,3})*(?:\.\d+)?")
+
+
+def is_grouped_number(text: str) -> bool:
+    """True when every comma in the text could be a grouping comma."""
+    return bool(GROUPED_NUMBER.fullmatch(text.strip()))
+
+
 # A number as people write it in India: an optional sign, digits with any
 # commas (1,00,000 or 100,000), an optional decimal part.
 _NUMBER = r"[-+]?(?:\d[\d,]*)?(?:\.\d+)?"
@@ -182,7 +221,7 @@ def parse_measurement(text: str | None) -> Measurement | None:
     if not match or not re.search(r"\d", match.group(1)):
         return None
     number_text, rest = match.group(1), match.group(2)
-    if "," in number_text and not re.fullmatch(r"[-+]?\d{1,3}(?:,\d{2,3})*(?:\.\d+)?", number_text):
+    if "," in number_text and not is_grouped_number(number_text):
         return None  # "1,2,3" is a list, not a number
     try:
         number = Decimal(number_text.replace(",", ""))
