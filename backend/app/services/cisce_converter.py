@@ -17,8 +17,9 @@ KRAMA-CISCE-C5M-DECISIONS-v1.0 (16 Nov 2026):
   rubric carried into the teacher note;
 - a measured answer with an Expected Unit becomes Answer Unit + Unit Rule
   REQUIRED, so the child must type the unit (his call, 17 Nov: "the unit is a
-  must"; the locked-unit box is a later slice and then moves these to STATED
-  where the question names the unit);
+  must"), EXCEPT where the question itself names that unit, which is Stated --
+  the locked-unit box, which these files have no Input Mode column to ask for,
+  read from the wording instead (A-047, 23 Nov 2026);
 - fields the file does not have (options, hints, difficulty, misconception
   notes, accepted variants) stay empty and are listed in the report, never
   invented.
@@ -42,7 +43,7 @@ from pathlib import Path
 
 import openpyxl
 
-from app.services import units
+from app.services import unit_reader, units
 
 BOARD_CODE = "CISCE"  # stored; the screen says ICSE
 BOARD_DISPLAY_NAME = "ICSE"
@@ -101,6 +102,9 @@ class ConvertReport:
     application_items: int = 0
     patterned: int = 0
     locked_units: int = 0
+    # Of those, the ones with no Input Mode column to read, where the
+    # question's own wording named the answer's unit instead (A-047).
+    locked_units_read_from_stem: int = 0
 
     @property
     def ok(self) -> bool:
@@ -273,6 +277,21 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
                 # the number only (rule Stated); otherwise the child types the
                 # unit too (rule Required).
                 locked = str(row.get("Input Mode") or "").strip().lower() == "locked unit"
+                if not locked and unit_reader.answer_unit_from_question(stem) == code:
+                    # A-047, 23 Nov 2026. The ICSE 16-column layout has no
+                    # Input Mode column, so every measured answer fell through
+                    # to Required -- including "Add 1770 m and 994 m. Give the
+                    # answer in metres.", where the question has already named
+                    # the unit. CBSE Class 7, which does have the column, marks
+                    # those as locked. So where the question itself names the
+                    # answer's unit, and it is the unit recorded for the
+                    # answer, the unit is locked: the same rule, read from the
+                    # wording instead of from a column that is not there.
+                    # Only an exact agreement counts; where the reader is
+                    # unsure it says nothing and the answer stays Required
+                    # (his call, 17 Nov: "the unit is a must").
+                    locked = True
+                    report.locked_units_read_from_stem += 1
                 answer_unit, unit_rule = code, ("Stated" if locked else "Required")
                 report.units[code] += 1
                 if locked:

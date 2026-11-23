@@ -652,17 +652,79 @@ _THOUSANDS = re.compile(r"(?<![\d.,])(\d{1,3}(?:,\d{2,3})+)(?![\d,])")
 _BRACED_EXPONENT = re.compile(r"\^\s*[({]\s*([^)}]+?)\s*[)}]")
 _TIMES_SIGN = re.compile(r"\s*[×*·∙⋅]\s*")
 _TIMES_LETTER_X = re.compile(r"(?<=[\d)])\s*x\s*(?=[\d(])")
-_OPERATOR_SPACES = re.compile(r"\s*([+\-×÷/^=<>()])\s*")
+# A colon joins the two halves of a ratio or a clock time, so the spaces
+# around it mean nothing: "3 : 4" is "3:4" and "9 : 45" is "9:45" (A-006).
+_OPERATOR_SPACES = re.compile(r"\s*([+\-×÷/^=<>():])\s*")
 _LEADING_VARIABLE = re.compile(r"^[a-z]\s*=\s*")
+# "p.m.", "pm", "P M" after a digit are one thing. Anchored to a digit so
+# the ordinary word "am" is left alone ("i am 9" keeps its "am"), and
+# spelled out to a single space so "1:15pm" and "1:15 p.m." meet (A-006).
+_MERIDIEM = re.compile(r"(?<=\d)\s*([ap])\s*\.?\s*m\s*\.?(?![a-z])")
+_COMMA_THEN_SPACE = re.compile(r",\s+")
 
 
-def _normalize_value(text: str) -> str:
+def _list_parts(text: str) -> list[str] | None:
+    """The parts of a comma-separated list, or None when the text is a
+    single number that happens to carry grouping commas (A-003).
+
+    The signal is the key's own punctuation. A comma followed by a space is
+    a list ("5, 100", "1,000, 2,000") -- nobody writes one number that way.
+    Without the space it is a list only when the commas cannot be grouping
+    commas ("97,44,61"), because "120,240,360" and "19,250" are written
+    the same way and only the content can say which is meant; those stay
+    numbers, as they were before this change.
+    """
+    if _COMMA_THEN_SPACE.search(text):
+        return _COMMA_THEN_SPACE.split(text.strip())
+    if "," in text and not units.is_grouped_number(text):
+        return text.strip().split(",")
+    return None
+
+
+def _list_values(text: str, count: int) -> list[str] | None:
+    """A written list read as exactly `count` values, or None when it does
+    not come apart into that many. The key says how many numbers to expect,
+    so the one child's answer "1,000 2,000" is two thousands where the key
+    is a list of two and would be a single number where it is not (A-003).
+    The splits are tried in order: a comma then a space, then every comma,
+    then whitespace; the first that gives the expected count wins."""
+    for parts in (_COMMA_THEN_SPACE.split(text), text.split(","), text.split()):
+        if len(parts) == count:
+            values = [_normalize_value(part, as_list=False) for part in parts]
+            if all(values):
+                return values
+    return None
+
+
+def _normalize_value(text: str, *, as_list: bool | None = None) -> str:
+    """One written value reduced for comparison. `as_list` says whether to
+    read the commas as separators; None works it out from this text alone,
+    and a caller comparing two answers passes the KEY's answer for both, so
+    that a child's "5,100" is read as the list the key asks for rather than
+    as the number it would look like on its own (A-003).
+    """
     value = text.lower().translate(_DASHES)
     value = _SUPERSCRIPT_RUN.sub(lambda m: "^" + m.group(0).translate(_SUPERSCRIPT_DIGITS), value)
     value = value.replace("**", "^")
     value = _BRACED_EXPONENT.sub(r"^\1", value)
-    # "19,250" and "1,00,000" are one number; "1, 2, 3" and "1,2,3" are the
-    # same list. Commas inside a number go, any other comma is a separator.
+    value = _MERIDIEM.sub(r" \1m", value)
+    if as_list is None:
+        as_list = _list_parts(value) is not None
+    if as_list and _COMMA_THEN_SPACE.search(value):
+        # Each part is a value in its own right, so "1,000, 2,000" keeps its
+        # thousands and still separates into two. Only a comma followed by a
+        # space parts the list here; a comma with no space after it is left
+        # to the ordinary path below, which already turns every comma that
+        # cannot be a grouping comma into a space ("1,2,3" -> "1 2 3"), and
+        # to _list_values, which knows how many parts to expect.
+        parts = [_normalize_value(part, as_list=False) for part in _COMMA_THEN_SPACE.split(value)]
+        # The parts are rejoined and run through the operator spacing once
+        # more, so that a list reads exactly as the same answer written
+        # without the commas: "Panda (1,1), Lion (2,5)" and
+        # "Panda (1,1) Lion (2,5)" are one answer, as they were before this
+        # change, because a bracket closes up against what follows it.
+        return _OPERATOR_SPACES.sub(r"\1", " ".join(p for p in parts if p)).strip()
+    # "19,250" and "1,00,000" are one number; any other comma separates.
     value = _THOUSANDS.sub(lambda m: m.group(1).replace(",", ""), value)
     value = value.replace(",", " ")
     value = _TIMES_SIGN.sub("×", value)
@@ -675,6 +737,22 @@ def _normalize_value(text: str) -> str:
 def _drop_variable(value: str) -> str:
     """"x=3" -> "3": the child may leave out the name of the unknown."""
     return _LEADING_VARIABLE.sub("", value)
+
+
+def _variable_name(value: str) -> str | None:
+    """The unknown a value names, or None when it names none: "x=3" -> "x"."""
+    match = _LEADING_VARIABLE.match(value)
+    return match.group(0)[0] if match else None
+
+
+def _names_a_different_unknown(given: str, expected: str) -> bool:
+    """True when both answers name an unknown and the names differ, so
+    dropping the name would make "y = 3" right for the key "x = 3" (A-005).
+    Where only one side names one, the name is still dropped: the key "3"
+    written "x = 3" is the same answer, and a child who shows the unknown
+    is not marked down for it (#244)."""
+    given_name, expected_name = _variable_name(given), _variable_name(expected)
+    return bool(given_name) and bool(expected_name) and given_name != expected_name
 
 
 def _value_without_labels(normalized: str) -> str | None:
@@ -704,11 +782,18 @@ def _value_without_labels(normalized: str) -> str | None:
 # stripping, anything other than a bare currency-prefixed/unit-suffixed
 # number still fails float() and falls back to plain string comparison.
 _LEADING_CURRENCY_RE = re.compile(r"^(rs\.?|inr|usd)\s*|^[₹$]\s*", re.IGNORECASE)
+# Units of time a school answer is written in that are not measured units:
+# a month is not a fixed number of days, so units.py carries no month, but
+# "6 months" still has to read as the number 6.
+_UNMEASURED_UNITS = ("weeks", "week", "months", "month")
+# Built from units.spellings(), longest first, rather than written out a
+# second time here: the hand-written list this replaces knew "kg" but not
+# "kgs", "litres" but not "ltr", and no unit added after it was written
+# (inch, celsius, cm3, m/s) -- so a child writing one of those had a
+# correct number read as free text (A-006). Still a closed vocabulary, so
+# free text that merely ends in a word ("add 500 each time") is untouched.
 _TRAILING_UNIT_RE = re.compile(
-    r"\s*(kmph|km/h|km|kg|gm|mg|g|cm|mm|ml|l|litres?|liters?|metres?|meters?|m|"
-    r"rupees?|rs\.?|"
-    r"hours?|hrs?|minutes?|mins?|seconds?|secs?|"
-    r"days?|weeks?|months?|years?|degrees?|percent|%)\.?$",
+    r"\s*(" + "|".join(re.escape(s) for s in units.spellings() + _UNMEASURED_UNITS) + r")\.?$",
     re.IGNORECASE,
 )
 
@@ -755,49 +840,108 @@ def _written_unit(text: str) -> str | None:
     if not match:
         return None
     word = match.group(1).lower().rstrip(".")
-    if word in ("km/h", "kmph"):
-        return "km"  # a speed in kilometres an hour, for an answer recorded in km
-    if word in ("%", "percent"):
-        return "percent"
+    # A speed is its own unit, not its first half. Until 23 Nov 2026 "km/h"
+    # was folded to "km" here so that "60 km/h" could match an answer
+    # recorded in km; what it also did was make "60 km/h" right for a key of
+    # 60 kilometres, a different quantity (A-028). units_named_in now reads
+    # the compound unit out of the question's own wording instead, so a
+    # speed question still accepts the speed.
     return units.unit_code(word) or word
+
+
+# A single letter is only a unit where it is one of these: "p" is a page or
+# a part far more often than a paisa, and the rest are not units at all.
+# (The list the word-by-word scan this replaces allowed.)
+_SINGLE_LETTER_UNITS = ("g", "m", "l", "h", "s")
+def _unit_pattern(spellings: tuple[str, ...], *, after_a_digit: bool) -> re.Pattern:
+    """One pattern matching any of these spellings where it stands as a unit
+    and not as part of a word. They arrive longest first, so "km/h" is read
+    as a speed and not as a kilometre, and "square centimetres" as an area
+    and not as a centimetre (A-028: the word-by-word scan this replaces
+    split the wording on letters alone, so a compound unit was invisible to
+    it and "60 km/h" in a question read as kilometres)."""
+    body = "|".join(re.escape(s) for s in spellings)
+    # A unit may not begin in the middle of a word, so "min" inside "mind"
+    # and "m" inside "metal" are not units. A spelling that starts with a
+    # letter may not follow a digit either: "6s" in "the two 6s in 66,205"
+    # is not six seconds, and reading it as one used to accept "54000
+    # seconds" for a place-value question. A symbol may: "10%" and "45°"
+    # are written with nothing between.
+    before = r"(?<![A-Za-z])" if after_a_digit else r"(?<![A-Za-z0-9])"
+    return re.compile(before + "(" + body + r")(?![A-Za-z0-9])", re.IGNORECASE)
+
+
+_UNIT_WORDS_RE = _unit_pattern(
+    tuple(s for s in units.spellings() if s[:1].isalpha() and (len(s) > 1 or s in _SINGLE_LETTER_UNITS)),
+    after_a_digit=False,
+)
+_UNIT_SYMBOLS_RE = _unit_pattern(
+    tuple(s for s in units.spellings() if not s[:1].isalpha()),
+    after_a_digit=True,
+)
+# Units written inside a longer unit: "cm" within "16 cm²". A question that
+# gives an area in cm² asks for a side in cm, and nothing else in the
+# wording says so, so the parts of a compound unit count as named too
+# (what the word-by-word scan before 23 Nov 2026 did by accident, and the
+# only thing it got right that this does not do on purpose). Two letters at
+# least: a single letter stuck to a digit is the "6s" case above.
+_UNIT_FRAGMENT_RE = re.compile(r"[A-Za-z]{2,}")
 
 
 def units_named_in(stem: str | None) -> frozenset:
     """The units a question's own wording names ("A bus travels 450 km" ->
-    {"km"}), so a child who writes the question's unit is never marked down
-    where no answer unit is recorded."""
-    found = set()
-    for word in re.findall(r"[A-Za-z]+|%", stem or ""):
-        lowered = word.lower()
-        if lowered in ("%", "percent"):
-            found.add("percent")
-            continue
-        code = units.unit_code(lowered) if len(lowered) > 1 or lowered in ("g", "m", "l", "h", "s") else None
-        if code:
-            found.add(code)
-    if "₹" in (stem or "") or re.search(r"\brupees?\b|\brs\b", stem or "", re.IGNORECASE):
+    {"km"}; "at 60 km/h for 2 hours" -> {"kmh", "km", "h"}), so a child who
+    writes the question's unit is never marked down where no answer unit is
+    recorded."""
+    text = stem or ""
+    written = _UNIT_WORDS_RE.findall(text) + _UNIT_SYMBOLS_RE.findall(text) + _UNIT_FRAGMENT_RE.findall(text)
+    found = {code for code in (units.unit_code(w) for w in written) if code}
+    if "₹" in text:
         found.add("rupee")
-    return frozenset(found)
+    # A question that names a distance and a time names the speed as well,
+    # even where it never writes "km/h" itself (A-028).
+    return frozenset(found | units.rates_from(found))
 
 
-def _same_text(response_blank: str, candidate_blank: str) -> bool:
+def _same_text(response_blank: str, candidate_blank: str, *, allow_label_drop: bool = False) -> bool:
     """The same written answer, whatever its case, spacing or sign spelling;
-    also "x=3" for "3" (and the other way) and just the value for a labelled
-    part ("2" for "Base 2"). The label is only ever dropped from the KEY: a
-    response with a label of its own ("decrease 11" for "Increase 11") must
-    still match whole."""
-    given = _normalize_value(response_blank)
-    expected = _normalize_value(candidate_blank)
+    also "x=3" for "3" (and the other way) and, where the answer is written
+    in several boxes, just the value for a labelled part ("2" for "Base 2").
+    The label is only ever dropped from the KEY: a response with a label of
+    its own ("decrease 11" for "Increase 11") must still match whole.
+
+    `allow_label_drop` is the count of boxes, from _blanks_match: true only
+    where the answer has more than one part. A one-box answer keeps its
+    label, because nothing on screen tells the child what the label was and
+    dropping it accepts the wrong answer -- "11" for "Decrease 11", "3" for
+    "quarter past 3" (A-004). Where there are several boxes, each carries
+    its label (answer_blank_labels), so the child has been shown which part
+    goes in which box and types the value alone.
+    """
+    key_parts = _list_parts(candidate_blank)
+    as_list = key_parts is not None
+    given = _normalize_value(response_blank, as_list=as_list)
+    expected = _normalize_value(candidate_blank, as_list=as_list)
     if given == expected:
         return True
-    if _drop_variable(given) == _drop_variable(expected):
+    if key_parts is not None:
+        expected_values = [_normalize_value(part, as_list=False) for part in key_parts]
+        if _list_values(response_blank, len(expected_values)) == expected_values:
+            return True
+    if not _names_a_different_unknown(given, expected) and _drop_variable(given) == _drop_variable(expected):
         return True
+    if not allow_label_drop:
+        return False
     bare = _value_without_labels(expected)
-    return bare is not None and (given == bare or _drop_variable(given) == _drop_variable(bare))
+    if bare is None:
+        return False
+    if given == bare:
+        return True
+    return not _names_a_different_unknown(given, bare) and _drop_variable(given) == _drop_variable(bare)
 
 
-def _blank_matches(response_blank: str, candidate_blank: str, question_unit=None) -> bool:
-    if _same_text(response_blank, candidate_blank):
+def _blank_matches(response_blank: str, candidate_blank: str, question_unit=None, *, allow_label_drop: bool = False) -> bool:
+    if _same_text(response_blank, candidate_blank, allow_label_drop=allow_label_drop):
         return True
     response_value = _numeric_value(response_blank)
     candidate_value = _numeric_value(candidate_blank)
@@ -817,8 +961,12 @@ def _blank_matches(response_blank: str, candidate_blank: str, question_unit=None
 
 
 def _blanks_match(response_blanks: list[str], candidate_blanks: list[str], question_unit: str | None = None) -> bool:
+    # Several boxes: each one is labelled on screen, so a part's label may be
+    # dropped from the key. One box: it may not (A-004, _same_text).
+    allow_label_drop = len(candidate_blanks) > 1
     return len(response_blanks) == len(candidate_blanks) and all(
-        _blank_matches(r, c, question_unit) for r, c in zip(response_blanks, candidate_blanks)
+        _blank_matches(r, c, question_unit, allow_label_drop=allow_label_drop)
+        for r, c in zip(response_blanks, candidate_blanks)
     )
 
 

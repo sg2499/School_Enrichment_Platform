@@ -180,3 +180,69 @@ def test_class7_units_parse_and_never_cross_convert():
     assert units.convert(units.Decimal(1), "kmh", "ms") is None  # a question must ask for that conversion
     assert units.convert(units.Decimal(1), "year", "day") is None
     assert units.parse_measurement("60 km/h").unit == "kmh"
+
+
+# --- A-047: a locked unit read from the wording (23 Nov 2026) --------------
+#
+# These files have no "Input Mode" column, so every measured answer fell
+# through to Required. Where the question itself names the answer's unit,
+# that is the locked-unit box Ashalatha asked for, and the rule is Stated.
+
+A047_QB = QB + ["Input Mode"]
+
+
+def _a047_file(tmp_path, n, rows):
+    wb = openpyxl.Workbook()
+    wb.active.title = "Start Here"
+    qb, ak, mg, sm = (wb.create_sheet(t) for t in ("Question Bank", "Answer Key", "Marking Guide", "Skill Map"))
+    header = A047_QB if any(mode for *_rest, mode in rows) else QB
+    for ws, head in ((qb, header), (ak, AK), (mg, MG), (sm, SM)):
+        ws.append(head)
+    p = f"U{n}"
+    for i, (stem, unit, key, mode) in enumerate(rows, start=1):
+        qid = f"{p}-Q{i:03d}"
+        row = [qid, "Numbers", f"{p}-S01", "Measure", 1, "A", "Diagnostic and foundation",
+               "Numeric Entry", 1, stem, unit, "Not applicable", "Exact; no rounding", "No",
+               "No external visual", "School to map"]
+        qb.append(row + [mode] if header is A047_QB else row)
+        ak.append([qid, key, "Because.", "Numeric Entry", unit, "Exact", "Exact"])
+        mg.append([qid, 1, "Auto-grade", "No", "1 mark.", "x", "Teacher note"])
+    sm.append([f"{p}-S01", "Measure", "Theme 1: Numbers", str(len(rows)), "Class 4 prerequisite review", "-", "School to map"])
+    src = tmp_path / f"CISCE_Class_5_Maths_Lesson_{n}_Numbers_500Q.xlsx"
+    wb.save(src)
+    dst = tmp_path / f"out{n}.xlsx"
+    report = convert_workbook(src, dst, class_level="5", subject="Mathematics", source_label="CISCE Class 5 Mathematics")
+    rows_out = list(openpyxl.load_workbook(dst, read_only=True)["Question Bank"].iter_rows(values_only=True))
+    return report, [dict(zip(rows_out[0], r)) for r in rows_out[1:]]
+
+
+def test_a_wording_that_names_the_unit_locks_it(tmp_path):
+    report, out = _a047_file(tmp_path, 81, [
+        ("Add 1770 m and 994 m. Give the answer in metres.", "metres", "2764", None),
+    ])
+    assert out[0]["Unit Rule"] == "Stated"
+    assert out[0]["Answer Unit"] == "m"
+    assert out[0]["Response Format"] == "Number"
+    assert report.locked_units == 1 and report.locked_units_read_from_stem == 1
+
+
+def test_a_wording_that_names_no_unit_still_requires_it(tmp_path):
+    report, out = _a047_file(tmp_path, 82, [("Find its length.", "metres", "12", None)])
+    assert out[0]["Unit Rule"] == "Required"
+    assert out[0]["Response Format"] == "Number and unit"
+    assert report.locked_units_read_from_stem == 0
+
+
+def test_a_wording_that_names_another_unit_still_requires_it(tmp_path):
+    # Only an exact agreement locks the unit. Here the wording says minutes
+    # and the recorded unit is seconds, so one of the two is wrong and the
+    # converter changes nothing.
+    report, out = _a047_file(tmp_path, 83, [("Find the elapsed time in minutes.", "seconds", "90", None)])
+    assert out[0]["Unit Rule"] == "Required"
+    assert report.locked_units_read_from_stem == 0
+
+
+def test_an_input_mode_column_still_wins(tmp_path):
+    report, out = _a047_file(tmp_path, 84, [("Find its length.", "metres", "12", "Locked unit")])
+    assert out[0]["Unit Rule"] == "Stated"
+    assert report.locked_units == 1 and report.locked_units_read_from_stem == 0
