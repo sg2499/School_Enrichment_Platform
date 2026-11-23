@@ -29,7 +29,7 @@ qrcode[pil]==8.2
 pillow==13.0.0
 # Reads a child's PDF upload (page count, encrypted or broken files) in
 # app/services/attachment_service.py (#237, 17 Nov 2026).
-pypdf==7.1.0
+pypdf==7.1.1
 # Fernet encryption of TOTP secrets at rest (app/core/totp_crypto.py and
 # alembic f7c2a9d4e1b8, 1 Oct 2026). It used to arrive with
 # python-jose[cryptography]; that is gone (PyJWT replaced it, 13 Oct 2026),
