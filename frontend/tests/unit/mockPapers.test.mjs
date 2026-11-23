@@ -19,6 +19,13 @@ import {
   toLocalInput,
   totalMarks,
   withMarks,
+  clearSitSaves,
+  finishSave,
+  handInBlock,
+  idsToResend,
+  markTyped,
+  newSitSaves,
+  startSave,
 } from "../../.test-build/lib/mockPapers.mjs";
 
 describe("sections", () => {
@@ -141,5 +148,107 @@ describe("sitting the paper", () => {
     assert.match(handedInText("TIME"), /time ran out/);
     assert.match(handedInText("CLOSED"), /paper closed/);
     assert.match(handedInText("STUDENT"), /You handed in/);
+  });
+});
+
+/*
+ * A-002: a mock paper must not be handed in while an answer has not saved.
+ * The audit reproduced the opposite: the save swallowed its own error, so
+ * the flush before handing in always looked successful and the answer was
+ * marked blank, with no re-sit.
+ *
+ * These drive the real bookkeeping the screen uses, in sequence, so each
+ * one fails if the guard is taken out.
+ */
+describe("saving a mock answer, and when the paper may be handed in", () => {
+  const save = (s, id, outcome, problem) => finishSave(s, id, startSave(s, id), outcome, problem);
+  const refusal = (id) => ({ questionId: id, message: "That answer is too long.", sessionEnded: false, retryable: false });
+  const dropped = (id) => ({ questionId: id, message: "Something went wrong on our side.", sessionEnded: false, retryable: true });
+  const names = { questionName: (id) => ({ q1: "Question 1", q2: "Question 2" })[id] ?? id };
+
+  test("nothing unsaved: the paper goes", () => {
+    const s = newSitSaves();
+    save(s, "q1", "saved");
+    assert.equal(handInBlock(s, { pastDeadline: false, ...names }), null);
+  });
+
+  test("a failed save blocks the hand-in and names the question and the reason", () => {
+    const s = newSitSaves();
+    save(s, "q1", "failed", refusal("q1"));
+    const block = handInBlock(s, { pastDeadline: false, ...names });
+    assert.ok(block, "a failed save must block the hand-in");
+    assert.match(block.message, /Question 1/);
+    assert.match(block.message, /too long/);
+    assert.match(block.message, /Nothing has been handed in/);
+  });
+
+  test("a refused save is still sent again, so the child is never stuck", () => {
+    // It is never put back into `pending`, so only `unsaved` keeps it alive.
+    const s = newSitSaves();
+    save(s, "q1", "failed", refusal("q1"));
+    assert.deepEqual(idsToResend(s), ["q1"]);
+    save(s, "q1", "saved"); // the next press gets through
+    assert.deepEqual(idsToResend(s), []);
+    assert.equal(handInBlock(s, { pastDeadline: false, ...names }), null);
+  });
+
+  test("an answer typed during the flush also blocks it", () => {
+    const s = newSitSaves();
+    save(s, "q1", "saved");
+    markTyped(s, "q2");
+    const block = handInBlock(s, { pastDeadline: false, ...names });
+    assert.ok(block);
+    assert.match(block.message, /Question 2/);
+  });
+
+  test("two unsaved answers are counted, not named one by one", () => {
+    const s = newSitSaves();
+    save(s, "q1", "failed", refusal("q1"));
+    save(s, "q2", "failed", refusal("q2"));
+    assert.match(handInBlock(s, { pastDeadline: false, ...names }).message, /2 of your answers/);
+  });
+
+  test("past the deadline nothing is blocked: the server has the paper", () => {
+    const s = newSitSaves();
+    save(s, "q1", "failed", refusal("q1"));
+    assert.ok(handInBlock(s, { pastDeadline: false, ...names }));
+    assert.equal(handInBlock(s, { pastDeadline: true, ...names }), null);
+  });
+
+  test("a slow older save cannot report over a newer one", () => {
+    const s = newSitSaves();
+    const first = startSave(s, "q1");
+    const second = startSave(s, "q1"); // the child typed again
+    finishSave(s, "q1", second, "failed", refusal("q1"));
+    finishSave(s, "q1", first, "saved"); // the first PUT lands late
+    assert.deepEqual(idsToResend(s), ["q1"], "the newer failure must stand");
+  });
+
+  test("a session that has ended is told apart from an ordinary failure", () => {
+    const s = newSitSaves();
+    save(s, "q1", "failed", { questionId: "q1", message: "Please sign in again.", sessionEnded: true, retryable: false });
+    const block = handInBlock(s, { pastDeadline: false, ...names });
+    assert.equal(block.sessionEnded, true);
+    assert.match(block.message, /Sign in again/);
+    assert.doesNotMatch(block.message, /Press Hand In again/);
+  });
+
+  test("what the child is told to do next fits the cause", () => {
+    const refused = newSitSaves();
+    save(refused, "q1", "failed", refusal("q1"));
+    // Pressing again would be refused again: the answer has to change.
+    assert.match(handInBlock(refused, { pastDeadline: false, ...names }).message, /Change that answer/);
+
+    const flaky = newSitSaves();
+    save(flaky, "q1", "failed", dropped("q1"));
+    assert.match(handInBlock(flaky, { pastDeadline: false, ...names }).message, /Press Hand In again/);
+  });
+
+  test("the paper handed in by the server clears everything", () => {
+    const s = newSitSaves();
+    save(s, "q1", "failed", refusal("q1"));
+    clearSitSaves(s);
+    assert.deepEqual(idsToResend(s), []);
+    assert.equal(handInBlock(s, { pastDeadline: false, ...names }), null);
   });
 });
