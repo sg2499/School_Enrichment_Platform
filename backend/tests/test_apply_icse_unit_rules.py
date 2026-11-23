@@ -68,12 +68,25 @@ def _chain(session, board_code: str) -> str:
     return lesson.id
 
 
-def _question(lesson_id, code, stem, answer, unit, rule="REQUIRED", response_format="Number and unit"):
+def _question(lesson_id, code, stem, answer, unit, rule="REQUIRED", response_format="Number and unit",
+              question_type="Numeric Entry", marks=1, auto_gradable=True):
     return Question(
-        concept_lesson_id=lesson_id, code=code, question_type="Numeric Entry", stem=stem,
-        correct_answer=answer, marks=1, auto_gradable=True, answer_unit=unit, unit_rule=rule,
+        concept_lesson_id=lesson_id, code=code, question_type=question_type, stem=stem,
+        correct_answer=answer, marks=marks, auto_gradable=auto_gradable, answer_unit=unit, unit_rule=rule,
         response_format=response_format,
     )
+
+
+# The rule decides no mark on these, so they are out of scope however well
+# their wording names the unit. The production run of 23 Nov tripped on the
+# Constructed Response ones: the platform gives no verdict on a
+# teacher-marked answer, the strict re-mark read that as "would be marked
+# wrong", and the whole run rolled back.
+OUT_OF_SCOPE = [
+    ("CISCE-C5-CH01-Q101", "Show all working and explain your reasoning. Convert 49800 cm to metres.",
+     "498", "m", "Constructed Response", 3, False, "Written explanation or working"),
+    ("CISCE-C5-CH01-Q102", "Convert 2 km to metres.", "2000", "m", "Text Entry", 1, True, "Short text"),
+]
 
 
 # The wording names the recorded unit: these move.
@@ -96,6 +109,9 @@ def db():
     cbse = _chain(session, "CBSE")
     for code, stem, answer, unit in NAMED + SILENT + DISAGREES:
         session.add(_question(icse, code, stem, answer, unit))
+    for code, stem, answer, unit, qtype, marks, auto, fmt in OUT_OF_SCOPE:
+        session.add(_question(icse, code, stem, answer, unit, question_type=qtype, marks=marks,
+                              auto_gradable=auto, response_format=fmt))
     # Ashalatha's own Required, on a CBSE question whose wording DOES name
     # the unit: out of scope, so it must not move (#180).
     session.add(_question(cbse, "CBSE-C5-CH05-Q034", "Add 2 m and 3 m. Give the answer in metres.", "5", "m"))
@@ -183,4 +199,36 @@ def test_a_key_that_would_be_marked_wrong_rolls_the_whole_run_back(db):
     with pytest.raises(StopBeforeWriting):
         script.apply_plan(db, script.make_plan(db))
     assert db.query(Question).filter(Question.code == "CISCE-C5-CH01-Q001").one().unit_rule == "REQUIRED"
+    assert db.query(AuditLog).filter(AuditLog.event_type == script.AUDIT_EVENT).count() == 0
+
+
+def test_a_question_whose_mark_the_rule_does_not_decide_is_left_alone(db):
+    plan = script.make_plan(db)
+    moved = {q.code for q, _read in plan.to_change}
+    for code, *_rest in OUT_OF_SCOPE:
+        assert code not in moved
+    assert plan.out_of_scope == len(OUT_OF_SCOPE)
+
+
+def test_the_apply_succeeds_with_those_rows_present(db):
+    # The production run of 23 Nov stopped here: a teacher-marked question
+    # has no verdict, the strict re-mark counted that as wrong, and all 457
+    # rolled back. They are now out of scope, so the apply goes through.
+    script.apply_plan(db, script.make_plan(db))
+    for code, *_rest in OUT_OF_SCOPE:
+        untouched = db.query(Question).filter(Question.code == code).one()
+        assert untouched.unit_rule == "REQUIRED"
+    for code, *_rest in NAMED:
+        assert db.query(Question).filter(Question.code == code).one().unit_rule == "STATED"
+
+
+def test_no_verdict_inside_the_scope_is_a_hard_stop(db):
+    # If the selection and the marker ever disagree, nothing is written.
+    moved = db.query(Question).filter(Question.code == NAMED[0][0]).one()
+    plan = script.make_plan(db)
+    moved.auto_gradable = False  # the marker now declines it, after selection
+    db.flush()
+    with pytest.raises(StopBeforeWriting) as stop:
+        script.apply_plan(db, plan)
+    assert "not auto-marked after all" in str(stop.value)
     assert db.query(AuditLog).filter(AuditLog.event_type == script.AUDIT_EVENT).count() == 0
