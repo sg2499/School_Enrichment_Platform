@@ -45,6 +45,26 @@ export function missingRequired(questions: { uploadRule?: UploadRule; attachment
   return questions.filter((q) => q.uploadRule === "REQUIRED" && !q.attachment).length;
 }
 
+/**
+ * Whether a child has given anything at all on one answer, for the
+ * confirmations before Submit Practice and Hand In (A-041). A child who drew
+ * their working on paper and attached the PDF has answered, so counting the
+ * typed text alone would tell them the question was blank.
+ *
+ * The PDF counts on its own only where a teacher marks the answer. A reviewer
+ * may put an upload box on a question the platform marks by itself, and there
+ * a PDF with nothing typed really does score nothing -- saying "answered"
+ * would be the comforting answer rather than the true one.
+ *
+ * `value` is what is typed now, with the ";" that joins an answer's boxes
+ * removed: one box filled is an answer, the same test the mock paper has
+ * always used.
+ */
+export function answerGiven(answer: { value?: string | null; attachment?: unknown | null; teacherMarked?: boolean }): boolean {
+  if ((answer.value ?? "").replace(/;/g, "").trim() !== "") return true;
+  return Boolean(answer.attachment) && answer.teacherMarked === true;
+}
+
 export function missingRequiredSentence(count: number): string | null {
   if (count <= 0) return null;
   return count === 1

@@ -1431,6 +1431,25 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
     return best
 
 
+def answer_is_blank(response_text: str | None, *, has_file: bool) -> bool:
+    """Whether a child gave nothing at all on this answer.
+
+    Used by mock papers (mock_sitting_service.hand_in, in four places), and
+    public and named here rather than there because practice is meant to
+    share it the day A-043 is decided -- see the note in submit_attempt. A
+    child who draws their working on paper and attaches the PDF has
+    answered; they just did not type.
+    Reading the typed text alone scored those answers 0 at hand-in, and an
+    answer with a score is one no teacher may then mark, so the work was
+    lost twice over (A-013, 23 Nov 2026).
+
+    `has_file` is passed in rather than looked up here, so this stays
+    arithmetic on what the caller already loaded: a caller marking a whole
+    paper reads every attachment in one query, not one per answer.
+    """
+    return not (response_text or "").strip() and not has_file
+
+
 def grade_answer_detail(question: Question, response_text: str | None) -> GradeResult:
     """grade_answer, with the reason for a unit mark lost or a wrong unit
     (GradeResult.note). submit_attempt records the note."""
@@ -1580,6 +1599,17 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
 
         result = grade_answer_detail(question, answer.response_text)
         is_correct, score = result.is_correct, result.score
+        # A-043 asks for a blank written answer to be scored 0 here, as the
+        # mock does, rather than waiting for a teacher. It is NOT done, and
+        # the reason is worth keeping: practice has re-attempts and the mock
+        # does not. Scoring the blank makes it "marked", which (1) sends the
+        # child the model answer and the explanation that routes_learning
+        # withholds from an unmarked written answer (4 Oct 2026), while they
+        # still have attempts left, and (2) makes that 0 the question's
+        # latest marked answer in progress_service.skill_scores, throwing
+        # away a teacher's mark from an earlier attempt. Measured 23 Nov
+        # 2026: a skill went from 6 of 6 to 1 of 6. Shailesh's call, with
+        # both findings in front of him.
         answer.is_correct = is_correct
         answer.auto_score = score
         answer.grading_note = result.note

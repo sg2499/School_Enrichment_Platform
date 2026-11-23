@@ -135,6 +135,11 @@ def _question_public_dict(question: Question) -> dict:
         # #237: does this question take a PDF of working or a drawing?
         # "REQUIRED", "OPTIONAL" or "NONE".
         "uploadRule": upload_rule_service.rule_of(question),
+        # A-041: whether a teacher marks this answer. The confirmation on
+        # Submit Practice counts an attached PDF as an answer, which is only
+        # true here -- a reviewer may put an upload box on an auto-marked
+        # question, and there a PDF with nothing typed still scores 0.
+        "teacherMarked": upload_rule_service.teacher_marked(question),
     }
 
 

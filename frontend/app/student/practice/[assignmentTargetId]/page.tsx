@@ -30,6 +30,7 @@ import { Card, CardBody, CardIcon, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
+import { Modal } from "@/components/ui/Modal";
 import { InlineLink } from "@/components/ui/InlineLink";
 import { SessionGate } from "@/components/SessionGate";
 import { SignInAgainBanner } from "@/components/SignInAgainBanner";
@@ -48,6 +49,8 @@ import {
   partsComplete,
   partsText,
   partMarksHint,
+  practiceAnsweredCount,
+  blankWarning,
   resultHref,
   resultSentence,
   resultTally,
@@ -480,6 +483,8 @@ export default function StudentAttemptPage() {
   // gets a definite answer the questions stay locked: an edit now could be
   // an edit to a set that is already handed in.
   const [submitUnconfirmed, setSubmitUnconfirmed] = useState(false);
+  // A-041: Submit Practice used to hand in on one press, with no way back.
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const startedRef = useRef(false);
   // Autosave used to fire one PUT per keystroke with no ordering guard, so a
   // fast typist could have an earlier (shorter) keystroke's request resolve
@@ -740,6 +745,20 @@ export default function StudentAttemptPage() {
   // answer when it was not.
   const locked = phase === "submitting" || submitUnconfirmed;
 
+  // A-041: what the confirmation says. A question with a PDF attached and
+  // nothing typed is answered where a teacher marks it (lib/attachments).
+  const handIn = useMemo(
+    () =>
+      practiceAnsweredCount(
+        (attempt?.questions ?? []).map((q) => ({
+          value: answers[q.id],
+          attachment: attachments[q.id],
+          teacherMarked: q.teacherMarked,
+        })),
+      ),
+    [attempt?.questions, answers, attachments],
+  );
+
   function handleAnswerChange(question: AttemptQuestion, value: string) {
     if (locked) return;
     answersRef.current = { ...answersRef.current, [question.id]: value };
@@ -779,6 +798,9 @@ export default function StudentAttemptPage() {
 
   async function handleSubmit() {
     if (!attempt) return;
+    // The confirmation closes before anything is handed in: a hand-in that
+    // fails says so above Submit, on the page behind the dialog (A-041).
+    setConfirmSubmit(false);
     setSubmitError(null);
     setPhase("submitting");
 
@@ -1241,11 +1263,54 @@ export default function StudentAttemptPage() {
                     </p>
                   ) : null}
                 </div>
-                <Button variant="primary" leadingIcon={<Send className="h-4 w-4" />} loading={phase === "submitting"} onClick={handleSubmit}>
+                <Button
+                  variant="primary"
+                  leadingIcon={<Send className="h-4 w-4" />}
+                  loading={phase === "submitting"}
+                  // A-041: the confirmation first -- except on a retry after
+                  // a Submit that got no answer, which the student has
+                  // already confirmed once.
+                  onClick={() => (submitUnconfirmed ? void handleSubmit() : setConfirmSubmit(true))}
+                >
                   Submit Practice
                 </Button>
               </CardBody>
             </Card>
+
+            <Modal
+              open={confirmSubmit}
+              onClose={() => setConfirmSubmit(false)}
+              title="Submit Your Practice?"
+              size="sm"
+              footer={
+                <>
+                  <Button variant="ghost" onClick={() => setConfirmSubmit(false)}>
+                    Keep Working
+                  </Button>
+                  <Button variant="primary" onClick={() => void handleSubmit()}>
+                    Submit Practice
+                  </Button>
+                </>
+              }
+            >
+              <div className="space-y-3 text-sm text-content">
+                <p>
+                  You have answered {handIn.answered} of {handIn.total} questions. Once you submit, you can&apos;t change your
+                  answers for this attempt.
+                </p>
+                {blankWarning(handIn.blank) ? <p className="font-medium text-saffron-800">{blankWarning(handIn.blank)}</p> : null}
+                {missingRequiredSentence(
+                  missingRequired((attempt?.questions ?? []).map((q) => ({ uploadRule: q.uploadRule, attachment: attachments[q.id] }))),
+                ) ? (
+                  <p className="text-content-muted">
+                    {missingRequiredSentence(
+                      missingRequired((attempt?.questions ?? []).map((q) => ({ uploadRule: q.uploadRule, attachment: attachments[q.id] }))),
+                    )}{" "}
+                    You can still submit, but those questions can&apos;t get full marks without it.
+                  </p>
+                ) : null}
+              </div>
+            </Modal>
           </>
         ) : null}
 

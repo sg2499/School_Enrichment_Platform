@@ -11,8 +11,10 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  blankWarning,
   joinParts,
   partsComplete,
+  practiceAnsweredCount,
   partsText,
   splitParts,
   PRACTICE_LIST_HREF,
@@ -458,5 +460,34 @@ describe("an answer in parts (#160)", () => {
     assert.equal(partsText("add;\nthen;", "Constructed Response"), "add;\nthen;");
     assert.equal(partsComplete("94;", 2), false);
     assert.equal(partsComplete("94;385", 2), true);
+  });
+});
+
+describe("the confirmation before Submit Practice (A-041)", () => {
+  const pdf = { id: "f1" };
+
+  test("how many are answered, and how many have nothing in them", () => {
+    assert.deepEqual(
+      practiceAnsweredCount([
+        { value: "7" },
+        { value: "" },
+        { value: "   " },
+        { value: "9;" },
+        { attachment: pdf, teacherMarked: true },
+        { attachment: pdf, teacherMarked: false },
+      ]),
+      { answered: 3, blank: 3, total: 6 },
+    );
+  });
+
+  test("an empty set counts to nothing rather than dividing by it", () => {
+    assert.deepEqual(practiceAnsweredCount([]), { answered: 0, blank: 0, total: 0 });
+  });
+
+  test("the warning names the count and is never a scolding", () => {
+    assert.equal(blankWarning(0), null);
+    assert.equal(blankWarning(-1), null);
+    assert.equal(blankWarning(1), "1 question has nothing in it. A question left blank gets no marks.");
+    assert.equal(blankWarning(4), "4 questions have nothing in them. A question left blank gets no marks.");
   });
 });

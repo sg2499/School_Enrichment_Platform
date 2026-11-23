@@ -29,9 +29,10 @@
  *     wrong. The server stores is_correct as "full marks or not" for it, so
  *     read naively it shows as Incorrect; answerState() reads the marks.
  *
- * Type-only imports, so it is unit-tested directly
- * (scripts/run-unit-tests.mjs).
+ * Its only runtime import is another listed unit (lib/attachments), so it is
+ * unit-tested directly (scripts/run-unit-tests.mjs).
  */
+import { answerGiven } from "@/lib/attachments";
 import type { AttemptAnswerResult, AttemptResult, StudentAssignmentSummary } from "@/types/learning";
 
 type AssignmentStatus = StudentAssignmentSummary["status"];
@@ -328,6 +329,33 @@ export function joinParts(parts: string[]): string {
 /** Whether every box of an answer in parts has something in it. */
 export function partsComplete(value: string, count: number): boolean {
   return splitParts(value, count).every((part) => part.trim() !== "");
+}
+
+/** One question as the confirmation before Submit Practice reads it. */
+export interface PracticeAnswerSoFar {
+  value?: string | null;
+  attachment?: unknown | null;
+  teacherMarked?: boolean;
+}
+
+/**
+ * How many questions a child is about to hand in with nothing in them, and
+ * how many there are (A-041). An attached PDF is an answer on a question a
+ * teacher marks; `attachments.answerGiven` holds that rule, so this screen
+ * and the mock paper's hand-in say the same thing.
+ */
+export function practiceAnsweredCount(answers: readonly PracticeAnswerSoFar[]): { answered: number; blank: number; total: number } {
+  const answered = answers.filter((answer) => answerGiven(answer)).length;
+  return { answered, blank: answers.length - answered, total: answers.length };
+}
+
+/** The sentence in the confirmation, and never a scolding one: a child may
+ *  mean to leave a question out, and this only makes sure they meant to. */
+export function blankWarning(blank: number): string | null {
+  if (blank <= 0) return null;
+  return blank === 1
+    ? "1 question has nothing in it. A question left blank gets no marks."
+    : `${blank} questions have nothing in them. A question left blank gets no marks.`;
 }
 
 /**

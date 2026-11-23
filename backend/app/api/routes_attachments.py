@@ -84,11 +84,14 @@ def attach_paper(
     user: User = Depends(require_roles("STUDENT")),
     db: Session = Depends(get_db),
 ):
-    record = service.attach_to_mock(db, student, user, paper_id, question_id, file.filename, _read_upload(file))
+    record, chosen_slot_id = service.attach_to_mock(db, student, user, paper_id, question_id, file.filename, _read_upload(file))
     log_audit_event(db, "attachment.uploaded", user_id=user.id, request=request,
                     details={"attachmentId": record.id, "where": "mock_paper", "bytes": record.size_bytes, "pages": record.page_count})
     db.commit()
-    return {"attachment": service.info(record)}
+    # chosenSlotId as saving an answer returns it (A-013): attaching a PDF
+    # chooses that half of an either/or pair, and the screen has to show it,
+    # or the paper still asks the child to choose one.
+    return {"attachment": service.info(record), "chosenSlotId": chosen_slot_id}
 
 
 @student_papers_router.delete("/{paper_id}/answers/{question_id}/attachment")

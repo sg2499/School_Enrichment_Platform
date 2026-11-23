@@ -118,6 +118,9 @@ def public_question(question: Question) -> dict:
         "answerBlanks": learning_service.answer_blanks(question),
         "answerBlankLabels": learning_service.answer_blank_labels(question),
         "uploadRule": upload_rule_service.rule_of(question),  # #237
+        # A-041: the hand-in confirmation counts an attached PDF as an
+        # answer, which is only true where a teacher marks it.
+        "teacherMarked": upload_rule_service.teacher_marked(question),
     }
 
 
@@ -403,15 +406,32 @@ def save_answer(db: Session, student: Student, paper_id: str, question_id: str, 
     if working_sent and learning_service.accepts_working(question):
         answer.working_text = learning_service._clean_working(working)
     answer.answered_at = now
-    # Answering one half of an either/or pair chooses it, unless the
-    # student has chosen already.
-    if slot.choice_group:
-        choices = _choices(sitting)
-        if str(slot.choice_group) not in choices and answer.response_text:
-            choices[str(slot.choice_group)] = slot.id
-            sitting.choices_json = json.dumps(choices)
+    if answer.response_text:
+        chose_by_answering(db, answer)
     db.commit()
     return {"saved": True, "savedAt": now.isoformat(), "chosenSlotId": _choices(sitting).get(str(slot.choice_group)) if slot.choice_group else None}
+
+
+def chose_by_answering(db: Session, answer: MockPaperAnswer) -> str | None:
+    """Answering one half of an either/or pair chooses it, unless the student
+    has chosen already. Attaching a PDF is answering it too (A-013): without
+    this, a child who drew their working on one half and typed nothing had
+    that half left uncounted, and `save_marks` then refused the teacher a
+    mark for it.
+
+    Returns the half now chosen for this answer's pair, so the screen can
+    show it as chosen (the same value saving an answer returns), or None when
+    the question is not one of a pair.
+    """
+    slot = db.get(MockPaperSlot, answer.slot_id)
+    sitting = db.get(MockPaperSitting, answer.sitting_id)
+    if slot is None or sitting is None or not slot.choice_group:
+        return None
+    choices = _choices(sitting)
+    if str(slot.choice_group) not in choices:
+        choices[str(slot.choice_group)] = slot.id
+        sitting.choices_json = json.dumps(choices)
+    return _choices(sitting).get(str(slot.choice_group))
 
 
 def answer_for_upload(db: Session, student: Student, paper_id: str, question_id: str,
@@ -515,6 +535,15 @@ def hand_in(db: Session, sitting: MockPaperSitting, how: str, when: datetime) ->
     slots = {s.id: s for s in papers.slots_of(db, paper)}
     items = db.query(MockPaperVersionItem).filter_by(version_id=sitting.version_id).all()
     answers = _answers(db, sitting)
+    # Which answers have a PDF, in one query. A child's drawing or working is
+    # an answer, so this decides both which half of an either/or pair was
+    # answered and which written answers were left blank (A-013).
+    with_files = set(attachment_service.for_mock_answers(db, [a.id for a in answers.values()]))
+
+    def gave_something(answer: MockPaperAnswer | None) -> bool:
+        return answer is not None and not learning_service.answer_is_blank(
+            answer.response_text, has_file=answer.id in with_files)
+
     choices = _choices(sitting)
     # A pair with no choice made: the half with an answer, else the first.
     for group in {s.choice_group for s in slots.values() if s.choice_group}:
@@ -522,7 +551,7 @@ def hand_in(db: Session, sitting: MockPaperSitting, how: str, when: datetime) ->
             continue
         halves = sorted([s for s in slots.values() if s.choice_group == group], key=lambda s: s.alternative)
         answered = [s for s in halves if any(
-            a.slot_id == s.id and a.response_text for a in answers.values())]
+            a.slot_id == s.id and gave_something(a) for a in answers.values())]
         choices[str(group)] = (answered or halves)[0].id
     sitting.choices_json = json.dumps(choices)
     questions = {q.id: q for q in db.query(Question).filter(Question.id.in_([i.question_id for i in items]))} if items else {}
@@ -537,8 +566,11 @@ def hand_in(db: Session, sitting: MockPaperSitting, how: str, when: datetime) ->
         answer.counted = not slot.choice_group or choices.get(str(slot.choice_group)) == slot.id
         result = learning_service.grade_answer_detail(question, answer.response_text)
         answer.is_correct, answer.auto_score, answer.grading_note = result.is_correct, result.score, result.note
-        if answer.auto_score is None and not (answer.response_text or "").strip():
+        if answer.auto_score is None and not gave_something(answer):
             # A written answer left blank: nothing for the teacher to mark.
+            # An attached PDF is an answer, so one of those is left for them
+            # (A-013): it used to be scored 0 here, and `save_marks` then
+            # refused any mark for an answer that already had a score.
             answer.auto_score, answer.is_correct = 0, False
         if answer.counted:
             if answer.auto_score is None:
@@ -829,6 +861,10 @@ def results(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
     if sittings:
         for a in db.query(MockPaperAnswer).filter(MockPaperAnswer.sitting_id.in_([s.id for s in sittings.values()])):
             answers.setdefault(a.sitting_id, []).append(a)
+    # A cell is only blank when the child gave nothing at all. A PDF of their
+    # working is something, and a cell marked blank is one a teacher scrolls
+    # past (A-013).
+    grid_files = set(attachment_service.for_mock_answers(db, [a.id for rows_ in answers.values() for a in rows_]))
     names = _student_names(db, {v.student_id for v in versions})
     rows = []
     for v in versions:
@@ -845,7 +881,8 @@ def results(db: Session, viewer: Viewer, paper_id: str, now: datetime | None = N
                 score = a.manual_score if a.manual_score is not None else a.auto_score
                 cell["changed"] = cell["changed"] or (a.manual_score is not None and a.auto_score is not None)
                 cell["max"] += a.max_score
-                cell["blank"] = cell["blank"] and not (a.response_text or "").strip()
+                cell["blank"] = cell["blank"] and learning_service.answer_is_blank(
+                    a.response_text, has_file=a.id in grid_files)
                 if score is None:
                     cell["waiting"] = True
                 else:

@@ -185,6 +185,9 @@ export interface SitPart {
   // #237: does the question take a PDF of the child's work, and the one attached.
   uploadRule?: UploadRule;
   attachment?: AnswerAttachment | null;
+  // A-041: whether a teacher marks this answer, so the hand-in confirmation
+  // knows where an attached PDF counts as an answer on its own.
+  teacherMarked?: boolean;
 }
 
 export interface SitPlace {
