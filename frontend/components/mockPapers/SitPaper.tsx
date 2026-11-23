@@ -17,10 +17,17 @@ import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import {
   activeHalf,
   answeredCount,
+  clearSitSaves,
   countdownText,
   durationText,
+  finishSave,
   handedInText,
+  handInBlock,
+  idsToResend,
+  markTyped,
+  newSitSaves,
   placeAnswered,
+  startSave,
   STATUS_LABEL,
   STATUS_TONE,
 } from "@/lib/mockPapers";
@@ -397,9 +404,14 @@ export function SitPaper({ paperId }: { paperId: string }) {
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [handInBlocked, setHandInBlocked] = useState<string | null>(null);
+  const blockedRef = useRef<string | null>(null);
   const [confirmNext, setConfirmNext] = useState(false);
   const timers = useRef<Record<string, number>>({});
-  const pending = useRef<Set<string>>(new Set());
+  // What has saved and what has not (A-002): the screen reports each save
+  // here and asks this before handing in. A ref, not state: it is read the
+  // moment a flush finishes, before React has re-rendered.
+  const tracker = useRef(newSitSaves());
   const handingIn = useRef(false);
 
   const adopt = useCallback((next: SittingView) => {
@@ -439,6 +451,15 @@ export function SitPaper({ paperId }: { paperId: string }) {
   answersRef.current = answers;
   workingRef.current = working;
 
+  // Read inside handIn, which runs long after this render: the paper (to
+  // name the question that would not save) and the deadline (past it, the
+  // server has the paper and an unsaved answer must not hold anything up).
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const offsetRef = useRef(offset);
+  offsetRef.current = offset;
+  const deadlineRef = useRef(0);
+
   // Each save sends the answer and the working together (the server keeps
   // working only where a question takes it).
   // Saves in flight, so handing in waits for them (review).
@@ -458,7 +479,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
   );
 
   const saveNow = async (questionId: string) => {
-    pending.current.delete(questionId);
+    const attempt = startSave(tracker.current, questionId);
     setSaves((s) => ({ ...s, [questionId]: "saving" }));
     try {
       const { data } = await api.put<{ chosenSlotId: string | null }>(`/my-papers/${paperId}/answers`, {
@@ -467,7 +488,9 @@ export function SitPaper({ paperId }: { paperId: string }) {
         working: workingRef.current[questionId] ?? "",
         workingSent: true,
       });
-      setSaves((s) => ({ ...s, [questionId]: "saved" }));
+      const latest = tracker.current.seq[questionId] === attempt;
+      finishSave(tracker.current, questionId, attempt, "saved");
+      if (latest) setSaves((s) => ({ ...s, [questionId]: "saved" }));
       if (data.chosenSlotId) {
         setView((v) =>
           v
@@ -485,52 +508,95 @@ export function SitPaper({ paperId }: { paperId: string }) {
       }
     } catch (err) {
       const described = describeApiError(err, "save your answer");
+      // A save that was overtaken by a newer one for the same question says
+      // nothing about where that answer stands now.
+      const latest = tracker.current.seq[questionId] === attempt;
+      finishSave(tracker.current, questionId, attempt, "failed", {
+        questionId,
+        message: described.message,
+        sessionEnded: described.kind === "session",
+        retryable: described.retryable,
+      });
+      if (!latest) return;
       setSaves((s) => ({ ...s, [questionId]: "error" }));
       if (["TIME_UP", "HANDED_IN"].includes(errorCode(err) ?? "")) {
+        // The server has the paper now: there is nothing left to save.
         setProblem(described.message);
-        pending.current.clear();
+        clearSitSaves(tracker.current);
         const fresh = await api.get<SittingView>(`/my-papers/${paperId}`).catch(() => null);
         if (fresh) adoptRef.current(fresh.data);
       } else if (described.retryable) {
-        pending.current.add(questionId); // a dropped connection: tried again
+        tracker.current.pending.add(questionId); // a dropped connection: tried again
       } else {
-        setProblem(described.message); // refused (too long, say): trying again won't help
+        setProblem(described.message); // refused (too long, say): say so now
       }
     }
   };
 
   const schedule = useCallback(
     (questionId: string) => {
-      pending.current.add(questionId);
+      markTyped(tracker.current, questionId);
       window.clearTimeout(timers.current[questionId]);
       timers.current[questionId] = window.setTimeout(() => void save(questionId), SAVE_DELAY);
     },
     [save],
   );
 
+  // Sends everything waiting: typed but not yet sent, AND anything whose
+  // last save failed. The second half matters -- a refused save never goes
+  // back into `pending`, so without it the child could never clear it and
+  // never hand in (A-002).
   const flush = useCallback(async () => {
-    const ids = [...pending.current];
+    const ids = idsToResend(tracker.current);
     for (const id of ids) window.clearTimeout(timers.current[id]);
     await Promise.all([...ids.map((id) => save(id)), ...Object.values(inflight.current)]);
   }, [save]);
 
   // Retry unsaved answers every so often (a dropped connection).
-  const savesRef = useRef(saves);
-  savesRef.current = saves;
   useEffect(() => {
     const id = window.setInterval(() => {
-      for (const q of [...pending.current]) if (savesRef.current[q] === "error") void save(q);
+      for (const q of [...tracker.current.unsaved]) if (tracker.current.pending.has(q)) void save(q);
     }, 15000);
     return () => window.clearInterval(id);
   }, [save]);
+
+  // Which question an id belongs to, for the sentence shown when a save has
+  // not gone through ("Question 7", not "one of your answers").
+  const questionName = useCallback(
+    (questionId: string) => {
+      for (const section of viewRef.current?.sections ?? [])
+        for (const place of section.places)
+          for (const half of place.halves)
+            if (half.parts.some((part) => part.id === questionId)) return `Question ${place.number}`;
+      return "one of your answers";
+    },
+    [],
+  );
 
   const handIn = useCallback(async () => {
     if (handingIn.current) return;
     handingIn.current = true;
     setBusy(true);
     setProblem(null);
+    setHandInBlocked(null);
+    blockedRef.current = null;
     try {
       await flush();
+      // Nothing is handed in while an answer is still unsaved: on a mock
+      // there is one sitting and no re-sit, so a lost answer is marked
+      // blank for good (A-002). Past the deadline this does not apply: the
+      // server refuses every save then and hands the paper in itself, so
+      // refusing here would only leave the child stuck.
+      const block = handInBlock(tracker.current, {
+        pastDeadline: deadlineRef.current > 0 && Date.now() + offsetRef.current >= deadlineRef.current,
+        questionName,
+      });
+      if (block) {
+        setProblem(block.message);
+        blockedRef.current = block.message;
+        setHandInBlocked(block.message); // shown in the dialog they pressed
+        return;
+      }
       const { data } = await api.post<SittingView>(`/my-papers/${paperId}/submit`);
       adopt(data);
     } catch (err) {
@@ -540,14 +606,17 @@ export function SitPaper({ paperId }: { paperId: string }) {
       else setProblem(describeApiError(err, "hand in your paper").message);
     } finally {
       setBusy(false);
-      setConfirmSubmit(false);
+      // The dialog stays open when the hand-in was held back, so the child
+      // reads why where they pressed.
+      setConfirmSubmit((open) => (blockedRef.current ? open : false));
       handingIn.current = false;
     }
-  }, [flush, paperId, adopt]);
+  }, [flush, paperId, adopt, questionName]);
 
   const sitting = view?.sitting ?? null;
   const serverNow = now + offset;
   const deadline = sitting ? Date.parse(sitting.deadlineAt) : 0;
+  deadlineRef.current = deadline;
   const writingAt = sitting ? Date.parse(sitting.writingStartsAt) : 0;
   const inProgress = sitting?.status === "IN_PROGRESS";
   const reading = inProgress && serverNow < writingAt;
@@ -851,6 +920,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
         }
       >
         <div className="space-y-3 text-sm text-content">
+          {handInBlocked ? <AlertBanner tone="error" message={handInBlocked} /> : null}
           <p>
             You have answered {answered} of {total} questions.
             {answered < total ? " Questions left blank get no marks." : ""}

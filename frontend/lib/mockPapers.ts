@@ -179,3 +179,132 @@ export const RESULT_STATE_LABEL = {
   TO_MARK: "To Mark",
   MARKED: "Marked",
 } as const;
+
+/* --- Saving a mock answer, and when a paper may be handed in (A-002) -----
+ *
+ * The audit of 22 Nov 2026 found that a mock paper was handed in even when
+ * an answer had failed to save: the save swallowed its own error, so the
+ * flush before handing in always looked successful. The answer was then
+ * marked blank, and a mock cannot be re-sat.
+ *
+ * The bookkeeping lives here, not in the screen, so it can be tested: the
+ * screen only reports what happened to each save and asks whether the paper
+ * may go. Everything is deliberately plain data.
+ */
+
+export type SitSaveProblem = {
+  questionId: string;
+  /** The server's own sentence, shown to the child as it was written. */
+  message: string;
+  /** A session that has ended: signing in again is what helps. */
+  sessionEnded: boolean;
+  /** A dropped connection or a fault on our side: sending it again helps.
+   *  A refusal (too long, say) will be refused again until it is changed. */
+  retryable: boolean;
+};
+
+export type SitSaves = {
+  /** Typed but not yet sent (the debounce), or waiting to be sent again. */
+  pending: Set<string>;
+  /** The last save for this question failed, whatever the reason. */
+  unsaved: Set<string>;
+  /** The newest save started per question, so a slow older one cannot
+   *  report over a newer one's result. */
+  seq: Record<string, number>;
+  /** The most recent failure, for the sentence shown when handing in. */
+  problem: SitSaveProblem | null;
+};
+
+export function newSitSaves(): SitSaves {
+  return { pending: new Set(), unsaved: new Set(), seq: {}, problem: null };
+}
+
+/** The child typed: this answer is now waiting to be sent. */
+export function markTyped(s: SitSaves, questionId: string): void {
+  s.pending.add(questionId);
+}
+
+/** A save is going out now. Returns its number, to be given back to
+ *  `finishSave` so an older save that lands late is ignored. */
+export function startSave(s: SitSaves, questionId: string): number {
+  s.pending.delete(questionId);
+  const n = (s.seq[questionId] ?? 0) + 1;
+  s.seq[questionId] = n;
+  return n;
+}
+
+/** A save came back. A result from anything but the newest save for that
+ *  question is thrown away. */
+export function finishSave(
+  s: SitSaves,
+  questionId: string,
+  n: number,
+  outcome: "saved" | "failed",
+  problem?: SitSaveProblem,
+): void {
+  if (s.seq[questionId] !== n) return; // an older save, landing late
+  if (outcome === "saved") {
+    s.unsaved.delete(questionId);
+    if (s.problem?.questionId === questionId) s.problem = null;
+    return;
+  }
+  s.unsaved.add(questionId);
+  if (problem) s.problem = problem;
+}
+
+/** The paper was handed in by the server, or reloaded: start afresh. */
+export function clearSitSaves(s: SitSaves): void {
+  s.pending.clear();
+  s.unsaved.clear();
+  s.problem = null;
+}
+
+/** Everything to send before handing in: what was typed and not yet sent,
+ *  AND anything whose last save failed. A refused save is never put back
+ *  into `pending`, so without the second half it would never be sent again
+ *  and the child could never hand in. */
+export function idsToResend(s: SitSaves): string[] {
+  return [...new Set([...s.pending, ...s.unsaved])];
+}
+
+export type HandInBlock = {
+  /** What the child reads. Carries the server's own reason where there is
+   *  one, and says what will actually help -- never a bare count. */
+  message: string;
+  /** A session that has ended: signing in again is the way out. */
+  sessionEnded: boolean;
+};
+
+/**
+ * May this paper be handed in? Called after the flush.
+ *
+ * `pastDeadline` is the one exception, and it is keyed on the time, not on
+ * who pressed: once the deadline has passed the server refuses every save
+ * (`TIME_UP`) and hands the paper in itself, so there is nothing left to
+ * save and nothing to be gained by refusing. That also lets a child hand in
+ * by hand if the automatic hand-in failed while they were offline.
+ */
+export function handInBlock(
+  s: SitSaves,
+  { pastDeadline, questionName }: { pastDeadline: boolean; questionName?: (questionId: string) => string },
+): HandInBlock | null {
+  if (pastDeadline) return null;
+  const stuck = idsToResend(s);
+  if (stuck.length === 0) return null;
+  const name = (id: string) => questionName?.(id) ?? "one of your answers";
+  const which = stuck.length === 1 ? `Your answer to ${name(stuck[0])} has not saved yet.` : `${stuck.length} of your answers have not saved yet.`;
+  const problem = s.problem && stuck.includes(s.problem.questionId) ? s.problem : null;
+  const why = problem ? ` ${problem.message}` : "";
+  // What will actually help. Telling a child to press again when the server
+  // will refuse the same answer again, or when their session has ended,
+  // sends them round in a circle.
+  const next = problem?.sessionEnded
+    ? "Sign in again on this device, then press Hand In."
+    : problem && !problem.retryable
+      ? "Change that answer, then press Hand In."
+      : "Press Hand In again to try once more.";
+  return {
+    message: `${which}${why} Nothing has been handed in, and your answers are still on this page. ${next}`,
+    sessionEnded: problem?.sessionEnded === true,
+  };
+}
