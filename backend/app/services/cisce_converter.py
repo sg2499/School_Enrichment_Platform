@@ -277,7 +277,11 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
                 # the number only (rule Stated); otherwise the child types the
                 # unit too (rule Required).
                 locked = str(row.get("Input Mode") or "").strip().lower() == "locked unit"
-                if not locked and unit_reader.answer_unit_from_question(stem) == code:
+                if (
+                    not locked
+                    and qtype == "Numeric Entry"
+                    and unit_reader.answer_unit_from_question(stem) == code
+                ):
                     # A-047, 23 Nov 2026. The ICSE 16-column layout has no
                     # Input Mode column, so every measured answer fell through
                     # to Required -- including "Add 1770 m and 994 m. Give the
@@ -289,7 +293,13 @@ def convert_workbook(src: Path, dst: Path, *, class_level: str, subject: str, so
                     # wording instead of from a column that is not there.
                     # Only an exact agreement counts; where the reader is
                     # unsure it says nothing and the answer stays Required
-                    # (his call, 17 Nov: "the unit is a must").
+                    # (his call, 17 Nov: "the unit is a must"). Numeric
+                    # Entry only, the same scope as the marker's
+                    # learning_service.uses_measured_marking and as
+                    # scripts/apply_icse_unit_rules.py: on a teacher-marked
+                    # or Text Entry answer the rule decides no mark, so
+                    # changing it would alter nothing but the record of his
+                    # call on written work.
                     locked = True
                     report.locked_units_read_from_stem += 1
                 answer_unit, unit_rule = code, ("Stated" if locked else "Required")

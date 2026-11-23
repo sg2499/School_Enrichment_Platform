@@ -982,7 +982,7 @@ def _candidate_answers(question: Question) -> list[str]:
 # Ashalatha's clarification note, item 5, as designed in
 # PHASE4_UNITS_DESIGN.md (approved 13 Oct 2026). Applies to a Numeric Entry
 # question with one blank, and only once its marking fields say so (see
-# _uses_measured_marking); every other question is marked by the code after
+# uses_measured_marking); every other question is marked by the code after
 # this block exactly as before.
 
 UNIT_RULES = ("NONE", "STATED", "REQUIRED")
@@ -1191,7 +1191,7 @@ def answer_instruction(question: Question) -> str | None:
     if (question.question_type or "").strip() != "Numeric Entry":
         return None
     rule = marking_rule(question)
-    if not _uses_measured_marking(question, rule) or not rule.answer_unit:
+    if not uses_measured_marking(question, rule) or not rule.answer_unit:
         return None
     if rule.unit_rule == "STATED":
         return f"Answer in {units.unit_label(rule.answer_unit)}."
@@ -1257,14 +1257,14 @@ def answer_needs_unit(question: Question) -> bool:
     """True when the child must write the unit (a REQUIRED unit that is
     recorded), so the answer box should offer letters, not a number pad."""
     rule = marking_rule(question)
-    return rule.unit_rule == "REQUIRED" and bool(rule.answer_unit) and _uses_measured_marking(question, rule)
+    return rule.unit_rule == "REQUIRED" and bool(rule.answer_unit) and uses_measured_marking(question, rule)
 
 
 def answer_unit_label(question: Question) -> str | None:
     """The unit the correct answer is in, in words, for showing the answer
     key ("500 grams"); None when the unit plays no part in marking."""
     rule = marking_rule(question)
-    if rule.unit_rule == "NONE" or not rule.answer_unit or not _uses_measured_marking(question, rule):
+    if rule.unit_rule == "NONE" or not rule.answer_unit or not uses_measured_marking(question, rule):
         return None
     key = units.parse_measurement(question.correct_answer)
     one = key is not None and key.unit is None and key.number == 1
@@ -1283,7 +1283,12 @@ def grading_note_words(note: str | None, *, marks_lost: int | None = None) -> st
     return None
 
 
-def _uses_measured_marking(question: Question, rule: MarkingRule) -> bool:
+def uses_measured_marking(question: Question, rule: MarkingRule) -> bool:
+    """Whether the unit, tolerance and rounding fields decide this
+    question's mark. Public, and named without an underscore, because
+    scripts/apply_icse_unit_rules.py selects the questions it may change by
+    this same test rather than by a question-type string of its own, which
+    could drift away from what the marker actually does (A-047)."""
     if (question.question_type or "").strip() != "Numeric Entry":
         return False
     if len([p for p in (question.correct_answer or "").split(";") if p.strip()]) != 1:
@@ -1431,7 +1436,7 @@ def grade_answer_detail(question: Question, response_text: str | None) -> GradeR
     (GradeResult.note). submit_attempt records the note."""
     if question.auto_gradable:
         rule = marking_rule(question)
-        if _uses_measured_marking(question, rule):
+        if uses_measured_marking(question, rule):
             return _grade_measured(question, (response_text or "").strip(), rule)
     is_correct, score = _grade_answer_text(question, response_text)
     return GradeResult(is_correct, score)

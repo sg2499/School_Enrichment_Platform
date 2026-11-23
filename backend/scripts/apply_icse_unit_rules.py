@@ -28,7 +28,15 @@ Rule, and nothing else.
 What it does, in order, and why it is safe to run:
 
   * Finds every question whose stored Unit Rule is Required, that has an
-    Answer Unit recorded, and whose own wording names that same unit --
+    Answer Unit recorded, **whose mark the rule actually decides**, and
+    whose own wording names that same unit --
+    the scope being the marker's own test
+    (learning_service.uses_measured_marking) and not a question-type string
+    of this script's own, so it cannot drift from what marking does. A
+    teacher-marked answer ("Show all working and explain your reasoning")
+    and a Text Entry answer are left alone: there the rule decides no mark,
+    the teacher's judgement stands, and moving it would only alter the
+    record of his 17 Nov call on written work. The wording is
     read by app/services/unit_reader.py, the module that has done this since
     13 Oct 2026 and whose 380 reads were checked by hand. Only an exact
     agreement counts: where the reader is unsure it says nothing, and the
@@ -78,6 +86,7 @@ class Plan:
     to_change: list = field(default_factory=list)  # (question, read_unit)
     disagreed: list = field(default_factory=list)  # (question, read_unit) -- reported, never changed
     unread: int = 0  # the wording does not name the unit: stays Required
+    out_of_scope: int = 0  # the rule decides no mark on this question
     by_group: Counter = field(default_factory=Counter)
     formats_reset: int = 0
 
@@ -101,6 +110,7 @@ def make_plan(db, *, boards=DEFAULT_BOARDS, lock: bool = False) -> Plan:
     she chose is not this script's to overturn."""
     from app.models import Board, BoardCourse, Chapter, ConceptLesson, Question
     from app.services import unit_reader, units
+    from app.services.learning_service import marking_rule, uses_measured_marking
 
     plan = Plan()
     query = (
@@ -120,6 +130,18 @@ def make_plan(db, *, boards=DEFAULT_BOARDS, lock: bool = False) -> Plan:
         recorded = units.unit_code(_text(question.answer_unit))
         if recorded is None:
             continue  # a unit marking does not know: not this script's business
+        # Only where the rule decides a mark. A-047 is a child scoring 0 for
+        # the right number, and that can only happen where the platform
+        # marks the answer against the unit -- the marker's own test, not a
+        # question-type string, so this cannot drift from it. On a
+        # teacher-marked question ("Show all working and explain your
+        # reasoning", 27 of them) and on a Text Entry answer (23) the rule
+        # plays no part in the mark, the teacher's judgement stands, and
+        # moving it would be a change to his 17 Nov call on written work
+        # for no gain.
+        if not question.auto_gradable or not uses_measured_marking(question, marking_rule(question)):
+            plan.out_of_scope += 1
+            continue
         read = unit_reader.answer_unit_from_question(question.stem)
         if read is None:
             plan.unread += 1
@@ -166,7 +188,16 @@ def check_keys_still_right(changed) -> list[str]:
             attempts.extend([bare, f"{bare} {question.answer_unit}", f"{bare} {label}"])
         for given in dict.fromkeys(a for a in attempts if a):
             is_correct, _score = grade_answer(question, given)
-            if not is_correct:
+            if is_correct is None:
+                # Not a skip. Every question here was selected because the
+                # marker marks it, so "no verdict" means the selection and
+                # the marker disagree, and nothing should be written until
+                # that is understood.
+                failures.append(
+                    f"{question.code}: the platform gives no verdict on \"{given}\", "
+                    "so it is not auto-marked after all."
+                )
+            elif not is_correct:
                 failures.append(f'{question.code}: "{given}" would be marked wrong.')
     return failures
 
@@ -223,6 +254,7 @@ def _report(plan: Plan, *, examples: int) -> None:
         print("  " + ", ".join(f"{group} {n}" for group, n in sorted(plan.by_group.items())))
     print(f'  of those, Response Format "Number and unit" -> "Number": {plan.formats_reset}')
     print(f"Required questions whose wording does not name it (left Required): {plan.unread}")
+    print(f"Required questions where the rule decides no mark (not touched): {plan.out_of_scope}")
     if plan.disagreed:
         print(f"\nWording names a DIFFERENT unit from the one recorded: {len(plan.disagreed)}")
         print("Not changed. One of the two is wrong, so these need a content decision:")

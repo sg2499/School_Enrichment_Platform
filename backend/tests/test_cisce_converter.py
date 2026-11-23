@@ -246,3 +246,31 @@ def test_an_input_mode_column_still_wins(tmp_path):
     report, out = _a047_file(tmp_path, 84, [("Find its length.", "metres", "12", "Locked unit")])
     assert out[0]["Unit Rule"] == "Stated"
     assert report.locked_units == 1 and report.locked_units_read_from_stem == 0
+
+
+def test_a_written_answer_is_not_locked_from_its_wording(tmp_path):
+    # Same scope as the marker (learning_service.uses_measured_marking) and
+    # as scripts/apply_icse_unit_rules.py: on a teacher-marked answer the
+    # unit rule decides no mark, so the wording does not lock it and his
+    # 17 Nov call on written work is left as it stands.
+    wb = openpyxl.Workbook()
+    wb.active.title = "Start Here"
+    qb, ak, mg, sm = (wb.create_sheet(t) for t in ("Question Bank", "Answer Key", "Marking Guide", "Skill Map"))
+    for ws, head in ((qb, QB), (ak, AK), (mg, MG), (sm, SM)):
+        ws.append(head)
+    stem = "Show all working and explain your reasoning. Convert 49800 cm to metres."
+    qb.append(["U91-Q001", "Numbers", "U91-S01", "Measure", 1, "A", "Diagnostic and foundation",
+               "Written Response", 3, stem, "metres", "Not applicable", "Exact; no rounding", "No",
+               "No external visual", "School to map"])
+    ak.append(["U91-Q001", "498", "Because.", "Written Response", "metres", "Exact", "Exact"])
+    mg.append(["U91-Q001", 3, "Teacher", "No", "1 mark for the reason.", "x", "Teacher note"])
+    sm.append(["U91-S01", "Measure", "Theme 1: Numbers", "1", "Class 4 prerequisite review", "-", "School to map"])
+    src = tmp_path / "CISCE_Class_5_Maths_Lesson_91_Numbers_500Q.xlsx"
+    wb.save(src)
+    dst = tmp_path / "out91.xlsx"
+    report = convert_workbook(src, dst, class_level="5", subject="Mathematics", source_label="CISCE Class 5 Mathematics")
+    rows = list(openpyxl.load_workbook(dst, read_only=True)["Question Bank"].iter_rows(values_only=True))
+    written = dict(zip(rows[0], rows[1]))
+    assert written["Question Type"] == "Constructed Response"
+    assert written["Unit Rule"] == "Required"
+    assert report.locked_units_read_from_stem == 0
