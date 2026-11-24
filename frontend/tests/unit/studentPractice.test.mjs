@@ -12,7 +12,9 @@ import { describe, test } from "node:test";
 
 import {
   blankWarning,
+  incorrectHint,
   joinParts,
+  keyShown,
   partsComplete,
   practiceAnsweredCount,
   partsText,
@@ -489,5 +491,35 @@ describe("the confirmation before Submit Practice (A-041)", () => {
     assert.equal(blankWarning(-1), null);
     assert.equal(blankWarning(1), "1 question has nothing in it. A question left blank gets no marks.");
     assert.equal(blankWarning(4), "4 questions have nothing in them. A question left blank gets no marks.");
+  });
+});
+
+describe("a key the result holds back (A-043)", () => {
+  const wrong = (extra) => ({ isCorrect: false, autoScore: 0, maxScore: 3, manualScore: null, ...extra });
+
+  test("keyShown is false only when the key is not there", () => {
+    assert.equal(keyShown({ correctAnswer: "Because the halves are equal" }), true);
+    // A key can legitimately be an empty string; what is withheld is null.
+    assert.equal(keyShown({ correctAnswer: "" }), true);
+    assert.equal(keyShown({ correctAnswer: null }), false);
+    assert.equal(keyShown({}), false);
+  });
+
+  test("the hint under Incorrect promises only what is actually below", () => {
+    assert.equal(incorrectHint([]), "None");
+    assert.equal(incorrectHint([{ isCorrect: true, autoScore: 3, maxScore: 3, correctAnswer: "x" }]), "None");
+    // One wrong answer with its key: as before.
+    assert.equal(incorrectHint([wrong({ correctAnswer: "7" })]), "The correct answer is below");
+    assert.equal(
+      incorrectHint([wrong({ correctAnswer: "7" }), wrong({ correctAnswer: "8" })]),
+      "The correct answers are below",
+    );
+    // A blank, marked wrong, with its key held back: there is nothing below,
+    // and saying there is would send the child looking for it.
+    assert.equal(incorrectHint([wrong({ correctAnswer: null })]), "Shown when your attempts are used up");
+    assert.equal(
+      incorrectHint([wrong({ correctAnswer: "7" }), wrong({ correctAnswer: null })]),
+      "Some correct answers are below",
+    );
   });
 });

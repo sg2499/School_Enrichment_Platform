@@ -990,6 +990,11 @@ UNIT_RULES = ("NONE", "STATED", "REQUIRED")
 # Grading notes recorded on AttemptAnswer.grading_note.
 WRONG_UNIT = "WRONG_UNIT"
 UNIT_MISSING = "UNIT_MISSING"
+# A-043: a written answer the platform scored 0 because the child gave
+# nothing at all. It is the only note that records why a 0 is a 0 rather
+# than why a right number lost marks, and the result route keys the model
+# answer on it, so it must mean exactly that and nothing else.
+BLANK = "BLANK"
 
 
 @dataclass(frozen=True)
@@ -1280,6 +1285,12 @@ def grading_note_words(note: str | None, *, marks_lost: int | None = None) -> st
             word = "mark was" if marks_lost == 1 else "marks were"
             return f"Correct number, but the unit was missing, so {marks_lost} {word} taken off."
         return "Correct number, but the unit was missing."
+    if note == BLANK:
+        # Deliberately not "you did not answer": a child may have run out of
+        # time, and the sentence has to be true either way. marks_lost is
+        # ignored -- the whole question's marks were lost and saying so adds
+        # nothing to a 0 the child can already see.
+        return "Nothing was written or attached, so this earned no marks."
     return None
 
 
@@ -1434,11 +1445,10 @@ def _grade_measured(question: Question, response: str, rule: MarkingRule) -> Gra
 def answer_is_blank(response_text: str | None, *, has_file: bool) -> bool:
     """Whether a child gave nothing at all on this answer.
 
-    Used by mock papers (mock_sitting_service.hand_in, in four places), and
-    public and named here rather than there because practice is meant to
-    share it the day A-043 is decided -- see the note in submit_attempt. A
-    child who draws their working on paper and attaches the PDF has
-    answered; they just did not type.
+    Shared by mock papers (mock_sitting_service.hand_in, in four places)
+    and practice (submit_attempt), so one rule decides both. A child who
+    draws their working on paper and attaches the PDF has answered; they
+    just did not type.
     Reading the typed text alone scored those answers 0 at hand-in, and an
     answer with a score is one no teacher may then mark, so the work was
     lost twice over (A-013, 23 Nov 2026).
@@ -1584,6 +1594,16 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
 
     existing_answers = {a.question_id: a for a in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()}
 
+    # Imported here, not at the top: attachment_service imports this module,
+    # so a module-level import would be a cycle (it imports
+    # mock_sitting_service the same way).
+    from app.services import attachment_service
+
+    # Which answers have a PDF, in one query (A-043 reads the same "did the
+    # child give anything" rule as the mock). An answer made below has none:
+    # it was never touched at all.
+    with_files = set(attachment_service.for_attempt_answers(db, [a.id for a in existing_answers.values()]))
+
     auto_score = 0
     max_score = 0
     any_unscored = False
@@ -1599,20 +1619,35 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
 
         result = grade_answer_detail(question, answer.response_text)
         is_correct, score = result.is_correct, result.score
-        # A-043 asks for a blank written answer to be scored 0 here, as the
-        # mock does, rather than waiting for a teacher. It is NOT done, and
-        # the reason is worth keeping: practice has re-attempts and the mock
-        # does not. Scoring the blank makes it "marked", which (1) sends the
-        # child the model answer and the explanation that routes_learning
-        # withholds from an unmarked written answer (4 Oct 2026), while they
-        # still have attempts left, and (2) makes that 0 the question's
-        # latest marked answer in progress_service.skill_scores, throwing
-        # away a teacher's mark from an earlier attempt. Measured 23 Nov
-        # 2026: a skill went from 6 of 6 to 1 of 6. Shailesh's call, with
-        # both findings in front of him.
+        note = result.note
+        if score is None and answer_is_blank(answer.response_text, has_file=answer.id in with_files):
+            # A-043 (Shailesh, 24 Nov 2026): "blank means either the student
+            # does not know the answer or did not have time to answer it,
+            # either way it counts as not answered so it should be 0."
+            # Nothing was written and nothing was drawn, so there is nothing
+            # for a teacher to mark and the answer no longer waits in their
+            # queue. The mock paper has done this since #166.
+            #
+            # Scoring it makes it a *marked* answer, and practice has
+            # re-attempts where the mock has none, so three other places
+            # read it differently from here. Each is handled, and together
+            # they are the fix, not this line alone:
+            #   * routes_learning's result withholds the model answer while
+            #     the child can still answer (4 Oct 2026), or leaving a
+            #     question blank becomes the way to read the key.
+            #   * analytics_service does not let a blank flag a
+            #     misconception: it says nothing about which mistake a child
+            #     makes (the same rule #226 applied to mock blanks).
+            #   * progress_service and standing_service now count it as 0,
+            #     which is what the 26 Oct 2026 My Progress design asks for
+            #     ("a question left blank in a handed-in attempt counts as
+            #     0"). A child who re-attempts a set and skips a written
+            #     question loses the teacher's earlier mark for it, exactly
+            #     as already happens for an auto-marked question.
+            is_correct, score, note = False, 0, BLANK
         answer.is_correct = is_correct
         answer.auto_score = score
-        answer.grading_note = result.note
+        answer.grading_note = note
         max_score += question.marks
         if score is None:
             any_unscored = True

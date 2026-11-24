@@ -50,7 +50,7 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
-from app.services import mock_results_service, practice_access_service
+from app.services import learning_service, mock_results_service, practice_access_service
 from app.services.practice_access_service import Viewer
 
 MISSED_FOR_MISCONCEPTION = 2
@@ -206,7 +206,10 @@ def _student_dict(student: Student, user: User, in_section=None) -> dict:
 
 def _answers(db: Session, assignment_ids: list[str], *, question_ids: set[str] | None = None, chapter_id: str | None = None):
     """Every answer in a handed-in attempt on these assignments:
-    (student_id, question_id, score or None, max_score, response_text, attempt key)."""
+    (student_id, question_id, score or None, max_score, response_text,
+    attempt key, grading note). The note is last so the positions the grid
+    reads do not move; it is there for A-043, to tell an answer the platform
+    scored 0 for a blank from one a person judged."""
     if not assignment_ids:
         return []
     query = (
@@ -217,6 +220,7 @@ def _answers(db: Session, assignment_ids: list[str], *, question_ids: set[str] |
             AttemptAnswer.auto_score,
             AttemptAnswer.max_score,
             AttemptAnswer.response_text,
+            AttemptAnswer.grading_note,
             Attempt.submitted_at,
             Attempt.attempt_number,
             Attempt.id,
@@ -234,12 +238,12 @@ def _answers(db: Session, assignment_ids: list[str], *, question_ids: set[str] |
             .filter(ConceptLesson.chapter_id == chapter_id)
         )
     out = []
-    for student_id, question_id, manual, auto, max_score, response, submitted_at, number, attempt_id in query.all():
+    for student_id, question_id, manual, auto, max_score, response, note, submitted_at, number, attempt_id in query.all():
         stamp = submitted_at or _EARLIEST
         if stamp.tzinfo is None:
             stamp = stamp.replace(tzinfo=timezone.utc)
         score = manual if manual is not None else auto
-        out.append((student_id, question_id, score, max_score or 0, response, (stamp, number, attempt_id)))
+        out.append((student_id, question_id, score, max_score or 0, response, (stamp, number, attempt_id), note))
     return out
 
 
@@ -502,7 +506,7 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
     # (#207 review).
     counted_as: dict[str, str] = {}
     for a in mock_rows:
-        picked[(a.student_id, a.question_id)] = (a.student_id, a.question_id, a.score, a.max_score, None, (a.handed_in_at, 0, a.sitting_id))
+        picked[(a.student_id, a.question_id)] = (a.student_id, a.question_id, a.score, a.max_score, None, (a.handed_in_at, 0, a.sitting_id), None)
         counted_as[a.question_id] = f"slot:{a.slot_id}"
     # Only the questions answered here (the chapter's every question, at
     # every school, would be read otherwise).
@@ -521,6 +525,13 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
     groups: dict[tuple[str, str], dict] = {}
     for (student_id, question_id), row in picked.items():
         if student_id not in students or row[2] is None or question_id not in by_question:
+            continue
+        if row[6] == learning_service.BLANK:
+            # A question left blank says nothing about which mistake a child
+            # makes -- the same rule as for a mock paper's blanks, a few
+            # lines below (#226). Until A-043 a blank written answer had no
+            # score at all, so the test above already dropped it; now it is
+            # scored 0 and has to be named.
             continue
         raw_tag, skill = by_question[question_id]
         key = tag_key(raw_tag)
