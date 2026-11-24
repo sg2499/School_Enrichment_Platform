@@ -11,12 +11,11 @@ What the 22 Nov audit found, and each row's test here:
     already has one, so the teacher could never put it right. The same
     reading left the PDF-only half of an either/or pair uncounted, and showed
     the cell as blank on the teacher's grid.
-  * A-043, practice. submit_attempt has no blank rule at all, so every blank
-    written answer sits in a teacher's queue. NOT FIXED here, deliberately --
-    see the note in submit_attempt. Practice has re-attempts and the mock
-    does not, and marking the blank would both send the child the model
-    answer while attempts remain and throw away a teacher's earlier mark.
-    His call, with both findings in front of him.
+  * A-043, practice. submit_attempt had no blank rule at all, so every blank
+    written answer sat in a teacher's queue. Built, held for a day, and
+    shipped on 24 Nov 2026 with the three places that read a marked answer
+    differently handled alongside it -- see
+    tests/test_blank_practice_answers_a043.py.
 
 Two of these pass against the unfixed code and are guards on what already
 worked: the mock scoring a wholly blank answer 0, and a typed answer coming
@@ -116,10 +115,9 @@ def test_the_payloads_say_which_answers_a_teacher_marks(client, db_session):
 
 def test_practice_leaves_a_pdf_only_answer_for_the_teacher(client, db_session):
     """A child who draws their working, attaches the PDF and types nothing has
-    answered, and the answer reaches their teacher. Practice has no blank rule
-    of its own (A-043 is held -- see the note in submit_attempt), so what this
-    pins down is that a PDF-only answer stays markable: the half of A-013 that
-    practice would inherit the day that rule arrives."""
+    answered, and the answer reaches their teacher. This is the half of A-013
+    that practice inherited when A-043 arrived (24 Nov 2026): the blank rule
+    must not reach an answer that has a drawing behind it."""
     db = db_session
     p = _practice(db, "NGV2", "ngv2")
     w = p.world
@@ -132,8 +130,9 @@ def test_practice_leaves_a_pdf_only_answer_for_the_teacher(client, db_session):
 
     drawn = _answer(db, p.attempt["id"], w.q2.id)
     assert drawn.auto_score is None and learning_service.needs_manual_grade(drawn) is True
-    # The one with neither waits too, for now: practice has no blank rule.
-    assert _answer(db, p.attempt["id"], w.q3.id).auto_score is None
+    # The one with neither is scored 0 (A-043, 24 Nov 2026), so only the
+    # drawing waits for the teacher.
+    assert _answer(db, p.attempt["id"], w.q3.id).auto_score == 0
 
     evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == p.attempt["id"]).one()
     assert evaluation.review_status == "PENDING_REVIEW"

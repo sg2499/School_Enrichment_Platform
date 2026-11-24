@@ -855,6 +855,20 @@ def get_attempt_result(
     }
     answer_rows.sort(key=lambda row: (sequence.get(row.question_id, 10_000), row.question.code))
     result_attachments = attachment_service.for_attempt_answers(db, [row.id for row in answer_rows])
+    # A-043 (24 Nov 2026): whether this child can still write an answer to
+    # these questions. Not "attempts used < the limit" alone: the limit
+    # counts an attempt that is still open, so once the last one is started
+    # that test says no, and an earlier attempt's result would hand over the
+    # model answer while the child sits in the open attempt able to type it
+    # in. So an attempt that has not been handed in counts too.
+    # The second test is for an attempt still OPEN, not merely "not handed
+    # in": ABANDONED is a status an Attempt may carry, and reading that as
+    # still answerable would hold the key back for ever.
+    _target = attempt.assignment_target
+    _history = _attempt_history(db, _target.id)
+    can_still_answer = len(_history) < _target.assignment.max_attempts + _target.bonus_attempts or any(
+        row["status"] == "IN_PROGRESS" for row in _history
+    )
     breakdown = []
     for answer in answer_rows:
         question = answer.question
@@ -868,7 +882,17 @@ def get_attempt_result(
         # sent, as before. A teacher or an admin reading the same attempt
         # always gets them.
         unmarked = answer.auto_score is None and answer.manual_score is None
-        withhold_key = user.role == "STUDENT" and unmarked
+        # A-043: a written answer left blank is now scored 0 at hand-in, so
+        # "nothing has marked it" no longer catches it -- and without this a
+        # child could leave a written question blank, read the model answer
+        # on the result, and type it into a re-attempt. That is the very
+        # thing the 4 Oct rule above exists to stop, so the blank is held
+        # back on the same terms: until the child can no longer answer it.
+        # Keyed on the note, which records that the platform scored this 0
+        # for a blank, rather than on the question's type -- a teacher's own
+        # 0 is a judgment and reveals the key as it always has.
+        blank_scored_here = answer.grading_note == learning_service.BLANK and answer.manual_score is None
+        withhold_key = user.role == "STUDENT" and (unmarked or (blank_scored_here and can_still_answer))
         breakdown.append(
             {
                 "questionId": question.id,
@@ -933,10 +957,10 @@ def get_attempt_result(
     # (and the same _attempt_history count) that grant_extra_attempt and
     # list_assignment_targets already return, so every surface agrees with
     # start_attempt's real limit: attemptsUsed < maxAttempts + bonusAttempts.
-    target = attempt.assignment_target
-    result["maxAttempts"] = target.assignment.max_attempts
-    result["bonusAttempts"] = target.bonus_attempts
-    result["attemptsUsed"] = len(_attempt_history(db, target.id))
+    # _target and _history are the same two, read once above for A-043.
+    result["maxAttempts"] = _target.assignment.max_attempts
+    result["bonusAttempts"] = _target.bonus_attempts
+    result["attemptsUsed"] = len(_history)
     result["answers"] = breakdown
     return result
 

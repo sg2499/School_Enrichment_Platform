@@ -98,10 +98,22 @@ def test_scores_use_the_latest_marked_answer_and_bands_follow(db_session):
     assert _skill(progress_service.progress_payload(db_session, student, for_student=True), s2.id)["band"] == "JUST_STARTED"
 
     # A second attempt, all right: the latest answers replace the first.
-    _do(db_session, student, target.id, {q.id: "A" for q in core})
+    _do(db_session, student, target.id, {**{q.id: "A" for q in core}, setup["written"].id: "y"})
     again = progress_service.progress_payload(db_session, student, for_student=True)
     assert (_skill(again, s1.id)["percent"], _skill(again, s1.id)["band"]) == (100.0, "STRONG")
     assert again["summary"]["strong"] == 1 and again["summary"]["skills"] == 3
+
+    # A-043 (24 Nov 2026): a third attempt that leaves the written question
+    # blank. A blank is now scored 0 at hand-in, so it becomes the question's
+    # latest marked answer and counts -- which is what the 26 Oct 2026 My
+    # Progress design asks for ("a question left blank in a handed-in attempt
+    # counts as 0"). The cost, deliberately pinned here: the skill falls, and
+    # a teacher's mark on an earlier attempt would be displaced the same way.
+    # A typed answer still waits for its mark and still does not count (the
+    # attempt above).
+    _do(db_session, student, target.id, {q.id: "A" for q in core})
+    blanked = _skill(progress_service.progress_payload(db_session, student, for_student=True), s1.id)
+    assert blanked["percent"] < 100.0 and blanked["answered"] == 4
     assert progress_service.band_for(79.9, 3) == "GETTING_THERE" and progress_service.band_for(50, 5) == "GETTING_THERE"
 
 
@@ -248,7 +260,7 @@ def test_a_written_answer_in_self_practice_reaches_needs_review(client, db_sessi
     db_session.add(LearningActivityQuestion(learning_activity_id=setup["rem"].id, question_id=written.id, sequence=9))
     db_session.commit()
     target = _assign(db_session, setup, setup["p01"])
-    _do(db_session, student, target.id, {q.id: "B" for q in setup["core1"]})
+    _do(db_session, student, target.id, {**{q.id: "B" for q in setup["core1"]}, setup["written"].id: "Because."})
     own = progress_service.start_self_practice(db_session, student, setup["rem"].id)
     _do(db_session, student, own.id, {written.id: "My reason."})
 
@@ -257,3 +269,11 @@ def test_a_written_answer_in_self_practice_reaches_needs_review(client, db_sessi
     assert len(queue["items"]) == 2  # the core set's written answer, and the self-practice's
     stats = client.get(f"/api/learning/tracker/students/{student.id}", headers=headers).json()["student"]["stats"]
     assert (stats["assigned"], stats["needsReview"]) == (1, 2)
+
+    # A-043 (24 Nov 2026): a second attempt at the core set that leaves the
+    # written question blank is scored and finalised, so it does not join the
+    # queue -- the point of the row. The self-practice answer, which has
+    # something in it, is still waiting, and this test's own subject.
+    _do(db_session, student, target.id, {q.id: "B" for q in setup["core1"]})
+    after = client.get("/api/learning/tracker/review-queue", headers=headers).json()
+    assert [i["attemptId"] for i in after["items"]] == [i["attemptId"] for i in queue["items"]]

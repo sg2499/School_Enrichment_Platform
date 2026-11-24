@@ -49,6 +49,8 @@ import {
   partsComplete,
   partsText,
   partMarksHint,
+  incorrectHint,
+  keyShown,
   practiceAnsweredCount,
   blankWarning,
   resultHref,
@@ -171,8 +173,15 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
   // The right answer is shown for an answer that has been marked, never for
   // one still waiting for a teacher.
   const reveal = state !== "pending";
-  const showRight = state === "incorrect" || state === "partial";
   const shown = answerPresentation(answer, reveal);
+  // A-043: a blank is marked wrong and its key is held back while the child
+  // can still answer it, which is the first time this page has had a wrong
+  // answer with no key to put beside it. Before, a withheld key always meant
+  // "waiting for your teacher", and nothing was drawn at all. Now the panel
+  // is still there -- a missing panel reads as "nothing to learn here" --
+  // and says when the answer will be shown instead of standing empty.
+  const showRight = state === "incorrect" || state === "partial";
+  const hasKey = shown.kind === "sequence" ? Boolean(shown.right) : keyShown(answer);
 
   if (shown.kind === "options") {
     return (
@@ -285,7 +294,15 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
         <p className={cn(PANEL_LABEL, "text-content-subtle")}>{shown.kind === "sequence" ? "Your Order" : "Your Answer"}</p>
         {yours}
       </div>
-      {showRight ? (
+      {showRight && !hasKey ? (
+        // Held back, not missing: content-subtle on surface-muted is 6.0:1,
+        // and the neutral panel keeps it from reading as the answer.
+        <div className="rounded-2xl border border-line bg-surface-muted px-3.5 py-3">
+          <p className={cn(PANEL_LABEL, "text-content-subtle")}>{shown.kind === "sequence" ? "Correct Order" : "Correct Answer"}</p>
+          <p className="mt-1 text-sm leading-relaxed text-content-muted">Shown when your attempts are used up.</p>
+        </div>
+      ) : null}
+      {showRight && hasKey ? (
         // jade-800 on jade-50: 8.9:1.
         <div className="rounded-2xl border border-jade-200 bg-jade-50 px-3.5 py-3">
           <p className={cn(PANEL_LABEL, "text-jade-800")}>{shown.kind === "sequence" ? "Correct Order" : "Correct Answer"}</p>
@@ -957,7 +974,7 @@ export default function StudentAttemptPage() {
       {
         label: "Incorrect",
         value: tally.incorrect,
-        hint: tally.incorrect > 0 ? (tally.incorrect === 1 ? "The correct answer is below" : "The correct answers are below") : "None",
+        hint: incorrectHint(result.answers),
       },
       ...(tally.partial > 0 || tally.pending > 0
         ? [

@@ -374,6 +374,30 @@ export function partMarksHint(
   return "Some from your teacher";
 }
 
+/**
+ * Whether the result can show this answer's correct answer (A-043). The
+ * model answer is held back for a question the child can still answer --
+ * otherwise leaving it blank would be the way to read the key and re-attempt
+ * -- so the result must not draw an empty "Correct Answer" box, and the
+ * summary must not promise one that is not there.
+ */
+export function keyShown(answer: Pick<AttemptAnswerResult, "correctAnswer">): boolean {
+  return answer.correctAnswer !== null && answer.correctAnswer !== undefined;
+}
+
+/** The hint under "Incorrect": what the child will actually find below. */
+export function incorrectHint(answers: readonly AttemptAnswerResult[]): string {
+  const wrong = answers.filter((answer) => {
+    const state = answerState(answer);
+    return state === "incorrect" || state === "partial";
+  });
+  if (wrong.length === 0) return "None";
+  const shown = wrong.filter((answer) => keyShown(answer)).length;
+  if (shown === 0) return "Shown when your attempts are used up";
+  if (shown < wrong.length) return "Some correct answers are below";
+  return shown === 1 ? "The correct answer is below" : "The correct answers are below";
+}
+
 /** The marks an answer earned, or null while nothing has marked it. */
 export function answerMarks(answer: Pick<AttemptAnswerResult, "autoScore" | "manualScore">): number | null {
   if (typeof answer.manualScore === "number") return answer.manualScore;

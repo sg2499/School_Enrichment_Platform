@@ -84,7 +84,7 @@ def test_grid_misconceptions_and_access(client, db_session):
     _do(db_session, a, target[a.id].id, {q1: "B", q2: "B", q3: "A", wr: "My reason"})
     _do(db_session, a, target[a.id].id, {q1: "A", q2: "A", q3: "A", q4: "10"})
     # b: misses only q1 (one slip). c: never hands in.
-    _do(db_session, b, target[b.id].id, {q1: "B", q2: "A", q3: "A", q4: "10"})
+    _do(db_session, b, target[b.id].id, {q1: "B", q2: "A", q3: "A", q4: "10", wr: "Because the halves are equal"})
 
     scope = f"{w['assignment'].class_level_id}|A|{w['assignment'].board_course_id}"
     headers = {**_login(client, w["teacher"].user.email), "x-auth-role": "TEACHER"}
@@ -100,14 +100,19 @@ def test_grid_misconceptions_and_access(client, db_session):
     rows = {s["studentCode"]: s for s in grid["students"]}
     states = lambda code: [cell["state"] if cell else None for cell in rows[code]["cells"]]
     assert states(a.student_code) == ["WRONG", "WRONG", "CORRECT", "BLANK", "PENDING"]
-    # A written answer, even left blank, waits for the teacher's mark.
+    # A written answer with something in it waits for the teacher's mark.
     assert states(b.student_code) == ["WRONG", "CORRECT", "CORRECT", "CORRECT", "PENDING"]
     assert rows[c.student_code]["handedIn"] is False and states(c.student_code) == [None] * 5
     assert grid["questions"][0]["percentCorrect"] == 0.0 and grid["questions"][1]["percentCorrect"] == 50.0
     latest = client.get(
         f"/api/learning/analytics/sets/{w['core'].id}", params={"scope": scope, "attempt": "latest"}, headers=headers
     ).json()
-    assert [cell["state"] for cell in {s["studentCode"]: s for s in latest["students"]}[a.student_code]["cells"][:4]] == ["CORRECT"] * 4
+    latest_cells = [cell["state"] for cell in {s["studentCode"]: s for s in latest["students"]}[a.student_code]["cells"]]
+    # A-043 (24 Nov 2026): a's second attempt left the written question
+    # blank, and a blank is now scored 0 at hand-in, so the cell reads BLANK
+    # where it read PENDING. A typed answer still waits for the teacher (b,
+    # above) -- it is only the empty one that no longer does.
+    assert latest_cells == ["CORRECT"] * 4 + ["BLANK"]
 
     report = client.get(
         f"/api/learning/analytics/chapters/{w['chapter'].id}/misconceptions", params={"scope": scope}, headers=headers
