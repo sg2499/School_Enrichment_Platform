@@ -286,6 +286,34 @@ export function markTyped(s: SitSaves, questionId: string): void {
   s.pending.add(questionId);
 }
 
+/** Runs work for one key strictly after the previous work for that key
+ *  (#264).
+ *
+ *  The mock sitting page fired a second PUT for a question while the first
+ *  was still in flight. The SCREEN was already safe -- A-002's tracker makes
+ *  an overtaken response say nothing -- but the SERVER is not: if the older
+ *  request reaches it last, it overwrites the newer answer in the database
+ *  while the screen says saved, and the child loses what they typed without
+ *  anything looking wrong. Practice has chained its saves for this reason;
+ *  this is the same rule, in a form that can be tested.
+ *
+ *  A failed save does not block the next one: the chain continues from it,
+ *  so one refused request cannot wedge a question for the rest of the paper.
+ */
+export function chainByKey(
+  queue: Record<string, Promise<void>>,
+  key: string,
+  work: () => Promise<void>,
+): Promise<void> {
+  const previous = queue[key] ?? Promise.resolve();
+  const run = previous.catch(() => {}).then(work);
+  queue[key] = run;
+  void run.catch(() => {}).finally(() => {
+    if (queue[key] === run) delete queue[key];
+  });
+  return run;
+}
+
 /** A save is going out now. Returns its number, to be given back to
  *  `finishSave` so an older save that lands late is ignored. */
 export function startSave(s: SitSaves, questionId: string): number {
@@ -293,6 +321,28 @@ export function startSave(s: SitSaves, questionId: string): number {
   const n = (s.seq[questionId] ?? 0) + 1;
   s.seq[questionId] = n;
   return n;
+}
+
+/** The word to put on a question after one of its saves has just SUCCEEDED
+ *  (#264).
+ *
+ *  Not always "saved". Saves for one question are chained, so this one can
+ *  land while newer typing for the same question is still waiting its turn --
+ *  the child typed again during the save, or during the debounce before it.
+ *  The server holds THIS answer, not that one, so "Saved" would be the very
+ *  claim the chaining exists to stop: the screen saying saved while the
+ *  database is behind what the child typed.
+ *
+ *  `pending` is exactly that window. `schedule` puts the question there on
+ *  every keystroke and `startSave` takes it out when its request actually
+ *  goes, so the word cannot stick on "Saving" -- something is always coming.
+ *
+ *  (The window itself is not new: it already existed during the debounce
+ *  delay. Chaining widens it to the length of the save in front, which is
+ *  what made it worth saying out loud.)
+ */
+export function labelAfterSave(s: SitSaves, questionId: string): "saved" | "saving" {
+  return s.pending.has(questionId) ? "saving" : "saved";
 }
 
 /** A save came back. A result from anything but the newest save for that

@@ -41,9 +41,10 @@ Authorization model:
 """
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.errors import api_error
+from app.core.errors import api_error, status_words
 from app.core.rate_limit import limiter
 from app.database import get_db
 from app.dependencies import get_current_student, get_current_teacher, require_roles
@@ -212,8 +213,38 @@ def publish_activity(
     activity = db.get(LearningActivity, activity_id)
     if not activity:
         api_error(404, "NOT_FOUND", "That activity couldn't be found. It may have been removed.")
-    if not db.query(LearningActivityQuestion).filter(LearningActivityQuestion.learning_activity_id == activity.id).first():
+    counts = (
+        db.query(Question.status, func.count(Question.id))
+        .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
+        .filter(LearningActivityQuestion.learning_activity_id == activity.id)
+        .group_by(Question.status)
+        .all()
+    )
+    if not counts:
         api_error(422, "VALIDATION_ERROR", "This activity has no questions yet, so it can't be published.")
+    # #261: this endpoint checked only that the set HAD questions, so a set
+    # full of Drafts or questions sent back for rework could be published
+    # straight past the approval gate -- the gate A-001 put on the bulk
+    # Approve and Publish path, which this one sat beside and did not share.
+    # Same rule, same vocabulary: every question cleared for release.
+    # Counted by the words the studio shows, not the stored enums: DRAFT and
+    # SME_REVIEW are "Draft" and "In Review" on screen, and REVIEW and
+    # SME_REVIEW are one state to the person, so they add up into one figure
+    # rather than appearing twice under the same name.
+    not_ready: dict[str, int] = {}
+    for status, count in counts:
+        if status in learning_service.READY_QUESTION_STATUSES:
+            continue
+        not_ready[status_words(status)] = not_ready.get(status_words(status), 0) + count
+    if not_ready:
+        total = sum(not_ready.values())
+        breakdown = ", ".join(f"{count} {words}" for words, count in sorted(not_ready.items()))
+        api_error(
+            422,
+            "SET_NOT_READY",
+            f"This set can't be published yet: {total} of its questions are not approved "
+            f"({breakdown}). Approve them in the chapter's question list, then publish the set.",
+        )
     activity.status = "PUBLISHED"
     db.commit()
     return _activity_dict(activity)
