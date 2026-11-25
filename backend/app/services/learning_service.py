@@ -180,11 +180,29 @@ def classify_assignment_code(code: str) -> tuple[str | None, bool]:
 
 # The question statuses that count as cleared for release: a human has
 # approved the question. `routes_curriculum_admin.py` imports this rather
-# than keeping its own copy. It is not a guarantee that everything a child
-# sees is approved -- a question sent back for rework after its set went
-# live is still served (A-011), and `scripts/publish_courses.py` still has
-# its own inline copy of these two names.
+# than keeping its own copy. `scripts/publish_courses.py` still has its own
+# inline copy of these two names.
 READY_QUESTION_STATUSES = {"APPROVED", "PUBLISHED"}
+
+# A-011, 25 Nov 2026: a question a person has deliberately sent back for
+# rework is withdrawn from the live sets that hold it, so no child is marked
+# against a key that has been rejected.
+#
+# Only a send-back, and deliberately nothing else. Shailesh's decision of
+# 23 Nov (#251, part 4): an automatic FLAGGED from Re-run Checks does NOT
+# withdraw a question, because the checker has false positives and should
+# not take questions out from under children -- those are reported to him
+# instead. A DRAFT sitting in a published set is #261's defect, not this
+# one, and must not be fixed by a surprise on deploy day: production holds
+# 4,828 questions that are not approved, and pulling all of them at once
+# would empty live sets in front of a real school.
+WITHDRAWN_QUESTION_STATUSES = {"SME_REVIEW"}
+
+# The floor a set must still clear once a question has been withdrawn. Below
+# it the set is held rather than served thin (#251, part 1). The same number
+# scripts/check_set_sizes.py defaults to; a set that was always small is not
+# held, because nothing was taken from it.
+MIN_SET_SIZE = 10
 
 
 def top_up_activity(db: Session, activity: LearningActivity, group_questions: list[Question]) -> int:
@@ -505,6 +523,17 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
     assignment = target.assignment
     if assignment.status != "ACTIVE":
         api_error(422, "ASSIGNMENT_CLOSED", "This practice has been closed, so it can't be started.")
+    # A-011 (#251, part 1): hide the question, not the set -- unless hiding
+    # it leaves too few questions to be worth setting, in which case the set
+    # is held until the question comes back. Only on starting: a child who
+    # already has it open finishes rather than losing their work.
+    if set_is_held(db, assignment.learning_activity_id):
+        api_error(
+            422,
+            "SET_ON_HOLD",
+            "Your teacher is checking a question in this practice, so it's paused for now. "
+            "It will be back once they're done.",
+        )
 
     # Resume an already-open attempt rather than starting a duplicate --
     # this is what makes a page-refresh mid-attempt safe, and half of
@@ -596,8 +625,65 @@ def _get_owned_attempt(db: Session, student: Student, attempt_id: str) -> Attemp
 
 
 def _activity_question_ids(db: Session, learning_activity_id: str) -> set[str]:
+    """Every question in the set, withdrawn ones included. For callers that
+    ask "is this question part of this set at all"."""
     rows = db.query(LearningActivityQuestion.question_id).filter(LearningActivityQuestion.learning_activity_id == learning_activity_id).all()
     return {r[0] for r in rows}
+
+
+def withdrawn_question_ids(db: Session, learning_activity_id: str) -> set[str]:
+    """The questions in this set that a person has sent back for rework, so
+    they are no longer served or marked (A-011)."""
+    rows = (
+        db.query(LearningActivityQuestion.question_id)
+        .join(Question, Question.id == LearningActivityQuestion.question_id)
+        .filter(
+            LearningActivityQuestion.learning_activity_id == learning_activity_id,
+            Question.status.in_(WITHDRAWN_QUESTION_STATUSES),
+        )
+        .all()
+    )
+    return {r[0] for r in rows}
+
+
+def servable_questions(db: Session, learning_activity_id: str) -> list[Question]:
+    """The questions a child is given, in order, with withdrawn ones left
+    out (A-011). The one place that decides what a set currently contains --
+    the attempt payload, saving an answer and marking all read it, so they
+    cannot disagree about which questions the set has."""
+    return (
+        db.query(Question)
+        .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
+        .filter(
+            LearningActivityQuestion.learning_activity_id == learning_activity_id,
+            Question.status.notin_(WITHDRAWN_QUESTION_STATUSES),
+        )
+        .order_by(LearningActivityQuestion.sequence)
+        .all()
+    )
+
+
+def set_is_held(db: Session, learning_activity_id: str) -> bool:
+    """Whether a set has been held because withdrawing a question left it
+    under the minimum (#251, part 1).
+
+    A set that was always small is NOT held: the demo school's Case Study is
+    five questions by design, and holding it would be this fix breaking
+    something nobody asked it to touch. Only a set that lost a question and
+    then fell short is held."""
+    if not withdrawn_question_ids(db, learning_activity_id):
+        return False
+    remaining = (
+        db.query(func.count(LearningActivityQuestion.id))
+        .join(Question, Question.id == LearningActivityQuestion.question_id)
+        .filter(
+            LearningActivityQuestion.learning_activity_id == learning_activity_id,
+            Question.status.notin_(WITHDRAWN_QUESTION_STATUSES),
+        )
+        .scalar()
+        or 0
+    )
+    return remaining < MIN_SET_SIZE
 
 
 # --- The child's working (#163, 22 Oct 2026) ----------------------------------
@@ -656,6 +742,17 @@ def save_answer(
     activity = attempt.assignment_target.assignment.learning_activity
     if question_id not in _activity_question_ids(db, activity.id):
         api_error(422, "VALIDATION_ERROR", "That question isn't part of this practice.")
+    if question_id in withdrawn_question_ids(db, activity.id):
+        # A-011: withdrawn while the child had the set open. Their screen
+        # still shows it, so this is the first they hear of it -- and it is
+        # not their mistake, so it does not read like one. It will not be
+        # marked either way (submit_attempt leaves it out of the total).
+        api_error(
+            409,
+            "QUESTION_WITHDRAWN",
+            "Your teacher has taken this question out of the practice, so your answer to it won't be marked. "
+            "Everything else you have written is saved.",
+        )
 
     question = db.get(Question, question_id)
     answer = (
@@ -1066,6 +1163,10 @@ UNIT_MISSING = "UNIT_MISSING"
 # than why a right number lost marks, and the result route keys the model
 # answer on it, so it must mean exactly that and nothing else.
 BLANK = "BLANK"
+# A-011: the child answered, then the question was taken out of the set.
+# Not right, not wrong, and out of the total -- so it must not sit in a
+# teacher's marking queue either.
+WITHDRAWN = "WITHDRAWN"
 
 
 @dataclass(frozen=True)
@@ -1362,6 +1463,10 @@ def grading_note_words(note: str | None, *, marks_lost: int | None = None) -> st
         # ignored -- the whole question's marks were lost and saying so adds
         # nothing to a 0 the child can already see.
         return "Nothing was written or attached, so this earned no marks."
+    if note == WITHDRAWN:
+        # A-011. Said plainly, and without blame: the child did nothing
+        # wrong, and may well have answered it.
+        return "Your teacher took this question out of the practice, so it isn't counted either way."
     return None
 
 
@@ -1666,10 +1771,25 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
         api_error(409, "ATTEMPT_LOCKED", "This attempt is no longer in progress.")
 
     activity = attempt.assignment_target.assignment.learning_activity
-    question_ids = _activity_question_ids(db, activity.id)
-    questions_by_id = {q.id: q for q in db.query(Question).filter(Question.id.in_(question_ids)).all()}
+    # A-011 (#251, part 2): a question withdrawn while this attempt was open
+    # is not counted at all -- not right, not wrong, and out of the total --
+    # so no child is marked out of a question that was taken away from them.
+    questions = servable_questions(db, activity.id)
+    question_ids = {q.id for q in questions}
+    questions_by_id = {q.id: q for q in questions}
 
     existing_answers = {a.question_id: a for a in db.query(AttemptAnswer).filter(AttemptAnswer.attempt_id == attempt.id).all()}
+
+    # A-011: the child answered a question that was then withdrawn. The row
+    # stays -- deleting a child's work to tidy a report would be worse than
+    # the defect -- but it is named, so the teacher's queue, the result page
+    # and the analytics grid can leave it alone. Without this its auto_score
+    # is None, which needs_manual_grade reads as "a teacher must mark this",
+    # and a withdrawn question would arrive in their queue.
+    for _question_id, _answer in existing_answers.items():
+        if _question_id not in question_ids:
+            _answer.grading_note = WITHDRAWN
+            _answer.is_correct = None
 
     # Imported here, not at the top: attachment_service imports this module,
     # so a module-level import would be a cycle (it imports
@@ -1770,8 +1890,11 @@ def needs_manual_grade(answer: AttemptAnswer) -> bool:
     """True for an answer grade_answer left unscored on submit (auto_score
     IS NULL -- Constructed Response and any other non-auto-gradable type).
     These, and only these, are what a teacher marks; an auto-scored answer
-    is never re-marked by hand (see AttemptAnswer.manual_score's comment)."""
-    return answer.auto_score is None
+    is never re-marked by hand (see AttemptAnswer.manual_score's comment).
+
+    A withdrawn question (A-011) has no score either, but it is not the
+    teacher's to mark: the question was taken out of the set."""
+    return answer.auto_score is None and answer.grading_note != WITHDRAWN
 
 
 def apply_manual_grades(

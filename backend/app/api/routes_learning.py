@@ -695,13 +695,11 @@ class StartAttemptRequest(BaseModel):
 
 def _attempt_dict(attempt: Attempt, db: Session) -> dict:
     activity = attempt.assignment_target.assignment.learning_activity
-    questions = (
-        db.query(Question)
-        .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
-        .filter(LearningActivityQuestion.learning_activity_id == activity.id)
-        .order_by(LearningActivityQuestion.sequence)
-        .all()
-    )
+    # A-011: a question sent back for rework is not served, so a child is
+    # never shown, nor marked against, a key a person has rejected. This ran
+    # its own join before and so would have kept showing the question after
+    # the rest of the platform had stopped counting it.
+    questions = learning_service.servable_questions(db, activity.id)
     # 30 Sep 2026: resume used to come back blank. start_attempt returns the
     # existing IN_PROGRESS attempt on resume (learning_service.start_attempt,
     # "Resume an already-open attempt"), and every answer the student already
