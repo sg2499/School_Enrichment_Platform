@@ -14,7 +14,7 @@ from tests.test_curriculum_admin import (
     _make_chapter,
     _make_school_admin,
 )
-from tests.test_learning import _make_school, _published_single_activity
+from tests.test_learning import _assigner, _make_school, _published_single_activity
 
 test_learning._CHAPTER_NUM.update({"mf1": 131})
 
@@ -102,19 +102,19 @@ def test_the_same_set_is_not_set_twice_for_one_open_section(db_session):
     school = _make_school(db_session, "mf1")
     test_learning._make_sectioned_student(db_session, school, "mf1-a", class_name="5", section="A")
     learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="t",
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
         class_name="5", section="A",
     )
     with pytest.raises(HTTPException) as err:
         learning_service.create_assignment(
-            db_session, school=school, learning_activity=activity, assigned_by_user_id="t",
+            db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
             class_name="5", section="A",
         )
     assert err.value.status_code == 409
     # another section is a different audience
     test_learning._make_sectioned_student(db_session, school, "mf1-b", class_name="5", section="B")
     learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="t",
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
         class_name="5", section="B",
     )
 

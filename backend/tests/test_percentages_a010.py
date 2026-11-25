@@ -15,6 +15,10 @@ import math
 from app.core import percentages
 from app.services import progress_service, weekly_report_service  # noqa: F401  (import-cycle guard)
 
+from tests import test_learning
+
+test_learning._CHAPTER_NUM.update({"BFIL": 191})
+
 
 def _old_server_then_screen(earned: int, possible: int) -> int:
     """What the platform used to show: the server's one-decimal rounding,
@@ -169,3 +173,65 @@ def test_practise_next_orders_on_the_exact_percentage_not_the_shown_one():
     # my_progress now uses.
     exact = sorted([stronger, weaker], key=lambda r: (r.exact_percent, r.skill.code))
     assert exact[0].skill.code == "Z-SKILL"
+
+
+# --- #268: a set says how it is marked ---------------------------------------
+
+
+def test_a_set_reports_how_it_is_actually_marked():
+    """#268: evaluation_mode was hardcoded "AUTO" for every generated set, so
+    "Measurement — Mastery E" -- twenty Constructed Response questions, every
+    one hand-marked -- reported itself as automatically marked.
+
+    Nothing reads the field today, which is why it was wrong for so long
+    unnoticed. It is fixed because the first thing that reads it would read
+    it wrong, and telling a teacher a 60-mark hand-marked set is "AUTO" is a
+    worse mistake than an empty field."""
+    from app.services.learning_service import evaluation_mode_for
+
+    def q(*, auto, kind="Numeric Entry"):
+        return type("Q", (), {"auto_gradable": auto, "question_type": kind})()
+
+    written = q(auto=False, kind="Constructed Response")
+    marked_by_platform = q(auto=True)
+
+    assert evaluation_mode_for([marked_by_platform, marked_by_platform]) == "AUTO"
+    assert evaluation_mode_for([written, written]) == "MANUAL"
+    assert evaluation_mode_for([marked_by_platform, written]) == "HYBRID"
+    # A Constructed Response is teacher-marked even when the flag says
+    # otherwise -- upload_rule_service.teacher_marked decides, not this.
+    assert evaluation_mode_for([q(auto=True, kind="Constructed Response")]) == "MANUAL"
+
+
+def test_the_backfill_corrects_an_existing_set_and_then_does_nothing(db_session):
+    """#268's backfill writes to the production database, so "it parses" is
+    not a check. This drives it against a real world: a set of written
+    questions stored as AUTO is reported, then corrected, then left alone."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from scripts.backfill_evaluation_mode import plan
+
+    from app.models import LearningActivity
+    from tests.test_class_analytics import _world
+
+    w = _world(db_session, "BFIL")
+    # The Mastery E shape: a set whose questions a teacher marks, stored AUTO.
+    activity = db_session.get(LearningActivity, w["core"].id)
+    activity.evaluation_mode = "AUTO"
+    db_session.commit()
+
+    changes, _examples, looked_at = plan(db_session, apply=False)
+    assert looked_at > 0, "the backfill must actually see the sets"
+    before = db_session.get(LearningActivity, activity.id).evaluation_mode
+    assert before == "AUTO", "--report must not write"
+
+    changes, _examples, _ = plan(db_session, apply=True)
+    db_session.expire_all()
+    after = db_session.get(LearningActivity, activity.id).evaluation_mode
+    assert after in {"AUTO", "HYBRID", "MANUAL"}
+
+    # Running it twice is a no-op, which is what makes it safe to re-run.
+    again, _e, _l = plan(db_session, apply=False)
+    assert not again, f"a second run should have nothing to do, got {again}"

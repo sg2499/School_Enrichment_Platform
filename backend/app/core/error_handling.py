@@ -50,8 +50,10 @@ reason.
 """
 import logging
 import math
+import re
 import secrets
 import time
+import traceback
 from http import HTTPStatus
 
 import sentry_sdk
@@ -371,6 +373,92 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSO
     return JSONResponse(status_code=429, content=body, headers={"Retry-After": str(retry_after)})
 
 
+# --- keeping row values out of the logs (A-038) ----------------------------------
+
+
+# A database error's text carries the row that failed, and that text is what
+# goes to the hosting logs and to Sentry as the exception message. Three
+# sources, and `hide_parameters` on the engine only closes the second:
+#
+#   * Postgres's own DETAIL line -- "Key (email)=(child@school.test) already
+#     exists." -- which the driver appends to the message itself. Measured on
+#     Postgres 16 on 25 Nov 2026: it survives hide_parameters untouched.
+#   * SQLAlchemy's "[parameters: {...}]", which on the double-tap race in
+#     A-016 carried the child's answer.
+#   * The "[SQL: INSERT INTO ...]" statement echo, which names columns.
+#
+# The constraint's name is kept, because "uq_attempt_answer" is what the
+# error is actually about and a person debugging needs it. The values are
+# what nobody needs and nobody should have.
+# Lines a database driver adds that carry the row itself. Each is dropped
+# whole; nothing else is touched.
+#
+# Bounded to their own lines on purpose. The first version of this matched
+# to the end of the text with re.DOTALL, which on a real error deleted the
+# entire second half of a chained traceback -- the half naming the frame in
+# OUR code. Measured on Postgres 16 on 25 Nov 2026: `app_frame` vanished
+# from the log. A scrubber that costs the traceback is not worth having.
+_DROP_LINE = re.compile(
+    r"^\s*(?:DETAIL|HINT|CONTEXT|LINE \d+)\s*:|^\s*Failing row contains",
+    re.IGNORECASE,
+)
+# "[SQL: ...]" and "[parameters: ...]" open a block that can run over several
+# lines and closes on the line ending with "]".
+_BLOCK_START = re.compile(r"^\s*\[(?:SQL|parameters|cached since)", re.IGNORECASE)
+# A DETAIL that arrived inline rather than on its own line.
+_KEY_VALUES = re.compile(r"Key \(([^)]*)\)=\([^)]*\)")
+
+
+def scrub_row_values(text: str) -> str:
+    """A database error's text with the failing row's values taken out, and
+    everything else -- the traceback above all -- left exactly as it was."""
+    if not text:
+        return text
+    out, in_block = [], False
+    for line in text.splitlines():
+        if in_block:
+            if line.rstrip().endswith("]"):
+                in_block = False
+            continue
+        if _BLOCK_START.match(line):
+            in_block = not line.rstrip().endswith("]")
+            continue
+        if _DROP_LINE.match(line):
+            continue
+        out.append(_KEY_VALUES.sub(r"Key (\1)=(value hidden)", line))
+    return "\n".join(out).strip()
+
+
+class RowValueScrubbingFilter(logging.Filter):
+    """Takes the failing row's values out of a log record, traceback and all
+    (A-038).
+
+    The traceback is what a crash is debugged from, so it stays -- an earlier
+    attempt at this dropped it to DEBUG and would have left production with
+    no traceback at all, which `test_error_envelope` rightly refused.
+
+    The trick is `record.exc_text`: logging renders a record's exception
+    once and caches it there, and uses the cache if it is already set. So
+    this renders the traceback itself, scrubs it, and puts it in the cache
+    before any handler formats the record. Both the message and the
+    exception text are covered, whatever handler the host has installed.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.exc_info and not record.exc_text:
+            record.exc_text = scrub_row_values("".join(traceback.format_exception(*record.exc_info)))
+        elif record.exc_text:
+            record.exc_text = scrub_row_values(record.exc_text)
+        try:
+            rendered = record.getMessage()
+        except Exception:  # noqa: BLE001 -- a broken format string is not this filter's business
+            return True
+        scrubbed = scrub_row_values(rendered)
+        if scrubbed != rendered:
+            record.msg, record.args = scrubbed, ()
+        return True
+
+
 # --- anything nobody handled -----------------------------------------------------
 
 
@@ -403,3 +491,21 @@ def install_error_handling(app: FastAPI) -> None:
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
+    # A-038: on the logger the handlers above use, so a database error's
+    # message and traceback reach the host's logs without the failing row's
+    # values in them. Added once -- install_error_handling runs per app.
+    scrubber = RowValueScrubbingFilter()
+    # Not only our own logger. Starlette re-raises after the Exception
+    # handler above has made the response, and uvicorn logs that itself on
+    # "uvicorn.error" as "Exception in ASGI application" -- a second copy of
+    # the same traceback, by a different route, which our logger never sees.
+    # gunicorn's error logger is covered for the same reason.
+    # A logging.Filter on a logger only sees records logged ON that logger,
+    # not records from its children, so "sqlalchemy.engine" would never have
+    # caught SQLAlchemy's own output (it logs on sqlalchemy.engine.Engine).
+    # It is left out rather than left in looking like cover it does not give;
+    # SQL echo is off in production anyway.
+    for name in ("school_enrichment", "uvicorn.error", "gunicorn.error"):
+        target = logging.getLogger(name)
+        if not any(isinstance(f, RowValueScrubbingFilter) for f in target.filters):
+            target.addFilter(scrubber)

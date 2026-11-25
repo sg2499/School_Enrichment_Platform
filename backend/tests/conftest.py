@@ -28,7 +28,13 @@ from app.core.rate_limit import limiter
 from app.database import Base, get_db
 from app.main import app
 
-TEST_DATABASE_URL = "sqlite:///:memory:"
+# A-027, 25 Nov 2026: the suite ran on SQLite and only SQLite, so row locks,
+# cascades and every race in A-016 were invisible to it -- a difference
+# between the two databases was first met on production. The default is
+# unchanged, so nothing about an ordinary run differs; set
+# TEST_DATABASE_URL to a Postgres URL to run the same suite there.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
+_IS_SQLITE = TEST_DATABASE_URL.startswith("sqlite")
 
 # StaticPool is required for an in-memory SQLite DB in tests: without it,
 # every new connection opens its own separate, empty in-memory database
@@ -36,10 +42,13 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 # in the _create_schema fixture below would be invisible to the connection
 # the app itself uses. StaticPool forces every checkout to reuse the same
 # single underlying connection.
-engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+engine = (
+    create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    if _IS_SQLITE
+    # Postgres needs neither: it is a real server, so every connection sees
+    # the same schema, and StaticPool's single shared connection would stop
+    # the suite from ever exercising two sessions at once.
+    else create_engine(TEST_DATABASE_URL, future=True)
 )
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 

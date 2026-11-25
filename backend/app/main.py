@@ -50,6 +50,7 @@ from app.core.error_handling import (
     SECURITY_HEADERS,
     RequestIdMiddleware,
     install_error_handling,
+    scrub_row_values,
 )
 from app.core.rate_limit import limiter
 
@@ -79,6 +80,23 @@ def _sentry_before_send(event, hint):
     EventScrubber below: strip any request body/headers/cookies that made it
     onto the event anyway, so a future SDK change or an unanticipated event
     shape can't reintroduce a leak silently."""
+    # A-038, 25 Nov 2026: the exception's own message. On a database error
+    # it carries the failing row -- Postgres's DETAIL line names the value,
+    # and that is the message Sentry shows as the issue title. The scrubber
+    # above works on field NAMES and cannot see inside a message string, so
+    # this is the only place it can be taken out before the event leaves.
+    exception = event.get("exception")
+    if isinstance(exception, dict):
+        for entry in exception.get("values") or []:
+            if isinstance(entry, dict) and isinstance(entry.get("value"), str):
+                entry["value"] = scrub_row_values(entry["value"])
+    for key in ("message", "logentry"):
+        value = event.get(key)
+        if isinstance(value, str):
+            event[key] = scrub_row_values(value)
+        elif isinstance(value, dict) and isinstance(value.get("message"), str):
+            value["message"] = scrub_row_values(value["message"])
+
     request_data = event.get("request")
     if isinstance(request_data, dict):
         request_data.pop("data", None)

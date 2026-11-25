@@ -187,6 +187,47 @@ export function answeredCount(
   return { answered, total };
 }
 
+/** Whether a place has nothing in it at all -- no part typed and no PDF
+ *  (25 Nov 2026).
+ *
+ *  Not the opposite of `placeAnswered`, and that is the point. `placeAnswered`
+ *  asks whether a place is *finished*, so a two-part question with one box
+ *  filled is not yet answered, and the progress count is right to say so. But
+ *  the warning before Hand In names those same places "Questions not
+ *  answered" and says "Questions left blank get no marks" -- and a place with
+ *  one part filled is neither blank nor worth no marks. A child was being
+ *  told the work they had done did not count.
+ *
+ *  So: the count of what is finished uses `placeAnswered`, and the warning
+ *  about what is blank uses this. Practice already draws the same
+ *  distinction, between its progress strip and its Submit confirmation. */
+export function placeBlank(
+  place: SitPlace,
+  answers: Record<string, string>,
+  attached: Record<string, unknown | null> = {},
+): boolean {
+  const half = activeHalf(place);
+  if (!half) return true;
+  return !half.parts.some((p) =>
+    answerGiven({
+      value: answers[p.id],
+      attachment: p.id in attached ? attached[p.id] : p.attachment,
+      teacherMarked: p.teacherMarked,
+    }),
+  );
+}
+
+/** How many places a child is about to hand in with nothing in them. */
+export function blankCount(
+  sections: readonly { places: readonly SitPlace[] }[],
+  answers: Record<string, string>,
+  attached: Record<string, unknown | null> = {},
+): number {
+  let blank = 0;
+  for (const s of sections) for (const place of s.places) if (placeBlank(place, answers, attached)) blank += 1;
+  return blank;
+}
+
 /** How the paper was handed in, in words. */
 export function handedInText(how: string | null): string {
   if (how === "TIME") return "Handed in when the time ran out, with the answers you had saved.";

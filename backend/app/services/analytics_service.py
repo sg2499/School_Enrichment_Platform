@@ -51,7 +51,7 @@ from app.models import (
     TeacherSectionAssignment,
     User,
 )
-from app.services import learning_service, mock_results_service, practice_access_service
+from app.services import attachment_service, learning_service, mock_results_service, practice_access_service
 from app.services.practice_access_service import Viewer
 
 MISSED_FOR_MISCONCEPTION = 2
@@ -225,6 +225,8 @@ def _answers(db: Session, assignment_ids: list[str], *, question_ids: set[str] |
             Attempt.submitted_at,
             Attempt.attempt_number,
             Attempt.id,
+            # #271: last, so the tuple positions above do not move.
+            AttemptAnswer.id,
         )
         .join(Attempt, Attempt.id == AttemptAnswer.attempt_id)
         .join(AssignmentTarget, AssignmentTarget.id == Attempt.assignment_target_id)
@@ -238,13 +240,17 @@ def _answers(db: Session, assignment_ids: list[str], *, question_ids: set[str] |
             .join(ConceptLesson, ConceptLesson.id == Question.concept_lesson_id)
             .filter(ConceptLesson.chapter_id == chapter_id)
         )
+    rows = query.all()
+    # #271: which of these answers came with a PDF. One query for the lot,
+    # the same call hand_in and submit_attempt make.
+    with_files = set(attachment_service.for_attempt_answers(db, [r[-1] for r in rows]))
     out = []
-    for student_id, question_id, manual, auto, max_score, response, note, submitted_at, number, attempt_id in query.all():
+    for student_id, question_id, manual, auto, max_score, response, note, submitted_at, number, attempt_id, answer_id in rows:
         stamp = submitted_at or _EARLIEST
         if stamp.tzinfo is None:
             stamp = stamp.replace(tzinfo=timezone.utc)
         score = manual if manual is not None else auto
-        out.append((student_id, question_id, score, max_score or 0, response, (stamp, number, attempt_id), note))
+        out.append((student_id, question_id, score, max_score or 0, response, (stamp, number, attempt_id), note, answer_id in with_files))
     return out
 
 
@@ -260,16 +266,24 @@ def _pick(rows, which: str) -> dict[tuple[str, str], tuple]:
     return chosen
 
 
-def cell_state(score, max_score, response) -> str:
+def cell_state(score, max_score, response, has_file: bool = False) -> str:
     """CORRECT, PARTIAL, WRONG, BLANK or PENDING (a written answer waiting
-    for its mark)."""
+    for its mark).
+
+    has_file (#271, 25 Nov 2026): a child may answer a written question by
+    attaching a PDF of their working and typing nothing. Judged on the text
+    alone, that answer looked blank -- so a teacher who had read the child's
+    PDF and marked it 0 then saw "Left blank" in the cell for it, on the
+    grid, about work the child had done and they had marked. Seen live on
+    production before this. It is the same rule the rest of the platform
+    now uses: learning_service.answer_is_blank(text, has_file=...)."""
     if score is None:
         return "PENDING"
     if max_score and score >= max_score:
         return "CORRECT"
     if score > 0:
         return "PARTIAL"
-    return "BLANK" if not (response or "").strip() else "WRONG"
+    return "BLANK" if learning_service.answer_is_blank(response, has_file=has_file) else "WRONG"
 
 
 def tag_key(tag: str | None) -> str:
@@ -446,7 +460,7 @@ def set_grid(db: Session, viewer: Viewer, scope: Scope, activity_id: str, which:
                 cells.append(None)
                 continue
             attempted = True
-            state = cell_state(row[2], row[3], row[4])
+            state = cell_state(row[2], row[3], row[4], has_file=bool(row[7]) if len(row) > 7 else False)
             cells.append({"state": state, "score": row[2], "max": row[3]})
             if row[2] is not None:
                 earned += max(0, min(row[2], row[3]))
@@ -506,9 +520,15 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
     # it" counts the paper's question (its slot), not each student's copy
     # (#207 review).
     counted_as: dict[str, str] = {}
+    # A mock row carries None where a practice row carries the child's typed
+    # answer, because the mock path has already dropped its blanks upstream
+    # (answered_only=True). So the blank test below must not be asked of
+    # these rows: None would make every wrong mock answer look blank.
+    from_mock: set[tuple[str, str]] = set()
     for a in mock_rows:
-        picked[(a.student_id, a.question_id)] = (a.student_id, a.question_id, a.score, a.max_score, None, (a.handed_in_at, 0, a.sitting_id), None)
+        picked[(a.student_id, a.question_id)] = (a.student_id, a.question_id, a.score, a.max_score, None, (a.handed_in_at, 0, a.sitting_id), None, False)
         counted_as[a.question_id] = f"slot:{a.slot_id}"
+        from_mock.add((a.student_id, a.question_id))
     # Only the questions answered here (the chapter's every question, at
     # every school, would be read otherwise).
     answered_ids = {qid for _, qid in picked}
@@ -527,12 +547,31 @@ def misconceptions(db: Session, viewer: Viewer, scope: Scope, chapter_id: str, w
     for (student_id, question_id), row in picked.items():
         if student_id not in students or row[2] is None or question_id not in by_question:
             continue
-        if row[6] == learning_service.BLANK:
+        blank_practice_answer = (
+            (student_id, question_id) not in from_mock
+            and cell_state(row[2], row[3], row[4], has_file=bool(row[7]) if len(row) > 7 else False) == "BLANK"
+        )
+        if row[6] == learning_service.BLANK or blank_practice_answer:
             # A question left blank says nothing about which mistake a child
             # makes -- the same rule as for a mock paper's blanks, a few
             # lines below (#226). Until A-043 a blank written answer had no
             # score at all, so the test above already dropped it; now it is
             # scored 0 and has to be named.
+            #
+            # 25 Nov 2026: the grading note alone was not enough. A-043 sets
+            # it only on a teacher-marked answer, so an AUTO-marked question
+            # left empty -- a multiple choice or a number nobody typed --
+            # was still marked wrong in the ordinary way and still counted as
+            # evidence of a misconception. A child who ran out of time and
+            # left ten questions blank was recorded as holding ten
+            # misconceptions, and a teacher was shown them as something to
+            # reteach. cell_state already calls exactly these answers BLANK
+            # on the grid above, so the grid and this list now agree.
+            #
+            # cell_state knows about attached PDFs since #271, so an answer
+            # given only as a PDF and marked wrong is WRONG here, not blank,
+            # and does count towards the misconception. Only an answer with
+            # nothing in it at all is skipped.
             continue
         raw_tag, skill = by_question[question_id]
         key = tag_key(raw_tag)
