@@ -487,7 +487,15 @@ function AnswerCard({
           <div className="rounded-2xl border border-line bg-surface-muted px-3.5 py-3">
             <p className="text-[0.6875rem] font-bold uppercase tracking-eyebrow text-content-subtle">Student&rsquo;s Answer</p>
             <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-content">
-              {partsText(answer.responseText, answer.questionType ?? "") || <span className="font-normal italic text-content-subtle">Not answered</span>}
+              {partsText(answer.responseText, answer.questionType ?? "") ||
+                (answer.attachment ? (
+                  // A-013, 24 Nov 2026: the child answered on paper and typed
+                  // nothing. Their file is shown just below this panel, so
+                  // "Not answered" here contradicted it.
+                  <span className="font-normal italic text-content-subtle">Answered on paper &mdash; see the PDF below.</span>
+                ) : (
+                  <span className="font-normal italic text-content-subtle">Not answered</span>
+                ))}
             </p>
           </div>
           <div className="rounded-2xl border border-jade-200 bg-jade-50 px-3.5 py-3">
@@ -540,6 +548,12 @@ function AnswerCard({
                 Marked by {answer.gradedByName}
                 {answer.gradedAt ? ` · ${formatDateTime(answer.gradedAt)}` : ""}
               </p>
+            ) : !answer.responseText && answer.attachment ? (
+              // A-013, 24 Nov 2026: this used to read "award 0" whenever
+              // nothing was typed, with the child's own PDF on screen above
+              // it -- the platform telling a teacher to give nought to a
+              // child who had done the work on paper.
+              <p className="text-xs text-content-subtle">Nothing typed &mdash; mark this from the attached PDF.</p>
             ) : !answer.responseText ? (
               <p className="text-xs text-content-subtle">Not answered &mdash; award 0 to finish marking this attempt.</p>
             ) : null}

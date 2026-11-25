@@ -52,6 +52,7 @@ import { Table, TableSkeleton, TBody, TD, TH, THead, TR } from "@/components/ui/
 import { api, errorMessage } from "@/lib/api";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { useUrlState } from "@/lib/hooks/useUrlState";
+import { wholePercent } from "@/lib/percentages";
 import { cn } from "@/lib/utils";
 import type {
   BulkApproveResult,
@@ -786,7 +787,7 @@ export function ChapterWorkspace({ chapterId }: { chapterId: string }) {
           {
             label: "Approved",
             value: r.approved,
-            hint: r.questions ? `${Math.round((r.approved / r.questions) * 100)}% of the questions` : undefined,
+            hint: r.questions ? `${wholePercent(r.approved, r.questions)}% of the questions` : undefined,
             tone: r.questions && r.approved === r.questions ? "good" : "default",
           },
           {

@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from app.core import percentages
 from app.core.errors import api_error
 from app.models import (
     Assignment,
@@ -85,14 +86,14 @@ class SkillScore:
     @property
     def exact_percent(self) -> float | None:
         """Unrounded: bands are judged on this, so 49.96% is not Getting There."""
-        if self.possible <= 0:
-            return None
-        return 100.0 * self.earned / self.possible
+        return percentages.exact_percent(self.earned, self.possible)
 
     @property
-    def percent(self) -> float | None:
-        exact = self.exact_percent
-        return None if exact is None else round(exact, 1)
+    def percent(self) -> int | None:
+        """The number a person is shown: a whole percent, rounded down
+        (A-010). Bands read exact_percent instead, so this never moves a
+        child between Strong and Getting There."""
+        return percentages.whole_percent(self.earned, self.possible)
 
 
 @dataclass
@@ -214,8 +215,17 @@ class SkillRow:
         self.band = band_for(self.score.exact_percent if self.score else None, self.score.answered if self.score else 0)
 
     @property
-    def percent(self) -> float | None:
+    def percent(self) -> int | None:
+        """The number shown beside the skill: a whole percent, rounded down."""
         return self.score.percent if self.score else None
+
+    @property
+    def exact_percent(self) -> float | None:
+        """For ordering and bands, never for display -- see
+        app/core/percentages.py. Practise Next orders the weakest skills on
+        this, because the shown number is floored and 33.3% and 33.9% would
+        otherwise tie and fall through to the skill's code (A-010)."""
+        return self.score.exact_percent if self.score else None
 
 
 def skill_rows(db: Session, student: Student, assignment_clause=None, *, mock_clause=None, mock_before=None) -> list[SkillRow]:
@@ -376,7 +386,7 @@ def progress_payload(db: Session, student: Student, *, assignment_clause=None, m
 
     weak = sorted(
         (r for r in rows if r.band in WEAK_BANDS),
-        key=lambda r: (0 if r.band == NEEDS_WORK else 1, r.percent if r.percent is not None else 0, r.skill.code),
+        key=lambda r: (0 if r.band == NEEDS_WORK else 1, r.exact_percent if r.exact_percent is not None else 0, r.skill.code),
     )[:PRACTISE_NEXT_LIMIT]
 
     sets = _self_practice_sets(db, [r.skill.id for r in weak], [c.id for c in _mapped_chapters(db, student)])
@@ -461,7 +471,7 @@ def progress_payload(db: Session, student: Student, *, assignment_clause=None, m
             "justStarted": summary[JUST_STARTED],
             "notStarted": summary[NOT_STARTED],
             "skills": len(rows),
-            "overallPercent": round(100.0 * earned / possible, 1) if possible else None,
+            "overallPercent": percentages.whole_percent(earned, possible),
         },
         "chapters": chapters,
         "practiseNext": practise_next,

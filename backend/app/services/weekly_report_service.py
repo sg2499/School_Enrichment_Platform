@@ -28,6 +28,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
+from app.core import percentages
 from app.core.errors import api_error
 from app.models import (
     Assignment,
@@ -39,6 +40,7 @@ from app.models import (
     ClassLevel,
     Evaluation,
     LearningActivity,
+    Question,
     School,
     Student,
     TeacherSectionAssignment,
@@ -46,7 +48,13 @@ from app.models import (
     WeeklyReportIssue,
     WeeklyReportNote,
 )
-from app.services import mock_results_service, progress_service, report_card_service
+from app.services import (
+    attachment_service,
+    mock_results_service,
+    progress_service,
+    report_card_service,
+    upload_rule_service,
+)
 from app.services.assessment_service import SCHOOL_TIMEZONE
 from app.services.practice_access_service import Viewer
 
@@ -504,7 +512,11 @@ def _week_numbers(db: Session, student_ids: list[str], week_start: date) -> dict
         db.query(
             AssignmentTarget.student_id, AssignmentTarget.id, Assignment.reason, AttemptAnswer.response_text,
             AttemptAnswer.manual_score, AttemptAnswer.auto_score, AttemptAnswer.max_score,
+            # A-013, 24 Nov 2026: needed to ask which answers came with a PDF,
+            # and whether a PDF is an answer on this question at all.
+            AttemptAnswer.id, Question,
         )
+        .join(Question, Question.id == AttemptAnswer.question_id)
         .join(Attempt, Attempt.id == AttemptAnswer.attempt_id)
         .join(AssignmentTarget, AssignmentTarget.id == Attempt.assignment_target_id)
         .join(Assignment, Assignment.id == AssignmentTarget.assignment_id)
@@ -517,10 +529,23 @@ def _week_numbers(db: Session, student_ids: list[str], week_start: date) -> dict
         )
         .all()
     )
-    for sid, target_id, reason, response, manual, auto, max_score in rows:
+    # A-013, 24 Nov 2026: a child may answer a written question by attaching a
+    # PDF of their working and typing nothing. The platform treats that as an
+    # answer everywhere else -- it goes to the teacher to mark, it is not
+    # scored 0 -- but this count read the typed text alone, so a parent whose
+    # child answered three questions on paper was told they answered none.
+    #
+    # Only where a teacher marks the question, which is the same condition the
+    # child's own screens use (frontend lib/attachments.answerGiven): a
+    # reviewer may put an upload box on an auto-marked question, and there a
+    # PDF with nothing typed still scores 0. Counting it for the parent but
+    # not for the child would simply move the disagreement rather than end it.
+    with_files = set(attachment_service.for_attempt_answers(db, [row[7] for row in rows]))
+    for sid, target_id, reason, response, manual, auto, max_score, answer_id, question in rows:
         entry = out[sid]
         # A question left blank still counts towards the marks (as 0), not as answered.
-        if _has_text(response):
+        gave_a_file = answer_id in with_files and upload_rule_service.teacher_marked(question)
+        if _has_text(response) or gave_a_file:
             entry["answered"] += 1
         score = manual if manual is not None else auto
         if score is not None and max_score:
@@ -532,7 +557,7 @@ def _week_numbers(db: Session, student_ids: list[str], week_start: date) -> dict
     for entry in out.values():
         possible = entry.pop("possible")
         earned = entry.pop("earned")
-        entry["percent"] = int(100 * earned / possible) if possible else None  # rounded down, as My Progress
+        entry["percent"] = percentages.whole_percent(earned, possible)  # the shared rule (A-010)
         entry["ownPractice"] = len(entry["ownPractice"])
     return out
 

@@ -4,6 +4,7 @@
  * practice set already chosen. The rules themselves are on the server
  * (analytics_service).
  */
+import { percentLabel } from "@/lib/percentages";
 import type { AnalyticsSection, CellState, GridStudent } from "@/types/analytics";
 
 export const CELL_LABEL: Record<CellState, string> = {
@@ -44,10 +45,10 @@ export function cellText(cell: GridStudent["cells"][number], questionNumber: num
   return `Question ${questionNumber}: ${CELL_LABEL[cell.state]}${marks}`;
 }
 
-/** The question's share right, as a whole percent rounded down; "—" with no answers. */
+/** The question's share right, as a whole percent rounded down; "—" with no
+ *  answers. Same rule as My Progress and the trackers (A-010). */
 export function percentCorrectText(percent: number | null | undefined): string {
-  if (percent === null || percent === undefined) return "—";
-  return `${Math.floor(percent + 1e-9)}%`;
+  return percentLabel(percent);
 }
 
 /** A tone for a question's share right: under half is worth a look. */

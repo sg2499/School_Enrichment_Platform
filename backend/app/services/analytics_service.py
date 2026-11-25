@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from app.core import percentages
 from app.core.errors import api_error
 from app.models import (
     Assignment,
@@ -431,7 +432,7 @@ def set_grid(db: Session, viewer: Viewer, scope: Scope, activity_id: str, which:
                 # Only a note Ashalatha has approved, in her wording (Q14).
                 "misconception": _short(note.shown_note, 200) if (note := _approved(reviews.get((skill.id, tag_key(q.misconception_tag))))) else None,
                 "answered": answered,
-                "percentCorrect": round(100.0 * right / answered, 1) if answered else None,
+                "percentCorrect": percentages.whole_percent(right, answered),
             }
         )
     students = []

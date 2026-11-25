@@ -4,6 +4,7 @@
  * server (progress_service.band_for); this only presents them.
  */
 import type { BadgeTone } from "@/components/ui/Badge";
+import { percentLabel } from "@/lib/percentages";
 import { PRACTICE_LIST_HREF, resultHref } from "@/lib/studentPractice";
 import type { ChapterProgress, SelfPracticeHistoryItem, SkillBand, SkillProgress, StandingBand } from "@/types/progress";
 
@@ -39,10 +40,11 @@ export const BAND_BAR: Record<SkillBand, string> = {
 export const BAND_ORDER: SkillBand[] = ["STRONG", "GETTING_THERE", "NEEDS_WORK", "JUST_STARTED", "NOT_STARTED"];
 
 /** Whole percent, rounded down: 79.6% is "79%", so it never reads as the
- *  80% that Strong needs beside a Getting There badge. */
+ *  80% that Strong needs beside a Getting There badge. The rule itself lives
+ *  in lib/percentages.ts, shared with Class Analytics and the Super Admin
+ *  figures (A-010, A-040). */
 export function percentText(percent: number | null | undefined): string {
-  if (percent === null || percent === undefined || Number.isNaN(percent)) return "—";
-  return `${Math.floor(percent + 1e-9)}%`;
+  return percentLabel(percent);
 }
 
 /** A mock paper's marks: "34 / 60 (56%)", "so far" while a written answer

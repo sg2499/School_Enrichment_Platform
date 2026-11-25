@@ -45,13 +45,12 @@ import {
   answerState,
   attemptsLeft,
   correctAnswerText,
-  hasParts,
-  partsComplete,
   partsText,
   partMarksHint,
   incorrectHint,
   keyShown,
   practiceAnsweredCount,
+  practiceStripAnswered,
   blankWarning,
   resultHref,
   resultSentence,
@@ -161,6 +160,14 @@ function NotAnswered() {
   return <span className="font-normal italic text-content-subtle">Not answered</span>;
 }
 
+function AnsweredWithPdf() {
+  // A-013, 24 Nov 2026: a child who answered with a PDF and typed nothing
+  // read "Not answered" directly under the "Waiting for Marks" badge, with
+  // their own file listed beneath it -- two statements about one answer, and
+  // the untrue one in plainer type. Same contrast as NotAnswered.
+  return <span className="font-normal italic text-content-subtle">Your working is in the PDF below.</span>;
+}
+
 /**
  * What the student answered, and (once it has been marked) what was right.
  *
@@ -264,7 +271,8 @@ function AnswerBody({ answer, state }: { answer: AttemptAnswerResult; state: Ans
       </ol>
     ) : (
       <p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-content">
-        {partsText(answer.responseText, answer.questionType ?? "") || <NotAnswered />}
+        {partsText(answer.responseText, answer.questionType ?? "") ||
+          (answer.attachment ? <AnsweredWithPdf /> : <NotAnswered />)}
       </p>
     );
 
@@ -639,15 +647,17 @@ export default function StudentAttemptPage() {
 
   const totalQuestions = attempt?.questions.length ?? 0;
   // An answer in parts counts once every box is filled (#160 review).
+  //
+  // A-013, 24 Nov 2026: a PDF with nothing typed is an answer where a teacher
+  // marks it, and this strip did not know that. The Submit confirmation did,
+  // so a child who attached their working for a written question saw the
+  // strip say "1 of 20 answered" and the confirmation say "2 of 20" -- two
+  // numbers on one screen, and the strip telling them a question they had
+  // answered was still blank. The server was always right: that answer goes
+  // to the teacher, not to a 0.
   const answeredCount = useMemo(
-    () =>
-      (attempt?.questions ?? []).filter((q) => {
-        const v = answers[q.id];
-        if (!v || v.trim().length === 0) return false;
-        const count = q.answerBlanks ?? 1;
-        return count > 1 && hasParts(q.questionType) ? partsComplete(v, count) : true;
-      }).length,
-    [answers, attempt],
+    () => practiceStripAnswered(attempt?.questions ?? [], answers, attachments),
+    [answers, attachments, attempt],
   );
 
   const persistAnswer = useCallback(

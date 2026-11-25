@@ -45,6 +45,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import and_, case, distinct, func, or_
 from sqlalchemy.orm import Session, joinedload
 
+from app.core import percentages
 from app.core.errors import api_error
 from app.core.pagination import PageParams, like_pattern, page_envelope, page_params, paginate
 from app.core.rate_limit import limiter
@@ -99,10 +100,10 @@ def _iso(value) -> str | None:
 
 
 def _percent(earned: int | None, possible: int | None) -> int | None:
-    if not possible:
-        return None
-    # One rounding rule everywhere: a percentage rounds down (6 of 9 is 66%).
-    return (100 * (earned or 0)) // possible
+    # One rounding rule everywhere, and since A-010 it really is everywhere:
+    # app/core/percentages.py holds it, and this stays as the name the
+    # tracker's own code reads by.
+    return percentages.whole_percent(earned, possible)
 
 
 # --- shared aggregate helpers (bounded by one page of ids) -------------------
