@@ -1,13 +1,16 @@
 /** Wording for the overview screens (#224). Pure, so it is unit tested. */
+import { wholePercent } from "@/lib/percentages";
 
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** "3 of 4" as a whole-number percent, rounded DOWN, the one rule for every percentage (lib/studentPractice.ts wholePercent); "—" when there is nothing to divide. */
+/** "3 of 4" as a whole-number percent, rounded DOWN -- the one rule for every
+ *  percentage, which lives in lib/percentages.ts (A-010); "—" when there is
+ *  nothing to divide. */
 export function sharePercent(part: number, whole: number): string {
-  if (!whole) return "—";
-  return `${Math.floor((part / whole) * 100 + 1e-9)}%`;
+  const percent = wholePercent(part, whole);
+  return percent === null ? "—" : `${percent}%`;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

@@ -31,6 +31,7 @@ import { SubTabs, type SubTab } from "@/components/ui/SubTabs";
 import { useApiQuery } from "@/lib/hooks/useApiQuery";
 import { useProtectedPage } from "@/lib/hooks/useProtectedPage";
 import { useUrlState } from "@/lib/hooks/useUrlState";
+import { wholePercent } from "@/lib/percentages";
 import type { ChapterStatus, ChapterSummary, SchoolCurriculumMapEntry } from "@/types/curriculum";
 
 type PlatformTab = "chapters" | "calendars";
@@ -98,7 +99,7 @@ function StudioPage() {
       {
         label: "Questions Approved",
         value: figure(chaptersQuery, approved),
-        hint: chapters && questions ? `${Math.round((approved / questions) * 100)}% of the question bank` : undefined,
+        hint: chapters && questions ? `${wholePercent(approved, questions)}% of the question bank` : undefined,
       },
     ];
     const t: PlatformTab = url.get("tab") === "calendars" ? "calendars" : "chapters";

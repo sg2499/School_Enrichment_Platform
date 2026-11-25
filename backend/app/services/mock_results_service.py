@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from sqlalchemy import and_, or_, true
 from sqlalchemy.orm import Session
 
+from app.core import percentages
 from app.models import Question
 from app.models.papers import MockPaper, MockPaperAnswer, MockPaperSitting
 from app.services import teacher_assignment_service
@@ -161,10 +162,12 @@ def handed_in_chapter_ids(db: Session, paper_clause) -> set[str]:
     return out
 
 
-def _percent(score, max_score) -> float | None:
-    if score is None or not max_score:
+def _percent(score, max_score) -> int | None:
+    # A-010: one rounding rule -- see app/core/percentages.py. None while a
+    # written answer is still unmarked, which the screen shows as a dash.
+    if score is None:
         return None
-    return round(100.0 * score / max_score, 1)
+    return percentages.whole_percent(score, max_score)
 
 
 def papers_for(

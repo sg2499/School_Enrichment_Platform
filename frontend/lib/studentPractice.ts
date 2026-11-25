@@ -33,6 +33,7 @@
  * unit-tested directly (scripts/run-unit-tests.mjs).
  */
 import { answerGiven } from "@/lib/attachments";
+import { floorPercent, wholePercent } from "@/lib/percentages";
 import type { AttemptAnswerResult, AttemptResult, StudentAssignmentSummary } from "@/types/learning";
 
 type AssignmentStatus = StudentAssignmentSummary["status"];
@@ -160,15 +161,18 @@ export function averageScore(summary: PracticeSummary): { percent: number; sets:
     percents.push((evaluation.finalScore / evaluation.maxScore) * 100);
   }
   if (percents.length === 0) return null;
-  return { percent: wholePercent(percents.reduce((sum, value) => sum + value, 0) / percents.length), sets: percents.length };
+  const mean = percents.reduce((sum, value) => sum + value, 0) / percents.length;
+  return { percent: floorPercent(mean) ?? 0, sets: percents.length };
 }
 
-/** One rule for every percentage a child or parent sees: round DOWN, so 6 of 9
- *  is 66% here, on My Progress and on the Weekly Report alike (12 Nov 2026:
- *  Daily Practice rounded to 67% while the Weekly Report floored to 66%). */
-export function wholePercent(percent: number): number {
-  return Math.floor(percent + 1e-9);
-}
+/* One rule for every percentage a child or parent sees: round DOWN, so 6 of 9
+ * is 66% here, on My Progress and on the Weekly Report alike (12 Nov 2026:
+ * Daily Practice rounded to 67% while the Weekly Report floored to 66%).
+ *
+ * 24 Nov 2026 (A-010): that rule, which this module used to keep its own copy
+ * of, now lives in lib/percentages.ts and is shared with the server, My
+ * Progress, Class Analytics, the overview screens and the Super Admin
+ * figures. Nothing outside this module used the copy. */
 
 /** "set" or "sets". */
 export function setWord(count: number): string {
@@ -349,6 +353,53 @@ export function practiceAnsweredCount(answers: readonly PracticeAnswerSoFar[]): 
   return { answered, blank: answers.length - answered, total: answers.length };
 }
 
+/** One question as the progress strip at the top of the set reads it. */
+export interface PracticeStripQuestion {
+  id: string;
+  questionType?: string | null;
+  answerBlanks?: number | null;
+  teacherMarked?: boolean;
+}
+
+/**
+ * How many questions the strip at the top of a practice set counts as
+ * answered (A-013, 24 Nov 2026).
+ *
+ * Two rules, and both matter to a child watching the bar fill:
+ *   * An answer in parts counts once every box is filled (#160 review), so a
+ *     half-filled two-box answer is not yet answered.
+ *   * A PDF with nothing typed IS an answer on a question a teacher marks --
+ *     the same rule the Submit confirmation uses (lib/attachments.answerGiven).
+ *     Before this, the strip knew only about typed text, so a child who
+ *     attached their working saw the strip say "1 of 20 answered" while the
+ *     confirmation said "2 of 20", and the strip was the one that was wrong:
+ *     the server sends that answer to the teacher, it does not score it 0.
+ *
+ * The strip and the confirmation still differ on a part-filled answer, which
+ * is a separate open question about which rule is right, not this fix.
+ */
+export function practiceStripAnswered(
+  questions: readonly PracticeStripQuestion[],
+  answers: Readonly<Record<string, string | undefined>>,
+  attachments: Readonly<Record<string, unknown | null>>,
+): number {
+  return questions.filter((q) => {
+    const value = answers[q.id];
+    const count = q.answerBlanks ?? 1;
+    const typedCounts =
+      !!value &&
+      value.trim().length > 0 &&
+      (count > 1 && hasParts(q.questionType) ? partsComplete(value, count) : true);
+    if (typedCounts) return true;
+    // The attachment rule is asked whatever is or is not typed, never only
+    // when the box looks empty: a part-filled answer saved as ";" is not
+    // blank to trim() but is blank to the child, and a PDF beside it is
+    // still an answer. Passing "" leaves answerGiven judging the PDF alone,
+    // which is the one question left once the typed rule has said no.
+    return answerGiven({ value: "", attachment: attachments[q.id], teacherMarked: q.teacherMarked });
+  }).length;
+}
+
 /** The sentence in the confirmation, and never a scolding one: a child may
  *  mean to leave a question out, and this only makes sure they meant to. */
 export function blankWarning(blank: number): string | null {
@@ -526,7 +577,9 @@ export function attemptsLeft(result: Pick<AttemptResult, "maxAttempts" | "bonusA
  *  percentage of. */
 export function scorePercent(finalScore: number, maxScore: number): number | null {
   if (!(maxScore > 0)) return null;
-  return wholePercent((finalScore / maxScore) * 100);
+  // part and whole, not a percentage worked out first: (57 / 100) * 100 is
+  // 56.999... and used to need an epsilon to floor the right way (A-010).
+  return wholePercent(finalScore, maxScore);
 }
 
 /**

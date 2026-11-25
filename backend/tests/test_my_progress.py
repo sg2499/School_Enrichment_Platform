@@ -89,7 +89,12 @@ def test_scores_use_the_latest_marked_answer_and_bands_follow(db_session):
     payload = progress_service.progress_payload(db_session, student, for_student=True)
     first = _skill(payload, s1.id)
     # 1 of 3 marked (the written answer is waiting for its mark).
-    assert (first["answered"], first["percent"], first["band"]) == (3, 33.3, "NEEDS_WORK")
+    # A-010, 24 Nov 2026: the shown percentage is now a whole number rounded
+    # down, so this reads 33 rather than the 33.3 the server used to send and
+    # the screen floored anyway. The band is unchanged, because a band is
+    # decided from the exact percentage, not from this number.
+    assert (first["answered"], first["percent"], first["band"]) == (3, 33, "NEEDS_WORK")
+    assert isinstance(first["percent"], int)
     assert _skill(payload, s3.id)["band"] == "NOT_STARTED"
 
     target2 = _assign(db_session, setup, setup["p02"])
