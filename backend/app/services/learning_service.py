@@ -57,6 +57,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.errors import api_error
@@ -76,7 +77,7 @@ from app.models import (
     Student,
     Teacher,
 )
-from app.services import units
+from app.services import units, upload_rule_service
 from app.services.unit_reader import answer_unit_from_question
 
 # --- Phase 3 ingestion: Question.assignment_code -> LearningActivity -------
@@ -238,6 +239,30 @@ def top_up_activity(db: Session, activity: LearningActivity, group_questions: li
     return len(fresh)
 
 
+def evaluation_mode_for(questions) -> str:
+    """How a set is marked, from the questions actually in it (#268).
+
+    Blueprint Section 7.3's EvaluationMode: AUTO when the platform marks
+    every answer, MANUAL when a teacher marks every one, HYBRID when a set
+    holds both. Until 25 Nov 2026 this was hardcoded "AUTO" for every set
+    generated, so "Measurement — Mastery E" -- twenty Constructed Response
+    questions, every one of them hand-marked -- reported itself as
+    automatically marked.
+
+    Nothing reads the field today, which is why this was wrong for so long
+    without anyone noticing, and why fixing it changes no behaviour. It is
+    fixed because the first thing that does read it would read it wrong:
+    a teacher being told a 60-mark hand-marked set is "AUTO" is a worse
+    mistake than an empty field.
+    """
+    marked_by_teacher = [upload_rule_service.teacher_marked(q) for q in questions]
+    if all(marked_by_teacher):
+        return "MANUAL"
+    if any(marked_by_teacher):
+        return "HYBRID"
+    return "AUTO"
+
+
 def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_user_id: str | None) -> list[LearningActivity]:
     """Idempotent: re-running this after new questions are added to a
     chapter only creates activities for (assignment_code, concept_lesson)
@@ -314,7 +339,7 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
             title=title,
             sequence=sequence,
             pacing_day=(day_set_parts(assignment_code) or (None,))[0] or DEFAULT_PACING_DAY.get(activity_type),
-            evaluation_mode="AUTO",
+            evaluation_mode=evaluation_mode_for(group_questions),
             estimated_minutes=max(len(group_questions) * 2, 5),
             status="DRAFT",
             source_assignment_code=assignment_code,
@@ -513,7 +538,30 @@ def start_attempt(db: Session, student: Student, assignment_target_id: str) -> A
     attempt = Attempt(assignment_target_id=target.id, attempt_number=attempt_count + 1, status="IN_PROGRESS")
     db.add(attempt)
     target.status = "IN_PROGRESS"
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # A-016: two tabs, or a double tap on Start on a slow phone. Both
+        # requests counted the attempts, both picked the same number, and the
+        # unique constraint on (assignment_target_id, attempt_number) let only
+        # one in. No mark was ever at risk -- the database saw to that -- but
+        # the loser used to get "Something went wrong" on a child's screen for
+        # pressing a button twice, and its error text carried the row's values
+        # into the logs (A-038).
+        #
+        # The other request has made exactly the attempt this one was asking
+        # for, so hand that back. Re-raise if it is somehow not there, rather
+        # than swallowing an integrity error that means something else.
+        db.rollback()
+        raced = (
+            db.query(Attempt)
+            .filter(Attempt.assignment_target_id == target.id, Attempt.status == "IN_PROGRESS")
+            .order_by(Attempt.attempt_number.desc())
+            .first()
+        )
+        if raced is None:
+            raise
+        return raced
     db.refresh(attempt)
     return attempt
 
@@ -633,7 +681,30 @@ def save_answer(
             answered_at=now,
         )
         db.add(answer)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # A-016: two saves of the same question at once -- the answer box and
+        # the working box, or a retried request. Both found no row and both
+        # inserted; (attempt_id, question_id) is unique, so one lost.
+        #
+        # The row the winner made is NOT this request's answer, so handing it
+        # back would drop what the child just typed while the screen said
+        # saved. Take their row and put this request's answer into it, which
+        # is what a single save would have done.
+        db.rollback()
+        answer = (
+            db.query(AttemptAnswer)
+            .filter(AttemptAnswer.attempt_id == attempt.id, AttemptAnswer.question_id == question_id)
+            .first()
+        )
+        if answer is None:
+            raise
+        answer.response_text = response_text
+        answer.answered_at = now
+        if store_working:
+            answer.working_text = working
+        db.commit()
     db.refresh(answer)
     return answer
 
@@ -1582,6 +1653,12 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
     # already-submitted attempt just returns the existing evaluation rather
     # than re-grading or erroring, so a double-click or a retried request
     # never creates a duplicate.
+    # A-016: the lock makes the check-then-insert below one step, so two
+    # Submits cannot both decide there is no evaluation yet. SQLite ignores
+    # row locks, so the test suite behaves exactly as before; on Postgres the
+    # second request waits here and then takes the early return above it.
+    # mock_sitting_service locks the sitting row for the same reason.
+    db.query(Attempt).filter(Attempt.id == attempt.id).with_for_update().first()
     existing_evaluation = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
     if existing_evaluation:
         return existing_evaluation
@@ -1668,7 +1745,20 @@ def submit_attempt(db: Session, student: Student, attempt_id: str) -> Evaluation
         evaluated_at=now,
     )
     db.add(evaluation)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # A-016, the belt to the lock's braces. Evaluation.attempt_id is
+        # unique, so if two Submits ever get past the lock above -- on a
+        # database that does not take it, or through a path that does not
+        # go through this function -- the loser returns the evaluation the
+        # winner wrote rather than erroring. Grading is deterministic from
+        # the saved answers, so the two would have agreed anyway.
+        db.rollback()
+        raced = db.query(Evaluation).filter(Evaluation.attempt_id == attempt.id).first()
+        if raced is None:
+            raise
+        return raced
     db.refresh(evaluation)
     return evaluation
 

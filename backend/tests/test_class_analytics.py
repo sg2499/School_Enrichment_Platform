@@ -121,7 +121,19 @@ def test_grid_misconceptions_and_access(client, db_session):
     assert top["misconception"] == "Adds the denominators." and top["nextStep"] == "Shade both fractions on one strip."
     assert report["awaitingReview"] == 0
     assert [s["studentCode"] for s in top["students"]] == [a.student_code]  # b's one slip isn't a pattern
-    assert top["students"][0]["missed"] == 3 and top["studentsAnswered"] == 2
+    # 25 Nov 2026: 2, not the 3 this asserted before. Student a's third
+    # question was left BLANK (see the cell states above, which have always
+    # called it blank), and a question nobody answered says nothing about
+    # which mistake they make. Until now only a teacher-marked blank was
+    # excluded (A-043's grading note); an auto-marked one -- a multiple
+    # choice or a number left empty -- was marked wrong in the ordinary way
+    # and counted here, so a child who ran out of time was shown to their
+    # teacher as holding misconceptions to reteach. The two answers that
+    # really do show the misconception are still counted.
+    assert top["students"][0]["missed"] == 2 and top["studentsAnswered"] == 2
+    # And the blank is still on the grid as a blank: excluded from the
+    # misconception, not hidden from the teacher.
+    assert states(a.student_code) == ["WRONG", "WRONG", "CORRECT", "BLANK", "PENDING"]
     assert top["practiceSet"]["learningActivityId"] == w["remediation"].id
     later = client.get(
         f"/api/learning/analytics/chapters/{w['chapter'].id}/misconceptions",

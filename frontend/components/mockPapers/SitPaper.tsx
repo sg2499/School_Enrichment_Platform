@@ -26,7 +26,9 @@ import {
   idsToResend,
   markTyped,
   newSitSaves,
+  blankCount,
   placeAnswered,
+  placeBlank,
   startSave,
   STATUS_LABEL,
   STATUS_TONE,
@@ -760,6 +762,7 @@ export function SitPaper({ paperId }: { paperId: string }) {
   const forward = p.navigation === "FORWARD";
   const shown = sections[tab] ?? sections[0];
   const { answered, total } = answeredCount(sections, answers, attachments);
+  const blanks = blankCount(sections, answers, attachments);
   const left = reading ? writingAt - serverNow : deadline - serverNow;
   const lastMinutes = !reading && left < 5 * 60 * 1000;
 
@@ -932,10 +935,18 @@ export function SitPaper({ paperId }: { paperId: string }) {
           {handInBlocked ? <AlertBanner tone="error" message={handInBlocked} /> : null}
           <p>
             You have answered {answered} of {total} questions.
-            {answered < total ? " Questions left blank get no marks." : ""}
+            {/* 25 Nov 2026: the warning counts places with nothing in them,
+                not places that are merely unfinished. A two-part question
+                with one box filled is not blank and does earn marks for
+                that part, and listing it here told a child their work did
+                not count. The "answered" figure above still means finished. */}
+            {blanks > 0 ? " Questions left blank get no marks." : ""}
           </p>
+          {/* The chips stay on every place that is not finished, blank or
+              half-done, because a child needs to find them; only the
+              sentence above tells blank from unfinished. */}
           {answered < total ? (
-            <ul className="flex flex-wrap gap-1.5" aria-label="Questions not answered">
+            <ul className="flex flex-wrap gap-1.5" aria-label="Questions not finished">
               {sections.flatMap((s) =>
                 s.places
                   .filter((pl) => !placeAnswered(pl, answers, attachments))

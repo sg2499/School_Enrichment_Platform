@@ -197,6 +197,22 @@ def _make_teacher(db, school: School, suffix: str) -> Teacher:
     return teacher
 
 
+
+def _assigner(db, school: School) -> str:
+    """A real teacher's user id to put on an assignment.
+
+    The tests used the string "teacher-x", which SQLite accepted because it
+    does not enforce foreign keys by default. On Postgres every one of them
+    failed with a ForeignKeyViolation -- 14 tests, one cause -- the first
+    time the suite was run there (A-027, 25 Nov 2026). Reusing the school's
+    teacher if it already has one keeps the fixtures as cheap as they were.
+    """
+    existing = db.query(Teacher).filter(Teacher.school_id == school.id).first()
+    if existing:
+        return existing.user_id
+    return _make_teacher(db, school, f"assigner-{school.id[:8]}").user_id
+
+
 def _make_super_admin(db, suffix: str) -> User:
     user = User(full_name="Super Admin", email=f"sa-{suffix}@example.com", password_hash=hash_password(PASSWORD), role="SUPER_ADMIN", totp_enabled=True, totp_secret=TEST_TOTP_SECRET)
     db.add(user)
@@ -531,7 +547,7 @@ def test_create_assignment_materializes_one_target_per_student(db_session):
     db_session.commit()
 
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
         class_name="5A",
     )
     targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
@@ -585,7 +601,7 @@ def test_create_assignment_with_section_targets_only_that_section(db_session):
     other_school_5a = _make_sectioned_student(db_session, other_school, "asg3-5a-elsewhere", class_name="5", section="A")
 
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
         class_name="5", section="A",
     )
     targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
@@ -609,7 +625,7 @@ def test_create_assignment_without_section_still_targets_every_section_of_the_cl
 
     for section_arg in ({}, {"section": None}, {"section": "  "}):
         assignment = create_assignment_again(
-            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+            db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
             class_name="5", **section_arg,
         )
         targets = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
@@ -625,7 +641,7 @@ def test_create_assignment_empty_section_error_names_the_section_searched(db_ses
 
     try:
         learning_service.create_assignment(
-            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+            db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
             class_name="5", section="C",
         )
         assert False, "expected a 422 for a section with no students"
@@ -635,7 +651,7 @@ def test_create_assignment_empty_section_error_names_the_section_searched(db_ses
 
     try:
         learning_service.create_assignment(
-            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", class_name="9",
+            db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), class_name="9",
         )
         assert False, "expected a 422 for a class with no students"
     except HTTPException as exc:
@@ -662,7 +678,7 @@ def test_attempt_lifecycle_scores_correctly_and_locks_after_submit(db_session):
     student = _make_student(db_session, school, "att1")
     db_session.commit()
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id],
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id],
     )
     target = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).first()
 
@@ -707,7 +723,7 @@ def test_attempt_limit_is_enforced(db_session):
     student = _make_student(db_session, school, "att2")
     db_session.commit()
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id], max_attempts=1,
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id], max_attempts=1,
     )
     target = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).first()
 
@@ -731,7 +747,7 @@ def test_grant_extra_attempt_raises_this_one_students_limit_only(db_session):
     other_student = _make_student(db_session, school, "att4-other")
     db_session.commit()
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
         student_ids=[student.id, other_student.id], max_attempts=1,
     )
     target = db_session.query(AssignmentTarget).filter(
@@ -778,7 +794,7 @@ def test_unanswered_question_is_scored_as_wrong_on_submit(db_session):
     student = _make_student(db_session, school, "att3")
     db_session.commit()
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id],
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id],
     )
     target = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).first()
     attempt = learning_service.start_attempt(db_session, student, target.id)
@@ -819,7 +835,7 @@ def test_foundation_repair_recommends_prerequisite_gap_over_reteach(db_session):
 
     # Student scores low on BOTH current and prerequisite skill.
     for activity in (current_activity, prereq_activity):
-        assignment = learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id="t", student_ids=[student.id])
+        assignment = learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id])
         target = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).first()
         attempt = learning_service.start_attempt(db_session, student, target.id)
         q_id = next(iter(learning_service._activity_question_ids(db_session, activity.id)))
@@ -848,7 +864,7 @@ def test_foundation_repair_falls_back_to_reteach_when_prerequisite_is_secure(db_
     db_session.commit()
 
     for activity, response in ((current_activity, "B"), (prereq_activity, "A")):  # prereq scores 100%, current scores 0%
-        assignment = learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id="t", student_ids=[student.id])
+        assignment = learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id])
         target = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).first()
         attempt = learning_service.start_attempt(db_session, student, target.id)
         q_id = next(iter(learning_service._activity_question_ids(db_session, activity.id)))
@@ -886,7 +902,7 @@ def test_student_assignment_list_latest_attempt_is_none_before_starting(client, 
     school = _make_school(db_session, "api3")
     student = _make_student(db_session, school, "api3")
     db_session.commit()
-    learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", class_name="5A")
+    learning_service.create_assignment(db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), class_name="5A")
 
     headers = _login(client, student.user.email)
     response = client.get("/api/learning/assignments", headers=headers)
@@ -1489,7 +1505,7 @@ def test_resuming_an_attempt_returns_previously_saved_answers(client, db_session
     school = _make_school(db_session, "api10")
     student = _make_student(db_session, school, "api10")
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id],
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id],
     )
     [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
 
@@ -1536,7 +1552,7 @@ def test_student_sees_bonus_attempts_and_attempts_used(client, db_session):
     school = _make_school(db_session, "api11")
     student = _make_student(db_session, school, "api11")
     assignment = learning_service.create_assignment(
-        db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x",
+        db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school),
         student_ids=[student.id], max_attempts=1,
     )
     [target] = db_session.query(AssignmentTarget).filter(AssignmentTarget.assignment_id == assignment.id).all()
@@ -1579,7 +1595,7 @@ def test_student_list_hides_cancelled_assignments_but_keeps_closed_ones(client, 
     by_status = {}
     for status in ("ACTIVE", "CLOSED", "CANCELLED"):
         assignment = learning_service.create_assignment(
-            db_session, school=school, learning_activity=activity, assigned_by_user_id="teacher-x", student_ids=[student.id],
+            db_session, school=school, learning_activity=activity, assigned_by_user_id=_assigner(db_session, school), student_ids=[student.id],
         )
         assignment.status = status
         by_status[status] = assignment.id
