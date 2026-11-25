@@ -29,6 +29,8 @@ import {
   blankCount,
   placeAnswered,
   placeBlank,
+  chainByKey,
+  labelAfterSave,
   startSave,
   STATUS_LABEL,
   STATUS_TONE,
@@ -466,12 +468,17 @@ export function SitPaper({ paperId }: { paperId: string }) {
   // working only where a question takes it).
   // Saves in flight, so handing in waits for them (review).
   const inflight = useRef<Record<string, Promise<void>>>({});
+  // One chain per question (#264).
+  const saveQueue = useRef<Record<string, Promise<void>>>({});
 
   const save = useCallback(
     (questionId: string): Promise<void> => {
-      const run = saveNow(questionId);
+      // #264: chained, not fired concurrently. Two PUTs for one question
+      // could reach the server out of order, and the older one landing last
+      // overwrote the newer answer there while the screen said saved.
+      const run = chainByKey(saveQueue.current, questionId, () => saveNow(questionId));
       inflight.current[questionId] = run;
-      void run.finally(() => {
+      void run.catch(() => {}).finally(() => {
         if (inflight.current[questionId] === run) delete inflight.current[questionId];
       });
       return run;
@@ -510,7 +517,10 @@ export function SitPaper({ paperId }: { paperId: string }) {
       });
       const latest = tracker.current.seq[questionId] === attempt;
       finishSave(tracker.current, questionId, attempt, "saved");
-      if (latest) setSaves((s) => ({ ...s, [questionId]: "saved" }));
+      // #264, second half: not always "saved" -- see `labelAfterSave`, which
+      // holds the reasoning and is tested on its own.
+      const word = labelAfterSave(tracker.current, questionId);
+      if (latest) setSaves((s) => ({ ...s, [questionId]: word }));
       applyChosen(data.chosenSlotId);
     } catch (err) {
       const described = describeApiError(err, "save your answer");

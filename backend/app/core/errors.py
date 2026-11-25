@@ -78,7 +78,26 @@ def wrong_way_in_message(role: str | None) -> str:
     return f"These are {_WHOSE_DETAILS[role]} sign-in details. Choose {_WAY_IN_NAME[way_in]} above to sign in."
 
 
+# The words the curriculum studio puts on screen for each stored status
+# (frontend/components/curriculum/shared.tsx STATUS_LABEL). A sentence about
+# a status has to use the same words the person is looking at, and title-case
+# alone gets two of them wrong: SME_REVIEW would read "Sme Review", which is
+# the internal name showing through, and REVIEW and SME_REVIEW are one state
+# to the person ("In Review") even though the ladder keeps them apart.
+_STATUS_WORDS: dict[str, str] = {
+    "DRAFT": "Draft",
+    "REVIEW": "In Review",
+    "SME_REVIEW": "In Review",
+    "APPROVED": "Approved",
+    "PUBLISHED": "Published",
+    "ARCHIVED": "Archived",
+}
+
+
 def status_words(status: str | None) -> str:
-    """IN_REVIEW -> "In Review". Stored status values are upper snake case;
+    """SME_REVIEW -> "In Review". Stored status values are upper snake case;
     the interface shows them as words, and so should a sentence about them."""
-    return (status or "").replace("_", " ").strip().title() or "Unknown"
+    key = (status or "").strip().upper()
+    if key in _STATUS_WORDS:
+        return _STATUS_WORDS[key]
+    return key.replace("_", " ").title() or "Unknown"
