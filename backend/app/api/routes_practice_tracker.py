@@ -740,7 +740,16 @@ def _answers_to_mark_counts(db: Session, attempt_ids: list[str]) -> dict[str, tu
             func.sum(case((AttemptAnswer.manual_score.is_(None), 1), else_=0)),
             func.sum(case((AttemptAnswer.manual_score.isnot(None), 1), else_=0)),
         )
-        .filter(AttemptAnswer.attempt_id.in_(attempt_ids), AttemptAnswer.auto_score.is_(None))
+        .filter(
+            AttemptAnswer.attempt_id.in_(attempt_ids),
+            AttemptAnswer.auto_score.is_(None),
+            # A-011: a withdrawn question has no score either, but it is not
+            # the teacher's to mark. != alone would drop the NULL notes too.
+            or_(
+                AttemptAnswer.grading_note.is_(None),
+                AttemptAnswer.grading_note != learning_service.WITHDRAWN,
+            ),
+        )
         .group_by(AttemptAnswer.attempt_id)
         .all()
     ):
