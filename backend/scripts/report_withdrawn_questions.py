@@ -20,6 +20,8 @@ import sys
 
 sys.path.insert(0, ".")
 
+from sqlalchemy import func
+
 from app.database import SessionLocal
 from app.models import (
     Assignment,
@@ -32,37 +34,34 @@ from app.models import (
     Student,
     User,
 )
-from app.services.learning_service import (
-    MIN_SET_SIZE,
-    WITHDRAWN_QUESTION_STATUSES,
-)
+from app.services import learning_service
+from app.services.learning_service import MIN_SET_SIZE, withdrawn_question_clause
 
 
 def main() -> int:
     db = SessionLocal()
     try:
-        withdrawn = (
-            db.query(Question)
-            .filter(Question.status.in_(WITHDRAWN_QUESTION_STATUSES))
-            .all()
-        )
+        # The shared rule, not the status alone: a question sent back and then
+        # moved on to Draft carries the stamp and no longer the status, and
+        # this report is the only list of what the filter hides (#261).
+        withdrawn = db.query(Question).filter(withdrawn_question_clause()).all()
         print(f"Questions sent back for rework: {len(withdrawn)}")
 
         # --- part 1's fallback: sets held because they fell under the floor
         held = []
         for activity in db.query(LearningActivity).filter(LearningActivity.status == "PUBLISHED").all():
-            rows = (
-                db.query(Question.status)
-                .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
+            total = (
+                db.query(func.count(LearningActivityQuestion.id))
                 .filter(LearningActivityQuestion.learning_activity_id == activity.id)
-                .all()
+                .scalar()
+                or 0
             )
-            if not rows:
+            if not total:
                 continue
-            pulled = sum(1 for (st,) in rows if st in WITHDRAWN_QUESTION_STATUSES)
-            remaining = len(rows) - pulled
+            pulled = len(learning_service.withdrawn_question_ids(db, activity.id))
+            remaining = total - pulled
             if pulled and remaining < MIN_SET_SIZE:
-                held.append((activity.title, len(rows), remaining))
+                held.append((activity.title, total, remaining))
         print(f"\nSets held because withdrawing left them under {MIN_SET_SIZE}: {len(held)}")
         for title, total, remaining in held[:20]:
             print(f"  {title}: {remaining} of {total} questions left")

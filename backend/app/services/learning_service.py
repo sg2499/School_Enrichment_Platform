@@ -56,7 +56,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -192,11 +192,57 @@ READY_QUESTION_STATUSES = {"APPROVED", "PUBLISHED"}
 # 23 Nov (#251, part 4): an automatic FLAGGED from Re-run Checks does NOT
 # withdraw a question, because the checker has false positives and should
 # not take questions out from under children -- those are reported to him
-# instead. A DRAFT sitting in a published set is #261's defect, not this
-# one, and must not be fixed by a surprise on deploy day: production holds
-# 4,828 questions that are not approved, and pulling all of them at once
-# would empty live sets in front of a real school.
+# instead.
+#
+# Corrected 26 Nov 2026. This block used to justify the narrow filter with
+# "production holds 4,828 questions that are not approved, and pulling all of
+# them at once would empty live sets in front of a real school". The second
+# half of that was wrong and was disproved the next day: all 4,828 are DRAFT
+# in published CHAPTERS and not one of them is in a set at all (measured
+# 25 Nov 19:34 IST, and again 26 Nov 19:11 IST over sets of every status).
+# The first half stands -- a filter of "not APPROVED" would also have hidden
+# every PUBLISHED question, which is why READY_QUESTION_STATUSES holds both.
 WITHDRAWN_QUESTION_STATUSES = {"SME_REVIEW"}
+
+
+def withdrawn_question_clause():
+    """Whether a question has been pulled from a live set, as SQL.
+
+    The one rule, read by every caller below, so A-011's own guarantee --
+    one place decides what a set contains -- stays true (#261, 26 Nov 2026).
+
+    A question is withdrawn when a PERSON sent it back for rework, and only
+    then. Two halves, because one is not enough:
+
+      * `status in WITHDRAWN_QUESTION_STATUSES` -- a send-back still sitting
+        in review. That was the whole rule until today.
+      * `sent_back_at is not null` -- A-012's stamp. `_QUESTION_TRANSITIONS`
+        allows SME_REVIEW -> DRAFT, and the status rule alone lost the
+        question at that step: it walked back out of the filter and was
+        served to children again, unapproved, with nobody having approved it.
+        The stamp survives the move to Draft by design, so it does not.
+
+    Deliberately NOT a whitelist of APPROVED and PUBLISHED, which is what
+    every publishing gate uses (READY_QUESTION_STATUSES). A whitelist would
+    also hide questions no person ever rejected, and until A-035 lands a
+    workbook re-import can set a live question to Draft on its own -- which
+    would hand a spreadsheet the power to take a question away from a class.
+    His decision of 23 Nov 2026 (#251, A-011 part 4) is that only a human
+    send-back does that. Shailesh chose this shape on 26 Nov over the
+    whitelist for that reason.
+
+    One route this does NOT cover, and it is not serve-time's to cover: a
+    question that was never approved reaching a live set at all. #262 and
+    A-035 can do it, and so can A-019 demoting an assigned set back to Draft
+    (a Draft set's top-up takes everything, and `create_assignment` checks
+    PUBLISHED only when the assignment is created, never again). Those are
+    fixed where they happen.
+    """
+    return or_(
+        Question.status.in_(WITHDRAWN_QUESTION_STATUSES),
+        Question.sent_back_at.isnot(None),
+    )
+
 
 # The floor a set must still clear once a question has been withdrawn. Below
 # it the set is held rather than served thin (#251, part 1). The same number
@@ -661,7 +707,7 @@ def withdrawn_question_ids(db: Session, learning_activity_id: str) -> set[str]:
         .join(Question, Question.id == LearningActivityQuestion.question_id)
         .filter(
             LearningActivityQuestion.learning_activity_id == learning_activity_id,
-            Question.status.in_(WITHDRAWN_QUESTION_STATUSES),
+            withdrawn_question_clause(),
         )
         .all()
     )
@@ -678,7 +724,7 @@ def servable_questions(db: Session, learning_activity_id: str) -> list[Question]
         .join(LearningActivityQuestion, LearningActivityQuestion.question_id == Question.id)
         .filter(
             LearningActivityQuestion.learning_activity_id == learning_activity_id,
-            Question.status.notin_(WITHDRAWN_QUESTION_STATUSES),
+            ~withdrawn_question_clause(),
         )
         .order_by(LearningActivityQuestion.sequence)
         .all()
@@ -700,7 +746,7 @@ def set_is_held(db: Session, learning_activity_id: str) -> bool:
         .join(Question, Question.id == LearningActivityQuestion.question_id)
         .filter(
             LearningActivityQuestion.learning_activity_id == learning_activity_id,
-            Question.status.notin_(WITHDRAWN_QUESTION_STATUSES),
+            ~withdrawn_question_clause(),
         )
         .scalar()
         or 0
