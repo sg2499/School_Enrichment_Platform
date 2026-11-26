@@ -39,7 +39,7 @@ from app.models import (
     Question,
     SubjectGroup,
 )
-from app.services import figures
+from app.services import figures, question_approval_service
 from app.services.learning_service import MARKING_FIELD_LABELS, clean_marking_fields
 
 # Question Bank sheet column positions (0-indexed) -- see module docstring.
@@ -409,7 +409,29 @@ def import_chapter_workbook(
         question.response_format = row[QB_RESPONSE_FORMAT]
         question.media_required = row[QB_MEDIA_REQUIRED]
         question.teacher_note = row[QB_TEACHER_NOTE]
-        question.status = _normalize_status(row[QB_STATUS])
+        target_status = _normalize_status(row[QB_STATUS])
+        if target_status in question_approval_service.APPROVED_STATUSES:
+            # A-012: a workbook's Status column can say Approved or Published,
+            # so the import is one of the routes a question gets approved by
+            # and has to say so. Narrowing what a workbook is allowed to
+            # approve at all is A-035, not this change.
+            if question_approval_service.is_sent_back(question):
+                # A person sent this question back for rework, and a workbook
+                # does not overrule a person (A-011 part 4). Left where it is,
+                # and said out loud rather than passed over in silence.
+                result.warnings.append(
+                    f"Question {code}: somebody sent this back for rework, so the workbook's "
+                    "status was not applied. Approve it in Curriculum Studio instead."
+                )
+            else:
+                question_approval_service.approve(
+                    question,
+                    to_status=target_status,
+                    user_id=None,
+                    source=question_approval_service.SOURCE_IMPORT,
+                )
+        else:
+            question.status = target_status
         question.source_alignment = row[QB_SOURCE_ALIGNMENT]
         if marking_columns:
             marking, problems = clean_marking_fields(

@@ -66,7 +66,7 @@ def main() -> int:
         LearningActivityQuestion,
         Question,
     )
-    from app.services import repeat_service
+    from app.services import question_approval_service, repeat_service
     from app.services.audit_service import log_audit_event
     from app.services.question_quality_service import run_quality_checks
     from scripts.apply_answer_units import mask_database_url
@@ -126,7 +126,8 @@ def main() -> int:
                             admin._persist_quality_results(db, batch)
                     approval = admin._bulk_approve_questions(
                         db, questions, True, user=actor, request=None,
-                        scope={"chapterIds": [chapter.id], "via": "publish_courses.py"})
+                        scope={"chapterIds": [chapter.id], "via": "publish_courses.py"},
+                        source=question_approval_service.SOURCE_PUBLISH_SCRIPT)
                     blocker = admin._chapter_publish_blocker(db, chapter)
                     if chapter.status == "DRAFT":
                         chapter.status = "REVIEW"
@@ -152,21 +153,34 @@ def main() -> int:
                     db.commit()
                     grand["small sets kept as drafts"] += small
                     line.update(approved=approval["approvedCount"], flagged=approval["skippedFlaggedCount"],
+                                sent_back=approval["skippedSentBackCount"],
                                 status=chapter.status, sets=n_sets - small, held=blocker["message"] if blocker else None)
                 else:
                     found = repeat_service.find_repeats(questions)
-                    todo = [q for q in questions if q.status not in ("APPROVED", "PUBLISHED") and q.id not in found]
+                    # A question a person sent back for rework is not going to
+                    # be approved by --apply either, so the read-only run must
+                    # not count it as one that would be (A-012).
+                    sent_back = [q for q in questions if question_approval_service.is_sent_back(q)]
+                    todo = [q for q in questions
+                            if q.status not in ("APPROVED", "PUBLISHED")
+                            and q.id not in found
+                            and not question_approval_service.is_sent_back(q)]
                     results = run_quality_checks(todo)
                     would = sum(1 for q in todo if results[q.id].status != "FLAGGED")
                     flagged = len(todo) - would
-                    line.update(approved=would, flagged=flagged, status=chapter.status, sets=None, held=None)
-                for key in ("questions", "repeats", "approved", "flagged"):
+                    line.update(approved=would, flagged=flagged, sent_back=len(sent_back),
+                                status=chapter.status, sets=None, held=None)
+                for key in ("questions", "repeats", "approved", "flagged", "sent_back"):
                     grand[key] += line.get(key) or 0
                 if line.get("held"):
                     held_all.append((chapter.code, line["held"]))
                 sets = "" if line["sets"] is None else f"  sets published {line['sets']}"
+                # The send-back figure is printed only when there is one, so
+                # the usual line stays the width it has always been.
+                held_back = f"  sent back {line['sent_back']}" if line.get("sent_back") else ""
                 print(f"  {chapter.code:<34} {line['questions']:>5} q  repeats {line['repeats']:>4}  "
-                      f"{'approved' if args.apply else 'would approve'} {line['approved']:>5}  flagged {line['flagged']:>4}  {line['status']}{sets}")
+                      f"{'approved' if args.apply else 'would approve'} {line['approved']:>5}  flagged {line['flagged']:>4}"
+                      f"{held_back}  {line['status']}{sets}")
         if args.apply:
             log_audit_event(db, "curriculum.courses.published_by_script", details={"chapters": total, **grand})
             db.commit()

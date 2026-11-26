@@ -63,7 +63,7 @@ from app.models import (
     Teacher,
     User,
 )
-from app.services import figures, repeat_service, units, upload_rule_service
+from app.services import figures, question_approval_service, repeat_service, units, upload_rule_service
 from app.services.audit_service import log_audit_event
 from app.services.learning_service import (
     READY_QUESTION_STATUSES,
@@ -895,7 +895,21 @@ def update_question_status(
     _apply_transition(question.status, requested_status, _QUESTION_TRANSITIONS, "Question")
 
     previous_status = question.status
-    question.status = requested_status
+    if requested_status in question_approval_service.APPROVED_STATUSES:
+        question_approval_service.approve(
+            question,
+            to_status=requested_status,
+            user_id=user.id,
+            source=question_approval_service.SOURCE_REVIEW_SCREEN,
+        )
+    else:
+        question.status = requested_status
+        if previous_status in question_approval_service.APPROVED_STATUSES:
+            # A person taking an approved question back for rework. This is the
+            # only path that does so, and the stamp is what stops the next batch
+            # approval putting it straight back (A-011 part 4, his decision of
+            # 23 Nov 2026).
+            question_approval_service.send_back(question)
     log_audit_event(
         db,
         "curriculum.question.status_changed",
@@ -1019,6 +1033,7 @@ def _bulk_approve_questions(
     user: User,
     request: Request,
     scope: dict,
+    source: str = question_approval_service.SOURCE_BULK,
 ) -> dict:
     """Advances every question whose quality check allows it straight from
     its current status to APPROVED (DRAFT and SME_REVIEW both walk the
@@ -1026,8 +1041,15 @@ def _bulk_approve_questions(
     step) -- the quality gate substitutes for the per-question ceremony,
     it doesn't skip it. A FLAGGED question is NEVER touched by this
     regardless of includeUnverified; that flag exists specifically to force
-    a human look. Returns transparent counts rather than a single number --
-    Shailesh was explicit that nothing should be silently glossed over."""
+    a human look. Nor is a question a person has SENT BACK for rework, at
+    any status (A-012, 26 Nov 2026): a batch undoing a person's send-back is
+    the gap that made A-011 part 4 only half true. Returns transparent
+    counts rather than a single number -- Shailesh was explicit that nothing
+    should be silently glossed over.
+
+    `source` says which route this run is, for the approval stamp
+    question_approval_service writes: the Approve and Publish button by
+    default, and publish_courses.py passes its own."""
     unchecked = [q for q in questions if q.quality_status == "UNCHECKED"]
     if unchecked:
         _persist_quality_results(db, unchecked)
@@ -1035,6 +1057,7 @@ def _bulk_approve_questions(
     allowed_statuses = {"VERIFIED"} | ({"UNVERIFIED"} if include_unverified else set())
 
     approved = 0
+    skipped_sent_back = 0
     skipped_flagged = 0
     skipped_unverified = 0
     skipped_already_done = 0
@@ -1047,6 +1070,15 @@ def _bulk_approve_questions(
         if question.status in ("APPROVED", "PUBLISHED"):
             skipped_already_done += 1
             continue
+        if question_approval_service.is_sent_back(question):
+            # A person sent this one back for rework. A batch must not undo
+            # that: only a human send-back pulls a question from a live set
+            # (A-011 part 4), and re-approving it here would put it back in
+            # front of children with nothing in the audit row naming it. It
+            # comes back by one click in Curriculum Studio, which clears the
+            # stamp.
+            skipped_sent_back += 1
+            continue
         if question.quality_status == "FLAGGED":
             skipped_flagged += 1
             continue
@@ -1055,8 +1087,12 @@ def _bulk_approve_questions(
             continue
         if question.status == "DRAFT":
             question.status = "SME_REVIEW"
-        if question.status == "SME_REVIEW":
-            question.status = "APPROVED"
+        # Everything that was not going to be approved has been skipped
+        # above, so the question is in review by now, whether it started
+        # there or was just moved.
+        if question_approval_service.approve(
+            question, to_status="APPROVED", user_id=user.id, source=source
+        ):
             approved += 1
     log_audit_event(
         db,
@@ -1066,6 +1102,7 @@ def _bulk_approve_questions(
         details={
             **scope,
             "approvedCount": approved,
+            "skippedSentBackCount": skipped_sent_back,
             "skippedFlaggedCount": skipped_flagged,
             "skippedUnverifiedCount": skipped_unverified,
             "skippedAlreadyDoneCount": skipped_already_done,
@@ -1076,6 +1113,7 @@ def _bulk_approve_questions(
     return {
         "skippedRepeatsCount": skipped_repeats,
         "approvedCount": approved,
+        "skippedSentBackCount": skipped_sent_back,
         "skippedFlaggedCount": skipped_flagged,
         "skippedUnverifiedCount": skipped_unverified,
         "skippedAlreadyDoneCount": skipped_already_done,
