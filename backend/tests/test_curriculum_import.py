@@ -219,3 +219,66 @@ def test_only_some_marking_columns_may_be_present(db_session, tmp_path):
     assert result.warnings == []
     q = db_session.query(Question).filter(Question.code == "TEST-C5-CH906-Q001").one()
     assert (q.answer_unit, q.unit_rule, q.allow_unit_conversion, q.unit_mark) == ("m", "STATED", False, None)
+
+
+def test_a_workbook_that_approves_a_question_says_the_import_did_it(db_session, tmp_path):
+    """A-012: the workbook's Status column is one of the routes a question
+    gets approved by, so it has to say so. Narrowing what a workbook may
+    approve at all is A-035."""
+    path = tmp_path / "ch41.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=41, title="Approval Route Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    published = db_session.query(Question).filter(Question.code == "TEST-C5-CH41-Q002").one()
+    assert published.status == "PUBLISHED"  # the workbook said Published
+    assert published.approval_source == "IMPORT"
+    assert published.approved_by_user_id is None
+
+    draft = db_session.query(Question).filter(Question.code == "TEST-C5-CH41-Q001").one()
+    assert draft.status == "DRAFT"
+    assert draft.approval_source is None, "a draft row is not an approval"
+
+
+def test_a_re_import_does_not_restamp_a_question_that_was_already_approved(db_session, tmp_path):
+    """The 28,430 questions approved before these columns existed carry an
+    EMPTY stamp, and that is the honest record. Re-running an importer over
+    live content must not put today's date and IMPORT on them."""
+    path = tmp_path / "ch42.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=42, title="No Restamp Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH42-Q002").one()
+    question.approval_source = None
+    question.approved_at = None
+    question.approved_by_user_id = None
+    db_session.commit()
+
+    import_chapter_workbook(db_session, str(path))
+
+    db_session.refresh(question)
+    assert question.status == "PUBLISHED"
+    assert question.approval_source is None
+    assert question.approved_at is None
+
+
+def test_a_workbook_cannot_approve_a_question_a_person_sent_back(db_session, tmp_path):
+    """A-011 part 4 reaches the importer too: a workbook does not overrule a
+    person. The question stays where it is, and the run says so rather than
+    passing over it in silence."""
+    from app.services import question_approval_service
+
+    path = tmp_path / "ch43.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=43, title="Sent Back Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH43-Q002").one()
+    question.status = "SME_REVIEW"
+    question_approval_service.send_back(question)
+    db_session.commit()
+
+    result = import_chapter_workbook(db_session, str(path))
+
+    db_session.refresh(question)
+    assert question.status == "SME_REVIEW", "the workbook does not overrule a person"
+    assert question_approval_service.is_sent_back(question)
+    assert any("sent this back for rework" in w for w in result.warnings), result.warnings

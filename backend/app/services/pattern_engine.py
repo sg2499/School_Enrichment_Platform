@@ -788,6 +788,7 @@ def build_rows(pattern, made: Made, *, school_id: str, student_id: str | None) -
     (a case study: one pair per part), not yet added to a session."""
     from app.models import Question
     from app.models.papers import GeneratedQuestion
+    from app.services import question_approval_service
 
     group_id = str(uuid.uuid4()) if made.stimulus is not None else None
     rows = []
@@ -806,8 +807,18 @@ def build_rows(pattern, made: Made, *, school_id: str, student_id: str | None) -
             auto_gradable=data["auto_gradable"], difficulty=pattern.difficulty,
             competency=pattern.competency, response_format=data["response_format"],
             teacher_note=data["teacher_note"], answer_unit=data["answer_unit"],
-            unit_rule=data["unit_rule"], status="APPROVED", quality_status="VERIFIED",
+            unit_rule=data["unit_rule"], quality_status="VERIFIED",
             figure=data.get("figure"),
+        )
+        # A-012: a generated question is approved because its PATTERN was
+        # approved, not because a person read this particular wording of it.
+        # Recorded as such, so it never looks like curriculum anybody signed
+        # off. `_refuse_generated` keeps Curriculum Studio out of it.
+        question_approval_service.approve(
+            question,
+            to_status="APPROVED",
+            user_id=None,
+            source=question_approval_service.SOURCE_PATTERN,
         )
         record = GeneratedQuestion(
             question_id=question.id, pattern_id=pattern.id, pattern_version=pattern.version,

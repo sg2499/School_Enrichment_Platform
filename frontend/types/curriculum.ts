@@ -140,6 +140,8 @@ export type MarkingUnit = { code: string; kind: string; label: string; singular:
 
 export type BulkApproveResult = {
   approvedCount: number;
+  /** Sent back for rework by a person, so a batch leaves it alone (A-012). */
+  skippedSentBackCount: number;
   skippedFlaggedCount: number;
   skippedUnverifiedCount: number;
   skippedAlreadyDoneCount: number;

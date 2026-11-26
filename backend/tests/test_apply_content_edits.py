@@ -147,3 +147,18 @@ def test_a_required_unit_answer_is_checked_with_its_unit(db, tmp_path):
     done = apply_content_edits.apply_plan(
         db, apply_content_edits.read_and_plan(db, _workbook(tmp_path, edits=edit)), workbook_name="x", workbook_sha256="x")
     assert done["questions"] == 1
+
+
+def test_a_question_added_by_an_edit_run_says_the_script_approved_it(db, tmp_path):
+    """A-012, and #262 made findable. Q4 is added after Q3, which is
+    PUBLISHED, so #262 hands it that status without anybody reading it. The
+    defect stands until #262 is fixed -- but the route is now recorded, so
+    every question it ever let through can be listed."""
+    path = _workbook(tmp_path, new=NEW)
+    apply_content_edits.apply_plan(db, apply_content_edits.read_and_plan(db, path),
+                                  workbook_name="edits.xlsx", workbook_sha256="x")
+    added = db.query(Question).filter_by(code="Q4").one()
+    assert added.status == "PUBLISHED"
+    assert added.approval_source == "CONTENT_EDIT"
+    assert added.approved_at is not None
+    assert added.approved_by_user_id is None

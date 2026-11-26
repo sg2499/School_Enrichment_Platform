@@ -300,6 +300,7 @@ def apply_plan(db, plan: Plan, *, workbook_name: str, workbook_sha256: str) -> d
     import uuid
 
     from app.models import LearningActivityQuestion, Question
+    from app.services import question_approval_service
     from app.services.audit_service import log_audit_event
     from app.services.learning_service import grade_answer
 
@@ -321,12 +322,26 @@ def apply_plan(db, plan: Plan, *, workbook_name: str, workbook_sha256: str) -> d
             after = added[after]
         question = Question(id=str(uuid.uuid4()), code=code, concept_lesson_id=after.concept_lesson_id, origin="BANK",
                             assignment_code=after.assignment_code, difficulty=after.difficulty, competency=after.competency,
-                            source_alignment=after.source_alignment, status=after.status, time_seconds=after.time_seconds,
+                            source_alignment=after.source_alignment, time_seconds=after.time_seconds,
                             shuffle_options=False, misconception_tag=after.misconception_tag)
         for attribute, value in values.items():
             setattr(question, attribute, value)
         if question.stage is None:
             question.stage = after.stage
+        # #262: this still copies the neighbouring question's status, so a
+        # question added by an edit run can arrive APPROVED without anyone
+        # reading it. A-012 does not fix that -- it makes it findable, by
+        # recording CONTENT_EDIT as the route. Every question #262 ever let
+        # through can now be listed: approval_source = 'CONTENT_EDIT'.
+        if after.status in question_approval_service.APPROVED_STATUSES:
+            question_approval_service.approve(
+                question,
+                to_status=after.status,
+                user_id=None,
+                source=question_approval_service.SOURCE_CONTENT_EDIT,
+            )
+        else:
+            question.status = after.status
         db.add(question)
         db.flush()
         for link in db.query(LearningActivityQuestion).filter_by(question_id=after.id).all():

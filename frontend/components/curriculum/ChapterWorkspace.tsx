@@ -268,6 +268,9 @@ function BulkApprove({ path, scopeLabel, onDone }: { path: string; scopeLabel: s
       {result ? (
         <p role="status" className="text-sm leading-relaxed text-content-muted">
           Approved <strong className="text-jade-700">{result.approvedCount}</strong>.
+          {result.skippedSentBackCount > 0
+            ? ` ${result.skippedSentBackCount} sent back for rework, so they were left as they are.`
+            : ""}
           {result.skippedFlaggedCount > 0 ? ` ${result.skippedFlaggedCount} flagged, left for you to read.` : ""}
           {result.skippedUnverifiedCount > 0 ? ` ${result.skippedUnverifiedCount} couldn't be checked automatically.` : ""}
           {result.skippedAlreadyDoneCount > 0 ? ` ${result.skippedAlreadyDoneCount} already approved or published.` : ""}

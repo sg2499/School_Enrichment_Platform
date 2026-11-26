@@ -435,6 +435,27 @@ class Question(Base):
     # and clears it. Empty for every other question. A plain text column,
     # not a foreign key, so removing the kept question can never block.
     repeat_of_id = Column(String, nullable=True, index=True)
+    # Who approved this question, when, and by what route (A-012, 26 Nov 2026).
+    # Before these columns a question recorded only its status, so "the quality
+    # checks cleared it" and "the academic owner signed it off" were the same
+    # fact in the database. Written in exactly one place:
+    # app/services/question_approval_service.py, which also lists every path
+    # that can approve a question. Empty on every question approved before
+    # 26 Nov 2026, and empty means "not recorded" -- there was nothing to
+    # backfill it from, because the bulk audit rows carry counts and not ids.
+    # No foreign key on the user, for the reason repeat_of_id has none.
+    approved_by_user_id = Column(String, nullable=True, index=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    # One of question_approval_service.SOURCES. SIGN_OFF is the one that
+    # matters to A-012 and nothing writes it yet.
+    approval_source = Column(String(20), nullable=True)
+    # A person sent this question back for rework and nobody has approved it
+    # since (A-011 part 4, his decision 23 Nov 2026). A column rather than a
+    # status test, because an import can also put a question into SME_REVIEW
+    # and because SME_REVIEW -> DRAFT is allowed; the reasoning is in
+    # question_approval_service.send_back. A batch approval skips a question
+    # that carries this; the studio clears it.
+    sent_back_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
