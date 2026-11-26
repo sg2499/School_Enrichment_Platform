@@ -288,15 +288,37 @@ def generate_activities_for_chapter(db: Session, chapter: Chapter, created_by_us
     their question links are left untouched, mirroring
     curriculum_import_service.py's own idempotent-seed convention.
 
-    Chapter-scoped activity_types (CHAPTER_MASTERY, CASE_STUDY) collapse
-    every matching question -- regardless of which skill it's tagged
-    against -- into ONE activity for the whole chapter (see learning.py's
-    module docstring for why: the real MASTERY code is structurally
-    identical to DIAG, one item per skill, but plays the opposite role).
-    Every other activity_type groups by (assignment_code, concept_lesson_id)
-    pair, which for the real data naturally reproduces one activity per
-    skill per code (Chapter 1's own per-skill P0X/XA/XB/REM/ADV sets are
-    each already entirely one skill).
+    Chapter-scoped activity_types collapse every matching question --
+    regardless of which skill it is tagged against -- into ONE activity for
+    the whole chapter, leaving concept_lesson_id NULL. Which codes those are
+    is decided by classify_assignment_code's second return value, and there
+    are TWO families of them, not one:
+
+      * CHAPTER_MASTERY and CASE_STUDY (see learning.py's module docstring
+        for why: the real MASTERY code is structurally identical to DIAG,
+        one item per skill, but plays the opposite role); and
+      * ALL FIVE day-set types -- PREREQUISITE_CHECK, CORE_PRACTICE,
+        FLUENCY, APPLICATION and CHALLENGE -- when they arrive as the
+        ICSE-style L01-D1A..D5E codes handled by _DAY_SETS, because each of
+        those sets spans every skill of the lesson and so belongs to the
+        chapter rather than to one skill (#234).
+
+    Only the remaining codes group by (assignment_code, concept_lesson_id),
+    which for the real data reproduces one activity per skill per code
+    (Chapter 1's own per-skill P0X/XA/XB/REM/ADV sets are each already
+    entirely one skill).
+
+    This paragraph used to name only CHAPTER_MASTERY and CASE_STUDY and say
+    "every other activity_type groups by (assignment_code,
+    concept_lesson_id)". That was written before #234 added the day sets and
+    was never updated, so it read as though a CORE_PRACTICE set always
+    carries a lesson id. It does not: on production 1,141 published sets
+    carry NULL, and this docstring is what first made that look like a data
+    defect rather than the design (#272). The live consequence, documented
+    here because the two belong together: Foundation Repair --
+    compute_concept_mastery, _find_rescue_activity and PrerequisiteLink --
+    matches a SPECIFIC concept_lesson_id, so it cannot see a chapter-scoped
+    set at all.
     """
     questions = (
         db.query(Question)
