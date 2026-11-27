@@ -114,7 +114,11 @@ def test_import_is_idempotent(db_session, tmp_path):
     second = import_chapter_workbook(db_session, str(path))
 
     assert second.concept_lessons_created == 0
-    assert second.concept_lessons_updated == 2
+    # Nothing about the skills changed, so nothing is reported as
+    # updated. This asserted 2 until 27 Nov 2026, which counted two
+    # no-op writes as changes -- on production that read as "15
+    # updated" per chapter for content nobody had touched.
+    assert second.concept_lessons_updated == 0
     assert second.questions_created == 0
     assert second.questions_updated == 2
 
@@ -438,3 +442,4 @@ def test_an_unpublished_chapters_skills_are_still_updated(db_session, tmp_path):
     db_session.refresh(lesson)
     assert lesson.title == "Test skill one", "a draft chapter still takes the workbook's version"
     assert result.concept_lessons_skipped_published == 0
+    assert result.concept_lessons_updated == 1, "only the skill that changed is counted"

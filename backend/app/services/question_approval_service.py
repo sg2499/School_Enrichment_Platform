@@ -20,8 +20,11 @@ written:
      2026) stopped it. An import now sets DRAFT on a question it creates and
      never touches the status of one that already exists, so IMPORT below is
      kept only to read the stamps written before that date.
-  5. scripts/apply_content_edits.py                  -- copies the status of
-     the question it sits after (#262 will remove this)
+  5. scripts/apply_content_edits.py                  -- NO LONGER a writer.
+     It copied the status of the question it sat after; #262 (27 Nov 2026)
+     stopped it. A question it adds is a DRAFT in no set, like any other new
+     question. CONTENT_EDIT below is kept only to read stamps written before
+     that date -- in practice none, since the columns arrived on 26 Nov.
   6. services/pattern_engine                         -- a question MADE from
      an approved pattern for one school's paper; not curriculum content
 
