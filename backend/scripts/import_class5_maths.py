@@ -76,17 +76,32 @@ def mask_database_url(url: str) -> str:
     return f"{scheme}://***:***@{host_and_rest}"
 
 
+# How many warnings to print per chapter before summarising the rest.
+WARNINGS_SHOWN = 15
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--content-dir",
-        default=str(Path(__file__).resolve().parent.parent.parent.parent / "Content"),
-        help='Folder containing the CBSE_Class_5_Chapter_*.xlsx files (default: "../../Content" from this script).',
+        default=str(
+            Path(__file__).resolve().parent.parent.parent.parent
+            / "Content" / "CBSE" / "Class-5" / "Maths"
+        ),
+        help="Folder holding the CBSE_Class_5_Chapter_*.xlsx files. The default follows the "
+             "board/class/subject tree the content was reorganised into; it used to point at a "
+             "flat Content folder that no longer holds the workbooks (found 27 Nov 2026).",
     )
     parser.add_argument(
         "--yes",
         action="store_true",
         help="Skip the interactive confirmation prompt (for non-interactive/CI use).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Do the whole load, report what it would do, then roll it back. Writes nothing, "
+             "not even an audit row. The CISCE loader beside this one has always had this.",
     )
     parser.add_argument(
         "--allow-approved-overwrite",
@@ -116,13 +131,15 @@ def main() -> int:
     if "sqlite" in db_url:
         print("WARNING: DATABASE_URL is not set (or points at SQLite) -- this will NOT write to production.")
     print(f"Content directory: {content_dir}")
+    if args.dry_run:
+        print("DRY RUN: everything is rolled back at the end. Nothing is written.")
     print(f"Chapters to import: {len(CHAPTER_FILES)} (every NEW question lands in DRAFT, whatever "
           f"the workbook's Status column says -- nothing becomes visible to anyone)")
     if args.allow_approved_overwrite:
         print("--allow-approved-overwrite is ON: questions a person has already approved WILL be "
               "replaced, and each one is listed by code in the audit row.")
 
-    if not args.yes:
+    if not args.yes and not args.dry_run:
         confirm = input("Type YES to proceed: ")
         if confirm.strip() != "YES":
             print("Aborted.")
@@ -148,6 +165,8 @@ def main() -> int:
                     f"  OK -- {result.chapter_code} {result.chapter_title!r}: "
                     f"{result.concept_lessons_created} lessons created / {result.concept_lessons_updated} updated, "
                     f"{result.questions_created} questions created / {result.questions_updated} updated"
+                    + (f", {result.concept_lessons_skipped_published} skills left alone (chapter published)"
+                       if result.concept_lessons_skipped_published else "")
                     + (f", {result.questions_status_ignored} rows asked for a status other than Draft"
                        if result.questions_status_ignored else "")
                     + (f", {result.questions_skipped_approved} left alone (already approved)"
@@ -158,9 +177,14 @@ def main() -> int:
                        if result.overwritten_codes else "")
                 )
                 if result.warnings:
-                    print(f"  {len(result.warnings)} warning(s):")
-                    for warning in result.warnings:
+                    # Capped: a re-run over a whole class can raise hundreds,
+                    # and an unreadable wall of them is the same as none.
+                    print(f"  {len(result.warnings)} warning(s)"
+                          + (f", first {WARNINGS_SHOWN}:" if len(result.warnings) > WARNINGS_SHOWN else ":"))
+                    for warning in result.warnings[:WARNINGS_SHOWN]:
                         print(f"    - {warning}")
+                    if len(result.warnings) > WARNINGS_SHOWN:
+                        print(f"    ... and {len(result.warnings) - WARNINGS_SHOWN} more of the same kind.")
                 succeeded.append(num)
             except Exception as exc:  # noqa: BLE001 -- report it, then stop: all or nothing
                 db.rollback()
@@ -170,21 +194,28 @@ def main() -> int:
         if failed:
             db.rollback()
             print("\nNothing was kept: a chapter failed, so the whole load was rolled back.")
+        elif args.dry_run:
+            db.rollback()
+            print("\nDry run: nothing was written, not even an audit row.")
         else:
             db.commit()
     finally:
         db.close()
 
     print("\n=== Summary ===")
-    print(f"Imported: {len(succeeded)}/{len(CHAPTER_FILES)} -- {[f'CH{n:02d}' for n in succeeded]}")
+    print(f"{'Would import' if args.dry_run else 'Imported'}: {len(succeeded)}/{len(CHAPTER_FILES)}"
+          f" -- {[f'CH{n:02d}' for n in succeeded]}")
     if failed:
         print(f"Failed: {len(failed)}")
         for num, reason in failed:
             print(f"  CH{num:02d}: {reason}")
         return 1
 
-    print("\nAll chapters are now in the database with status DRAFT.")
-    print("Review and publish each one in the admin Curriculum Studio (/admin/curriculum) when ready.")
+    if args.dry_run:
+        print("\nThat was a dry run. Nothing was written.")
+    else:
+        print("\nEvery NEW question is in the database as a Draft.")
+        print("Review and publish each one in the admin Curriculum Studio (/admin/curriculum) when ready.")
     return 0
 
 

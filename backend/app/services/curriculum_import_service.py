@@ -114,6 +114,8 @@ class ImportResult:
     chapter_title: str
     concept_lessons_created: int = 0
     concept_lessons_updated: int = 0
+    # Skills in a PUBLISHED chapter the workbook would have rewritten (A-035).
+    concept_lessons_skipped_published: int = 0
     questions_created: int = 0
     questions_updated: int = 0
     # A-035: rows an import refused to touch because a person had already
@@ -141,18 +143,21 @@ def _normalize_status(value) -> str:
     return STATUS_MAP.get(str(value).strip().lower(), "DRAFT")
 
 
-def _row_changes_question(question, row, marking_columns, figure_column) -> bool:
+def _row_changes_question(question, row, marking_columns, figure_column) -> list[str]:
     """Whether this workbook row would change anything about a question that
     already exists (A-035).
 
-    Used only to decide whether a refusal is worth SAYING. A re-run over a
-    whole class is mostly rows that match what is already stored, and warning
-    on every one of them would bury the handful that differ.
+    Returns the NAMES of the fields that would change, so the refusal can say
+    which ones. A bare "this differs" on 316 questions is unreadable and
+    unactionable; "differs in: answer_unit, unit_rule" tells you at a glance
+    that a re-import would undo the marking work (found on production,
+    27 Nov 2026).
 
-    Deliberately errs towards True: a field this does not compare is a field
-    the import would change without saying so, which is the failure that
-    matters. Status is not compared -- an import never sets it.
+    Deliberately errs towards "changed": a field this does not compare is a
+    field the import would change without saying so, which is the failure
+    that matters. Status is not compared -- an import never sets it.
     """
+    changed: list[str] = []
     for index, attribute in (
         (QB_ASSIGNMENT_ID, "assignment_code"),
         (QB_STAGE, "stage"),
@@ -173,21 +178,21 @@ def _row_changes_question(question, row, marking_columns, figure_column) -> bool
         (QB_SOURCE_ALIGNMENT, "source_alignment"),
     ):
         if row[index] != getattr(question, attribute):
-            return True
+            changed.append(attribute)
 
     correct = str(row[QB_CORRECT_ANSWER]) if row[QB_CORRECT_ANSWER] is not None else ""
     if correct != (question.correct_answer or ""):
-        return True
+        changed.append("correct_answer")
     if (int(row[QB_DIFFICULTY]) if row[QB_DIFFICULTY] is not None else None) != question.difficulty:
-        return True
+        changed.append("difficulty")
     if (int(row[QB_MARKS]) if row[QB_MARKS] is not None else 1) != question.marks:
-        return True
+        changed.append("marks")
     if (int(row[QB_TIME_SECONDS]) if row[QB_TIME_SECONDS] is not None else None) != question.time_seconds:
-        return True
+        changed.append("time_seconds")
     if _yn_to_bool(row[QB_AUTO_GRADABLE]) != bool(question.auto_gradable):
-        return True
+        changed.append("auto_gradable")
     if _yn_to_bool(row[QB_SHUFFLE_OPTIONS]) != bool(question.shuffle_options):
-        return True
+        changed.append("shuffle_options")
 
     if marking_columns:
         marking, _problems = clean_marking_fields(
@@ -195,21 +200,21 @@ def _row_changes_question(question, row, marking_columns, figure_column) -> bool
         )
         for key, value in marking.items():
             if value != getattr(question, key):
-                return True
+                changed.append(key)
 
     if figure_column is not None:
         raw = row[figure_column] if figure_column < len(row) else None
         if raw is None or not str(raw).strip():
             if question.figure is not None:
-                return True
+                changed.append("figure")
         else:
             try:
                 if json.dumps(figures.check(str(raw))) != (question.figure or ""):
-                    return True
+                    changed.append("figure")
             except figures.FigureError:
-                return True
+                changed.append("figure")
 
-    return False
+    return changed
 
 
 def _find_header_row(rows, first_cell_value: str) -> int:
@@ -449,11 +454,38 @@ def import_chapter_workbook(
             db.flush()
             result.concept_lessons_created += 1
         else:
-            lesson.title = skill_name
-            lesson.learning_outcome = learning_outcome
-            lesson.prerequisite_note = prerequisite_note
-            lesson.priority_misconception = priority_misconception
-            result.concept_lessons_updated += 1
+            # A-035, extended to skills after the 27 Nov production dry run.
+            # The guard below started on questions alone, and the run showed
+            # 225 skill rows being rewritten per pass -- including the names
+            # Ashalatha reviewed through apply_content_edits.py's "Skill
+            # Names" sheet. A workbook does not overrule a reviewer there
+            # either. A skill in a chapter nobody has published yet is still
+            # updated freely: nothing is live to protect.
+            differs = [
+                field
+                for field, value in (
+                    ("title", skill_name),
+                    ("learning_outcome", learning_outcome),
+                    ("prerequisite_note", prerequisite_note),
+                    ("priority_misconception", priority_misconception),
+                )
+                if getattr(lesson, field) != value
+            ]
+            if differs and chapter.status == "PUBLISHED" and not allow_approved_overwrite:
+                result.warnings.append(
+                    f"Skill {skill_id}: this chapter is published, so the workbook's version was "
+                    f"not applied. It differs in: {', '.join(differs)}. Re-run with "
+                    f"--allow-approved-overwrite to replace it."
+                )
+                result.concept_lessons_skipped_published += 1
+            else:
+                lesson.title = skill_name
+                lesson.learning_outcome = learning_outcome
+                lesson.prerequisite_note = prerequisite_note
+                lesson.priority_misconception = priority_misconception
+                result.concept_lessons_updated += 1
+                if differs and chapter.status == "PUBLISHED":
+                    result.overwritten_codes.append(skill_id)
         concept_lessons_by_code[skill_id] = lesson
 
     # Every skill in THIS chapter. A question whose code is already taken by
@@ -495,11 +527,12 @@ def import_chapter_workbook(
             # so a re-run over a whole class does not bury the real
             # differences under thousands of identical rows.
             if not allow_approved_overwrite:
-                if _row_changes_question(question, row, marking_columns, figure_column):
+                differs = _row_changes_question(question, row, marking_columns, figure_column)
+                if differs:
                     result.warnings.append(
                         f"Question {code}: a person has already approved this question, so the "
-                        f"workbook's version was not applied. Re-run with --allow-approved-overwrite "
-                        f"to replace it."
+                        f"workbook's version was not applied. It differs in: {', '.join(differs)}. "
+                        f"Re-run with --allow-approved-overwrite to replace it."
                     )
                     result.questions_skipped_approved += 1
                 continue
@@ -590,6 +623,7 @@ def import_chapter_workbook(
             "file": os.path.basename(file_path),
             "conceptLessonsCreated": result.concept_lessons_created,
             "conceptLessonsUpdated": result.concept_lessons_updated,
+            "conceptLessonsSkippedPublished": result.concept_lessons_skipped_published,
             "questionsCreated": result.questions_created,
             "questionsUpdated": result.questions_updated,
             "questionsSkippedApproved": result.questions_skipped_approved,

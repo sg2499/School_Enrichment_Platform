@@ -295,7 +295,11 @@ def test_a_workbook_does_not_overwrite_a_question_a_person_approved(db_session, 
     assert question.stem == "A reviewer's own wording.", "the workbook must not overrule a reviewer"
     assert question.correct_answer == "5"
     assert result.questions_skipped_approved == 1
-    assert any("already approved" in w for w in result.warnings), result.warnings
+    warning = next(w for w in result.warnings if "already approved" in w)
+    # The fields are named, so a run over live content says WHY it refused --
+    # "differs in: answer_unit" is actionable where "it differs" is not.
+    assert "differs in:" in warning, warning
+    assert "stem" in warning and "correct_answer" in warning, warning
 
 
 def test_the_override_flag_replaces_it_and_names_it(db_session, tmp_path):
@@ -386,3 +390,51 @@ def test_an_import_leaves_an_audit_row(db_session, tmp_path):
     assert len(mine) == 1, rows
     assert "ch51.xlsx" in mine[0]
     assert '"questionsCreated": 2' in mine[0]
+
+
+def test_a_published_chapters_skills_are_not_rewritten(db_session, tmp_path):
+    """A-035 extended to skills, after a production dry run showed 225 skill
+    rows being rewritten per pass -- including the names Ashalatha reviewed.
+    A workbook does not overrule a reviewer there either."""
+    from app.models import Chapter, ConceptLesson
+
+    path = tmp_path / "ch52.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=52, title="Published Skills Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    chapter = db_session.query(Chapter).filter(Chapter.code == "CH52").one()
+    chapter.status = "PUBLISHED"
+    lesson = (
+        db_session.query(ConceptLesson)
+        .filter(ConceptLesson.chapter_id == chapter.id, ConceptLesson.code == "T5-C52-S01")
+        .one()
+    )
+    lesson.title = "A reviewer's own skill name."
+    db_session.commit()
+
+    result = import_chapter_workbook(db_session, str(path))
+
+    db_session.refresh(lesson)
+    assert lesson.title == "A reviewer's own skill name."
+    assert result.concept_lessons_skipped_published == 1
+    assert any("this chapter is published" in w for w in result.warnings), result.warnings
+
+
+def test_an_unpublished_chapters_skills_are_still_updated(db_session, tmp_path):
+    """Nothing is live to protect in a chapter nobody has published, and a
+    re-import correcting a skill name there is the point of the loader."""
+    from app.models import ConceptLesson
+
+    path = tmp_path / "ch53.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=53, title="Draft Skills Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    lesson = db_session.query(ConceptLesson).filter(ConceptLesson.code == "T5-C53-S01").one()
+    lesson.title = "Stale name."
+    db_session.commit()
+
+    result = import_chapter_workbook(db_session, str(path))
+
+    db_session.refresh(lesson)
+    assert lesson.title == "Test skill one", "a draft chapter still takes the workbook's version"
+    assert result.concept_lessons_skipped_published == 0

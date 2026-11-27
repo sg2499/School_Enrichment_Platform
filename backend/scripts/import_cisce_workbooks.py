@@ -90,6 +90,8 @@ def main() -> int:
                 print(f"  OK {path.name}: {result.chapter_code} {result.chapter_title!r}: "
                       f"{result.concept_lessons_created} skills created / {result.concept_lessons_updated} updated, "
                       f"{result.questions_created} questions created / {result.questions_updated} updated"
+                      + (f", {result.concept_lessons_skipped_published} skills left alone (chapter published)"
+                         if result.concept_lessons_skipped_published else "")
                       + (f", {result.questions_status_ignored} rows asked for a status other than Draft"
                          if result.questions_status_ignored else "")
                       + (f", {result.questions_skipped_approved} left alone (already approved)"
