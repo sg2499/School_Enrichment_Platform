@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, ".")
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 
 from app.database import SessionLocal
 from app.models import (
@@ -34,7 +34,6 @@ from app.models import (
     Student,
     User,
 )
-from app.services import learning_service
 from app.services.learning_service import MIN_SET_SIZE, withdrawn_question_clause
 
 
@@ -48,20 +47,33 @@ def main() -> int:
         print(f"Questions sent back for rework: {len(withdrawn)}")
 
         # --- part 1's fallback: sets held because they fell under the floor
-        held = []
-        for activity in db.query(LearningActivity).filter(LearningActivity.status == "PUBLISHED").all():
-            total = (
-                db.query(func.count(LearningActivityQuestion.id))
-                .filter(LearningActivityQuestion.learning_activity_id == activity.id)
-                .scalar()
-                or 0
+        #
+        # ONE grouped query, not one per set. This loop used to run a query
+        # for every published set on production -- about 2,504 of them -- and
+        # #261's change made it two each, which from a laptop against the
+        # Singapore database reads as a hung script. Found by running it on
+        # production 26 Nov 2026, not by the tests, because the only data it
+        # had ever been run against held two sets.
+        pulled_count = func.count(
+            case((withdrawn_question_clause(), LearningActivityQuestion.id), else_=None)
+        )
+        total_count = func.count(LearningActivityQuestion.id)
+        held = [
+            (title, total, total - pulled)
+            for title, total, pulled in (
+                db.query(LearningActivity.title, total_count, pulled_count)
+                .join(
+                    LearningActivityQuestion,
+                    LearningActivityQuestion.learning_activity_id == LearningActivity.id,
+                )
+                .join(Question, Question.id == LearningActivityQuestion.question_id)
+                .filter(LearningActivity.status == "PUBLISHED")
+                .group_by(LearningActivity.id, LearningActivity.title)
+                .having(pulled_count > 0)
+                .having(total_count - pulled_count < MIN_SET_SIZE)
+                .all()
             )
-            if not total:
-                continue
-            pulled = len(learning_service.withdrawn_question_ids(db, activity.id))
-            remaining = total - pulled
-            if pulled and remaining < MIN_SET_SIZE:
-                held.append((activity.title, total, remaining))
+        ]
         print(f"\nSets held because withdrawing left them under {MIN_SET_SIZE}: {len(held)}")
         for title, total, remaining in held[:20]:
             print(f"  {title}: {remaining} of {total} questions left")
