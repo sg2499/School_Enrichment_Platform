@@ -98,7 +98,11 @@ def test_import_creates_full_hierarchy(db_session, fixture_workbook):
     assert q1.status == "DRAFT"  # source said "Draft"
 
     q2 = db_session.query(Question).filter(Question.code == "TEST-C5-CH01-Q002").first()
-    assert q2.status == "PUBLISHED"  # source said "Published" -- normalized to our vocabulary
+    # The workbook says "Published" for this row. Until 27 Nov 2026 it landed
+    # PUBLISHED, which is A-035: a supplier's spreadsheet could put a question
+    # in front of children with nobody having read it. A new question is now
+    # always a Draft, and the run says so.
+    assert q2.status == "DRAFT"
     assert q2.option_b == "4"
 
 
@@ -221,64 +225,164 @@ def test_only_some_marking_columns_may_be_present(db_session, tmp_path):
     assert (q.answer_unit, q.unit_rule, q.allow_unit_conversion, q.unit_mark) == ("m", "STATED", False, None)
 
 
-def test_a_workbook_that_approves_a_question_says_the_import_did_it(db_session, tmp_path):
-    """A-012: the workbook's Status column is one of the routes a question
-    gets approved by, so it has to say so. Narrowing what a workbook may
-    approve at all is A-035."""
+def test_a_new_question_is_always_a_draft_whatever_the_workbook_says(db_session, tmp_path):
+    """A-035. The Status column is the supplier's claim, not a decision of
+    ours. `import_class5_maths.py` has always printed "all land in DRAFT" on
+    screen; now that is true."""
     path = tmp_path / "ch41.xlsx"
-    _build_fixture_workbook(str(path), chapter_no=41, title="Approval Route Chapter")
+    _build_fixture_workbook(str(path), chapter_no=41, title="Draft On Arrival Chapter")
+    result = import_chapter_workbook(db_session, str(path))
+
+    published_row = db_session.query(Question).filter(Question.code == "TEST-C5-CH41-Q002").one()
+    assert published_row.status == "DRAFT"
+    assert published_row.approval_source is None, "an import is not an approval"
+    # Counted, not warned: a new question starting as a Draft is the rule,
+    # and a supplier workbook can carry hundreds of such rows.
+    assert result.questions_status_ignored == 1
+    assert result.warnings == [], result.warnings
+
+
+def test_importing_the_same_workbook_twice_does_not_approve_anything(db_session, tmp_path):
+    """The hole a first draft of this fix left open. Run one lands the row as
+    a Draft; run two used to take the workbook at its word and approve it --
+    and this loader advertises itself as safe to re-run, so that is the
+    likely path, not an edge case."""
+    path = tmp_path / "ch44.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=44, title="Re-run Chapter")
+    import_chapter_workbook(db_session, str(path))
     import_chapter_workbook(db_session, str(path))
 
-    published = db_session.query(Question).filter(Question.code == "TEST-C5-CH41-Q002").one()
-    assert published.status == "PUBLISHED"  # the workbook said Published
-    assert published.approval_source == "IMPORT"
-    assert published.approved_by_user_id is None
-
-    draft = db_session.query(Question).filter(Question.code == "TEST-C5-CH41-Q001").one()
-    assert draft.status == "DRAFT"
-    assert draft.approval_source is None, "a draft row is not an approval"
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH44-Q002").one()
+    assert question.status == "DRAFT", "a second run must not approve what the first left as a draft"
+    assert question.approval_source is None
 
 
-def test_a_re_import_does_not_restamp_a_question_that_was_already_approved(db_session, tmp_path):
-    """The 28,430 questions approved before these columns existed carry an
-    EMPTY stamp, and that is the honest record. Re-running an importer over
-    live content must not put today's date and IMPORT on them."""
-    path = tmp_path / "ch42.xlsx"
-    _build_fixture_workbook(str(path), chapter_no=42, title="No Restamp Chapter")
+def test_an_import_never_sends_a_live_question_back(db_session, tmp_path):
+    """The same rule in the other direction. A workbook's "SME Review" on an
+    approved question would pull it out of every set it is in, which is
+    A-011 part 4 undone by a spreadsheet."""
+    path = tmp_path / "ch45.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=45, title="No Send Back Chapter")
     import_chapter_workbook(db_session, str(path))
 
-    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH42-Q002").one()
-    question.approval_source = None
-    question.approved_at = None
-    question.approved_by_user_id = None
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH45-Q001").one()
+    question.status = "APPROVED"
     db_session.commit()
 
     import_chapter_workbook(db_session, str(path))
 
     db_session.refresh(question)
-    assert question.status == "PUBLISHED"
-    assert question.approval_source is None
-    assert question.approved_at is None
+    assert question.status == "APPROVED"
+    assert question.sent_back_at is None
 
 
-def test_a_workbook_cannot_approve_a_question_a_person_sent_back(db_session, tmp_path):
-    """A-011 part 4 reaches the importer too: a workbook does not overrule a
-    person. The question stays where it is, and the run says so rather than
-    passing over it in silence."""
-    from app.services import question_approval_service
-
-    path = tmp_path / "ch43.xlsx"
-    _build_fixture_workbook(str(path), chapter_no=43, title="Sent Back Chapter")
+def test_a_workbook_does_not_overwrite_a_question_a_person_approved(db_session, tmp_path):
+    """A-035's main event: a re-import used to rewrite the stem, the key and
+    the marking of live content without a word."""
+    path = tmp_path / "ch46.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=46, title="Approved Content Chapter")
     import_chapter_workbook(db_session, str(path))
 
-    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH43-Q002").one()
-    question.status = "SME_REVIEW"
-    question_approval_service.send_back(question)
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH46-Q001").one()
+    question.status = "APPROVED"
+    question.stem = "A reviewer's own wording."
+    question.correct_answer = "5"
     db_session.commit()
 
     result = import_chapter_workbook(db_session, str(path))
 
     db_session.refresh(question)
-    assert question.status == "SME_REVIEW", "the workbook does not overrule a person"
-    assert question_approval_service.is_sent_back(question)
-    assert any("sent this back for rework" in w for w in result.warnings), result.warnings
+    assert question.stem == "A reviewer's own wording.", "the workbook must not overrule a reviewer"
+    assert question.correct_answer == "5"
+    assert result.questions_skipped_approved == 1
+    assert any("already approved" in w for w in result.warnings), result.warnings
+
+
+def test_the_override_flag_replaces_it_and_names_it(db_session, tmp_path):
+    """And the way through, for when the supplier is right. What it replaced
+    is recorded BY CODE -- A-012's finding was that a count cannot answer
+    "which ones"."""
+    path = tmp_path / "ch47.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=47, title="Override Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH47-Q001").one()
+    question.status = "APPROVED"
+    question.stem = "A reviewer's own wording."
+    db_session.commit()
+
+    result = import_chapter_workbook(db_session, str(path), allow_approved_overwrite=True)
+
+    db_session.refresh(question)
+    assert question.stem == "What is 2 + 2?", "the workbook's version is applied"
+    assert result.overwritten_codes == ["TEST-C5-CH47-Q001"]
+    assert question.status == "APPROVED", "replacing the content is not re-approving it"
+
+
+def test_an_unchanged_approved_row_is_skipped_without_a_warning(db_session, tmp_path):
+    """A re-run over a whole class is mostly rows that match what is stored.
+    Warning on every one of them would bury the handful that differ."""
+    path = tmp_path / "ch48.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=48, title="Quiet Re-run Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    question = db_session.query(Question).filter(Question.code == "TEST-C5-CH48-Q001").one()
+    question.status = "APPROVED"
+    db_session.commit()
+
+    result = import_chapter_workbook(db_session, str(path))
+
+    assert result.questions_skipped_approved == 0
+    assert not [w for w in result.warnings if "already approved" in w]
+
+
+def test_a_question_id_that_belongs_to_another_chapter_is_refused(db_session, tmp_path):
+    """A-036. A question is found by its code alone and uq_question_code is
+    global, so a workbook reusing another board's Question ID did not
+    collide -- it moved that question into this chapter and rewrote it,
+    inside whatever sets already held it."""
+    first = tmp_path / "ch49.xlsx"
+    _build_fixture_workbook(str(first), chapter_no=49, title="Original Chapter")
+    import_chapter_workbook(db_session, str(first))
+    original = db_session.query(Question).filter(Question.code == "TEST-C5-CH49-Q001").one()
+    original_lesson_id = original.concept_lesson_id
+    original_stem = original.stem
+
+    # A second chapter whose workbook reuses the first chapter's Question ID.
+    second = tmp_path / "ch50.xlsx"
+    _build_fixture_workbook(str(second), chapter_no=50, title="Colliding Chapter")
+    book = openpyxl.load_workbook(str(second))
+    sheet = book["Question Bank"]
+    sheet.cell(row=2, column=1).value = "TEST-C5-CH49-Q001"
+    sheet.cell(row=2, column=14).value = "A different question that stole the ID."
+    book.save(str(second))
+
+    result = import_chapter_workbook(db_session, str(second))
+
+    db_session.refresh(original)
+    assert original.concept_lesson_id == original_lesson_id, "it must not be moved"
+    assert original.stem == original_stem, "it must not be rewritten"
+    assert result.questions_skipped_other_chapter == 1
+    assert any("another chapter" in w for w in result.warnings), result.warnings
+
+
+def test_an_import_leaves_an_audit_row(db_session, tmp_path):
+    """A-035: an import used to leave no trace at all."""
+    from app.models import AuditLog
+
+    path = tmp_path / "ch51.xlsx"
+    _build_fixture_workbook(str(path), chapter_no=51, title="Audited Chapter")
+    import_chapter_workbook(db_session, str(path))
+
+    # AuditLog.id is a uuid string, so ordering by it is not chronological --
+    # the row is found by what it says instead.
+    rows = [
+        r.event_data_json
+        for r in db_session.query(AuditLog).filter(
+            AuditLog.event_type == "curriculum.chapter.imported"
+        )
+    ]
+    mine = [r for r in rows if r and "CH51" in r]
+    assert len(mine) == 1, rows
+    assert "ch51.xlsx" in mine[0]
+    assert '"questionsCreated": 2' in mine[0]

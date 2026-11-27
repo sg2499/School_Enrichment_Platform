@@ -115,6 +115,11 @@ def main() -> int:
             print(f"  {question.code} in {activity.title}")
 
         # --- is any of this in front of children right now?
+        #
+        # Printed even when it is zero. This line used to sit inside the `if`,
+        # so a clean run ended on the flagged count with nothing after it --
+        # which reads as a script that died, not one that found nothing
+        # (27 Nov 2026).
         if withdrawn:
             live = (
                 db.query(Assignment)
@@ -127,7 +132,11 @@ def main() -> int:
                 .distinct()
                 .count()
             )
-            print(f"\nLive assignments holding a withdrawn question: {live}")
+        else:
+            live = 0  # nothing is withdrawn, so nothing can be holding one
+        print(f"\nLive assignments holding a withdrawn question: {live}")
+
+        print("\nReport complete. Nothing was written -- this script only reads.")
         return 0
     finally:
         db.close()

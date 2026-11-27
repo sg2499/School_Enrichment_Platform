@@ -22,6 +22,7 @@ export... for correction and re-import" workflow) updates existing rows
 rather than duplicating them.
 """
 import json
+import os
 from dataclasses import dataclass, field
 
 import openpyxl
@@ -40,6 +41,7 @@ from app.models import (
     SubjectGroup,
 )
 from app.services import figures, question_approval_service
+from app.services.audit_service import log_audit_event
 from app.services.learning_service import MARKING_FIELD_LABELS, clean_marking_fields
 
 # Question Bank sheet column positions (0-indexed) -- see module docstring.
@@ -114,6 +116,18 @@ class ImportResult:
     concept_lessons_updated: int = 0
     questions_created: int = 0
     questions_updated: int = 0
+    # A-035: rows an import refused to touch because a person had already
+    # approved the question, and A-036: rows whose Question ID belongs to a
+    # question in another chapter. Both are reported, never applied silently.
+    questions_skipped_approved: int = 0
+    questions_skipped_other_chapter: int = 0
+    # New rows whose Status column asked for something other than Draft. Not
+    # a warning: a new question always starts as a Draft (A-035).
+    questions_status_ignored: int = 0
+    # The questions --allow-approved-overwrite actually rewrote, BY CODE.
+    # A-012's own finding was that counts without ids cannot answer "which
+    # ones"; this list is what makes an overwrite recoverable.
+    overwritten_codes: list = field(default_factory=list)
     warnings: list = field(default_factory=list)
 
 
@@ -125,6 +139,77 @@ def _normalize_status(value) -> str:
     if not value:
         return "DRAFT"
     return STATUS_MAP.get(str(value).strip().lower(), "DRAFT")
+
+
+def _row_changes_question(question, row, marking_columns, figure_column) -> bool:
+    """Whether this workbook row would change anything about a question that
+    already exists (A-035).
+
+    Used only to decide whether a refusal is worth SAYING. A re-run over a
+    whole class is mostly rows that match what is already stored, and warning
+    on every one of them would bury the handful that differ.
+
+    Deliberately errs towards True: a field this does not compare is a field
+    the import would change without saying so, which is the failure that
+    matters. Status is not compared -- an import never sets it.
+    """
+    for index, attribute in (
+        (QB_ASSIGNMENT_ID, "assignment_code"),
+        (QB_STAGE, "stage"),
+        (QB_COMPETENCY, "competency"),
+        (QB_QUESTION_TYPE, "question_type"),
+        (QB_STEM, "stem"),
+        (QB_OPTION_A, "option_a"),
+        (QB_OPTION_B, "option_b"),
+        (QB_OPTION_C, "option_c"),
+        (QB_OPTION_D, "option_d"),
+        (QB_ACCEPTED_VARIANTS, "accepted_variants"),
+        (QB_HINT, "hint"),
+        (QB_EXPLANATION, "explanation"),
+        (QB_MISCONCEPTION_TAG, "misconception_tag"),
+        (QB_RESPONSE_FORMAT, "response_format"),
+        (QB_MEDIA_REQUIRED, "media_required"),
+        (QB_TEACHER_NOTE, "teacher_note"),
+        (QB_SOURCE_ALIGNMENT, "source_alignment"),
+    ):
+        if row[index] != getattr(question, attribute):
+            return True
+
+    correct = str(row[QB_CORRECT_ANSWER]) if row[QB_CORRECT_ANSWER] is not None else ""
+    if correct != (question.correct_answer or ""):
+        return True
+    if (int(row[QB_DIFFICULTY]) if row[QB_DIFFICULTY] is not None else None) != question.difficulty:
+        return True
+    if (int(row[QB_MARKS]) if row[QB_MARKS] is not None else 1) != question.marks:
+        return True
+    if (int(row[QB_TIME_SECONDS]) if row[QB_TIME_SECONDS] is not None else None) != question.time_seconds:
+        return True
+    if _yn_to_bool(row[QB_AUTO_GRADABLE]) != bool(question.auto_gradable):
+        return True
+    if _yn_to_bool(row[QB_SHUFFLE_OPTIONS]) != bool(question.shuffle_options):
+        return True
+
+    if marking_columns:
+        marking, _problems = clean_marking_fields(
+            {key: (row[index] if index < len(row) else None) for key, index in marking_columns.items()}
+        )
+        for key, value in marking.items():
+            if value != getattr(question, key):
+                return True
+
+    if figure_column is not None:
+        raw = row[figure_column] if figure_column < len(row) else None
+        if raw is None or not str(raw).strip():
+            if question.figure is not None:
+                return True
+        else:
+            try:
+                if json.dumps(figures.check(str(raw))) != (question.figure or ""):
+                    return True
+            except figures.FigureError:
+                return True
+
+    return False
 
 
 def _find_header_row(rows, first_cell_value: str) -> int:
@@ -251,6 +336,7 @@ def import_chapter_workbook(
     curriculum_version_status: str = "PUBLISHED",
     curriculum_version_effective_from: str | None = "2026-04-01",
     commit: bool = True,
+    allow_approved_overwrite: bool = False,
 ) -> ImportResult:
     """Import one chapter workbook. Master data (board/class level/subject
     group/discipline/board course/curriculum version) is shared across
@@ -370,6 +456,12 @@ def import_chapter_workbook(
             result.concept_lessons_updated += 1
         concept_lessons_by_code[skill_id] = lesson
 
+    # Every skill in THIS chapter. A question whose code is already taken by
+    # a question outside this set belongs to another chapter (A-036); moving
+    # one between skills WITHIN a chapter stays allowed, because that is a
+    # correction a re-import is meant to make.
+    lesson_ids = {lesson.id for lesson in concept_lessons_by_code.values()}
+
     # --- Questions (one per Question Bank row) ---
     for row in qb_data_rows:
         skill_id = str(row[QB_SKILL_ID]).strip()
@@ -381,8 +473,37 @@ def import_chapter_workbook(
             continue
 
         code = str(row[QB_QUESTION_ID]).strip()
+        # A question is found by its code ALONE, and uq_question_code is
+        # global, so before this check a workbook that reused another board's
+        # Question ID did not collide -- it silently moved that question into
+        # this chapter and rewrote it, inside whatever sets already held it
+        # (A-036). The code is the supplier's; the chapter is ours.
         question = db.query(Question).filter(Question.code == code).first()
         is_new = question is None
+        if question is not None and question.concept_lesson_id not in lesson_ids:
+            result.warnings.append(
+                f"Question {code}: that Question ID already belongs to a question in another "
+                f"chapter, so this row was skipped. Give it an ID of its own."
+            )
+            result.questions_skipped_other_chapter += 1
+            continue
+        if question is not None and question.status in question_approval_service.APPROVED_STATUSES:
+            # A-035: a person has approved this question. A workbook does not
+            # overrule a person, and a re-import used to rewrite the stem, the
+            # key and the marking of live content without a word. The warning
+            # is raised only where the row would actually change something,
+            # so a re-run over a whole class does not bury the real
+            # differences under thousands of identical rows.
+            if not allow_approved_overwrite:
+                if _row_changes_question(question, row, marking_columns, figure_column):
+                    result.warnings.append(
+                        f"Question {code}: a person has already approved this question, so the "
+                        f"workbook's version was not applied. Re-run with --allow-approved-overwrite "
+                        f"to replace it."
+                    )
+                    result.questions_skipped_approved += 1
+                continue
+            result.overwritten_codes.append(code)
         if question is None:
             question = Question(code=code, concept_lesson_id=lesson.id)
 
@@ -409,29 +530,24 @@ def import_chapter_workbook(
         question.response_format = row[QB_RESPONSE_FORMAT]
         question.media_required = row[QB_MEDIA_REQUIRED]
         question.teacher_note = row[QB_TEACHER_NOTE]
-        target_status = _normalize_status(row[QB_STATUS])
-        if target_status in question_approval_service.APPROVED_STATUSES:
-            # A-012: a workbook's Status column can say Approved or Published,
-            # so the import is one of the routes a question gets approved by
-            # and has to say so. Narrowing what a workbook is allowed to
-            # approve at all is A-035, not this change.
-            if question_approval_service.is_sent_back(question):
-                # A person sent this question back for rework, and a workbook
-                # does not overrule a person (A-011 part 4). Left where it is,
-                # and said out loud rather than passed over in silence.
-                result.warnings.append(
-                    f"Question {code}: somebody sent this back for rework, so the workbook's "
-                    "status was not applied. Approve it in Curriculum Studio instead."
-                )
-            else:
-                question_approval_service.approve(
-                    question,
-                    to_status=target_status,
-                    user_id=None,
-                    source=question_approval_service.SOURCE_IMPORT,
-                )
-        else:
-            question.status = target_status
+        # A-035: an import NEVER sets the status of a question that already
+        # exists, in either direction. It used to take the Status column at
+        # its word, which meant a supplier's spreadsheet could approve a
+        # question nobody had read (import once as Draft, re-import as
+        # Approved -- and this loader advertises itself as safe to re-run),
+        # or send a live question back for rework and pull it out of its sets,
+        # which is A-011 part 4 undone by a spreadsheet. A new question always
+        # starts in DRAFT, whatever the column says, which is what
+        # import_class5_maths.py has always promised on screen.
+        if is_new:
+            question.status = "DRAFT"
+            if _normalize_status(row[QB_STATUS]) != "DRAFT":
+                # Counted, not warned per row. A new question starting as a
+                # Draft is the rule, not a problem with the file, and a
+                # supplier workbook can carry hundreds of such rows -- one
+                # line at the end says it once. Warnings are for things that
+                # need a person to look.
+                result.questions_status_ignored += 1
         question.source_alignment = row[QB_SOURCE_ALIGNMENT]
         if marking_columns:
             marking, problems = clean_marking_fields(
@@ -458,6 +574,31 @@ def import_chapter_workbook(
             result.questions_created += 1
         else:
             result.questions_updated += 1
+
+    # A-035: an import left no trace at all. log_audit_event only does
+    # db.add, so this row lives or dies with the rest of the import -- a
+    # dry run that rolls back leaves no audit row either, which is right.
+    # The overwritten questions are listed BY CODE, not counted: A-012's own
+    # finding was that a count cannot answer "which ones".
+    log_audit_event(
+        db,
+        "curriculum.chapter.imported",
+        details={
+            "chapterCode": chapter.code,
+            "boardCode": board_code,
+            "classLevel": class_level_code,
+            "file": os.path.basename(file_path),
+            "conceptLessonsCreated": result.concept_lessons_created,
+            "conceptLessonsUpdated": result.concept_lessons_updated,
+            "questionsCreated": result.questions_created,
+            "questionsUpdated": result.questions_updated,
+            "questionsSkippedApproved": result.questions_skipped_approved,
+            "questionsSkippedOtherChapter": result.questions_skipped_other_chapter,
+            "questionsStatusIgnored": result.questions_status_ignored,
+            "allowApprovedOverwrite": allow_approved_overwrite,
+            "overwrittenCodes": result.overwritten_codes,
+        },
+    )
 
     if commit:
         db.commit()
