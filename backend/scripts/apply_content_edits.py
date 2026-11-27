@@ -24,12 +24,16 @@ The workbook (SE_Class_5_Content_Edits_*.xlsx):
                   and write itself into every set holding it, published sets
                   included, which put a question nobody had read in front of
                   children. It reaches a set the way every other question
-                  does -- approved in Curriculum Studio, then linked when the
-                  chapter is next published (Approve and Publish, or
-                  publish_courses.py) or the Super Admin generate-activities
-                  endpoint is called. The run prints which sets its neighbour
-                  is in, and which of those are frozen by A-001 because they
-                  are published and assigned.
+                  does -- approved in Curriculum Studio, then linked by
+                  generate_activities_for_chapter. Reach that through the Super
+                  Admin POST /api/learning/activities/generate, which approves
+                  nothing (it is chapter-wide, and publishes nothing). NOT through Approve and Publish or
+                  publish_courses.py: both bulk-approve every unflagged
+                  question in the chapter before generating, which would
+                  approve this one unread and every other Draft with it. The
+                  run names every new question, where it will land, and which
+                  of those sets are frozen by A-001 because they are published
+                  and already assigned.
   "Skill Names":  Skill ID | Current Name | New Name.
 
 Fields are named as in the chapter workbooks: Question Stem, Option A to D,
@@ -70,6 +74,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 AUDIT_EVENT = "curriculum.content_edits.applied"
+# The one route that places approved questions in their sets WITHOUT
+# approving anything (#262). The report prints it, and a test checks it
+# against the app's real routes so the two cannot drift apart.
+GENERATE_ROUTE = "/api/learning/activities/generate"
 
 # Workbook field -> Question attribute.
 FIELDS = {
@@ -171,7 +179,11 @@ def same_stored(attribute: str, now, value) -> bool:
 @dataclass
 class Plan:
     paired: list = field(default_factory=list)  # codes whose WORDING changed AND given a new question after (#262)
-    where: list = field(default_factory=list)  # (new code, set title, frozen?) -- where the neighbour sits (#262)
+    # One entry per code in `new`, always: (new code, the code its After names,
+    # root code or None, [(set title, frozen?), ...]). The root is the question
+    # already in the database that the chain of `After` values ends at, and it
+    # differs from the After only in a chain (#262).
+    where: list = field(default_factory=list)
     edits: list = field(default_factory=list)  # (question, attribute, old, new, condition)
     rewrites: list = field(default_factory=list)  # (question, {attribute: value}, condition)
     new: list = field(default_factory=list)  # (after_question, code, {attribute: value}, condition)
@@ -302,25 +314,55 @@ def read_and_plan(db, path: str, *, lock: bool = False) -> Plan:
                 problems.append(f"{where}: its name has changed since the sheet was made.")
             else:
                 plan.skills.append((lesson, new_name))
-    # Where each new question's neighbour sits. Worked out HERE, at plan
-    # time, because the summary has to be readable before --apply: the point
-    # of both reports below is that the person decides before the write.
+    # Where each new question will land. Worked out HERE, at plan time,
+    # because the summary has to be readable before --apply: the point of both
+    # reports below is that the person decides before the write.
+    #
+    # EVERY code in plan.new gets an entry, even when nothing can be said
+    # about it. The first version of this keyed the report on the neighbour's
+    # sets, so three kinds of new question fell out of the report silently --
+    # a chain, a neighbour in no set, and (for the remedy) an unrelated frozen
+    # set. A question missing from the report reads as a question needing no
+    # action, which is the opposite of the truth.
+    #
+    # `after` is a Question when the row follows one already in the database,
+    # and a plain CODE STRING when it follows a question added earlier on this
+    # same sheet -- a chain, which is what "5 written questions in steps, 8 new
+    # IDs" (11 Nov) looks like. A chain member inherits its skill and
+    # assignment code from the question it follows, which inherited them from
+    # the one before, so the whole chain lands wherever its root does.
+    follows = {code: after for after, code, *_ in plan.new}
+
+    def _root(code: str):
+        """The question already in the database that this code's chain of
+        `After` values ends at, and whether it took more than one step."""
+        after, steps, seen = follows.get(code), 0, {code}
+        while isinstance(after, str):
+            if after in seen:  # the read loop forbids this; never trust it anyway
+                return None, True
+            seen.add(after)
+            after, steps = follows.get(after), steps + 1
+        return after, steps > 0
+
     for after, code, *_ in plan.new:
-        if isinstance(after, str):
-            continue
-        for activity in (
-            db.query(LearningActivity)
-            .join(LearningActivityQuestion, LearningActivityQuestion.learning_activity_id == LearningActivity.id)
-            .filter(LearningActivityQuestion.question_id == after.id)
-            .all()
-        ):
-            # The same test top_up_activity uses to leave a set alone, so the
-            # report and the behaviour cannot disagree: published, with any
-            # assignment row against it, whatever that assignment's status.
-            frozen = activity.status == "PUBLISHED" and bool(
-                db.query(Assignment.id).filter(Assignment.learning_activity_id == activity.id).first()
-            )
-            plan.where.append((code, activity.title, frozen))
+        after_code = after if isinstance(after, str) else after.code
+        root, _chained = _root(code)
+        sets: list[tuple[str, bool]] = []
+        if root is not None:
+            for activity in (
+                db.query(LearningActivity)
+                .join(LearningActivityQuestion, LearningActivityQuestion.learning_activity_id == LearningActivity.id)
+                .filter(LearningActivityQuestion.question_id == root.id)
+                .all()
+            ):
+                # The same test top_up_activity uses to leave a set alone, so
+                # the report and the behaviour cannot disagree: published, with
+                # any assignment row against it, whatever its status.
+                frozen = activity.status == "PUBLISHED" and bool(
+                    db.query(Assignment.id).filter(Assignment.learning_activity_id == activity.id).first()
+                )
+                sets.append((activity.title, frozen))
+        plan.where.append((code, after_code, root.code if root is not None else None, sets))
 
     # A question SPLIT INTO STEPS arrives as a change to the original's
     # WORDING plus a New row for each new part, and since #262 the new parts
@@ -383,11 +425,13 @@ def apply_plan(db, plan: Plan, *, workbook_name: str, workbook_sha256: str) -> d
         # other new question lives under since A-035:
         #   * it lands as a DRAFT, whatever its neighbour is;
         #   * this script writes no LearningActivityQuestion rows at all.
-        # It joins a set through generate_activities_for_chapter, which runs
-        # when the chapter is next published or the Super Admin
-        # generate-activities endpoint is called -- never from here, because
-        # that function commits part-way and would break this script's
-        # rollback.
+        # It joins a set through generate_activities_for_chapter -- never
+        # from here, because that function commits part-way and would break
+        # this script's rollback. The way to reach it for one question is the
+        # Super Admin POST /api/learning/activities/generate, which approves
+        # nothing. Approve and Publish and publish_courses.py reach it too,
+        # but only after bulk-approving every unflagged question in the
+        # chapter, so they would approve this one unread.
         question.status = "DRAFT"
         db.add(question)
         db.flush()
@@ -422,7 +466,9 @@ def apply_plan(db, plan: Plan, *, workbook_name: str, workbook_sha256: str) -> d
         details={"workbook": workbook_name, "workbookSha256": workbook_sha256, "changes": len(changes),
                  "questionsTouched": len(touched), "byCondition": dict(Counter(c["condition"] for c in changes)),
                  "newQuestionsAwaitingPlacement": [
-                     {"code": c, "set": s, "frozen": f} for c, s, f in plan.where],
+                     {"code": c, "after": after, "root": root,
+                      "sets": [{"set": s, "frozen": f} for s, f in sets]}
+                     for c, after, root, sets in plan.where],
                  "changedAndGivenANewQuestionAfter": plan.paired,
                  "detail": changes},
     )
@@ -440,34 +486,55 @@ def _summary(plan: Plan) -> str:
         lines.append("By condition: " + ", ".join(f"{k} {v}" for k, v in sorted(by.items())))
     if plan.new:
         lines.append("")
-        lines.append("A new question is added to the bank as a Draft, in no practice set (#262). To")
-        lines.append("place it: approve it in Curriculum Studio, then publish the chapter again. It is")
-        lines.append("then sorted into its set by skill and question code -- not necessarily straight")
-        lines.append("after the question named in After.")
-        for code, title, frozen in plan.where:
-            lines.append(f"  {code} -> {title}: " + (
-                "THIS SET IS PUBLISHED AND ALREADY ASSIGNED, so nothing can be added to it any more. "
-                "The new question will never reach the children already working on it."
-                if frozen else "this set takes it at the next chapter publish."))
-        if not plan.where:
-            lines.append("  Its neighbour is in no set, so there is nothing to report.")
-    if plan.paired:
-        frozen_codes = {c for c, _t, f in plan.where if f}
+        lines.append("A new question is added to the bank as a Draft, in no practice set (#262).")
         lines.append("")
-        lines.append("CHECK THESE BEFORE CHILDREN PRACTISE AGAIN. Each of these questions has its")
-        lines.append("wording or answer changed AND a new question added after it, which is what a")
-        lines.append("split into steps looks like. The change goes live at once while the new parts")
-        lines.append("are Drafts outside the set, so a child could get the first step and not the")
-        lines.append("second.")
-        if frozen_codes:
-            lines.append("At least one of the sets involved is published and assigned, so the new parts")
-            lines.append("CANNOT be added to it at all -- putting the change back is the only remedy.")
+        lines.append("To place it: approve it in Curriculum Studio, then have a Super Admin call")
+        lines.append(f"POST {GENERATE_ROUTE} with {{\"chapterId\": <the chapter's id>}}.")
+        lines.append("No screen calls it yet; it needs a signed-in Super Admin session. It places")
+        lines.append("approved questions and approves nothing itself, but it works on the whole")
+        lines.append("chapter: it also creates a Draft set for any skill group that has none and tops")
+        lines.append("up the chapter's other open sets. It publishes nothing.")
+        lines.append("")
+        lines.append("DO NOT use Approve and Publish, or publish_courses.py, to place it. Both")
+        lines.append("bulk-approve every unflagged question in the chapter first, so they would")
+        lines.append("approve this question unread -- and every other Draft in that chapter with it.")
+        lines.append("")
+        lines.append("It is sorted into its set by skill and question code, not straight after the")
+        lines.append("question named in After.")
+        # One line for every new question, whatever is or is not known about
+        # it: a question left out of this list would read as one needing no
+        # action.
+        for code, after, root, sets in plan.where:
+            chain = "" if after == root else f" (after {after} on this sheet, so it lands with {root})"
+            if root is None:
+                lines.append(f"  {code}: this run cannot work out which question it follows, so it "
+                             "cannot say where it will land.")
+            elif not sets:
+                lines.append(f"  {code}{chain}: {root} is in no practice set, so this run cannot say "
+                             "where it will land. Generating activities may still place it.")
+            else:
+                for title, frozen in sets:
+                    lines.append(f"  {code}{chain} -> {title}: " + (
+                        "THIS SET IS PUBLISHED AND ALREADY ASSIGNED, so nothing can be added to it any "
+                        "more. The new question will never reach the children already working on it."
+                        if frozen else "this set takes it once activities are generated."))
+    for code in plan.paired:
+        # The remedy depends on THIS pair's own new parts. Keyed on the whole
+        # plan it would tell the operator to revert a pair that publishing
+        # would have fixed, because of some unrelated frozen addition.
+        frozen = any(f for _c, _a, root, sets in plan.where if root == code for _t, f in sets)
+        lines.append("")
+        lines.append(f"CHECK {code} BEFORE CHILDREN PRACTISE AGAIN. Its wording or answer is changed AND")
+        lines.append("a new question is added after it, which is what a split into steps looks like.")
+        lines.append("The change goes live at once while the new parts are Drafts outside the set, so a")
+        lines.append("child could get the first step and not the second.")
+        if frozen:
+            lines.append("Its set is published and assigned, so the new parts CANNOT be added to it at")
+            lines.append("all -- putting the change back is the only remedy.")
         else:
-            lines.append("Approve the new parts and publish the chapter to close that, or put the")
-            lines.append("change back.")
+            lines.append("Approve the new parts and generate activities to close that, or put the change")
+            lines.append("back.")
         lines.append("If the two changes are unrelated, nothing is wrong.")
-        for code in plan.paired:
-            lines.append(f"  {code}")
     return "\n".join(lines)
 
 
