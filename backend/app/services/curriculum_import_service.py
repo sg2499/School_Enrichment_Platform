@@ -478,13 +478,18 @@ def import_chapter_workbook(
                     f"--allow-approved-overwrite to replace it."
                 )
                 result.concept_lessons_skipped_published += 1
-            else:
+            elif differs:
                 lesson.title = skill_name
                 lesson.learning_outcome = learning_outcome
                 lesson.prerequisite_note = prerequisite_note
                 lesson.priority_misconception = priority_misconception
+                # Counted only where something really changed. It used to
+                # count every skill it touched, so a re-run over content that
+                # had not moved reported "15 updated" for fifteen no-op
+                # writes -- which reads as a change nobody made (found on
+                # production, 27 Nov 2026). Same rule the question side uses.
                 result.concept_lessons_updated += 1
-                if differs and chapter.status == "PUBLISHED":
+                if chapter.status == "PUBLISHED":
                     result.overwritten_codes.append(skill_id)
         concept_lessons_by_code[skill_id] = lesson
 
