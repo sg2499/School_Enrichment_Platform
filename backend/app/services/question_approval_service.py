@@ -15,8 +15,11 @@ written:
   2. routes_curriculum_admin._bulk_approve_questions -- the Approve and
      Publish button
   3. scripts/publish_courses.py                      -- calls (2) with no user
-  4. services/curriculum_import_service              -- a workbook's Status
-     column (A-035 will narrow this)
+  4. services/curriculum_import_service              -- NO LONGER a writer.
+     A workbook's Status column used to approve questions; A-035 (27 Nov
+     2026) stopped it. An import now sets DRAFT on a question it creates and
+     never touches the status of one that already exists, so IMPORT below is
+     kept only to read the stamps written before that date.
   5. scripts/apply_content_edits.py                  -- copies the status of
      the question it sits after (#262 will remove this)
   6. services/pattern_engine                         -- a question MADE from

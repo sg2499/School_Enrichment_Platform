@@ -41,6 +41,11 @@ def main() -> int:
                         help="CISCE (shown as ICSE) or the existing board CBSE.")
     parser.add_argument("--yes", action="store_true", help="Skip the YES prompt.")
     parser.add_argument("--dry-run", action="store_true", help="Do everything, then roll back.")
+    parser.add_argument(
+        "--allow-approved-overwrite", action="store_true",
+        help="Replace questions a person has already approved. Off by default: a workbook does "
+             "not overrule a reviewer. Every question replaced is listed by code in the audit row.",
+    )
     args = parser.parse_args()
 
     folder = Path(args.dir)
@@ -80,10 +85,19 @@ def main() -> int:
                 result = import_chapter_workbook(
                     db, str(path), board_code=board_code, board_display_name=board_display,
                     class_level_code=args.class_level, curriculum_version_status="DRAFT", commit=False,
+                    allow_approved_overwrite=args.allow_approved_overwrite,
                 )
                 print(f"  OK {path.name}: {result.chapter_code} {result.chapter_title!r}: "
                       f"{result.concept_lessons_created} skills created / {result.concept_lessons_updated} updated, "
                       f"{result.questions_created} questions created / {result.questions_updated} updated"
+                      + (f", {result.questions_status_ignored} rows asked for a status other than Draft"
+                         if result.questions_status_ignored else "")
+                      + (f", {result.questions_skipped_approved} left alone (already approved)"
+                         if result.questions_skipped_approved else "")
+                      + (f", {result.questions_skipped_other_chapter} skipped (ID belongs to another chapter)"
+                         if result.questions_skipped_other_chapter else "")
+                      + (f", {len(result.overwritten_codes)} approved questions REPLACED"
+                         if result.overwritten_codes else "")
                       + (f", {len(result.warnings)} warnings" if result.warnings else ""))
                 for warning in result.warnings:
                     print(f"      - {warning}")

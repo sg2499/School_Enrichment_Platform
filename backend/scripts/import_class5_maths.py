@@ -88,6 +88,12 @@ def main() -> int:
         action="store_true",
         help="Skip the interactive confirmation prompt (for non-interactive/CI use).",
     )
+    parser.add_argument(
+        "--allow-approved-overwrite",
+        action="store_true",
+        help="Replace questions a person has already approved. Off by default: a workbook does "
+             "not overrule a reviewer. Every question replaced is listed by code in the audit row.",
+    )
     args = parser.parse_args()
 
     content_dir = Path(args.content_dir)
@@ -110,7 +116,11 @@ def main() -> int:
     if "sqlite" in db_url:
         print("WARNING: DATABASE_URL is not set (or points at SQLite) -- this will NOT write to production.")
     print(f"Content directory: {content_dir}")
-    print(f"Chapters to import: {len(CHAPTER_FILES)} (all land in DRAFT -- nothing becomes visible to anyone)")
+    print(f"Chapters to import: {len(CHAPTER_FILES)} (every NEW question lands in DRAFT, whatever "
+          f"the workbook's Status column says -- nothing becomes visible to anyone)")
+    if args.allow_approved_overwrite:
+        print("--allow-approved-overwrite is ON: questions a person has already approved WILL be "
+              "replaced, and each one is listed by code in the audit row.")
 
     if not args.yes:
         confirm = input("Type YES to proceed: ")
@@ -121,30 +131,52 @@ def main() -> int:
     db = SessionLocal()
     succeeded, failed = [], []
     try:
+        # A-035: one transaction for the whole load, not one per chapter.
+        # This used to commit each chapter and carry on past a failure, so a
+        # load that broke at chapter 9 left eight chapters written and no way
+        # to tell from the database that the rest never arrived. The CISCE
+        # loader beside this one already worked this way; now both do.
         for num in sorted(CHAPTER_FILES):
             path = content_dir / CHAPTER_FILES[num]
             print(f"\n=== Chapter {num:02d}: {path.name} ===")
             try:
-                result = import_chapter_workbook(db, str(path))
+                result = import_chapter_workbook(
+                    db, str(path), commit=False,
+                    allow_approved_overwrite=args.allow_approved_overwrite,
+                )
                 print(
                     f"  OK -- {result.chapter_code} {result.chapter_title!r}: "
                     f"{result.concept_lessons_created} lessons created / {result.concept_lessons_updated} updated, "
                     f"{result.questions_created} questions created / {result.questions_updated} updated"
+                    + (f", {result.questions_status_ignored} rows asked for a status other than Draft"
+                       if result.questions_status_ignored else "")
+                    + (f", {result.questions_skipped_approved} left alone (already approved)"
+                       if result.questions_skipped_approved else "")
+                    + (f", {result.questions_skipped_other_chapter} skipped (ID belongs to another chapter)"
+                       if result.questions_skipped_other_chapter else "")
+                    + (f", {len(result.overwritten_codes)} approved questions REPLACED"
+                       if result.overwritten_codes else "")
                 )
                 if result.warnings:
                     print(f"  {len(result.warnings)} warning(s):")
                     for warning in result.warnings:
                         print(f"    - {warning}")
                 succeeded.append(num)
-            except Exception as exc:  # noqa: BLE001 -- one bad chapter shouldn't abort the rest
+            except Exception as exc:  # noqa: BLE001 -- report it, then stop: all or nothing
                 db.rollback()
                 print(f"  FAILED: {exc}")
                 failed.append((num, str(exc)))
+                break
+        if failed:
+            db.rollback()
+            print("\nNothing was kept: a chapter failed, so the whole load was rolled back.")
+        else:
+            db.commit()
     finally:
         db.close()
 
     print("\n=== Summary ===")
-    print(f"Succeeded: {len(succeeded)}/{len(CHAPTER_FILES)} -- {[f'CH{n:02d}' for n in succeeded]}")
+    print(f"Imported: {len(succeeded)}/{len(CHAPTER_FILES)} -- {[f'CH{n:02d}' for n in succeeded]}")
     if failed:
         print(f"Failed: {len(failed)}")
         for num, reason in failed:
